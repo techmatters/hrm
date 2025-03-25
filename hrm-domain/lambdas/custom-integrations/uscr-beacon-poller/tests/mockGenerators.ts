@@ -37,6 +37,13 @@ const EMPTY_INCIDENT_REPORT: IncidentReport = {
   updated_at: '',
   responders: [],
   tags: [],
+  activation_interval: null,
+  enroute_time_interval: null,
+  scene_arrival_interval: null,
+  triage_interval: null,
+  total_scene_interval: null,
+  transport_interval: null,
+  total_incident_interval: null,
 };
 
 export const generateIncidentReport = (

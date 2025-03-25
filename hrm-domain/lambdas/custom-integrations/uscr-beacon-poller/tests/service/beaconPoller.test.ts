@@ -112,7 +112,6 @@ const generateIncidentReports = (
           id,
           name: `Responder for case #${caseIds[indexInCurrentIteration]} on incident #${iteration} with id #${id}`,
           timestamps: {} as any,
-          intervals: {} as any,
         })),
         caller_number: '1234567890',
         created_at: start.toISOString(),

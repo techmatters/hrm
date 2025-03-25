@@ -29,6 +29,7 @@ describe('incidentReportToCaseSection', () => {
   test('most beacon incident report properties map to equivalents in the Aselo case section', () => {
     const { section, caseId, lastUpdated } = incidentReportToCaseSection(
       generateIncidentReport({
+        created_at: '1969',
         case_id: '1234',
         id: 5678,
         incident_class_id: 6,
@@ -41,6 +42,13 @@ describe('incidentReportToCaseSection', () => {
         number_of_patient_transports: 4000000000,
         updated_at: 'not long ago',
         tags: [],
+        activation_interval: 1,
+        enroute_time_interval: 208,
+        scene_arrival_interval: 3,
+        triage_interval: 208,
+        total_scene_interval: 411,
+        transport_interval: null,
+        total_incident_interval: 55 * 52,
         responders: [
           {
             name: 'Lorna Ballantyne',
@@ -54,14 +62,6 @@ describe('incidentReportToCaseSection', () => {
               hospital_arrival_received_at: '2025',
               complete_incident_received_at: '2026 (est)',
             },
-            intervals: {
-              enroute_time_interval: 208,
-              scene_arrival_interval: 3,
-              triage_interval: 208,
-              total_scene_interval: 411,
-              transport_interval: null,
-              total_incident_interval: 55 * 52,
-            },
           },
         ],
       }),
@@ -71,6 +71,7 @@ describe('incidentReportToCaseSection', () => {
     expect(section).toStrictEqual({
       sectionId: '5678',
       sectionTypeSpecificData: {
+        incidentCreationTimestamp: '1969',
         operatingArea: 6,
         incidentType: 'Planetary Evacuation',
         latitude: -4.2,
@@ -78,6 +79,12 @@ describe('incidentReportToCaseSection', () => {
         locationAddress: 'Echo Park, Los Angeles, CA, USA',
         transportDestination: 'Europa, Saturn',
         numberOfClientsTransported: 4000000000,
+        activationInterval: 1,
+        enrouteInterval: 208,
+        sceneArrivalInterval: 3,
+        triageInterval: 208,
+        transportInterval: null,
+        totalIncidentTime: 55 * 52,
       },
     });
   });
@@ -130,6 +137,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
   test('Responders specified - adds case section and responders', async () => {
     await addIncidentReportSectionsToAseloCase(
       generateIncidentReport({
+        created_at: '1969',
         case_id: '1234',
         id: 5678,
         incident_class_id: 6,
@@ -142,6 +150,13 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         number_of_patient_transports: 4000000000,
         updated_at: 'just now',
         tags: [],
+        activation_interval: 1,
+        enroute_time_interval: 208,
+        scene_arrival_interval: 3,
+        triage_interval: 208,
+        total_scene_interval: 411,
+        transport_interval: null,
+        total_incident_interval: 55 * 52,
         responders: [
           {
             name: 'Lorna Ballantyne',
@@ -154,14 +169,6 @@ describe('addIncidentReportSectionsToAseloCase', () => {
               transport_info_received_at: '1978',
               hospital_arrival_received_at: '2025',
               complete_incident_received_at: '2026 (est)',
-            },
-            intervals: {
-              enroute_time_interval: 208,
-              scene_arrival_interval: 3,
-              triage_interval: 208,
-              total_scene_interval: 411,
-              transport_interval: null,
-              total_incident_interval: 55 * 52,
             },
           },
           {
@@ -176,14 +183,6 @@ describe('addIncidentReportSectionsToAseloCase', () => {
               hospital_arrival_received_at: null,
               complete_incident_received_at: '1974',
             },
-            intervals: {
-              enroute_time_interval: 208,
-              scene_arrival_interval: 3,
-              triage_interval: null,
-              total_scene_interval: 411,
-              transport_interval: null,
-              total_incident_interval: 208,
-            },
           },
         ],
       }),
@@ -192,6 +191,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
     verifyAddSectionRequest('1234', 'incidentReport', {
       sectionId: '5678',
       sectionTypeSpecificData: {
+        incidentCreationTimestamp: '1969',
         operatingArea: 6,
         incidentType: 'Planetary Evacuation',
         latitude: -4.2,
@@ -199,6 +199,12 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         locationAddress: 'Echo Park, Los Angeles, CA, USA',
         transportDestination: 'Europa, Saturn',
         numberOfClientsTransported: 4000000000,
+        activationInterval: 1,
+        enrouteInterval: 208,
+        sceneArrivalInterval: 3,
+        triageInterval: 208,
+        transportInterval: null,
+        totalIncidentTime: 55 * 52,
       },
     });
     verifyAddSectionRequest(
@@ -214,11 +220,6 @@ describe('addIncidentReportSectionsToAseloCase', () => {
           transportTimestamp: '1978',
           destinationArrivalTimestamp: '2025',
           incidentCompleteTimestamp: '2026 (est)',
-          enrouteInterval: 208,
-          sceneArrivalInterval: 3,
-          triageInterval: 208,
-          transportInterval: null,
-          totalIncidentTime: 55 * 52,
         },
       },
       false,
@@ -236,11 +237,6 @@ describe('addIncidentReportSectionsToAseloCase', () => {
           transportTimestamp: null,
           destinationArrivalTimestamp: null,
           incidentCompleteTimestamp: '1974',
-          enrouteInterval: 208,
-          sceneArrivalInterval: 3,
-          triageInterval: null,
-          transportInterval: null,
-          totalIncidentTime: 208,
         },
       },
       false,
@@ -250,6 +246,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
   test('No responders - just adds case section', async () => {
     await addIncidentReportSectionsToAseloCase(
       generateIncidentReport({
+        created_at: '1969',
         case_id: '1234',
         id: 5678,
         incident_class_id: 6,
@@ -262,12 +259,20 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         number_of_patient_transports: 4000000000,
         updated_at: 'just now',
         tags: [],
+        activation_interval: 1,
+        enroute_time_interval: 208,
+        scene_arrival_interval: 3,
+        triage_interval: 208,
+        total_scene_interval: 411,
+        transport_interval: null,
+        total_incident_interval: 55 * 52,
       }),
       'not long ago',
     );
     verifyAddSectionRequest('1234', 'incidentReport', {
       sectionId: '5678',
       sectionTypeSpecificData: {
+        incidentCreationTimestamp: '1969',
         operatingArea: 6,
         incidentType: 'Planetary Evacuation',
         latitude: -4.2,
@@ -275,6 +280,12 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         locationAddress: 'Echo Park, Los Angeles, CA, USA',
         transportDestination: 'Europa, Saturn',
         numberOfClientsTransported: 4000000000,
+        activationInterval: 1,
+        enrouteInterval: 208,
+        sceneArrivalInterval: 3,
+        triageInterval: 208,
+        transportInterval: null,
+        totalIncidentTime: 55 * 52,
       },
     });
   });

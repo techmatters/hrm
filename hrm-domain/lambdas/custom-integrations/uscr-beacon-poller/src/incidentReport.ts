@@ -39,12 +39,21 @@ export type IncidentReport = {
   number_of_patient_transports: number;
   responders: Responder[];
   tags: string[];
+  // Incident intervals
+  activation_interval: number | null;
+  enroute_time_interval: number | null;
+  scene_arrival_interval: number | null;
+  triage_interval: number | null;
+  total_scene_interval: number | null;
+  transport_interval: number | null;
+  total_incident_interval: number | null;
 };
 
 export const incidentReportToCaseSection = ({
   id,
   case_id,
   updated_at,
+  created_at,
   incident_class_id,
   category,
   latitude,
@@ -52,6 +61,12 @@ export const incidentReportToCaseSection = ({
   address,
   transport_destination,
   number_of_patient_transports,
+  activation_interval,
+  enroute_time_interval,
+  scene_arrival_interval,
+  triage_interval,
+  transport_interval,
+  total_incident_interval,
 }: IncidentReport): NewCaseSectionInfo => {
   return {
     caseId: case_id as string,
@@ -59,6 +74,7 @@ export const incidentReportToCaseSection = ({
     section: {
       sectionId: id.toString(),
       sectionTypeSpecificData: {
+        incidentCreationTimestamp: created_at,
         operatingArea: incident_class_id,
         incidentType: category,
         latitude,
@@ -66,6 +82,12 @@ export const incidentReportToCaseSection = ({
         locationAddress: address,
         numberOfClientsTransported: number_of_patient_transports,
         transportDestination: transport_destination,
+        activationInterval: activation_interval,
+        enrouteInterval: enroute_time_interval,
+        sceneArrivalInterval: scene_arrival_interval,
+        triageInterval: triage_interval,
+        transportInterval: transport_interval,
+        totalIncidentTime: total_incident_interval,
       },
     },
   };

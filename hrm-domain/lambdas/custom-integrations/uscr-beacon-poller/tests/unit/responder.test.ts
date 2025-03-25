@@ -36,14 +36,6 @@ describe('responderToCaseSection', () => {
           hospital_arrival_received_at: '2025',
           complete_incident_received_at: '2026 (est)',
         },
-        intervals: {
-          enroute_time_interval: 208,
-          scene_arrival_interval: 3,
-          triage_interval: 208,
-          total_scene_interval: 411,
-          transport_interval: null,
-          total_incident_interval: 55 * 52,
-        },
       },
       'not long ago',
     );
@@ -59,11 +51,6 @@ describe('responderToCaseSection', () => {
         transportTimestamp: '1978',
         destinationArrivalTimestamp: '2025',
         incidentCompleteTimestamp: '2026 (est)',
-        enrouteInterval: 208,
-        sceneArrivalInterval: 3,
-        triageInterval: 208,
-        transportInterval: null,
-        totalIncidentTime: 55 * 52,
       },
     });
   });

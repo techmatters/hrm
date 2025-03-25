@@ -28,20 +28,12 @@ export type Responder = {
     hospital_arrival_received_at: string | null;
     complete_incident_received_at: string | null;
   };
-  intervals: {
-    enroute_time_interval: number | null;
-    scene_arrival_interval: number | null;
-    triage_interval: number | null;
-    total_scene_interval: number | null;
-    transport_interval: number | null;
-    total_incident_interval: number | null;
-  };
 };
 
 export const responderToCaseSection = (
   caseId: string,
   incidentReportId: number,
-  { name, timestamps, intervals, id }: Responder,
+  { name, timestamps, id }: Responder,
   lastUpdated: string,
 ): NewCaseSectionInfo => ({
   caseId,
@@ -56,11 +48,6 @@ export const responderToCaseSection = (
       transportTimestamp: timestamps.transport_info_received_at,
       destinationArrivalTimestamp: timestamps.hospital_arrival_received_at,
       incidentCompleteTimestamp: timestamps.complete_incident_received_at,
-      enrouteInterval: intervals.enroute_time_interval,
-      sceneArrivalInterval: intervals.scene_arrival_interval,
-      triageInterval: intervals.triage_interval,
-      transportInterval: intervals.transport_interval,
-      totalIncidentTime: intervals.total_incident_interval,
     },
   },
 });
