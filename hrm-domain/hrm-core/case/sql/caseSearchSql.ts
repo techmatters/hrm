@@ -173,7 +173,7 @@ export const filterSql = ({
   if (caseInfoFilters) {
     Object.entries(caseInfoFilters).forEach(([key, values]) => {
       if (Array.isArray(values) && values.length) {
-        const clause = `cases."info"->>'${key}' IN ($<caseInfoFilters.${key}:csv>)`;
+        const clause = `cases."info"->>'${key}' = ANY($<caseInfoFilters.${key}:csv>::text[])`;
         filterSqlClauses.push(clause);
       } else if (typeof values === 'object' && !Array.isArray(values)) {
         // Handle DateFilter type
