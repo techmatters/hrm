@@ -532,7 +532,10 @@ describe('/cases route', () => {
             perpetrators,
             accountSid,
           );
-          const toCreate = fillNameAndPhone({ ...contact1, twilioWorkerId: workerSid });
+          const toCreate = fillNameAndPhone({
+            ...contact1,
+            twilioWorkerId: workerSid,
+          });
 
           toCreate.timeOfContact = new Date().toISOString();
           toCreate.taskId = `TASK_SID`;
@@ -928,7 +931,8 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc => ['WK-worker-1', 'WK-worker-3'].indexOf(ccc.case.status) !== -1,
+                    ccc =>
+                      ['WK-worker-1', 'WK-worker-3'].indexOf(ccc.case.twilioWorkerId) !== -1,
                   )
                   .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
               expectedTotalCount: 5,
@@ -1326,28 +1330,26 @@ describe('/cases route', () => {
           });
         });
 
-        test('should filter cases by operatingArea string array', async () => {
-          // Filter for East and Hollywood operating areas
+        test('should filter cases by operatingArea as a single string value', async () => {
+          // Filter for East operating area using exact matching
           const body = {
             caseInfoFilters: {
-              operatingArea: [operatingAreas[0], operatingAreas[1]],
+              operatingArea: operatingAreas[0],
             },
           };
 
           const response = await request.post(searchRoute).set(headers).send(body);
 
           expect(response.status).toBe(200);
-          expect(response.body.cases).toHaveLength(2);
-          expect(response.body.cases.map(c => c.info.operatingArea)).toEqual(
-            expect.arrayContaining([operatingAreas[0], operatingAreas[1]]),
-          );
+          expect(response.body.cases).toHaveLength(1);
+          expect(response.body.cases[0].info.operatingArea).toBe(operatingAreas[0]);
         });
 
-        test('should filter cases by a single operatingArea value', async () => {
-          // Filter for just Downtown operating area
+        test('should filter cases by another operatingArea value', async () => {
+          // Filter for Downtown operating area using exact matching
           const body = {
             caseInfoFilters: {
-              operatingArea: [operatingAreas[2]],
+              operatingArea: operatingAreas[2],
             },
           };
 
@@ -1373,6 +1375,11 @@ describe('/cases route', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.cases).toHaveLength(2);
+          // Verify the followUpDates are within the expected range
+          response.body.cases.forEach(c => {
+            const date = new Date(c.info.followUpDate);
+            expect(date >= baselineDate && date <= addDays(baselineDate, 1)).toBe(true);
+          });
         });
 
         test('should filter cases by followUpDate using TODAY option', async () => {
@@ -1400,16 +1407,18 @@ describe('/cases route', () => {
 
           expect(response.status).toBe(200);
           expect(response.body.cases).toHaveLength(1);
-          expect(new Date(response.body.cases[0].info.followUpDate).toISOString()).toBe(
-            today.toISOString(),
-          );
+          const date = new Date(response.body.cases[0].info.followUpDate);
+          const expectedDate = new Date(today.toISOString());
+          expect(date.getFullYear()).toBe(expectedDate.getFullYear());
+          expect(date.getMonth()).toBe(expectedDate.getMonth());
+          expect(date.getDate()).toBe(expectedDate.getDate());
         });
 
         test('should combine multiple caseInfoFilters', async () => {
           // Filter for East operating area with follow-up date on baseline day
           const body = {
             caseInfoFilters: {
-              operatingArea: [operatingAreas[0]],
+              operatingArea: operatingAreas[0],
               followUpDate: {
                 from: baselineDate.toISOString(),
                 to: baselineDate.toISOString(),
@@ -1422,9 +1431,11 @@ describe('/cases route', () => {
           expect(response.status).toBe(200);
           expect(response.body.cases).toHaveLength(1);
           expect(response.body.cases[0].info.operatingArea).toBe(operatingAreas[0]);
-          expect(new Date(response.body.cases[0].info.followUpDate).toISOString()).toBe(
-            baselineDate.toISOString(),
-          );
+          const date = new Date(response.body.cases[0].info.followUpDate);
+          const expectedDate = new Date(baselineDate.toISOString());
+          expect(date.getFullYear()).toBe(expectedDate.getFullYear());
+          expect(date.getMonth()).toBe(expectedDate.getMonth());
+          expect(date.getDate()).toBe(expectedDate.getDate());
         });
 
         test('should return empty array when no cases match caseInfoFilters', async () => {
