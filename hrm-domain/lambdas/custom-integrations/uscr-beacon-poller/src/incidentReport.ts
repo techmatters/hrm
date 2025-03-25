@@ -66,6 +66,7 @@ export const incidentReportToCaseSection = ({
   scene_arrival_interval,
   triage_interval,
   transport_interval,
+  total_scene_interval,
   total_incident_interval,
 }: IncidentReport): NewCaseSectionInfo => {
   return {
@@ -87,6 +88,7 @@ export const incidentReportToCaseSection = ({
         sceneArrivalInterval: scene_arrival_interval,
         triageInterval: triage_interval,
         transportInterval: transport_interval,
+        totalSceneInterval: total_scene_interval,
         totalIncidentTime: total_incident_interval,
       },
     },

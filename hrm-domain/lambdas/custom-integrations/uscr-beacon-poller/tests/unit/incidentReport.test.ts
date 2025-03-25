@@ -83,6 +83,7 @@ describe('incidentReportToCaseSection', () => {
         enrouteInterval: 208,
         sceneArrivalInterval: 3,
         triageInterval: 208,
+        totalSceneInterval: 411,
         transportInterval: null,
         totalIncidentTime: 55 * 52,
       },
@@ -203,6 +204,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         enrouteInterval: 208,
         sceneArrivalInterval: 3,
         triageInterval: 208,
+        totalSceneInterval: 411,
         transportInterval: null,
         totalIncidentTime: 55 * 52,
       },
@@ -285,6 +287,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         sceneArrivalInterval: 3,
         triageInterval: 208,
         transportInterval: null,
+        totalSceneInterval: 411,
         totalIncidentTime: 55 * 52,
       },
     });
