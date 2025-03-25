@@ -51,6 +51,8 @@ const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
 const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_incident_report_seen`;
 const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_case_report_seen`;
 
+type CaseOverviewPatch = { priority: string; operatingArea: string };
+
 export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
   await mockSsmParameters(mockttp, [
     {
@@ -73,7 +75,13 @@ const generateCases = (numberToGenerate: number): Promise<string[]> => {
       .map(async () => {
         const newCaseResponse = await fetch(
           `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${ACCOUNT_SID}/cases`,
-          { method: 'POST', body: JSON.stringify({}), headers: HRM_REQUEST_HEADERS },
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              info: { summary: 'something' },
+            }),
+            headers: HRM_REQUEST_HEADERS,
+          },
         );
         const newCase: any = await newCaseResponse.json();
         console.debug('Generated case:', newCase.id);
@@ -105,7 +113,8 @@ const generateIncidentReports = (
         description: `Incident report #${iteration}, for case ${caseIds[indexInCurrentIteration]}`,
         address: `Address for incident report #${iteration}`,
         category_id: 1,
-        incident_class_id: 1,
+        class: 'Pasadena',
+        priority: 'Low',
         status: 'open',
         caller_name: 'Caller Name',
         responders: [40404, 40405].map(id => ({
@@ -182,6 +191,20 @@ export const mockBeacon = async <TItem>(
         headers: BEACON_RESPONSE_HEADERS,
       };
     });
+};
+
+const verifyCaseOverviewForCase = async (
+  caseId: string,
+  expectedOverview: CaseOverviewPatch,
+): Promise<void> => {
+  const record: { info: CaseOverviewPatch } = await db.one(
+    `SELECT "info" FROM public."Cases" WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>`,
+    {
+      caseId,
+      accountSid: ACCOUNT_SID,
+    },
+  );
+  expect(record.info).toStrictEqual({ ...expectedOverview, summary: 'something' });
 };
 
 const verifyCaseSectionsForCase =
@@ -376,6 +399,10 @@ describe('Beacon Polling Service', () => {
         // Act
         await handler({ apiType: 'incidentReport' });
         // Assert
+        await verifyCaseOverviewForCase(caseIds[0], {
+          priority: 'Low',
+          operatingArea: 'Pasadena',
+        });
         await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
         await verifyRespondersForCase(
           caseIds[0],
@@ -399,6 +426,10 @@ describe('Beacon Polling Service', () => {
         // Act
         await handler({ apiType: 'incidentReport' });
         // Assert
+        await verifyCaseOverviewForCase(caseIds[0], {
+          priority: 'Low',
+          operatingArea: 'Pasadena',
+        });
         await verifyIncidentReportsForCase(caseIds[0], [
           incidentReports[0],
           incidentReports[2],
@@ -437,6 +468,10 @@ describe('Beacon Polling Service', () => {
         // Act
         await handler({ apiType: 'incidentReport' });
         // Assert
+        await verifyCaseOverviewForCase(caseIds[0], {
+          priority: 'Low',
+          operatingArea: 'Pasadena',
+        });
         await verifyIncidentReportsForCase(caseIds[0], [incidentReports[0]]);
         await verifyRespondersForCase(
           caseIds[0],
@@ -469,6 +504,10 @@ describe('Beacon Polling Service', () => {
         // Act
         await handler({ apiType: 'incidentReport' });
         // Assert
+        await verifyCaseOverviewForCase(caseIds[0], {
+          priority: 'Low',
+          operatingArea: 'Pasadena',
+        });
         await verifyIncidentReportsForCase(caseIds[0], [
           incidentReports[0],
           incidentReports[2],

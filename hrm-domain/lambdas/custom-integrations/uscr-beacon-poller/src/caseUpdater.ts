@@ -21,7 +21,7 @@ import {
   newErr,
   newOkFromData,
   SuccessResult,
-} from '@tech-matters/types/dist/Result';
+} from '@tech-matters/types';
 import { accountSid } from './config';
 
 const hrmHeaders = {
@@ -190,3 +190,43 @@ export const addDependentSectionToAseloCase =
       return res;
     }
   };
+
+export const updateAseloCaseOverview = async (
+  caseId: string,
+  patch: { operatingArea: string; priority: string },
+) => {
+  console.info('Updating case overview:', caseId, patch);
+  const existingCaseResponse = await fetch(
+    `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/overview`,
+    {
+      headers: hrmHeaders,
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    },
+  );
+  if (!existingCaseResponse.ok) {
+    if (existingCaseResponse.status === 404) {
+      return newErr({
+        message: `[overview] Attempted to patch the overview of case ${caseId}, which does not exist. ${await existingCaseResponse.text()}`,
+        error: {
+          type: 'CaseNotFound',
+          caseId,
+          level: 'warn',
+        },
+      });
+    } else {
+      return newErr({
+        message: `[overview] Error patching the overview of case ${caseId} (status ${existingCaseResponse.status})`,
+        error: {
+          type: 'UnexpectedHttpError',
+          status: existingCaseResponse.status,
+          body: await existingCaseResponse.text(),
+          level: 'error',
+        },
+      });
+    }
+  }
+  const updated = await existingCaseResponse.json();
+  console.info('Updated case:', updated);
+  return newOkFromData(updated);
+};

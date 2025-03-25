@@ -15,19 +15,24 @@
  */
 
 import { ItemProcessor, NewCaseSectionInfo } from './types';
-import { addDependentSectionToAseloCase, addSectionToAseloCase } from './caseUpdater';
+import {
+  addDependentSectionToAseloCase,
+  addSectionToAseloCase,
+  updateAseloCaseOverview,
+} from './caseUpdater';
 import { isErr, isOk, newErr } from '@tech-matters/types';
 import { Responder, responderToCaseSection } from './responder';
 
 export type IncidentReport = {
   id: number;
+  class: string;
+  priority: string;
   case_id: string | null;
   contact_id: string | null;
   description: string;
   address: string;
   category_id: number;
   category: string | null;
-  incident_class_id: number;
   status: string;
   caller_name: string;
   caller_number: string;
@@ -54,7 +59,6 @@ export const incidentReportToCaseSection = ({
   case_id,
   updated_at,
   created_at,
-  incident_class_id,
   category,
   latitude,
   longitude,
@@ -68,6 +72,7 @@ export const incidentReportToCaseSection = ({
   transport_interval,
   total_scene_interval,
   total_incident_interval,
+  tags,
 }: IncidentReport): NewCaseSectionInfo => {
   return {
     caseId: case_id as string,
@@ -75,21 +80,22 @@ export const incidentReportToCaseSection = ({
     section: {
       sectionId: id.toString(),
       sectionTypeSpecificData: {
+        beaconIncidentId: id.toString(),
         incidentCreationTimestamp: created_at,
-        operatingArea: incident_class_id,
         incidentType: category,
         latitude,
         longitude,
         locationAddress: address,
         numberOfClientsTransported: number_of_patient_transports,
         transportDestination: transport_destination,
-        activationInterval: activation_interval,
+        incidentActivationInterval: activation_interval,
         enrouteInterval: enroute_time_interval,
         sceneArrivalInterval: scene_arrival_interval,
         triageInterval: triage_interval,
         transportInterval: transport_interval,
         totalSceneInterval: total_scene_interval,
         totalIncidentTime: total_incident_interval,
+        tags,
       },
     },
   };
@@ -120,12 +126,18 @@ export const addIncidentReportSectionsToAseloCase: ItemProcessor<IncidentReport>
           lastSeen,
         ),
     );
-    const responderResults = await Promise.all(
-      (incidentReport.responders ?? []).map(responder =>
+    const responderResults = await Promise.all([
+      ...(incidentReport.responders ?? []).map(responder =>
         addResponderToAseloCase(responder),
       ),
+    ]);
+    const overviewPatchResult = await updateAseloCaseOverview(incidentReport.case_id!, {
+      operatingArea: incidentReport.class,
+      priority: incidentReport.priority,
+    });
+    const errors = [...responderResults, overviewPatchResult].filter(result =>
+      isErr(result),
     );
-    const errors = responderResults.filter(result => isErr(result));
     if (errors.length) {
       return newErr({
         message: 'Failed to add responders from incident report to Aselo case',
@@ -138,5 +150,6 @@ export const addIncidentReportSectionsToAseloCase: ItemProcessor<IncidentReport>
       });
     }
   }
+
   return incidentReportResult;
 };
