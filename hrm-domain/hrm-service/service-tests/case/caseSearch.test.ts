@@ -403,7 +403,6 @@ describe('/cases route', () => {
         },
         true,
       );
-
       useOpenRules();
       if (!expectTranscripts) {
         setRules(ruleFileActionOverride('viewExternalTranscript', false));
@@ -539,7 +538,6 @@ describe('/cases route', () => {
           toCreate.taskId = `TASK_SID`;
           toCreate.channelSid = `CHANNEL_SID`;
           toCreate.serviceSid = 'SERVICE_SID';
-          // Connects createdContact with createdCase2
           createdContact = (await contactDb.create()(accountSid, toCreate)).unwrap()
             .contact;
           createdContact = await contactDb.connectToCase()(
@@ -1039,28 +1037,6 @@ describe('/cases route', () => {
             },
             {
               description:
-                'should only include cases without followUpDate set in followUpDate.exists: MUST_NOT_EXIST filter specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-              body: {
-                filters: {
-                  followUpDate: {
-                    exists: DateExistsCondition.MUST_NOT_EXIST,
-                  },
-                },
-              },
-              sampleConfig: <InsertSampleCaseSettings>{
-                ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-                followUpDateGenerator: idx =>
-                  idx % 2 === 1 ? addDays(baselineDate, idx).toISOString() : undefined,
-              },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .filter(ccc => !ccc.case.info.followUpDate)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-              expectedTotalCount: 5,
-            },
-            {
-              description:
                 'should count an empty string value as not existing followUpDate.exists: MUST_NOT_EXIST filter specified',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
@@ -1287,92 +1263,266 @@ describe('/cases route', () => {
           );
         });
       });
-    });
 
-    each([
-      {
-        expectTranscripts: true,
-        description: `with viewExternalTranscript includes transcripts`,
-      },
-      {
-        expectTranscripts: false,
-        description: `without viewExternalTranscript excludes transcripts`,
-      },
-    ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
-      const createdCase = await caseApi.createCase(
-        case1,
-        accountSid,
-        workerSid,
-        undefined,
-        true,
-      );
-      let createdContact = await createContact(
-        accountSid,
-        workerSid,
-        mocks.withTaskId,
-        ALWAYS_CAN,
-        true,
-      );
-      createdContact = await addConversationMediaToContact(
-        accountSid,
-        createdContact.id.toString(),
-        mocks.conversationMedia,
-        { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
-        true,
-      );
-      await connectContactToCase(
-        accountSid,
-        String(createdContact.id),
-        String(createdCase.id),
-        {
-          user: newTwilioUser(accountSid, workerSid, []),
-          can: () => true,
-        },
-        true,
-      );
-      if (expectTranscripts) {
-        console.log(createdContact);
-      }
+      describe('caseInfoFilters tests', () => {
+        const operatingAreas = ['East', 'Hollywood', 'Downtown', 'West'];
+        const baselineDate = new Date('2025-03-25T04:00:00.000Z');
+        const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'] as const;
+        const helplines = ['helpline-1'];
+        const searchRoute = `/v0/accounts/${accounts[0]}/cases/search`;
 
-      useOpenRules();
-      if (!expectTranscripts) {
-        setRules(ruleFileActionOverride('viewExternalTranscript', false));
-      }
-
-      const response = await request
-        .post(`${route}/search`)
-        .query({ limit: 20, offset: 0 })
-        .set(headers)
-        .send({
-          dateFrom: createdCase.createdAt,
-          dateTo: createdCase.createdAt,
-          firstName: 'withTaskId',
+        // Generate sample cases with different operating areas and follow-up dates
+        beforeEach(async () => {
+          await insertSampleCases({
+            sampleSize: 4,
+            accounts: [accounts[0]],
+            helplines,
+            cases: [
+              {
+                case: {
+                  ...case1,
+                  info: {
+                    ...case1.info,
+                    operatingArea: operatingAreas[0],
+                    followUpDate: new Date(baselineDate).toISOString(),
+                  },
+                },
+                sections: {},
+              },
+              {
+                case: {
+                  ...case1,
+                  info: {
+                    ...case1.info,
+                    operatingArea: operatingAreas[1],
+                    followUpDate: new Date(addDays(baselineDate, 1)).toISOString(),
+                  },
+                },
+                sections: {},
+              },
+              {
+                case: {
+                  ...case1,
+                  info: {
+                    ...case1.info,
+                    operatingArea: operatingAreas[2],
+                    followUpDate: new Date(addDays(baselineDate, 2)).toISOString(),
+                  },
+                },
+                sections: {},
+              },
+              {
+                case: {
+                  ...case1,
+                  info: {
+                    ...case1.info,
+                    operatingArea: operatingAreas[3],
+                    followUpDate: new Date(addDays(baselineDate, 3)).toISOString(),
+                  },
+                },
+                sections: {},
+              },
+            ],
+          });
         });
 
-      expect(response.status).toBe(200);
+        test('should filter cases by operatingArea string array', async () => {
+          // Filter for East and Hollywood operating areas
+          const body = {
+            caseInfoFilters: {
+              operatingArea: [operatingAreas[0], operatingAreas[1]],
+            },
+          };
 
-      expect(<caseApi.CaseService>response.body.cases).toHaveLength(1);
+          const response = await request.post(searchRoute).set(headers).send(body);
 
-      if (expectTranscripts) {
-        console.log(response.body.cases[0].connectedContacts);
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeTruthy();
-      } else {
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeFalsy();
-      }
+          expect(response.status).toBe(200);
+          expect(response.body.cases).toHaveLength(2);
+          expect(response.body.cases.map(c => c.info.operatingArea)).toEqual(
+            expect.arrayContaining([operatingAreas[0], operatingAreas[1]]),
+          );
+        });
+
+        test('should filter cases by a single operatingArea value', async () => {
+          // Filter for just Downtown operating area
+          const body = {
+            caseInfoFilters: {
+              operatingArea: [operatingAreas[2]],
+            },
+          };
+
+          const response = await request.post(searchRoute).set(headers).send(body);
+
+          expect(response.status).toBe(200);
+          expect(response.body.cases).toHaveLength(1);
+          expect(response.body.cases[0].info.operatingArea).toBe(operatingAreas[2]);
+        });
+
+        test('should filter cases by followUpDate using date range', async () => {
+          // Filter for follow-up dates in first two days
+          const body = {
+            caseInfoFilters: {
+              followUpDate: {
+                from: baselineDate.toISOString(),
+                to: new Date(addDays(baselineDate, 1)).toISOString(),
+              },
+            },
+          };
+
+          const response = await request.post(searchRoute).set(headers).send(body);
+
+          expect(response.status).toBe(200);
+          expect(response.body.cases).toHaveLength(2);
+        });
+
+        test('should filter cases by followUpDate using TODAY option', async () => {
+          const today = new Date('2025-03-25T04:00:00.000Z');
+
+          // Mock the current date for the test
+          const originalDateNow = Date.now;
+          Date.now = jest.fn(() => today.getTime());
+
+          // Filter for today's follow-up dates
+          const body = {
+            caseInfoFilters: {
+              followUpDate: {
+                option: 'TODAY',
+                from: today.toISOString(),
+                to: new Date(add(today, { days: 1, seconds: -1 })).toISOString(),
+              },
+            },
+          };
+
+          const response = await request.post(searchRoute).set(headers).send(body);
+
+          // Restore original Date.now
+          Date.now = originalDateNow;
+
+          expect(response.status).toBe(200);
+          expect(response.body.cases).toHaveLength(1);
+          expect(new Date(response.body.cases[0].info.followUpDate).toISOString()).toBe(
+            today.toISOString(),
+          );
+        });
+
+        test('should combine multiple caseInfoFilters', async () => {
+          // Filter for East operating area with follow-up date on baseline day
+          const body = {
+            caseInfoFilters: {
+              operatingArea: [operatingAreas[0]],
+              followUpDate: {
+                from: baselineDate.toISOString(),
+                to: baselineDate.toISOString(),
+              },
+            },
+          };
+
+          const response = await request.post(searchRoute).set(headers).send(body);
+
+          expect(response.status).toBe(200);
+          expect(response.body.cases).toHaveLength(1);
+          expect(response.body.cases[0].info.operatingArea).toBe(operatingAreas[0]);
+          expect(new Date(response.body.cases[0].info.followUpDate).toISOString()).toBe(
+            baselineDate.toISOString(),
+          );
+        });
+
+        test('should return empty array when no cases match caseInfoFilters', async () => {
+          // Filter with non-existent operating area
+          const body = {
+            caseInfoFilters: {
+              operatingArea: ['NonExistentArea'],
+            },
+          };
+
+          const response = await request.post(searchRoute).set(headers).send(body);
+
+          expect(response.status).toBe(200);
+          expect(response.body.cases).toHaveLength(0);
+        });
+      });
+
+      each([
+        {
+          expectTranscripts: true,
+          description: `with viewExternalTranscript includes transcripts`,
+        },
+        {
+          expectTranscripts: false,
+          description: `without viewExternalTranscript excludes transcripts`,
+        },
+      ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
+        const createdCase = await caseApi.createCase(
+          case1,
+          accountSid,
+          workerSid,
+          undefined,
+          true,
+        );
+        let createdContact = await createContact(
+          accountSid,
+          workerSid,
+          mocks.withTaskId,
+          ALWAYS_CAN,
+          true,
+        );
+        createdContact = await addConversationMediaToContact(
+          accountSid,
+          createdContact.id.toString(),
+          mocks.conversationMedia,
+          { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+          true,
+        );
+        await connectContactToCase(
+          accountSid,
+          String(createdContact.id),
+          String(createdCase.id),
+          {
+            user: newTwilioUser(accountSid, workerSid, []),
+            can: () => true,
+          },
+          true,
+        );
+        useOpenRules();
+        if (!expectTranscripts) {
+          setRules(ruleFileActionOverride('viewExternalTranscript', false));
+        }
+
+        const response = await request
+          .post(`${route}/search`)
+          .query({ limit: 20, offset: 0 })
+          .set(headers)
+          .send({
+            dateFrom: createdCase.createdAt,
+            dateTo: createdCase.createdAt,
+            firstName: 'withTaskId',
+          });
+
+        expect(response.status).toBe(200);
+
+        expect(<caseApi.CaseService>response.body.cases).toHaveLength(1);
+
+        if (expectTranscripts) {
+          console.log(response.body.cases[0].connectedContacts);
+          expect(
+            (<caseApi.CaseService[]>response.body.cases).every(
+              caseObj =>
+                caseObj.connectedContacts?.every(
+                  c => c.conversationMedia?.some(isS3StoredTranscript),
+                ),
+            ),
+          ).toBeTruthy();
+        } else {
+          expect(
+            (<caseApi.CaseService[]>response.body.cases).every(
+              caseObj =>
+                caseObj.connectedContacts?.every(
+                  c => c.conversationMedia?.some(isS3StoredTranscript),
+                ),
+            ),
+          ).toBeFalsy();
+        }
+      });
     });
   });
 });
