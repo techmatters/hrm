@@ -186,7 +186,7 @@ export const mockBeacon = async <TItem>(
         statusCode: 200,
         body: JSON.stringify({
           status: 'success',
-          [apiPath.includes('incidents') ? 'incidents' : 'casereports']: response,
+          [apiPath.includes('incidents') ? 'incidents' : 'case_reports']: response,
         }),
         headers: BEACON_RESPONSE_HEADERS,
       };
@@ -264,7 +264,7 @@ describe('Beacon Polling Service', () => {
       const apiPath =
         apiType === 'incidentReport'
           ? '/api/aselo/incidents/updates'
-          : '/api/aselo/casereports/updates';
+          : '/api/aselo/case_reports/updates';
       test(`[${apiType}] Returns less than the maximum records - doesn't query again`, async () => {
         const caseIds = await generateCases(4);
         if (apiType === 'incidentReport') {
@@ -563,7 +563,7 @@ describe('Beacon Polling Service', () => {
         const caseReports = generateCaseReports(2, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aselo/casereports/updates',
+          '/api/aselo/case_reports/updates',
           [caseReports],
         );
         // Act

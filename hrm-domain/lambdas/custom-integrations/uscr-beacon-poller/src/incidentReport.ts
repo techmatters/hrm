@@ -44,6 +44,7 @@ export type IncidentReport = {
   number_of_patient_transports: number;
   responders: Responder[];
   tags: string[];
+  comment: string | null;
   // Incident intervals
   activation_interval: number | null;
   enroute_time_interval: number | null;
@@ -73,6 +74,7 @@ export const incidentReportToCaseSection = ({
   total_scene_interval,
   total_incident_interval,
   tags,
+  comment,
 }: IncidentReport): NewCaseSectionInfo => {
   return {
     caseId: case_id as string,
@@ -96,6 +98,7 @@ export const incidentReportToCaseSection = ({
         totalSceneInterval: total_scene_interval,
         totalIncidentTime: total_incident_interval,
         tags,
+        comments: comment,
       },
     },
   };

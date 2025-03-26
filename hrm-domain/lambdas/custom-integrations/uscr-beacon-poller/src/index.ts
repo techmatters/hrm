@@ -29,10 +29,10 @@ export const handler = async ({
 }): Promise<0> => {
   const API_POLL_CONFIGS = {
     caseReport: {
-      url: new URL(`${process.env.BEACON_BASE_URL}/api/aselo/casereports/updates`),
+      url: new URL(`${process.env.BEACON_BASE_URL}/api/aselo/case_reports/updates`),
       headers: beaconHeaders,
       lastUpdateSeenSsmKey: lastCaseReportUpdateSeenSsmKey,
-      itemExtractor: (body: any) => body.casereports,
+      itemExtractor: (body: any) => body.case_reports,
       itemProcessor: addCaseReportSectionsToAseloCase,
       maxItemsInChunk: parseInt(process.env.MAX_CASE_REPORTS_PER_CALL || '1000'),
       maxChunksToRead: parseInt(process.env.MAX_CONSECUTIVE_API_CALLS || '10'),

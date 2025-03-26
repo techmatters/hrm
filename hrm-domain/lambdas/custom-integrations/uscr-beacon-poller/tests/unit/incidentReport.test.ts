@@ -84,6 +84,7 @@ describe('incidentReportToCaseSection', () => {
         total_scene_interval: 411,
         transport_interval: null,
         total_incident_interval: 55 * 52,
+        comment: 'far out...',
         responders: [
           {
             name: 'Lorna Ballantyne',
@@ -122,6 +123,7 @@ describe('incidentReportToCaseSection', () => {
         transportInterval: null,
         totalIncidentTime: 55 * 52,
         tags: ['tag1', 'tag2'],
+        comments: 'far out...',
       },
     });
   });
@@ -188,6 +190,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         number_of_patient_transports: 4000000000,
         updated_at: 'just now',
         tags: ['tag1', 'tag2'],
+        comment: 'far out...',
         activation_interval: 1,
         enroute_time_interval: 208,
         scene_arrival_interval: 3,
@@ -245,6 +248,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         transportInterval: null,
         totalIncidentTime: 55 * 52,
         tags: ['tag1', 'tag2'],
+        comments: 'far out...',
       },
     });
     verifyAddSectionRequest(
@@ -311,6 +315,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         total_scene_interval: 411,
         transport_interval: null,
         total_incident_interval: 55 * 52,
+        comment: 'far out...',
       }),
       'not long ago',
     );
@@ -333,6 +338,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         totalSceneInterval: 411,
         totalIncidentTime: 55 * 52,
         tags: ['tag1', 'tag2'],
+        comments: 'far out...',
       },
     });
     verifyUpdateOverviewRequest('1234', {

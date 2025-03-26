@@ -38,6 +38,7 @@ const EMPTY_INCIDENT_REPORT: IncidentReport = {
   updated_at: '',
   responders: [],
   tags: [],
+  comment: null,
   activation_interval: null,
   enroute_time_interval: null,
   scene_arrival_interval: null,
