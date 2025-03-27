@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-type CaseReportContentNode = {
+export type CaseReportContentNode = {
   type:
     | 'text'
     | 'section'
@@ -55,6 +55,12 @@ type RelevantProcessedCaseReportApiPayload = Omit<
   'Primary Disposition': {
     'Select One': string | null;
   };
+  'Secondary Disposition': {
+    'Tangible Resources Provided': Record<string, boolean> | null;
+    'Information Provided': Record<string, boolean> | null;
+    'Referral Provided': Record<string, boolean> | null;
+    'Services Obtained': Record<string, boolean> | null;
+  };
   'Narrative / Summary ': {
     Behavior?: string | null;
     Intervention?: string | null;
@@ -85,9 +91,8 @@ type RelevantProcessedCaseReportApiPayload = Omit<
   'Collaborative SUD Survey'?: {
     'In the past 3 months, have you used any of the following substances (check all that apply)'?: Record<
       string,
-      boolean
+      boolean | string | null
     > | null;
-    other_substances_used?: string | null;
     'In the past 3 months, have you ever tried and failed to control, cut down, or stop using the substances listed above?'?: string;
     'Are you interested in treatment for substance use disorder? If yes, continue with survey.'?: string;
     'There are several options for substance use disorder treatment. Which are you interested in?'?: Record<
@@ -98,6 +103,8 @@ type RelevantProcessedCaseReportApiPayload = Omit<
     'What type of pet(s)/service animal(s)?'?: string | null;
     'Is separating from your pet(s)/service animal a barrier to participating in the pilot program?'?: string;
   };
+  'Issue Report': // | ({ Narrative: string | null } & Omit<Record<string, boolean>, 'Narrative') Doesn't work :-(
+  Record<string, boolean | string | null> | null;
 };
 
 export type ProcessedCaseReportApiPayload = RelevantProcessedCaseReportApiPayload &

@@ -18,83 +18,52 @@
 import { ItemProcessor, NewCaseSectionInfo } from './types';
 import { addDependentSectionToAseloCase, addSectionToAseloCase } from './caseUpdater';
 import { isErr, isOk, newErr } from '@tech-matters/types';
+import {
+  ProcessedCaseReportApiPayload,
+  RawCaseReportApiPayload,
+  restructureApiContent,
+} from './caseReport/apiPayload';
 
-export type CaseReport = {
-  id: string;
-  case_id: string | null;
-  contact_id: string;
-  updated_at: string;
-  primary_disposition: string;
-  secondary_disposition?: {
-    tangible_resources_provided?: string[];
-    information_provided?: string[];
-    referral_provided?: string[];
-    service_obtained?: string[];
-  };
-  issue_report?: string[];
-  narrative?: {
-    behaviour?: string;
-    intervention?: string;
-    response?: string;
-    plan?: string;
-  };
-  demographics?: {
-    first_name?: string;
-    last_name?: string;
-    nickname?: string;
-    date_of_birth?: string;
-    gender?: string;
-    race_ethnicity?: string;
-    language?: string;
-  };
-  safety_plan?: {
-    warning_signs?: string;
-    coping_strategies?: string;
-    distractions?: string;
-    who_can_help?: string;
-    crisis_agencies?: string;
-    safe_environment?: string;
-  };
-  collaborative_sud_survey?: {
-    substances_used?: string[];
-    other_substances_used?: string;
-    failed_to_control_substances?: string;
-    treatment_interest?: string;
-    treatment_preferences?: string[];
-    has_service_animal?: string;
-    pet_type?: string[];
-    pet_separation_barrier?: string;
-  };
-};
+const checkboxMapToArray = (
+  checkboxMap: Record<string, boolean | string | null> | null | undefined,
+): string[] =>
+  Object.entries(checkboxMap || {})
+    .filter(([, checked]) => typeof checked === 'boolean' && checked)
+    .map(([key]) => key);
 
 const caseReportToCaseReportCaseSection = ({
   id,
   case_id,
   updated_at,
-  primary_disposition,
-  secondary_disposition,
-  issue_report,
-  narrative,
-}: CaseReport): NewCaseSectionInfo => {
-  const { behaviour, intervention, response, plan } = narrative || {};
+  'Primary Disposition': primaryDisposition,
+  'Secondary Disposition': secondaryDisposition,
+  'Issue Report': issueReport,
+  'Narrative / Summary ': narrative,
+}: ProcessedCaseReportApiPayload): NewCaseSectionInfo => {
   const {
-    tangible_resources_provided,
-    information_provided,
-    referral_provided,
-    service_obtained,
-  } = secondary_disposition || {};
+    Behavior: behaviour,
+    Intervention: intervention,
+    Response: response,
+    Plan: plan,
+  } = narrative || {};
+  const {
+    'Tangible Resources Provided': tangibleResourcesProvided,
+    'Information Provided': informationProvided,
+    'Referral Provided': referralProvided,
+    'Services Obtained': serviceObtained,
+  } = secondaryDisposition || {};
   return {
     caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
-      sectionId: id,
+      sectionId: id.toString(),
       sectionTypeSpecificData: {
-        primaryDisposition: primary_disposition,
-        tangibleResourcesProvided: tangible_resources_provided,
-        informationProvided: information_provided,
-        referralProvided: referral_provided,
-        serviceObtained: service_obtained,
-        issueReport: issue_report,
+        primaryDisposition: primaryDisposition?.['Select One'] || null,
+        tangibleResourcesProvided: checkboxMapToArray(tangibleResourcesProvided),
+        informationProvided: checkboxMapToArray(informationProvided),
+        referralProvided: checkboxMapToArray(referralProvided),
+        serviceObtained: checkboxMapToArray(serviceObtained),
+        issueReport: checkboxMapToArray(issueReport),
         behaviour,
         intervention,
         response,
@@ -108,30 +77,30 @@ const caseReportToPehCaseSection = ({
   id,
   case_id,
   updated_at,
-  demographics,
-}: CaseReport): NewCaseSectionInfo => {
+  Demographics: demographics,
+}: ProcessedCaseReportApiPayload): NewCaseSectionInfo => {
   const {
-    first_name,
-    last_name,
-    nickname,
-    date_of_birth,
-    gender,
-    language,
-    race_ethnicity,
+    'First Name': firstName,
+    'Last Name': lastName,
+    Nickname: nickname,
+    'Date of Birth': dateOfBirth,
+    Gender: genderOptions,
+    Language: language,
+    'Language Other': languageOther,
   } = demographics || {};
+  const { 'Select Gender': gender } = genderOptions || {};
   return {
     caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
       sectionTypeSpecificData: {
-        firstName: first_name,
-        lastName: last_name,
+        firstName,
+        lastName,
         nickname,
-        dateOfBirth: date_of_birth,
+        dateOfBirth,
         gender,
-        race: race_ethnicity,
-        language,
+        language: languageOther || language,
       },
     },
   };
@@ -141,28 +110,29 @@ const caseReportToSafetyPlanCaseSection = ({
   id,
   case_id,
   updated_at,
-  safety_plan,
-}: CaseReport): NewCaseSectionInfo => {
+  'Safety Plan': safetyPlan,
+}: ProcessedCaseReportApiPayload): NewCaseSectionInfo => {
   const {
-    warning_signs,
-    coping_strategies,
-    distractions,
-    who_can_help,
-    crisis_agencies,
-    safe_environment,
-  } = safety_plan || {};
+    'Write Signs Here': warningSigns,
+    'Write Strategies Here': copingStrategies,
+    'Write How Here': safeEnvironment,
+    'Write People or Places Here': distractions,
+
+    'Write Contact(s) Here': crisisAgencies,
+    'Write Here': whoCanHelp,
+  } = safetyPlan || {};
   return {
     caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
       sectionTypeSpecificData: {
-        warningSigns: warning_signs,
-        copingStrategies: coping_strategies,
+        warningSigns,
+        copingStrategies,
         distractions,
-        whoCanHelp: who_can_help,
-        crisisAgencies: crisis_agencies,
-        safeEnvironment: safe_environment,
+        whoCanHelp,
+        crisisAgencies,
+        safeEnvironment,
       },
     },
   };
@@ -172,32 +142,39 @@ const caseReportToSudSurveyCaseSection = ({
   id,
   case_id,
   updated_at,
-  collaborative_sud_survey,
-}: CaseReport): NewCaseSectionInfo => {
+  'Collaborative SUD Survey': collaborativeSudSurvey,
+}: ProcessedCaseReportApiPayload): NewCaseSectionInfo => {
   const {
-    substances_used,
-    other_substances_used,
-    failed_to_control_substances,
-    treatment_interest,
-    treatment_preferences,
-    has_service_animal,
-    pet_type,
-    pet_separation_barrier,
-  } = collaborative_sud_survey || {};
+    'In the past 3 months, have you used any of the following substances (check all that apply)':
+      substancesUsed,
+    'In the past 3 months, have you ever tried and failed to control, cut down, or stop using the substances listed above?':
+      failedToControlSubstances,
+    'Are you interested in treatment for substance use disorder? If yes, continue with survey.':
+      treatmentInterest,
+    'There are several options for substance use disorder treatment. Which are you interested in?':
+      treatmentPreferences,
+    'Do you have a pet(s)/service animal(s)?': hasServiceAnimal,
+    'What type of pet(s)/service animal(s)?': petType,
+    'Is separating from your pet(s)/service animal a barrier to participating in the pilot program?':
+      petSeparationBarrier,
+  } = collaborativeSudSurvey || {};
   return {
     caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
       sectionTypeSpecificData: {
-        substancesUsed: substances_used,
-        otherSubstancesUsed: other_substances_used,
-        failedToControlSubstances: failed_to_control_substances,
-        treatmentInterest: treatment_interest,
-        treatmentPreferences: treatment_preferences,
-        hasServiceAnimal: has_service_animal,
-        petType: pet_type,
-        petSeparationBarrier: pet_separation_barrier,
+        substancesUsed: checkboxMapToArray(substancesUsed),
+        otherSubstancesUsed:
+          Object.values(substancesUsed ?? {})
+            .filter(v => typeof v === 'string')
+            .join(', ') || null,
+        failedToControlSubstances,
+        treatmentInterest,
+        treatmentPreferences,
+        hasServiceAnimal,
+        petType,
+        petSeparationBarrier,
       },
     },
   };
@@ -220,23 +197,26 @@ const addSudSurveySectionToAseloCase = addDependentSectionToAseloCase(
   caseReportToSudSurveyCaseSection,
 );
 
-export const addCaseReportSectionsToAseloCase: ItemProcessor<CaseReport> = async (
-  caseReport: CaseReport,
+export const addCaseReportSectionsToAseloCase: ItemProcessor<
+  RawCaseReportApiPayload
+> = async (
+  rawCaseReport: RawCaseReportApiPayload,
 
   lastSeen: string,
 ) => {
+  const caseReport = restructureApiContent(rawCaseReport);
   const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, lastSeen);
   if (isOk(caseReportResult)) {
     const additionalSectionsResults: ReturnType<
       ReturnType<typeof addDependentSectionToAseloCase>
     >[] = [];
-    if (caseReport.demographics) {
+    if (caseReport.Demographics) {
       additionalSectionsResults.push(addPehSectionToAseloCase(caseReport));
     }
-    if (caseReport.collaborative_sud_survey) {
+    if (caseReport['Collaborative SUD Survey']) {
       additionalSectionsResults.push(addSudSurveySectionToAseloCase(caseReport));
     }
-    if (caseReport.safety_plan) {
+    if (caseReport['Safety Plan']) {
       additionalSectionsResults.push(addSafetyPlanSectionToAseloCase(caseReport));
     }
     const errors = (await Promise.all(additionalSectionsResults)).filter(isErr);
