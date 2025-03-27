@@ -29,7 +29,7 @@ import {
 } from './apiPayload';
 
 const BEACON_TO_ASELO_STATUS_MAP = {
-  Open: 'open',
+  '-': 'open',
   'Closed - No Further Action Needed': 'closed',
   'Response Team Follow-Up': 'responseTeamFollowUp',
   'Support Team Follow-Up': 'supportTeamFollowUp',
@@ -246,7 +246,8 @@ export const addCaseReportSectionsToAseloCase: ItemProcessor<
           BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP],
         );
         results.push(caseStatusUpdateResult);
-      } else {
+        // The starting value of the dropdown is 'Select', not sure if it ever comes through the API?
+      } else if (status !== 'Select') {
         results.push(
           newErr({
             message: 'Invalid case status',
@@ -257,6 +258,8 @@ export const addCaseReportSectionsToAseloCase: ItemProcessor<
             },
           }),
         );
+      } else {
+        console.debug('No case status provided, so no update being made');
       }
     }
     const errors = (await Promise.all(results)).filter(isErr);
