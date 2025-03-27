@@ -16,13 +16,36 @@
 
 import { NewCaseSectionInfo } from './types';
 
+type Responder = {
+  id: number;
+  name: string;
+  timestamps: {
+    alert_reply_received_at: string | null;
+    enroute_received_at: string | null;
+    on_scene_received_at: string | null;
+    additional_reply_received_at: string | null;
+    transport_info_received_at: string | null;
+    hospital_arrival_received_at: string | null;
+    complete_incident_received_at: string | null;
+  };
+  intervals: {
+    enroute_time_interval: number | null;
+    scene_arrival_interval: number | null;
+    triage_interval: number | null;
+    total_scene_interval: number | null;
+    transport_interval: number | null;
+    total_incident_interval: number | null;
+  };
+};
+
 export type IncidentReport = {
   id: number;
-  case_id: number;
-  contact_id: string;
+  case_id: string | null;
+  contact_id: string | null;
   description: string;
   address: string;
   category_id: number;
+  category: string | null;
   incident_class_id: number;
   status: string;
   caller_name: string;
@@ -31,21 +54,10 @@ export type IncidentReport = {
   updated_at: string;
   latitude: number;
   longitude: number;
-  responder_name: string;
   transport_destination: string;
-  no_clients_transported: number;
-  en_route_timestamp: string;
-  on_scene_timestamp: string;
-  additional_resources_timestamp: string;
-  transport_timestamp: string;
-  destination_arrival_timestamp: string;
-  incident_complete_timestamp: string;
-  activation_interval: string;
-  en_route_interval: string;
-  scene_arrival_interval: string;
-  triage_interval: string;
-  transport_interval: string;
-  total_incident_interval: string;
+  number_of_patient_transports: number;
+  responders: Responder[];
+  tags: string[];
 };
 
 export const incidentReportToCaseSection = ({
@@ -53,52 +65,48 @@ export const incidentReportToCaseSection = ({
   case_id,
   updated_at,
   incident_class_id,
-  category_id,
+  category,
   latitude,
   longitude,
   address,
-  responder_name,
+  responders,
   transport_destination,
-  no_clients_transported,
-  en_route_timestamp,
-  on_scene_timestamp,
-  additional_resources_timestamp,
-  transport_timestamp,
-  destination_arrival_timestamp,
-  incident_complete_timestamp,
-  activation_interval,
-  en_route_interval,
-  scene_arrival_interval,
-  triage_interval,
-  transport_interval,
-  total_incident_interval,
+  number_of_patient_transports,
 }: IncidentReport): NewCaseSectionInfo => {
+  const firstResponder: Responder | null = responders[0] ?? null;
+  const responderSections = firstResponder
+    ? {
+        responderName: firstResponder.name,
+        enrouteTimestamp: firstResponder.timestamps.enroute_received_at,
+        onSceneTimestamp: firstResponder.timestamps.on_scene_received_at,
+        additionalResourcesTimestamp:
+          firstResponder.timestamps.additional_reply_received_at,
+        transportTimestamp: firstResponder.timestamps.transport_info_received_at,
+        destinationArrivalTimestamp:
+          firstResponder.timestamps.hospital_arrival_received_at,
+        incidentCompleteTimestamp:
+          firstResponder.timestamps.complete_incident_received_at,
+        enrouteInterval: firstResponder.intervals.enroute_time_interval,
+        sceneArrivalInterval: firstResponder.intervals.scene_arrival_interval,
+        triageInterval: firstResponder.intervals.triage_interval,
+        transportInterval: firstResponder.intervals.transport_interval,
+        totalIncidentInterval: firstResponder.intervals.total_incident_interval,
+      }
+    : {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
       sectionTypeSpecificData: {
         operatingArea: incident_class_id,
-        incidentType: category_id,
+        incidentType: category,
         latitude,
         longitude,
         locationAddress: address,
-        responderName: responder_name,
+        numberOfClientsTransported: number_of_patient_transports,
         transportDestination: transport_destination,
-        numberOfClientsTransported: no_clients_transported,
-        enrouteTimestamp: en_route_timestamp,
-        onSceneTimestamp: on_scene_timestamp,
-        additionalResourcesTimestamp: additional_resources_timestamp,
-        transportTimestamp: transport_timestamp,
-        destinationArrivalTimestamp: destination_arrival_timestamp,
-        incidentCompleteTimestamp: incident_complete_timestamp,
-        incidentActivationInterval: activation_interval,
-        enrouteInterval: en_route_interval,
-        sceneArrivalInterval: scene_arrival_interval,
-        triageInterval: triage_interval,
-        transportInterval: transport_interval,
-        totalIncidentInterval: total_incident_interval,
+        ...responderSections,
       },
     },
   };

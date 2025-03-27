@@ -68,6 +68,7 @@ export const addSectionToAseloCase =
   ): ItemProcessor<TInput> =>
   async (
     inputData: TInput,
+    lastSeen: string,
   ): Promise<
     | InvalidDataError
     | CaseNotSpecifiedError
@@ -77,14 +78,18 @@ export const addSectionToAseloCase =
   > => {
     try {
       const { section, caseId, lastUpdated } = inputToSectionMapper(inputData);
+      // This works around a bug in the beacon service where it returns later than or equal to the provided updated_after timestamp, not strictly later than.
+      if (lastSeen === lastUpdated) {
+        console.info(
+          `Skipping ${sectionType} ${section.sectionId} (its last updated timestamp ${lastUpdated} is the same as the latest timestamp observed by the poller, indicating it is already processed)`,
+        );
+        return newOkFromData(lastUpdated);
+      }
       const { sectionId } = section;
       console.debug(
         `Start processing ${sectionType}: ${sectionId} (last updated: ${lastUpdated})`,
       );
       if (!caseId) {
-        console.warn(
-          `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
-        );
         return newErr({
           message: `${sectionType}s not already assigned to a case are not currently supported - rejecting ${sectionType} ${sectionId} (last updated: ${lastUpdated})`,
           error: {
@@ -106,13 +111,17 @@ export const addSectionToAseloCase =
       );
       if (newSectionResponse.ok) {
         const newSection: any = await newSectionResponse.json();
+
+        console.info(
+          `[${sectionType}] Added new ${sectionType} case section to case ${caseId}`,
+        );
         console.debug(
-          `Added new ${sectionType} case section to case ${caseId}:`,
+          `[${sectionType}] New ${sectionType} case section to case ${caseId} details:`,
           newSection,
         );
       } else if (newSectionResponse.status === 409) {
         return newErr({
-          message: `${sectionType} ${sectionId} was already added to case ${caseId} - overwrites are not supported. ${await newSectionResponse.text()}`,
+          message: `[${sectionType}] ${sectionId} was already added to case ${caseId} - overwrites are not supported. ${await newSectionResponse.text()}`,
           error: {
             type: 'SectionExists',
             caseId,
@@ -123,7 +132,7 @@ export const addSectionToAseloCase =
         });
       } else if (newSectionResponse.status === 404) {
         return newErr({
-          message: `Attempted to add ${sectionType} ${sectionId} to case ${caseId} which does not exist. ${await newSectionResponse.text()}`,
+          message: `[${sectionType}] Attempted to add ${sectionType} ${sectionId} to case ${caseId} which does not exist. ${await newSectionResponse.text()}`,
           error: {
             type: 'CaseNotFound',
             caseId,
@@ -134,7 +143,7 @@ export const addSectionToAseloCase =
         });
       } else {
         return newErr({
-          message: `Error adding ${sectionType} ${sectionId} to case ${caseId} (status ${newSectionResponse.status})`,
+          message: `[${sectionType}] Error adding ${sectionType} ${sectionId} to case ${caseId} (status ${newSectionResponse.status})`,
           error: {
             type: 'UnexpectedHttpError',
             status: newSectionResponse.status,

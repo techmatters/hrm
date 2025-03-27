@@ -71,8 +71,7 @@ export const createIncident = async ({
     ]);
 
     const fullUrl = `${baseUrl}/api/aselo/incidents`;
-
-    // @ts-ignore global fetch available because node 18
+    const apiCallStart = Date.now();
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
@@ -81,6 +80,12 @@ export const createIncident = async ({
       },
       body: JSON.stringify(incidentParams),
     });
+    const apiCallMillis = Date.now() - apiCallStart;
+
+    console.info(
+      `[TRACER][incident dispatch] Beacon API responded after ${apiCallMillis}ms with status:`,
+      response.status,
+    );
 
     if (!response.ok) {
       const error = await response.json();

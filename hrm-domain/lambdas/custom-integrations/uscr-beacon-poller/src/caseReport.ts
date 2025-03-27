@@ -21,7 +21,7 @@ import { isErr, isOk, newErr } from '@tech-matters/types';
 
 export type CaseReport = {
   id: string;
-  case_id: number;
+  case_id: string | null;
   contact_id: string;
   updated_at: string;
   primary_disposition: string;
@@ -84,7 +84,7 @@ const caseReportToCaseReportCaseSection = ({
     service_obtained,
   } = secondary_disposition || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id,
@@ -120,7 +120,7 @@ const caseReportToPehCaseSection = ({
     race_ethnicity,
   } = demographics || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
@@ -152,7 +152,7 @@ const caseReportToSafetyPlanCaseSection = ({
     safe_environment,
   } = safety_plan || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
@@ -185,7 +185,7 @@ const caseReportToSudSurveyCaseSection = ({
     pet_separation_barrier,
   } = collaborative_sud_survey || {};
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
@@ -223,19 +223,23 @@ const addSudSurveySectionToAseloCase = addSectionToAseloCase(
 export const addCaseReportSectionsToAseloCase: ItemProcessor<CaseReport> = async (
   caseReport: CaseReport,
 ) => {
-  const caseReportResult = await addCaseReportSectionToAseloCase(caseReport);
+  const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, 'something');
   if (isOk(caseReportResult)) {
     const additionalSectionsResults: ReturnType<
       ReturnType<typeof addSectionToAseloCase>
     >[] = [];
     if (caseReport.demographics) {
-      additionalSectionsResults.push(addPehSectionToAseloCase(caseReport));
+      additionalSectionsResults.push(addPehSectionToAseloCase(caseReport, 'something'));
     }
     if (caseReport.collaborative_sud_survey) {
-      additionalSectionsResults.push(addSudSurveySectionToAseloCase(caseReport));
+      additionalSectionsResults.push(
+        addSudSurveySectionToAseloCase(caseReport, 'something'),
+      );
     }
     if (caseReport.safety_plan) {
-      additionalSectionsResults.push(addSafetyPlanSectionToAseloCase(caseReport));
+      additionalSectionsResults.push(
+        addSafetyPlanSectionToAseloCase(caseReport, 'something'),
+      );
     }
     const errors = (await Promise.all(additionalSectionsResults)).filter(isErr);
     if (errors.length) {
