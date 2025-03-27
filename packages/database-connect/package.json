@@ -1,7 +1,7 @@
 {
-  "name": "@tech-matters/database-client",
+  "name": "@tech-matters/database-connect",
   "version": "1.0.0",
-  "description": "HTTP lib to help Aselo service conform to common practices when using express",
+  "description": "Library to connect to the database with the correct user",
   "author": "",
   "license": "AGPL",
   "main": "dist/index.js",

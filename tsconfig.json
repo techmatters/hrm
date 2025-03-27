@@ -5,7 +5,7 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/testing" },
-    { "path": "packages/database-client" },
+    { "path": "packages/database-connect" },
     { "path": "packages/http" },
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
