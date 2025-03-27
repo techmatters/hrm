@@ -41,7 +41,7 @@ const caseReportToCaseReportCaseSection = ({
   'Narrative / Summary ': narrative,
 }: ProcessedCaseReportApiPayload): NewCaseSectionInfo => {
   const {
-    Behavior: behaviour,
+    Behavior: behavior,
     Intervention: intervention,
     Response: response,
     Plan: plan,
@@ -64,7 +64,7 @@ const caseReportToCaseReportCaseSection = ({
         referralProvided: checkboxMapToArray(referralProvided),
         serviceObtained: checkboxMapToArray(serviceObtained),
         issueReport: checkboxMapToArray(issueReport),
-        behaviour,
+        behavior,
         intervention,
         response,
         plan,
