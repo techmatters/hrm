@@ -1,0 +1,29 @@
+{
+  "name": "@tech-matters/database-client",
+  "version": "1.0.0",
+  "description": "HTTP lib to help Aselo service conform to common practices when using express",
+  "author": "",
+  "license": "AGPL",
+  "main": "dist/index.js",
+  "dependencies": {
+    "pg": "^8.7.3",
+    "pg-hstore": "^2.3.4",
+    "pg-promise": "^10.11.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
+  }
+}
