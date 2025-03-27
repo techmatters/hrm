@@ -105,6 +105,9 @@ type RelevantProcessedCaseReportApiPayload = Omit<
   };
   'Issue Report': // | ({ Narrative: string | null } & Omit<Record<string, boolean>, 'Narrative') Doesn't work :-(
   Record<string, boolean | string | null> | null;
+  'Next Action': {
+    'Case Status': string | null;
+  };
 };
 
 export type ProcessedCaseReportApiPayload = RelevantProcessedCaseReportApiPayload &

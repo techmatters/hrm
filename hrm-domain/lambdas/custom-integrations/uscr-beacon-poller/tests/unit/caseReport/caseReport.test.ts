@@ -20,17 +20,44 @@ import {
   generateCaseReportSectionNode,
   generateCaseReportTextValueNode,
   generateCompleteCaseReport,
-} from '../mockGenerators';
-import { addCaseReportSectionsToAseloCase } from '../../src/caseReport';
+} from '../../mockGenerators';
+import { addCaseReportSectionsToAseloCase } from '../../../src/caseReport';
 import '@tech-matters/testing';
 import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
-import { verifyAddSectionRequest } from './verifyAddSectionRequest';
-import { RawCaseReportApiPayload } from '../../src/caseReport/apiPayload';
+import { verifyAddSectionRequest } from '../verifyAddSectionRequest';
+import { RawCaseReportApiPayload } from '../../../src/caseReport/apiPayload';
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
 global.fetch = mockFetch;
+
+export const verifyUpdateStatusRequest = (caseId: string, expectedStatus: string) => {
+  expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+  const [, ...subsequentCalls] = mockFetch.mock.calls;
+  const call = subsequentCalls.find(
+    ([url]) =>
+      url ===
+      `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/${caseId}/status`,
+  );
+  if (!call) {
+    throw new AssertionError({
+      message: `Expected request to put status not found`,
+      actual: mockFetch.mock.calls,
+    });
+  }
+
+  expect(call[1]).toStrictEqual({
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${process.env.STATIC_KEY}`,
+    },
+    body: expect.any(String),
+  });
+  let parsedJson = JSON.parse(call[1]!.body as string);
+  expect(parsedJson).toStrictEqual({ status: expectedStatus });
+};
 
 describe('addCaseReportSectionsToAseloCase', () => {
   const caseReportWithCoreSection = generateCaseReport({
@@ -71,6 +98,12 @@ describe('addCaseReportSectionsToAseloCase', () => {
           generateCaseReportCheckboxValueNode('issue1', true),
           generateCaseReportCheckboxValueNode('issue2', true),
         ]),
+        generateCaseReportSectionNode('Next Action', [
+          generateCaseReportTextValueNode(
+            'Case Status',
+            'Closed - No Further Action Needed',
+          ),
+        ]),
       ],
     },
   });
@@ -109,6 +142,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
         response: 'Music',
       },
     });
+    verifyUpdateStatusRequest('5678', 'closed');
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/personExperiencingHomelessness`,
       expect.anything(),
@@ -174,6 +208,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/safetyPlan`,
       expect.anything(),
@@ -239,6 +274,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/sudSurvey`,
       expect.anything(),
@@ -310,6 +346,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/safetyPlan`,
       expect.anything(),
     );
+    verifyUpdateStatusRequest('5678', 'closed');
 
     verifyAddSectionRequest(
       '5678',
@@ -374,6 +411,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     if (isOk(res)) {
       expect(res.unwrap()).toEqual('Christmas time');
     } else {
@@ -410,6 +448,10 @@ describe('addCaseReportSectionsToAseloCase', () => {
     );
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/sudSurvey`,
+      expect.anything(),
+    );
+    expect(mockFetch).not.toHaveBeenCalledWith(
+      `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/status`,
       expect.anything(),
     );
     if (isErr(res)) {
@@ -480,6 +522,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     if (isErr(res)) {
       expect(res.error.lastUpdated).toEqual('Christmas time');
       const error = res.error as any;

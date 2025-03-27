@@ -2602,4 +2602,7 @@ export const expectedProcessedApiCaseReportPayload: ProcessedCaseReportApiPayloa
     'Vehicle collision or damage': false,
     Narrative: 'narrative test',
   },
+  'Next Action': {
+    'Case Status': 'Response Team Follow Up',
+  },
 };

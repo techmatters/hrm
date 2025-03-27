@@ -196,6 +196,12 @@ export const generateCompleteCaseReport = (
           'cannot get rid of it, it follows me everywhere',
         ),
       ]),
+      generateCaseReportSectionNode('Next Action', [
+        generateCaseReportTextValueNode(
+          'Case Status',
+          'Closed - No Further Action Needed',
+        ),
+      ]),
     ],
   },
   ...patch,

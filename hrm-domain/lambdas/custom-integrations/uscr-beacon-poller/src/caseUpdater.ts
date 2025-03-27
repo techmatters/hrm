@@ -191,13 +191,27 @@ export const addDependentSectionToAseloCase =
     }
   };
 
-export const updateAseloCaseOverview = async (
+const updateAseloCase = async (
   caseId: string,
-  patch: { operatingArea: string; priority: string },
-) => {
-  console.info('Updating case overview:', caseId, patch);
+  patch: { status: string } | { operatingArea: string; priority: string },
+  caseDescendentPath: string,
+): Promise<
+  | ErrorResult<{
+      type: 'CaseNotFound';
+      caseId: string;
+      level: 'warn';
+    }>
+  | ErrorResult<{
+      type: 'UnexpectedHttpError';
+      status: number;
+      body: string;
+      level: 'error';
+    }>
+  | SuccessResult<unknown>
+> => {
+  console.info(`Updating case ${caseId} ${caseDescendentPath}:`, patch);
   const existingCaseResponse = await fetch(
-    `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/overview`,
+    `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/${caseDescendentPath}`,
     {
       headers: hrmHeaders,
       method: 'PUT',
@@ -207,7 +221,7 @@ export const updateAseloCaseOverview = async (
   if (!existingCaseResponse.ok) {
     if (existingCaseResponse.status === 404) {
       return newErr({
-        message: `[overview] Attempted to patch the overview of case ${caseId}, which does not exist. ${await existingCaseResponse.text()}`,
+        message: `[${caseDescendentPath}] Attempted to patch the ${caseDescendentPath} of case ${caseId}, which does not exist. ${await existingCaseResponse.text()}`,
         error: {
           type: 'CaseNotFound',
           caseId,
@@ -216,7 +230,7 @@ export const updateAseloCaseOverview = async (
       });
     } else {
       return newErr({
-        message: `[overview] Error patching the overview of case ${caseId} (status ${existingCaseResponse.status})`,
+        message: `[${caseDescendentPath}] Error patching the ${caseDescendentPath} of case ${caseId} (status ${existingCaseResponse.status})`,
         error: {
           type: 'UnexpectedHttpError',
           status: existingCaseResponse.status,
@@ -230,3 +244,11 @@ export const updateAseloCaseOverview = async (
   console.info('Updated case:', updated);
   return newOkFromData(updated);
 };
+
+export const updateAseloCaseOverview = async (
+  caseId: string,
+  patch: { operatingArea: string; priority: string },
+) => updateAseloCase(caseId, patch, 'overview');
+
+export const updateAseloCaseStatus = async (caseId: string, status: string) =>
+  updateAseloCase(caseId, { status }, 'status');

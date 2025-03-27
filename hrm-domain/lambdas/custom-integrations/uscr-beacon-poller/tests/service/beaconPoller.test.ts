@@ -210,6 +210,20 @@ const verifyCaseOverviewForCase = async (
   expect(record.info).toStrictEqual({ ...expectedOverview, summary: 'something' });
 };
 
+const verifyCaseStatusForCase = async (
+  caseId: string,
+  expectedStatus: string,
+): Promise<void> => {
+  const record: { status: string } = await db.one(
+    `SELECT "status" FROM public."Cases" WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>`,
+    {
+      caseId,
+      accountSid: ACCOUNT_SID,
+    },
+  );
+  expect(record.status).toStrictEqual(expectedStatus);
+};
+
 const verifyCaseSectionsForCase =
   <TItem>(
     caseSectionType: string,
@@ -590,6 +604,8 @@ describe('Beacon Polling Service', () => {
         await verifySafetyPlanForCase(caseIds[1], [caseReports[1]]);
         await verifySudSurveyForCase(caseIds[0], [caseReports[0]]);
         await verifySudSurveyForCase(caseIds[1], [caseReports[1]]);
+        await verifyCaseStatusForCase(caseIds[0], 'closed');
+        await verifyCaseStatusForCase(caseIds[1], 'closed');
       });
     });
   });

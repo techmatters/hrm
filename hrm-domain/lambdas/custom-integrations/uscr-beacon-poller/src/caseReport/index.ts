@@ -15,14 +15,26 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ItemProcessor, NewCaseSectionInfo } from './types';
-import { addDependentSectionToAseloCase, addSectionToAseloCase } from './caseUpdater';
-import { isErr, isOk, newErr } from '@tech-matters/types';
+import { ItemProcessor, NewCaseSectionInfo } from '../types';
+import {
+  addDependentSectionToAseloCase,
+  addSectionToAseloCase,
+  updateAseloCaseStatus,
+} from '../caseUpdater';
+import { ErrorResult, isErr, isOk, newErr, SuccessResult } from '@tech-matters/types';
 import {
   ProcessedCaseReportApiPayload,
   RawCaseReportApiPayload,
   restructureApiContent,
-} from './caseReport/apiPayload';
+} from './apiPayload';
+
+const BEACON_TO_ASELO_STATUS_MAP = {
+  Open: 'open',
+  'Closed - No Further Action Needed': 'closed',
+  'Response Team Follow-Up': 'responseTeamFollowUp',
+  'Support Team Follow-Up': 'supportTeamFollowUp',
+  'Managed By Support Team': 'managedBySupportTeam',
+};
 
 const checkboxMapToArray = (
   checkboxMap: Record<string, boolean | string | null> | null | undefined,
@@ -219,7 +231,35 @@ export const addCaseReportSectionsToAseloCase: ItemProcessor<
     if (caseReport['Safety Plan']) {
       additionalSectionsResults.push(addSafetyPlanSectionToAseloCase(caseReport));
     }
-    const errors = (await Promise.all(additionalSectionsResults)).filter(isErr);
+    const results: (
+      | SuccessResult<unknown>
+      | ErrorResult<{
+          level: 'error' | 'warn';
+        }>
+    )[] = await Promise.all(additionalSectionsResults);
+    const status = caseReport['Next Action']?.['Case Status'];
+
+    if (caseReport.case_id && status) {
+      if (BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP]) {
+        const caseStatusUpdateResult = await updateAseloCaseStatus(
+          caseReport.case_id,
+          BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP],
+        );
+        results.push(caseStatusUpdateResult);
+      } else {
+        results.push(
+          newErr({
+            message: 'Invalid case status',
+            error: {
+              type: 'InvalidCaseStatus',
+              level: 'error',
+              status,
+            },
+          }),
+        );
+      }
+    }
+    const errors = (await Promise.all(results)).filter(isErr);
     if (errors.length) {
       return newErr({
         message: 'Failed to add additional sections from case report to Aselo case',
