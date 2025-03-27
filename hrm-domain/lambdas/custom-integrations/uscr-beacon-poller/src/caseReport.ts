@@ -16,7 +16,7 @@
  */
 
 import { ItemProcessor, NewCaseSectionInfo } from './types';
-import { addSectionToAseloCase } from './caseUpdater';
+import { addDependentSectionToAseloCase, addSectionToAseloCase } from './caseUpdater';
 import { isErr, isOk, newErr } from '@tech-matters/types';
 
 export type CaseReport = {
@@ -207,39 +207,37 @@ const addCaseReportSectionToAseloCase = addSectionToAseloCase(
   'caseReport',
   caseReportToCaseReportCaseSection,
 );
-const addPehSectionToAseloCase = addSectionToAseloCase(
+const addPehSectionToAseloCase = addDependentSectionToAseloCase(
   'personExperiencingHomelessness',
   caseReportToPehCaseSection,
 );
-const addSafetyPlanSectionToAseloCase = addSectionToAseloCase(
+const addSafetyPlanSectionToAseloCase = addDependentSectionToAseloCase(
   'safetyPlan',
   caseReportToSafetyPlanCaseSection,
 );
-const addSudSurveySectionToAseloCase = addSectionToAseloCase(
+const addSudSurveySectionToAseloCase = addDependentSectionToAseloCase(
   'sudSurvey',
   caseReportToSudSurveyCaseSection,
 );
 
 export const addCaseReportSectionsToAseloCase: ItemProcessor<CaseReport> = async (
   caseReport: CaseReport,
+
+  lastSeen: string,
 ) => {
-  const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, 'something');
+  const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, lastSeen);
   if (isOk(caseReportResult)) {
     const additionalSectionsResults: ReturnType<
-      ReturnType<typeof addSectionToAseloCase>
+      ReturnType<typeof addDependentSectionToAseloCase>
     >[] = [];
     if (caseReport.demographics) {
-      additionalSectionsResults.push(addPehSectionToAseloCase(caseReport, 'something'));
+      additionalSectionsResults.push(addPehSectionToAseloCase(caseReport));
     }
     if (caseReport.collaborative_sud_survey) {
-      additionalSectionsResults.push(
-        addSudSurveySectionToAseloCase(caseReport, 'something'),
-      );
+      additionalSectionsResults.push(addSudSurveySectionToAseloCase(caseReport));
     }
     if (caseReport.safety_plan) {
-      additionalSectionsResults.push(
-        addSafetyPlanSectionToAseloCase(caseReport, 'something'),
-      );
+      additionalSectionsResults.push(addSafetyPlanSectionToAseloCase(caseReport));
     }
     const errors = (await Promise.all(additionalSectionsResults)).filter(isErr);
     if (errors.length) {

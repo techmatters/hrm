@@ -57,38 +57,46 @@ const newCaseRouter = (isPublic: boolean) => {
     },
   );
 
+  const patchCaseOverviewHandler = async (req, res) => {
+    const {
+      hrmAccountId,
+      user: { workerSid },
+      body,
+    } = req;
+    const { id } = req.params;
+    const { followUpDate } = body ?? {};
+    if (
+      followUpDate !== undefined &&
+      followUpDate !== null &&
+      isNaN(parseISO(followUpDate).valueOf())
+    ) {
+      throw createError(
+        400,
+        `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
+      );
+    }
+    const updatedCase = await caseApi.updateCaseOverview(
+      hrmAccountId,
+      id,
+      body,
+      workerSid,
+    );
+    if (!updatedCase) {
+      throw createError(404);
+    }
+    res.json(updatedCase);
+  };
+
   casesRouter.put(
     '/:id/overview',
     isPublic ? canEditCaseOverview : openEndpoint,
-    async (req, res) => {
-      const {
-        hrmAccountId,
-        user: { workerSid },
-        body,
-      } = req;
-      const { id } = req.params;
-      const { followUpDate } = body ?? {};
-      if (
-        followUpDate !== undefined &&
-        followUpDate !== null &&
-        isNaN(parseISO(followUpDate).valueOf())
-      ) {
-        throw createError(
-          400,
-          `Invalid followUpDate provided: ${followUpDate} - must be a valid ISO 8601 date string`,
-        );
-      }
-      const updatedCase = await caseApi.updateCaseOverview(
-        hrmAccountId,
-        id,
-        body,
-        workerSid,
-      );
-      if (!updatedCase) {
-        throw createError(404);
-      }
-      res.json(updatedCase);
-    },
+    patchCaseOverviewHandler,
+  );
+
+  casesRouter.patch(
+    '/:id/overview',
+    isPublic ? canEditCaseOverview : openEndpoint,
+    patchCaseOverviewHandler,
   );
 
   casesRouter.post('/', openEndpoint, async (req, res) => {

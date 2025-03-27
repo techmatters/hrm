@@ -18,6 +18,7 @@ import { IncidentReport } from '../src/incidentReport';
 import { CaseReport } from '../src/caseReport';
 
 const EMPTY_INCIDENT_REPORT: IncidentReport = {
+  priority: '',
   address: '',
   caller_name: '',
   caller_number: '',
@@ -28,7 +29,7 @@ const EMPTY_INCIDENT_REPORT: IncidentReport = {
   created_at: '',
   description: '',
   id: undefined as any,
-  incident_class_id: 0,
+  class: '',
   latitude: 0,
   longitude: 0,
   status: '',
@@ -37,6 +38,14 @@ const EMPTY_INCIDENT_REPORT: IncidentReport = {
   updated_at: '',
   responders: [],
   tags: [],
+  comment: null,
+  activation_interval: null,
+  enroute_time_interval: null,
+  scene_arrival_interval: null,
+  triage_interval: null,
+  total_scene_interval: null,
+  transport_interval: null,
+  total_incident_interval: null,
 };
 
 export const generateIncidentReport = (
