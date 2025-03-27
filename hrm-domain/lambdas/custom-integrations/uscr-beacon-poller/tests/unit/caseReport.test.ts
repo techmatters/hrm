@@ -103,7 +103,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
         serviceObtained: ['service', 'obtained'],
         informationProvided: ['some', 'information'],
 
-        behaviour: 'Ill',
+        behavior: 'Ill',
         plan: 'Nine',
         intervention: 'Great',
         response: 'Music',
