@@ -197,10 +197,7 @@ export const generateCompleteCaseReport = (
         ),
       ]),
       generateCaseReportSectionNode('Next Action', [
-        generateCaseReportTextValueNode(
-          'Case Status',
-          'Closed - No Further Action Needed',
-        ),
+        generateCaseReportTextValueNode('Case Status', 'Closed: No-Follow Up'),
       ]),
     ],
   },

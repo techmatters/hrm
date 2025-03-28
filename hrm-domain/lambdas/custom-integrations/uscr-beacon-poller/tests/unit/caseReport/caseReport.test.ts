@@ -99,10 +99,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
           generateCaseReportCheckboxValueNode('issue2', true),
         ]),
         generateCaseReportSectionNode('Next Action', [
-          generateCaseReportTextValueNode(
-            'Case Status',
-            'Closed - No Further Action Needed',
-          ),
+          generateCaseReportTextValueNode('Case Status', 'Closed: No-Follow Up'),
         ]),
       ],
     },

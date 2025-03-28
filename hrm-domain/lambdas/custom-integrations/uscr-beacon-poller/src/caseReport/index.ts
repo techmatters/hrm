@@ -30,9 +30,9 @@ import {
 
 const BEACON_TO_ASELO_STATUS_MAP = {
   '-': 'open',
-  'Closed - No Further Action Needed': 'closed',
-  'Response Team Follow-Up': 'responseTeamFollowUp',
-  'Support Team Follow-Up': 'supportTeamFollowUp',
+  'Closed: No-Follow Up': 'closed',
+  'Response Team Follow Up': 'responseTeamFollowUp',
+  'Support Team Follow Up': 'supportTeamFollowUp',
   'Managed By Support Team': 'managedBySupportTeam',
 };
 
