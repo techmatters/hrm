@@ -200,6 +200,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
           nickname: 'Charlie',
           dateOfBirth: '10-1-1990',
           gender: 'female',
+          race: 'white',
           language: 'English',
         },
       },
