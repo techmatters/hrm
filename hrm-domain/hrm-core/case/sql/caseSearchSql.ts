@@ -112,7 +112,7 @@ const enum FilterableDateField {
 }
 
 const dateFilterCondition = (
-  field: FilterableDateField,
+  field: FilterableDateField | string,
   filterName: string,
   filter: DateFilter,
 ): string | undefined => {
@@ -144,7 +144,7 @@ INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category
 ON requiredCategories.category = availableCategories.category AND requiredCategories.subcategory = availableCategories.subcategory
 )`;
 
-const filterSql = ({
+export const filterSql = ({
   counsellors,
   statuses,
   createdAt = {},
@@ -154,7 +154,8 @@ const filterSql = ({
   helplines,
   excludedStatuses,
   includeOrphans,
-}: CaseListFilters) => {
+  caseInfoFilters,
+}: CaseListFilters): string => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
     filterSqlClauses.push(`cases."helpline" IN ($<helplines:csv>)`);
@@ -168,25 +169,45 @@ const filterSql = ({
   if (statuses && statuses.length) {
     filterSqlClauses.push(`cases."status" IN ($<statuses:csv>)`);
   }
-  filterSqlClauses.push(
-    ...[
-      dateFilterCondition(FilterableDateField.CREATED_AT, 'createdAt', createdAt),
-      dateFilterCondition(FilterableDateField.UPDATED_AT, 'updatedAt', updatedAt),
-      dateFilterCondition(
-        FilterableDateField.FOLLOW_UP_DATE,
-        'followUpDate',
-        followUpDate,
-      ),
-    ].filter(sql => sql),
-  );
+
+  if (caseInfoFilters) {
+    Object.entries(caseInfoFilters).forEach(([key, values]) => {
+      if (Array.isArray(values) && values.length) {
+        const clause = `cases."info"->>'${key}' = ANY($<caseInfoFilters.${key}:csv>::text[])`;
+        filterSqlClauses.push(clause);
+      } else if (typeof values === 'object' && !Array.isArray(values)) {
+        // Handle DateFilter type
+        const dateFilter = values as DateFilter;
+        const dateClause = `CAST(NULLIF(cases."info"->>'${key}', '') AS TIMESTAMP WITH TIME ZONE)`;
+        const dateCondition = dateFilterCondition(
+          dateClause,
+          `caseInfoFilters.${key}`,
+          dateFilter,
+        );
+        if (dateCondition) {
+          filterSqlClauses.push(dateCondition);
+        }
+      }
+    });
+  }
+
+  const dateClauses = [
+    dateFilterCondition(FilterableDateField.CREATED_AT, 'createdAt', createdAt),
+    dateFilterCondition(FilterableDateField.UPDATED_AT, 'updatedAt', updatedAt),
+    dateFilterCondition(FilterableDateField.FOLLOW_UP_DATE, 'followUpDate', followUpDate),
+  ].filter(sql => sql);
+
+  if (dateClauses.length > 0) {
+    filterSqlClauses.push(...dateClauses);
+  }
+
   if (categories && categories.length) {
     filterSqlClauses.push(CATEGORIES_FILTER_SQL);
   }
   if (!includeOrphans) {
     filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
   }
-  return filterSqlClauses.join(`
-  AND `);
+  return filterSqlClauses.join(' AND ');
 };
 
 const nameAndPhoneNumberSearchSql = (
