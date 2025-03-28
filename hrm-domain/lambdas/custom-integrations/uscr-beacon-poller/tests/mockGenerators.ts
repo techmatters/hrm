@@ -15,7 +15,10 @@
  */
 
 import { IncidentReport } from '../src/incidentReport';
-import { CaseReport } from '../src/caseReport';
+import {
+  CaseReportContentNode,
+  RawCaseReportApiPayload,
+} from '../src/caseReport/apiPayload';
 
 const EMPTY_INCIDENT_REPORT: IncidentReport = {
   priority: '',
@@ -55,69 +58,148 @@ export const generateIncidentReport = (
   ...patch,
 });
 
-const EMPTY_CASE_REPORT: CaseReport = {
+const EMPTY_CASE_REPORT: RawCaseReportApiPayload = {
   case_id: undefined as any,
-  contact_id: '',
+  created_at: '',
   id: undefined as any,
-  issue_report: [],
-  narrative: { behaviour: '', intervention: '', plan: '', response: '' },
-  primary_disposition: undefined as any,
+  content: {
+    fields: [],
+  },
   updated_at: '',
+  incident_id: 0,
 };
 
+export const generateCaseReportTextValueNode = (
+  label: string,
+  value: string | null,
+  type: Omit<CaseReportContentNode['type'], 'section'> = 'text_field',
+): CaseReportContentNode => ({
+  label,
+  type: type as CaseReportContentNode['type'],
+  value,
+  fields: null,
+});
+export const generateCaseReportCheckboxValueNode = (
+  label: string,
+  value: boolean,
+): CaseReportContentNode => ({
+  label,
+  type: 'checkbox',
+  value: value ? label : 'false',
+  fields: null,
+});
+
+export const generateCaseReportSectionNode = (
+  label: string,
+  fields: CaseReportContentNode[],
+): CaseReportContentNode => ({
+  label,
+  type: 'section',
+  value: null,
+  fields,
+});
+
 export const generateCaseReport = (
-  patch: Partial<CaseReport> & Pick<CaseReport, 'id'>,
-): CaseReport => ({
+  patch: Partial<RawCaseReportApiPayload> & Pick<RawCaseReportApiPayload, 'id'>,
+): RawCaseReportApiPayload => ({
   ...EMPTY_CASE_REPORT,
   ...patch,
 });
 
 export const generateCompleteCaseReport = (
-  patch: Partial<CaseReport> & Pick<CaseReport, 'id'>,
-): CaseReport => ({
+  patch: Partial<RawCaseReportApiPayload> & Pick<RawCaseReportApiPayload, 'id'>,
+): RawCaseReportApiPayload => ({
   ...EMPTY_CASE_REPORT,
   case_id: '5678',
   issue_report: ['issue1', 'issue2'],
   updated_at: 'Christmas time',
-  primary_disposition: '1234',
-  secondary_disposition: {
-    tangible_resources_provided: ['tangerine'],
-    referral_provided: ['referral'],
-    service_obtained: ['service', 'obtained'],
-    information_provided: ['some', 'information'],
-  },
-  narrative: {
-    behaviour: 'Ill',
-    plan: 'Nine',
-    intervention: 'Great',
-    response: 'Music',
-  },
-  demographics: {
-    first_name: 'Charlotte',
-    last_name: 'Ballantyne',
-    nickname: 'Charlie',
-    date_of_birth: '10-1-1990',
-    gender: 'female',
-    race_ethnicity: 'white',
-    language: 'English',
-  },
-  safety_plan: {
-    warning_signs: 'warning',
-    coping_strategies: 'coping',
-    distractions: 'distractions',
-    who_can_help: 'who',
-    crisis_agencies: 'crisis',
-    safe_environment: 'safe',
-  },
-  collaborative_sud_survey: {
-    substances_used: ['thing1', 'thing2'],
-    other_substances_used: 'other',
-    failed_to_control_substances: 'thing1',
-    treatment_interest: 'much',
-    treatment_preferences: ['many', 'treatments'],
-    has_service_animal: 'yes',
-    pet_type: ['quasit'],
-    pet_separation_barrier: 'cannot get rid of it, it follows me everywhere',
+  content: {
+    fields: [
+      generateCaseReportSectionNode('Primary Disposition', [
+        generateCaseReportTextValueNode('Select One', '1234'),
+      ]),
+      generateCaseReportSectionNode('Secondary Disposition', [
+        generateCaseReportSectionNode('Tangible Resources Provided', [
+          generateCaseReportCheckboxValueNode('tangerine', true),
+          generateCaseReportCheckboxValueNode('orange', false),
+        ]),
+        generateCaseReportSectionNode('Referral Provided', [
+          generateCaseReportCheckboxValueNode('referral', true),
+        ]),
+        generateCaseReportSectionNode('Services Obtained', [
+          generateCaseReportCheckboxValueNode('service', true),
+          generateCaseReportCheckboxValueNode('obtained', true),
+        ]),
+        generateCaseReportSectionNode('Information Provided', [
+          generateCaseReportCheckboxValueNode('some', true),
+          generateCaseReportCheckboxValueNode('information', true),
+        ]),
+      ]),
+      generateCaseReportSectionNode('Issue Report', [
+        generateCaseReportCheckboxValueNode('issue0', false),
+        generateCaseReportCheckboxValueNode('issue1', true),
+        generateCaseReportCheckboxValueNode('issue2', true),
+      ]),
+      generateCaseReportSectionNode('Narrative / Summary ', [
+        generateCaseReportTextValueNode('Behavior', 'Ill'),
+        generateCaseReportTextValueNode('Intervention', 'Great'),
+        generateCaseReportTextValueNode('Response', 'Music'),
+        generateCaseReportTextValueNode('Plan', 'Nine'),
+      ]),
+      generateCaseReportSectionNode('Demographics', [
+        generateCaseReportTextValueNode('First Name', 'Charlotte'),
+        generateCaseReportTextValueNode('Last Name', 'Ballantyne'),
+        generateCaseReportTextValueNode('Nickname', 'Charlie'),
+        generateCaseReportTextValueNode('Date of Birth', '10-1-1990'),
+        generateCaseReportSectionNode('Gender', [
+          generateCaseReportTextValueNode('Select Gender', 'female'),
+        ]),
+        generateCaseReportTextValueNode('Race/Ethnicity', 'white'),
+        generateCaseReportTextValueNode('Language', 'English'),
+      ]),
+      generateCaseReportSectionNode('Safety Plan', [
+        generateCaseReportTextValueNode('Write Signs Here', 'warning'),
+        generateCaseReportTextValueNode('Write Strategies Here', 'coping'),
+        generateCaseReportTextValueNode('Write People or Places Here', 'distractions'),
+        generateCaseReportTextValueNode('Write Here', 'who'),
+        generateCaseReportTextValueNode('Write Contact(s) Here', 'crisis'),
+        generateCaseReportTextValueNode('Write How Here', 'safe'),
+      ]),
+      generateCaseReportSectionNode('Collaborative SUD Survey', [
+        generateCaseReportSectionNode(
+          'In the past 3 months, have you used any of the following substances (check all that apply)',
+          [
+            generateCaseReportCheckboxValueNode('thing1', true),
+            generateCaseReportCheckboxValueNode('thing2', true),
+            generateCaseReportTextValueNode('Other Substances Used', 'other'),
+          ],
+        ),
+        generateCaseReportTextValueNode(
+          'In the past 3 months, have you ever tried and failed to control, cut down, or stop using the substances listed above?',
+          'thing1',
+        ),
+        generateCaseReportTextValueNode(
+          'Are you interested in treatment for substance use disorder? If yes, continue with survey.',
+          'much',
+        ),
+        generateCaseReportTextValueNode(
+          'There are several options for substance use disorder treatment. Which are you interested in?',
+          'many treatments',
+        ),
+        generateCaseReportTextValueNode('Do you have a pet(s)/service animal(s)?', 'yes'),
+        generateCaseReportTextValueNode(
+          'What type of pet(s)/service animal(s)?',
+          'quasit',
+        ),
+        generateCaseReportTextValueNode(
+          'Is separating from your pet(s)/service animal a barrier to participating in the pilot program?',
+          'cannot get rid of it, it follows me everywhere',
+        ),
+      ]),
+      generateCaseReportSectionNode('Next Action', [
+        generateCaseReportTextValueNode('Case Status', 'Closed: No-Follow Up'),
+      ]),
+    ],
   },
   ...patch,
 });

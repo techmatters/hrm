@@ -32,8 +32,11 @@ import {
   generateCompleteCaseReport,
   generateIncidentReport,
 } from '../mockGenerators';
-import { CaseReport } from '../../src/caseReport';
 import { Responder } from '../../src/responder';
+import {
+  RawCaseReportApiPayload,
+  restructureApiContent,
+} from '../../src/caseReport/apiPayload';
 
 const ACCOUNT_SID = 'ACservicetest';
 const BEACON_RESPONSE_HEADERS = {
@@ -136,8 +139,8 @@ const generateCaseReports = (
   caseIds: string[] = [],
   start: Date = BASELINE_DATE,
   completeReport: boolean = false,
-): CaseReport[] => {
-  const response: CaseReport[] = [];
+): RawCaseReportApiPayload[] => {
+  const response: RawCaseReportApiPayload[] = [];
   for (let i = 0; i < numberToGenerate; i++) {
     const indexInCurrentIteration = i % caseIds.length;
     const iteration = Math.floor(i / caseIds.length);
@@ -147,7 +150,7 @@ const generateCaseReports = (
         ...(caseIds[indexInCurrentIteration]
           ? { case_id: caseIds[indexInCurrentIteration] }
           : {}),
-        id: iteration.toString(),
+        id: iteration,
         contact_id: `contact-for-case-${caseIds[indexInCurrentIteration]}`,
       }),
     );
@@ -205,6 +208,20 @@ const verifyCaseOverviewForCase = async (
     },
   );
   expect(record.info).toStrictEqual({ ...expectedOverview, summary: 'something' });
+};
+
+const verifyCaseStatusForCase = async (
+  caseId: string,
+  expectedStatus: string,
+): Promise<void> => {
+  const record: { status: string } = await db.one(
+    `SELECT "status" FROM public."Cases" WHERE "accountSid" = $<accountSid> AND "id" = $<caseId>`,
+    {
+      caseId,
+      accountSid: ACCOUNT_SID,
+    },
+  );
+  expect(record.status).toStrictEqual(expectedStatus);
 };
 
 const verifyCaseSectionsForCase =
@@ -518,49 +535,59 @@ describe('Beacon Polling Service', () => {
     describe('Case Reports', () => {
       const verifyCaseReportsForCase = verifyCaseSectionsForCase(
         'caseReport',
-        (actual, expected: CaseReport) => {
-          expect(actual.sectionId).toEqual(expected.id);
+        (actual, expected: RawCaseReportApiPayload) => {
+          const processedExpected = restructureApiContent(expected);
+          expect(actual.sectionId).toEqual(processedExpected.id.toString());
           expect(actual.sectionTypeSpecificData.primaryDisposition).toEqual(
-            expected.primary_disposition,
+            processedExpected['Primary Disposition']?.['Select One'],
           );
         },
-        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
+        (ir1, ir2) => ir1.id - ir2.id,
       );
       const verifyPehForCase = verifyCaseSectionsForCase(
-        'caseReport',
-        (actual, expected: CaseReport) => {
-          expect(actual.sectionId).toEqual(expected.id);
+        'personExperiencingHomelessness',
+        (actual, expected: RawCaseReportApiPayload) => {
+          const processedExpected = restructureApiContent(expected);
+          expect(actual.sectionId).toEqual(processedExpected.id.toString());
           expect(actual.sectionTypeSpecificData.firstName).toEqual(
-            expected.demographics?.first_name,
+            processedExpected.Demographics?.['First Name'],
           );
         },
-        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
+        (ir1, ir2) => ir1.id - ir2.id,
       );
       const verifySafetyPlanForCase = verifyCaseSectionsForCase(
-        'caseReport',
-        (actual, expected: CaseReport) => {
-          expect(actual.sectionId).toEqual(expected.id);
+        'safetyPlan',
+        (actual, expected: RawCaseReportApiPayload) => {
+          const processedExpected = restructureApiContent(expected);
+          expect(actual.sectionId).toEqual(processedExpected.id.toString());
           expect(actual.sectionTypeSpecificData.distractions).toEqual(
-            expected.safety_plan?.distractions,
+            processedExpected['Safety Plan']?.['Write People or Places Here'],
           );
         },
-        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
+        (ir1, ir2) => ir1.id - ir2.id,
       );
       const verifySudSurveyForCase = verifyCaseSectionsForCase(
-        'caseReport',
-        (actual, expected: CaseReport) => {
-          expect(actual.sectionId).toEqual(expected.id);
+        'sudSurvey',
+        (actual, expected: RawCaseReportApiPayload) => {
+          const processedExpected = restructureApiContent(expected);
+          const selections =
+            processedExpected?.['Collaborative SUD Survey']?.[
+              'In the past 3 months, have you used any of the following substances (check all that apply)'
+            ] ?? {};
+
           expect(actual.sectionTypeSpecificData.substancesUsed).toEqual(
-            expected.collaborative_sud_survey?.substances_used,
+            Object.entries(selections)
+              .filter(([, checked]) => typeof checked === 'boolean' && checked)
+              .map(([substance]) => substance),
           );
         },
-        (ir1, ir2) => ir1.id.localeCompare(ir2.id),
+        (ir1, ir2) => ir1.id - ir2.id,
       );
 
       test('Complete case report - adds 4 sections to a case', async () => {
         // Arrange
         const caseIds = await generateCases(2);
-        const caseReports = generateCaseReports(2, 1, caseIds);
+        const caseReports = generateCaseReports(2, 1, caseIds, BASELINE_DATE, true);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
           '/api/aselo/case_reports/updates',
@@ -577,6 +604,8 @@ describe('Beacon Polling Service', () => {
         await verifySafetyPlanForCase(caseIds[1], [caseReports[1]]);
         await verifySudSurveyForCase(caseIds[0], [caseReports[0]]);
         await verifySudSurveyForCase(caseIds[1], [caseReports[1]]);
+        await verifyCaseStatusForCase(caseIds[0], 'closed');
+        await verifyCaseStatusForCase(caseIds[1], 'closed');
       });
     });
   });
