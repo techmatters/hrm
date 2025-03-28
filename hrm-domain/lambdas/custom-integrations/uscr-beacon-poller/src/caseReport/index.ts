@@ -97,6 +97,7 @@ const caseReportToPehCaseSection = ({
     Nickname: nickname,
     'Date of Birth': dateOfBirth,
     Gender: genderOptions,
+    'Race/Ethnicity': race,
     Language: language,
     'Language Other': languageOther,
   } = demographics || {};
@@ -112,6 +113,7 @@ const caseReportToPehCaseSection = ({
         nickname,
         dateOfBirth,
         gender,
+        race,
         language: languageOther || language,
       },
     },
