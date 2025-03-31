@@ -14,76 +14,98 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { NewCaseSection } from '../../src/types';
-import { generateCaseReport, generateCompleteCaseReport } from '../mockGenerators';
-import { addCaseReportSectionsToAseloCase, CaseReport } from '../../src/caseReport';
+import {
+  generateCaseReport,
+  generateCaseReportCheckboxValueNode,
+  generateCaseReportSectionNode,
+  generateCaseReportTextValueNode,
+  generateCompleteCaseReport,
+} from '../../mockGenerators';
+import { addCaseReportSectionsToAseloCase } from '../../../src/caseReport';
 import '@tech-matters/testing';
 import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
+import { verifyAddSectionRequest } from '../verifyAddSectionRequest';
+import { RawCaseReportApiPayload } from '../../../src/caseReport/apiPayload';
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
 global.fetch = mockFetch;
 
-describe('addCaseReportSectionsToAseloCase', () => {
-  const verifyAddSectionRequest = (
-    caseId: string,
-    caseSectionType:
-      | 'caseReport'
-      | 'personExperiencingHomelessness'
-      | 'sudSurvey'
-      | 'safetyPlan',
-    expectedCaseSection: NewCaseSection,
-    firstRequest = true,
-  ) => {
-    expect(mockFetch.mock.calls.length).toBeGreaterThan(firstRequest ? 0 : 1);
-    const [firstCall, ...subsequentCalls] = mockFetch.mock.calls;
-    const callsToCheck = firstRequest ? [firstCall] : subsequentCalls;
-    const call = callsToCheck.find(
-      ([url]) =>
-        url ===
-        `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/${caseId}/sections/${caseSectionType}`,
-    );
-    if (!call) {
-      throw new AssertionError({
-        message: `Expected request to ${caseSectionType} section not found`,
-        actual: mockFetch.mock.calls,
-      });
-    }
-
-    expect(call[1]).toStrictEqual({
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${process.env.STATIC_KEY}`,
-      },
-      body: expect.any(String),
+export const verifyUpdateStatusRequest = (caseId: string, expectedStatus: string) => {
+  expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+  const [, ...subsequentCalls] = mockFetch.mock.calls;
+  const call = subsequentCalls.find(
+    ([url]) =>
+      url ===
+      `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/${caseId}/status`,
+  );
+  if (!call) {
+    throw new AssertionError({
+      message: `Expected request to put status not found`,
+      actual: mockFetch.mock.calls,
     });
-    let parsedJson = JSON.parse(call[1]!.body as string);
-    expect(parsedJson).toStrictEqual(expectedCaseSection);
-  };
+  }
 
+  expect(call[1]).toStrictEqual({
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${process.env.STATIC_KEY}`,
+    },
+    body: expect.any(String),
+  });
+  let parsedJson = JSON.parse(call[1]!.body as string);
+  expect(parsedJson).toStrictEqual({ status: expectedStatus });
+};
+
+describe('addCaseReportSectionsToAseloCase', () => {
   const caseReportWithCoreSection = generateCaseReport({
-    id: 'caseReportId',
-    case_id: 5678,
+    id: 1234,
+    case_id: '5678',
     issue_report: ['issue1', 'issue2'],
     updated_at: 'Christmas time',
-    primary_disposition: '1234',
-    secondary_disposition: {
-      tangible_resources_provided: ['tangerine'],
-      referral_provided: ['referral'],
-      service_obtained: ['service', 'obtained'],
-      information_provided: ['some', 'information'],
-    },
-    narrative: {
-      behaviour: 'Ill',
-      plan: 'Nine',
-      intervention: 'Great',
-      response: 'Music',
+    content: {
+      fields: [
+        generateCaseReportSectionNode('Primary Disposition', [
+          generateCaseReportTextValueNode('Select One', '1234'),
+        ]),
+        generateCaseReportSectionNode('Secondary Disposition', [
+          generateCaseReportSectionNode('Tangible Resources Provided', [
+            generateCaseReportCheckboxValueNode('tangerine', true),
+            generateCaseReportCheckboxValueNode('orange', false),
+          ]),
+          generateCaseReportSectionNode('Referral Provided', [
+            generateCaseReportCheckboxValueNode('referral', true),
+          ]),
+          generateCaseReportSectionNode('Services Obtained', [
+            generateCaseReportCheckboxValueNode('service', true),
+            generateCaseReportCheckboxValueNode('obtained', true),
+          ]),
+          generateCaseReportSectionNode('Information Provided', [
+            generateCaseReportCheckboxValueNode('some', true),
+            generateCaseReportCheckboxValueNode('information', true),
+          ]),
+        ]),
+        generateCaseReportSectionNode('Narrative / Summary ', [
+          generateCaseReportTextValueNode('Behavior', 'Ill'),
+          generateCaseReportTextValueNode('Intervention', 'Great'),
+          generateCaseReportTextValueNode('Response', 'Music'),
+          generateCaseReportTextValueNode('Plan', 'Nine'),
+        ]),
+        generateCaseReportSectionNode('Issue Report', [
+          generateCaseReportCheckboxValueNode('issue0', false),
+          generateCaseReportCheckboxValueNode('issue1', true),
+          generateCaseReportCheckboxValueNode('issue2', true),
+        ]),
+        generateCaseReportSectionNode('Next Action', [
+          generateCaseReportTextValueNode('Case Status', 'Closed: No-Follow Up'),
+        ]),
+      ],
     },
   });
 
-  const completeCaseReport = generateCompleteCaseReport({ id: 'caseReportId' });
+  const completeCaseReport = generateCompleteCaseReport({ id: 1234 });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -102,7 +124,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
-      sectionId: 'caseReportId',
+      sectionId: '1234',
       sectionTypeSpecificData: {
         issueReport: ['issue1', 'issue2'],
         primaryDisposition: '1234',
@@ -111,12 +133,13 @@ describe('addCaseReportSectionsToAseloCase', () => {
         serviceObtained: ['service', 'obtained'],
         informationProvided: ['some', 'information'],
 
-        behaviour: 'Ill',
+        behavior: 'Ill',
         plan: 'Nine',
         intervention: 'Great',
         response: 'Music',
       },
     });
+    verifyUpdateStatusRequest('5678', 'closed');
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/personExperiencingHomelessness`,
       expect.anything(),
@@ -137,16 +160,23 @@ describe('addCaseReportSectionsToAseloCase', () => {
   });
   test('Case report with demographics additional case report property - adds a case report and a PEH section', async () => {
     // Arrange
-    const caseReport: CaseReport = {
+    const caseReport: RawCaseReportApiPayload = {
       ...caseReportWithCoreSection,
-      demographics: {
-        first_name: 'Charlotte',
-        last_name: 'Ballantyne',
-        nickname: 'Charlie',
-        date_of_birth: '10-1-1990',
-        gender: 'female',
-        race_ethnicity: 'white',
-        language: 'English',
+      content: {
+        fields: [
+          ...caseReportWithCoreSection.content.fields,
+          generateCaseReportSectionNode('Demographics', [
+            generateCaseReportTextValueNode('First Name', 'Charlotte'),
+            generateCaseReportTextValueNode('Last Name', 'Ballantyne'),
+            generateCaseReportTextValueNode('Nickname', 'Charlie'),
+            generateCaseReportTextValueNode('Date of Birth', '10-1-1990'),
+            generateCaseReportSectionNode('Gender', [
+              generateCaseReportTextValueNode('Select Gender', 'female'),
+            ]),
+            generateCaseReportTextValueNode('Race/Ethnicity', 'white'),
+            generateCaseReportTextValueNode('Language', 'English'),
+          ]),
+        ],
       },
     };
 
@@ -155,7 +185,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
-      sectionId: 'caseReportId',
+      sectionId: '1234',
       sectionTypeSpecificData: expect.anything(),
     });
 
@@ -163,7 +193,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'personExperiencingHomelessness',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: {
           firstName: 'Charlotte',
           lastName: 'Ballantyne',
@@ -176,6 +206,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/safetyPlan`,
       expect.anything(),
@@ -192,15 +223,23 @@ describe('addCaseReportSectionsToAseloCase', () => {
   });
   test('Case report with safety_plan additional case report property - adds a case report and a safety plan section', async () => {
     // Arrange
-    const caseReport: CaseReport = {
+    const caseReport: RawCaseReportApiPayload = {
       ...caseReportWithCoreSection,
-      safety_plan: {
-        warning_signs: 'warning',
-        coping_strategies: 'coping',
-        distractions: 'distractions',
-        who_can_help: 'who',
-        crisis_agencies: 'crisis',
-        safe_environment: 'safe',
+      content: {
+        fields: [
+          ...caseReportWithCoreSection.content.fields,
+          generateCaseReportSectionNode('Safety Plan', [
+            generateCaseReportTextValueNode('Write Signs Here', 'warning'),
+            generateCaseReportTextValueNode('Write Strategies Here', 'coping'),
+            generateCaseReportTextValueNode(
+              'Write People or Places Here',
+              'distractions',
+            ),
+            generateCaseReportTextValueNode('Write Here', 'who'),
+            generateCaseReportTextValueNode('Write Contact(s) Here', 'crisis'),
+            generateCaseReportTextValueNode('Write How Here', 'safe'),
+          ]),
+        ],
       },
     };
 
@@ -209,7 +248,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
-      sectionId: 'caseReportId',
+      sectionId: '1234',
       sectionTypeSpecificData: expect.anything(),
     });
     expect(mockFetch).not.toHaveBeenCalledWith(
@@ -221,7 +260,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'safetyPlan',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: {
           warningSigns: 'warning',
           copingStrategies: 'coping',
@@ -233,6 +272,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/sudSurvey`,
       expect.anything(),
@@ -245,17 +285,46 @@ describe('addCaseReportSectionsToAseloCase', () => {
   });
   test('Case report with collaborative_sud_survey additional case report property - adds a case report and a sud survey section', async () => {
     // Arrange
-    const caseReport: CaseReport = {
+    const caseReport: RawCaseReportApiPayload = {
       ...caseReportWithCoreSection,
-      collaborative_sud_survey: {
-        substances_used: ['thing1', 'thing2'],
-        other_substances_used: 'other',
-        failed_to_control_substances: 'thing1',
-        treatment_interest: 'much',
-        treatment_preferences: ['many', 'treatments'],
-        has_service_animal: 'yes',
-        pet_type: ['quasit'],
-        pet_separation_barrier: 'cannot get rid of it, it follows me everywhere',
+      content: {
+        fields: [
+          ...caseReportWithCoreSection.content.fields,
+          generateCaseReportSectionNode('Collaborative SUD Survey', [
+            generateCaseReportSectionNode(
+              'In the past 3 months, have you used any of the following substances (check all that apply)',
+              [
+                generateCaseReportCheckboxValueNode('thing1', true),
+                generateCaseReportCheckboxValueNode('thing2', true),
+                generateCaseReportTextValueNode('Other Substances Used', 'other'),
+              ],
+            ),
+            generateCaseReportTextValueNode(
+              'In the past 3 months, have you ever tried and failed to control, cut down, or stop using the substances listed above?',
+              'thing1',
+            ),
+            generateCaseReportTextValueNode(
+              'Are you interested in treatment for substance use disorder? If yes, continue with survey.',
+              'much',
+            ),
+            generateCaseReportTextValueNode(
+              'There are several options for substance use disorder treatment. Which are you interested in?',
+              'many treatments',
+            ),
+            generateCaseReportTextValueNode(
+              'Do you have a pet(s)/service animal(s)?',
+              'yes',
+            ),
+            generateCaseReportTextValueNode(
+              'What type of pet(s)/service animal(s)?',
+              'quasit',
+            ),
+            generateCaseReportTextValueNode(
+              'Is separating from your pet(s)/service animal a barrier to participating in the pilot program?',
+              'cannot get rid of it, it follows me everywhere',
+            ),
+          ]),
+        ],
       },
     };
 
@@ -264,7 +333,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
-      sectionId: 'caseReportId',
+      sectionId: '1234',
       sectionTypeSpecificData: expect.anything(),
     });
     expect(mockFetch).not.toHaveBeenCalledWith(
@@ -275,20 +344,21 @@ describe('addCaseReportSectionsToAseloCase', () => {
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/safetyPlan`,
       expect.anything(),
     );
+    verifyUpdateStatusRequest('5678', 'closed');
 
     verifyAddSectionRequest(
       '5678',
       'sudSurvey',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: {
           substancesUsed: ['thing1', 'thing2'],
           otherSubstancesUsed: 'other',
           failedToControlSubstances: 'thing1',
           treatmentInterest: 'much',
-          treatmentPreferences: ['many', 'treatments'],
+          treatmentPreferences: 'many treatments',
           hasServiceAnimal: 'yes',
-          petType: ['quasit'],
+          petType: 'quasit',
           petSeparationBarrier: 'cannot get rid of it, it follows me everywhere',
         },
       },
@@ -307,7 +377,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
-      sectionId: 'caseReportId',
+      sectionId: '1234',
       sectionTypeSpecificData: expect.anything(),
     });
 
@@ -315,7 +385,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'personExperiencingHomelessness',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: expect.anything(),
       },
       false,
@@ -324,7 +394,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'safetyPlan',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: expect.anything(),
       },
       false,
@@ -334,11 +404,12 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'sudSurvey',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: expect.anything(),
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     if (isOk(res)) {
       expect(res.unwrap()).toEqual('Christmas time');
     } else {
@@ -362,7 +433,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
-      sectionId: 'caseReportId',
+      sectionId: '1234',
       sectionTypeSpecificData: expect.anything(),
     });
     expect(mockFetch).not.toHaveBeenCalledWith(
@@ -375,6 +446,10 @@ describe('addCaseReportSectionsToAseloCase', () => {
     );
     expect(mockFetch).not.toHaveBeenCalledWith(
       `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/sections/sudSurvey`,
+      expect.anything(),
+    );
+    expect(mockFetch).not.toHaveBeenCalledWith(
+      `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/5678/status`,
       expect.anything(),
     );
     if (isErr(res)) {
@@ -413,7 +488,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
 
     // Assert
     verifyAddSectionRequest('5678', 'caseReport', {
-      sectionId: 'caseReportId',
+      sectionId: '1234',
       sectionTypeSpecificData: expect.anything(),
     });
 
@@ -421,7 +496,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'personExperiencingHomelessness',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: expect.anything(),
       },
       false,
@@ -430,7 +505,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'safetyPlan',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: expect.anything(),
       },
       false,
@@ -440,11 +515,12 @@ describe('addCaseReportSectionsToAseloCase', () => {
       '5678',
       'sudSurvey',
       {
-        sectionId: 'caseReportId',
+        sectionId: '1234',
         sectionTypeSpecificData: expect.anything(),
       },
       false,
     );
+    verifyUpdateStatusRequest('5678', 'closed');
     if (isErr(res)) {
       expect(res.error.lastUpdated).toEqual('Christmas time');
       const error = res.error as any;
@@ -452,7 +528,7 @@ describe('addCaseReportSectionsToAseloCase', () => {
       expect(error.errors).toHaveLength(2);
       expect(error.errors[0].error.type).toBe('SectionExists');
       expect(error.errors[0].error.caseId).toBe('5678');
-      expect(error.errors[0].error.sectionId).toBe('caseReportId');
+      expect(error.errors[0].error.sectionId).toBe('1234');
       expect(error.errors[1].error.type).toBe('UnexpectedHttpError');
       expect(error.errors[1].error.status).toBe(500);
       expect(error.errors[1].error.body).toBe('splat');
