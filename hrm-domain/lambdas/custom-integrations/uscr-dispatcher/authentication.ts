@@ -21,6 +21,7 @@ import { isErr, newErr, newOk } from '@tech-matters/types';
 const validAccountSidsMap: { [env: string]: string[] } = {
   development: ['/development/twilio/AS/account_sid'],
   staging: ['/staging/twilio/AS/account_sid', '/staging/twilio/USCR/account_sid'],
+  production: ['/production/twilio/USCR/account_sid'],
 };
 
 const AuthenticationError = 'AuthenticationError';
