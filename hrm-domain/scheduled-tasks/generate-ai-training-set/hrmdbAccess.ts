@@ -17,7 +17,7 @@
 import { HrmAccountId } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
 import ReadableStream = NodeJS.ReadableStream;
-import { db, pgp } from '@tech-matters/hrm-core/connection-pool';
+import { db, pgp } from '@tech-matters/hrm-core/dbConnection';
 
 const HIGH_WATER_MARK = 1000;
 

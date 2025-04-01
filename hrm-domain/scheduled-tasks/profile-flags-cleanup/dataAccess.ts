@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '@tech-matters/hrm-core/dbConnection';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
 
