@@ -39,7 +39,7 @@ import {
   txIfNotInOne,
 } from '../sql';
 import * as profileGetSql from './sql/profile-get-sql';
-import { db } from '../connection-pool';
+import { db } from '../dbConnection';
 import {
   type NewProfileSectionRecord,
   getProfileSectionByIdSql,

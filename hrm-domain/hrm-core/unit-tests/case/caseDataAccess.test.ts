@@ -19,7 +19,7 @@ import * as pgPromise from 'pg-promise';
 import { mockConnection, mockTask } from '../mock-db';
 import * as caseDb from '../../case/caseDataAccess';
 import each from 'jest-each';
-import { db } from '../../connection-pool';
+import { db } from '../../dbConnection';
 import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
 import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
 import { newTwilioUser, TwilioUser } from '@tech-matters/twilio-worker-auth';

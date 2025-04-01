@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../connection-pool';
+import { db, pgp } from '../dbConnection';
 import {
   selectContactSearch,
   selectContactsByProfileId,

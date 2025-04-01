@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
+import { pgp } from '../../dbConnection';
 import { NewCSAMReport } from '../csam-report-data-access';
 import { HrmAccountId } from '@tech-matters/types';
 

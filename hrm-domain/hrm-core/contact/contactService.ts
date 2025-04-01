@@ -60,7 +60,7 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
-import { db } from '../connection-pool';
+import { db } from '../dbConnection';
 import {
   type ConversationMedia,
   type NewConversationMedia,

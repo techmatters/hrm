@@ -28,7 +28,7 @@ import {
 import { isFuture } from 'date-fns';
 
 import * as profileDB from './profileDataAccess';
-import { db } from '../connection-pool';
+import { db } from '../dbConnection';
 import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../sql';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';

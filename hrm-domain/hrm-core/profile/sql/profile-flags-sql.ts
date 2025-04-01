@@ -18,7 +18,7 @@ import type {
   NewProfileFlagRecord,
   NewProfileFlagRecordCommons,
 } from '@tech-matters/hrm-types';
-import { pgp } from '../../connection-pool';
+import { pgp } from '../../dbConnection';
 
 export type { NewProfileFlagRecord };
 

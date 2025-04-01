@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../../connection-pool';
+import { db, pgp } from '../../dbConnection';
 import { CaseSectionRecord, CaseSectionUpdate } from './types';
 import { SELECT_CASE_SECTION_BY_ID, selectCaseTimelineSql } from './sql/readSql';
 import { DELETE_CASE_SECTION_BY_ID } from './sql/deleteSql';

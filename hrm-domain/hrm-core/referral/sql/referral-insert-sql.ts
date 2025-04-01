@@ -15,7 +15,7 @@
  */
 
 import { Referral } from '../referral-data-access';
-import { pgp } from '../../connection-pool';
+import { pgp } from '../../dbConnection';
 
 export const insertReferralSql = (referral: Referral & { accountSid: string }) => `
 ${pgp.helpers.insert(

@@ -15,7 +15,7 @@
  */
 
 import { NewPostSurvey } from '../post-survey-data-access';
-import { pgp } from '../../connection-pool';
+import { pgp } from '../../dbConnection';
 
 export const insertPostSurveySql = (
   postSurvey: NewPostSurvey & { accountSid: string; createdAt: Date; updatedAt: Date },

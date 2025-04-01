@@ -24,7 +24,7 @@ import {
   txIfNotInOne,
 } from '../sql';
 import { DELETE_CONTACT_REFERRALS_SQL } from './sql/referral-delete-sql';
-import { db } from '../connection-pool';
+import { db } from '../dbConnection';
 
 // Working around the lack of a 'cause' property in the Error class for ES2020 - can be removed when we upgrade to ES2022
 export class DuplicateReferralError extends Error {

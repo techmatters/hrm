@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '../connection-pool';
+import { db } from '../dbConnection';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
