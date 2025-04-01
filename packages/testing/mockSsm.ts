@@ -27,19 +27,23 @@ type FindPayload = {
   NextToken?: string;
 };
 
-type MockParameter = {
-  valueGenerator: () => string;
-  updateable?: boolean;
-} & (
+type MockParameter = (
   | {
-      name: string;
-      pathPattern?: RegExp;
+      valueGenerator: () => string;
+      updateable?: false;
     }
-  | {
-      name?: string;
-      pathPattern: RegExp;
-    }
-);
+  | { valueGenerator?: () => string; updateable: true }
+) &
+  (
+    | {
+        name: string;
+        pathPattern?: RegExp;
+      }
+    | {
+        name?: string;
+        pathPattern: RegExp;
+      }
+  );
 
 let currentPriority = 1;
 
@@ -80,15 +84,13 @@ export const mockSsmParameters = async (
         // This is a get request for a single parameter
         for (const parameter of parameters) {
           if (parameter.name === name || parameter.pathPattern?.test(name)) {
-            let value;
+            let value: string | null = null;
             if (parameter.updateable && putValues[name]) {
               console.debug(`Returning updated value for ${name}: ${putValues[name]}`);
               value = putValues[name];
-            } else {
-              console.debug(
-                `Returning mocked value for ${name}: ${parameter.valueGenerator()}`,
-              );
+            } else if (parameter.valueGenerator) {
               value = parameter.valueGenerator();
+              console.debug(`Returning mocked value for ${name}: ${value}`);
             }
             return {
               statusCode: 200,
@@ -135,7 +137,7 @@ export const mockSsmParameters = async (
             Selector: 'string',
             SourceResult: 'string',
             Type: 'SecureString',
-            Value: parameter.valueGenerator(),
+            Value: parameter.valueGenerator?.(),
             Version: 3,
           })),
         };

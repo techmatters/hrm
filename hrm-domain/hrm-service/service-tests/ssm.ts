@@ -35,3 +35,12 @@ export const mockEntitySnsParameters = async (
     },
   ]);
 };
+
+export const mockDynamicDatabaseUserPasswordParameters = async (mockttp: Mockttp) => {
+  await mockSsmParameters(mockttp, [
+    {
+      pathPattern: /\/[^\/]+\/hrm\/database\/[^\/]*\/password$/,
+      updateable: true,
+    },
+  ]);
+};

@@ -10,10 +10,10 @@ import { CREATE_DYNAMIC_USER_SQL } from './createDynamicUserSql';
 type Database = ReturnType<typeof connectToPostgres>;
 
 export const connectToPostgresWithDynamicUser = (
-  environment: 'production' | 'staging' | 'development',
   adminConnectionConfig: ConnectionConfig,
   dynamicUserPrefix: string,
   role: string,
+  getPasswordSsmKey: (dynamicUserKey: string) => string,
 ): ((dynamicUserKey: string) => Promise<Database>) => {
   let lazyAdminConnection: Database | undefined = undefined;
   const connectionPoolMap: Record<string, Database> = {};
@@ -21,7 +21,7 @@ export const connectToPostgresWithDynamicUser = (
   return async (dynamicUserKey: string) => {
     if (!connectionPoolMap[dynamicUserKey]) {
       let password: string;
-      const passwordSsmKey = `/${environment}/hrm/database/${dynamicUserKey}/password`;
+      const passwordSsmKey = getPasswordSsmKey(dynamicUserKey);
       const user = `${dynamicUserPrefix}${dynamicUserKey}`;
       try {
         password = await getSsmParameter(passwordSsmKey);
