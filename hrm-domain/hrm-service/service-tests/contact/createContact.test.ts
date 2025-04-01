@@ -16,7 +16,7 @@
 
 import each from 'jest-each';
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import {
   accountSid,

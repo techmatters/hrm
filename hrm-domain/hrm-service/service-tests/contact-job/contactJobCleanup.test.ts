@@ -17,7 +17,7 @@
 import { ContactJobType } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 import {
   mockingProxy,
   mockSsmParameters,

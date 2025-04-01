@@ -16,7 +16,7 @@
 
 import { cleanupProfileFlags } from '@tech-matters/profile-flags-cleanup';
 import { addDays, subDays } from 'date-fns';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 import { accountSid, workerSid } from '../mocks';
 import * as profileDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { newTwilioUser, systemUser } from '@tech-matters/twilio-worker-auth';

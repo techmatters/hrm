@@ -19,7 +19,7 @@ import { isAfter, parseISO } from 'date-fns';
 import timers from 'timers';
 
 import { withTaskId, accountSid, workerSid } from '../../mocks';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../../dbConnection';
 import '../../case/caseValidation';
 import * as conversationMediaApi from '@tech-matters/hrm-core/conversation-media/conversation-media';
 import { JOB_MAX_ATTEMPTS } from '@tech-matters/hrm-core/contact-job/contact-job-processor';

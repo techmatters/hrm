@@ -23,7 +23,7 @@ import { AccountSID } from '@tech-matters/types';
 import * as mocks from '../mocks';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 import { isAfter, parseISO, subDays, subHours, subMinutes } from 'date-fns';
 import { transitionCaseStatuses } from '@tech-matters/case-status-transition';
 import { ALWAYS_CAN } from '../mocks';

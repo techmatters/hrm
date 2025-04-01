@@ -24,7 +24,7 @@ import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { CaseListFilters } from '@tech-matters/hrm-core/case/caseDataAccess';
 import { DateExistsCondition } from '@tech-matters/hrm-core/sql';
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 import {
   fillNameAndPhone,
   validateCaseListResponse,

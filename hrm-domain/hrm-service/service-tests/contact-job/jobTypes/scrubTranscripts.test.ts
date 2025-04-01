@@ -42,7 +42,7 @@ import {
   pullDueContactJobs,
 } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { receiveSqsMessage } from '@tech-matters/sqs-client';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../../dbConnection';
 
 const CONTACT_JOB_COMPLETE_SQS_QUEUE = 'mock-completed-contact-jobs';
 const PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE = 'mock-pending-scrub-transcript-jobs';

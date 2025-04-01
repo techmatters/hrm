@@ -15,7 +15,7 @@
  */
 
 import { performance } from 'perf_hooks';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {

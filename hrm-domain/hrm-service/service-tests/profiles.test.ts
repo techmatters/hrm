@@ -16,7 +16,7 @@
 
 import each from 'jest-each';
 import './case/caseValidation';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from './dbConnection';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';

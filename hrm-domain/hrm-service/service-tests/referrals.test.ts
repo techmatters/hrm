@@ -16,7 +16,7 @@
 
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from './dbConnection';
 import { headers, getRequest, getServer, useOpenRules } from './server';
 import { addSeconds, subHours } from 'date-fns';
 import { contact1, contact2 } from './mocks';

@@ -23,7 +23,7 @@ import {
   NewConversationMedia,
   S3ContactMediaType,
 } from '@tech-matters/hrm-core/conversation-media/conversation-media';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from './dbConnection';
 import * as contactDB from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as conversationMediaDB from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';

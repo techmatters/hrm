@@ -13,21 +13,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { db } from './dbConnection';
 
-export const clearAllTables = async () => {
-  await Promise.all([
-    db.none('DELETE FROM "public"."ConversationMedias"'),
-    db.none('DELETE FROM "public"."ContactJobs"'),
-    db.none('DELETE FROM "public"."ProfilesToProfileFlags"'),
-    db.none('DELETE FROM "public"."ProfilesToIdentifiers"'),
-    db.none('DELETE FROM "public"."ProfileSections"'),
-    db.none('DELETE FROM "public"."CSAMReports"'),
-  ]);
-  await db.none('DELETE FROM "public"."Contacts"');
-  await Promise.all([
-    db.none('DELETE FROM "public"."Identifiers"'),
-    db.none('DELETE FROM "public"."Cases"'),
-    db.none('DELETE FROM "public"."Profiles"'),
-  ]);
-};
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { connectToPostgres } from '@tech-matters/database-connect';
+import adminConnectionConfig from '@tech-matters/hrm-core/config/db';
+
+// eslint-disable-next-line import/no-extraneous-dependencies
+export { pgp } from '@tech-matters/database-connect';
+
+export const db = connectToPostgres({
+  ...adminConnectionConfig,
+  applicationName: 'hrm-service',
+});
