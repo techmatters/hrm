@@ -14,8 +14,24 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { connectToPostgres } from '@tech-matters/database-connect';
-import config from './config/db';
+import {
+  connectToPostgres,
+  connectToPostgresWithDynamicUser,
+} from '@tech-matters/database-connect';
+import adminConnectionConfig from './config/db';
 export { pgp } from '@tech-matters/database-connect';
 
-export const db = connectToPostgres({ ...config, applicationName: 'hrm-service' });
+export const db = connectToPostgres({
+  ...adminConnectionConfig,
+  applicationName: 'hrm-service',
+});
+
+export const userConnection = connectToPostgresWithDynamicUser(
+  {
+    ...adminConnectionConfig,
+    applicationName: 'hrm-service',
+  },
+  'hrm_account_',
+  'hrm_service',
+  accountSid => `/${process.env.NODE_ENV}/hrm/${accountSid}/database/password`,
+);

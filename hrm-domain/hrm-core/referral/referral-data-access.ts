@@ -24,6 +24,7 @@ import {
   txIfNotInOne,
 } from '../sql';
 import { DELETE_CONTACT_REFERRALS_SQL } from './sql/referral-delete-sql';
+import { db } from '../connection-pool';
 
 // Working around the lack of a 'cause' property in the Error class for ES2020 - can be removed when we upgrade to ES2022
 export class DuplicateReferralError extends Error {
@@ -63,7 +64,7 @@ export const createReferralRecord =
         accountSid,
       });
 
-      return await txIfNotInOne(task, conn => conn.one(statement));
+      return await txIfNotInOne(db, task, conn => conn.one(statement));
     } catch (err) {
       const dbErr = inferPostgresError(err);
       if (
@@ -85,7 +86,7 @@ export const createReferralRecord =
 export const deleteContactReferrals =
   (task?) =>
   (accountSid: string, contactId: string): Promise<Referral[]> => {
-    return txIfNotInOne(task, conn =>
+    return txIfNotInOne(db, task, conn =>
       conn.manyOrNone(DELETE_CONTACT_REFERRALS_SQL, { accountSid, contactId }),
     );
   };

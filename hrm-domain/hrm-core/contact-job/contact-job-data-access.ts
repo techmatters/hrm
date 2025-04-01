@@ -157,6 +157,7 @@ export const createContactJob =
       'ContactJobs',
     )} RETURNING *`;
     const { id, jobType, contactId, accountSid } = await txIfNotInOne<ContactJob>(
+      db,
       tk,
       conn => conn.one(insertSql),
     );

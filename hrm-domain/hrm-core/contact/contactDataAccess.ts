@@ -183,6 +183,7 @@ export const create =
     try {
       return newOkFromData(
         await txIfNotInOne(
+          db,
           task,
           async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
             const now = new Date();
@@ -211,7 +212,7 @@ export const patch =
     finalize: boolean,
     contactUpdates: ContactUpdates,
   ): Promise<Contact | undefined> => {
-    return txIfNotInOne(task, async connection => {
+    return txIfNotInOne(db, task, async connection => {
       const updatedContact: Contact = await connection.oneOrNone<Contact>(
         UPDATE_CONTACT_BY_ID,
         {
@@ -234,7 +235,7 @@ export const connectToCase =
     caseId: string,
     updatedBy: string,
   ): Promise<Contact | undefined> => {
-    return txIfNotInOne(task, async connection => {
+    return txIfNotInOne(db, task, async connection => {
       const [[updatedContact]]: Contact[][] = await connection.multi<Contact>(
         [UPDATE_CASEID_BY_ID, TOUCH_CASE_SQL].join(';\n'),
         {

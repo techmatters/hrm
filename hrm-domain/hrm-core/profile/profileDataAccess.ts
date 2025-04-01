@@ -95,7 +95,7 @@ export const getIdentifierWithProfiles =
     identifierId,
   }: IdentifierParams): Promise<IdentifierWithProfiles> => {
     const params = { accountSid, identifier, identifierId };
-    return txIfNotInOne<IdentifierWithProfiles>(task, async t => {
+    return txIfNotInOne<IdentifierWithProfiles>(db, task, async t => {
       /* We run two queries here, one to get the identifier and one to get the profiles
            because writing a single PERFORMANT query against tables that could eventually
            have millions of rows is hard. There is probably a better way to do this...
@@ -139,7 +139,7 @@ export const createIdentifier =
       updatedBy: null,
     });
 
-    return txIfNotInOne<Identifier>(task, conn => conn.one(statement));
+    return txIfNotInOne<Identifier>(db, task, conn => conn.one(statement));
   };
 
 export const createProfile =
@@ -158,7 +158,7 @@ export const createProfile =
       updatedBy: null,
     });
 
-    return txIfNotInOne<Profile>(task, t => t.one(statement));
+    return txIfNotInOne<Profile>(db, task, t => t.one(statement));
   };
 
 export const updateProfileById =
@@ -169,7 +169,7 @@ export const updateProfileById =
   ): Promise<Profile> => {
     const { id, name, updatedBy } = payload;
     const now = new Date();
-    return txIfNotInOne<Profile>(task, async t => {
+    return txIfNotInOne<Profile>(db, task, async t => {
       return t.oneOrNone(
         updateProfileByIdSql({ name: name, updatedAt: now, updatedBy }),
         {
@@ -187,7 +187,7 @@ export const associateProfileToIdentifier =
     profileId: number,
     identifierId: number,
   ): Promise<IdentifierWithProfiles> => {
-    return txIfNotInOne(task, async t => {
+    return txIfNotInOne(db, task, async t => {
       const now = new Date();
       await t.none(
         associateProfileToIdentifierSql({
@@ -209,7 +209,7 @@ export const associateProfileToIdentifier =
 export const getProfileById =
   (task?) =>
   async (accountSid: string, profileId: number): Promise<ProfileWithRelationships> => {
-    return txIfNotInOne<ProfileWithRelationships>(task, async t => {
+    return txIfNotInOne<ProfileWithRelationships>(db, task, async t => {
       return t.oneOrNone(profileGetSql.getProfileByIdSql, { accountSid, profileId });
     });
   };
@@ -277,7 +277,7 @@ export const associateProfileToProfileFlag =
           | 'ProfileAlreadyFlaggedError'
         >,
       ProfileWithRelationships
-    >(work => txIfNotInOne(task, work))(async t => {
+    >(work => txIfNotInOne(db, task, work))(async t => {
       try {
         await t.none(
           associateProfileToProfileFlagSql({
@@ -339,7 +339,7 @@ export const disassociateProfileFromProfileFlag =
     profileFlagId: number,
     { user }: { user: TwilioUser },
   ): Promise<ProfileWithRelationships> =>
-    txIfNotInOne(task, async t => {
+    txIfNotInOne(db, task, async t => {
       const { count } = await t.oneOrNone<{ count: string }>(
         disassociateProfileFromProfileFlagSql,
         {
@@ -437,7 +437,7 @@ export const createProfileSection =
       updatedBy: null,
     });
 
-    return txIfNotInOne(task, async t => {
+    return txIfNotInOne(db, task, async t => {
       const section = await t.oneOrNone<ProfileSection>(statement);
 
       if (section) {
@@ -465,7 +465,7 @@ export const updateProfileSectionById =
     },
   ): Promise<ProfileSection> => {
     const now = new Date();
-    return txIfNotInOne(task, async t => {
+    return txIfNotInOne(db, task, async t => {
       const section = await t.oneOrNone<ProfileSection>(updateProfileSectionByIdSql, {
         accountSid,
         profileId: payload.profileId,

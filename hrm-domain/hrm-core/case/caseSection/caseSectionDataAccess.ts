@@ -63,7 +63,7 @@ export const create =
         'CaseSections',
       )} RETURNING *`;
 
-      return await txIfNotInOne(task, async connection => {
+      return await txIfNotInOne(db, task, async connection => {
         const [[createdSection]]: CaseSectionRecord[][] =
           await connection.multi<CaseSectionRecord>(
             [insertSectionStatement, TOUCH_CASE_SQL].join(';\n'),
@@ -102,7 +102,7 @@ export const deleteById =
     sectionId: CaseSectionRecord['sectionId'],
     updatedBy: TwilioUser['workerSid'],
   ): Promise<CaseSectionRecord | undefined> => {
-    return txIfNotInOne(task, async connection => {
+    return txIfNotInOne(db, task, async connection => {
       const [[deletedSection]]: CaseSectionRecord[][] =
         await connection.multi<CaseSectionRecord>(
           [DELETE_CASE_SECTION_BY_ID, TOUCH_CASE_SQL].join(';\n'),
@@ -137,7 +137,7 @@ export const updateById =
       ...updates,
     };
 
-    return txIfNotInOne(task, async connection => {
+    return txIfNotInOne(db, task, async connection => {
       const [[updatedSection]]: CaseSectionRecord[][] =
         await connection.multi<CaseSectionRecord>(
           [UPDATE_CASE_SECTION_BY_ID, TOUCH_CASE_SQL].join(';\n'),

@@ -75,7 +75,7 @@ export const create =
         updatedAt: now,
       });
 
-      return await txIfNotInOne(task, conn => conn.one(statement));
+      return await txIfNotInOne(db, task, conn => conn.one(statement));
     } catch (err) {
       const dbErr = inferPostgresError(err);
       if (

@@ -65,7 +65,7 @@ export const createIdentifierAndProfile =
   ): Promise<Result<DatabaseErrorResult, profileDB.IdentifierWithProfiles>> => {
     const { identifier, profile } = payload;
 
-    return txIfNotInOne(task, async t => {
+    return txIfNotInOne(db, task, async t => {
       try {
         const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
           identifier: identifier.identifier,

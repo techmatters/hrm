@@ -7,7 +7,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { CREATE_DYNAMIC_USER_SQL } from './createDynamicUserSql';
 
-type Database = ReturnType<typeof connectToPostgres>;
+export type Database = ReturnType<typeof connectToPostgres>;
 
 export const connectToPostgresWithDynamicUser = (
   adminConnectionConfig: ConnectionConfig,
