@@ -14,23 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import pgPromise from 'pg-promise';
+import { connectToPostgres } from '@tech-matters/database-connect';
 import config from './config/db';
+export { pgp } from '@tech-matters/database-connect';
 
-export const pgp = pgPromise({});
-
-export const db = pgp(
-  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
-    config.password,
-  )}@${config.host}:${config.port}/${encodeURIComponent(
-    config.database,
-  )}?&application_name=hrm-service`,
-);
-
-const { builtins } = pgp.pg.types;
-
-[builtins.DATE, builtins.TIMESTAMP, builtins.TIMESTAMPTZ].forEach(typeId => {
-  pgp.pg.types.setTypeParser(typeId, value => {
-    return value === null ? null : new Date(value).toISOString();
-  });
-});
+export const db = connectToPostgres({ ...config, applicationName: 'hrm-service' });

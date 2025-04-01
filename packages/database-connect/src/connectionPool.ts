@@ -15,17 +15,37 @@
  */
 
 import pgPromise from 'pg-promise';
-import config from './config/db';
+
+export type ConnectionConfig = {
+  host: string;
+  port: number | string;
+  user: string;
+  password: string;
+  applicationName: string;
+  database: string;
+  poolSize?: number;
+};
 
 export const pgp = pgPromise({});
 
-export const db = pgp(
-  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
-    config.password,
-  )}@${config.host}:${config.port}/${encodeURIComponent(
-    config.database,
-  )}?&application_name=hrm-service`,
-);
+export const connectToPostgres = ({
+  user,
+  port,
+  host,
+  password,
+  applicationName,
+  database,
+  poolSize = 10,
+}: ConnectionConfig) =>
+  pgp({
+    host,
+    user,
+    password,
+    database,
+    application_name: applicationName,
+    port: typeof port === 'string' ? parseInt(port) : port,
+    max: poolSize,
+  });
 
 const { builtins } = pgp.pg.types;
 

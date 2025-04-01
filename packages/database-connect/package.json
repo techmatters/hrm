@@ -6,6 +6,7 @@
   "license": "AGPL",
   "main": "dist/index.js",
   "dependencies": {
+    "@tech-matters/ssm-cache": "^1.0.0",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
     "pg-promise": "^10.11.1"
