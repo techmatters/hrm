@@ -5,7 +5,6 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/testing" },
-    { "path": "packages/database-connect" },
     { "path": "packages/http" },
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
@@ -13,6 +12,7 @@
     { "path": "packages/s3-client" },
     { "path": "packages/sns-client" },
     { "path": "packages/sqs-client" },
+    { "path": "packages/database-connect" },
     { "path": "packages/twilio-client" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/service-discovery" },
