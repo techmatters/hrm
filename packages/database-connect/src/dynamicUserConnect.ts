@@ -47,7 +47,9 @@ export const connectToPostgresWithDynamicUser = (
       } catch (error) {
         if (error instanceof SsmParameterNotFound) {
           password = randomUUID();
-          await putSsmParameter(passwordSsmKey, password);
+          // Don't cache the value in case another process is trying to create the same user at the same time
+          // If that happens the password could be overwritten by the time we use it
+          await putSsmParameter(passwordSsmKey, password, { cacheValue: false });
           if (!lazyAdminConnection) {
             lazyAdminConnection = connectToPostgres({
               ...adminConnectionConfig,
