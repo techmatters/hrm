@@ -86,6 +86,13 @@ const generateCases = (numberToGenerate: number): Promise<string[]> => {
             headers: HRM_REQUEST_HEADERS,
           },
         );
+        if (!newCaseResponse.ok) {
+          throw new Error(
+            `Create case HTTP call failed: [${
+              newCaseResponse.status
+            }] ${await newCaseResponse.text()}`,
+          );
+        }
         const newCase: any = await newCaseResponse.json();
         console.debug('Generated case:', newCase.id);
         return newCase.id;
