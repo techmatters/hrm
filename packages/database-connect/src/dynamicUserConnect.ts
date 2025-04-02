@@ -61,7 +61,10 @@ export const connectToPostgresWithDynamicUser = (
               user,
             });
           } catch (dbError) {
-            if (dbError instanceof Error && error.message === 'role "" already exists') {
+            if (
+              dbError instanceof Error &&
+              dbError.message === `role "${user}" already exists`
+            ) {
               console.warn(
                 `User ${user} already exists but had no SSM parameter set for their password, resetting the database user password to match the one in SSM. [THIS IS EXPECTED IN SERVICE TESTS]`,
               );
