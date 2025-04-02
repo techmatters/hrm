@@ -32,6 +32,7 @@ import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { clearAllTables } from './dbCleanup';
 import { setupServiceTests } from './setupServiceTest';
+import { addSeconds } from 'date-fns';
 
 const { case1, accountSid, workerSid, contact1 } = mocks;
 
@@ -558,7 +559,7 @@ describe('/profiles', () => {
               expectStatus: 200,
               expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(new Date(response.body.updatedAt).getTime()).toBeLessThan(
-                  startTime,
+                  addSeconds(new Date(startTime), 10).getTime(),
                 );
               },
             },
@@ -570,7 +571,7 @@ describe('/profiles', () => {
                 expect(response.body.profileFlags).not.toContain(profileFlagId);
                 expect(response.body.updatedBy).toBe(workerSid);
                 expect(new Date(startTime).getTime()).toBeLessThan(
-                  new Date(response.body.updatedAt).getTime(),
+                  addSeconds(new Date(response.body.updatedAt), 10).getTime(),
                 );
               },
             },

@@ -32,7 +32,10 @@ import { workerSid } from './mocks';
 const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 const ENTITY_SNS_TOPIC_NAME = 'mock-entity-sns-topic';
 
-export const setupServiceTests = (userTwilioWorkerId: WorkerSID = workerSid) => {
+export const setupServiceTests = (
+  userTwilioWorkerId: WorkerSID = workerSid,
+  queues = [SEARCH_INDEX_SQS_QUEUE_NAME],
+) => {
   const server = getServer();
   const request = getRequest(server);
 
@@ -66,7 +69,7 @@ export const setupServiceTests = (userTwilioWorkerId: WorkerSID = workerSid) => 
   });
 
   return {
-    ...setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]),
+    ...setupTestQueues(queues),
     server,
     request,
     internalRequest,
