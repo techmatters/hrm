@@ -38,27 +38,15 @@ import {
 import '../case/caseValidation';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import {
-  mockingProxy,
-  mockSsmParameters,
-  mockSuccessfulTwilioAuthentication,
-} from '@tech-matters/testing';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
-import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
+import { headers, setRules, useOpenRules } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 
 import { addConversationMediaToContact } from '@tech-matters/hrm-core/contact/contactService';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import supertest from 'supertest';
-import { clearAllTables } from '../dbCleanup';
-import { setupTestQueues } from '../sqs';
-
-const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from '../setupServiceTest';
 
 /**
  *
@@ -73,24 +61,7 @@ const resolveSequentially = async (ps: Promise<unknown>[]) => {
   return ret;
 };
 
-beforeAll(async () => {
-  await clearAllTables();
-  await mockingProxy.start();
-  const mockttp = await mockingProxy.mockttpServer();
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  await mockSsmParameters(mockttp, [
-    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
-  ]);
-});
-
-afterAll(async () => {
-  await mockingProxy.stop();
-  server.close();
-});
-
-afterEach(clearAllTables);
-
-setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
+const { request } = setupServiceTests();
 
 const compareTimeOfContactDesc = (c1, c2) =>
   new Date(c2.timeOfContact).valueOf() - new Date(c1.timeOfContact).valueOf();

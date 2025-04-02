@@ -18,36 +18,17 @@ import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import '../case/caseValidation';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
-import { getRequest, getServer, headers, useOpenRules } from '../server';
+import { headers } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import {
-  cleanupCases,
-  cleanupContacts,
-  cleanupContactsJobs,
-  cleanupCsamReports,
-  cleanupReferrals,
-} from './dbCleanup';
+import { setupServiceTests } from '../setupServiceTest';
 
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
-
-const cleanup = async () => {
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  await cleanupCsamReports();
-  await cleanupReferrals();
-  await cleanupContactsJobs();
-  await cleanupContacts();
-  await cleanupCases();
-};
 
 let createdContact: contactDb.Contact;
 
-beforeEach(async () => {
-  await cleanup();
+const { request } = setupServiceTests();
 
+beforeEach(async () => {
   createdContact = await contactApi.createContact(
     accountSid,
     workerSid,
@@ -58,15 +39,6 @@ beforeEach(async () => {
     ALWAYS_CAN,
     true,
   );
-});
-
-beforeAll(async () => {
-  await mockingProxy.start();
-});
-
-afterAll(async () => {
-  await cleanup();
-  await mockingProxy.stop();
 });
 
 describe('/contacts/:contactId route', () => {
