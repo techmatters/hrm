@@ -19,6 +19,7 @@ import {
   connectToPostgresWithDynamicUser,
 } from '@tech-matters/database-connect';
 import adminConnectionConfig from './config/db';
+import { enableDbUserPerAccount } from './featureFlags';
 export { pgp } from '@tech-matters/database-connect';
 
 export const db = connectToPostgres({
@@ -26,12 +27,14 @@ export const db = connectToPostgres({
   applicationName: 'hrm-service',
 });
 
-export const getDbForUser = connectToPostgresWithDynamicUser(
-  {
-    ...adminConnectionConfig,
-    applicationName: 'hrm-service',
-  },
-  'hrm_account_',
-  'hrm_service',
-  accountSid => `/${process.env.NODE_ENV}/hrm/${accountSid}/database/password`,
-);
+export const getDbForUser = enableDbUserPerAccount
+  ? connectToPostgresWithDynamicUser(
+      {
+        ...adminConnectionConfig,
+        applicationName: 'hrm-service',
+      },
+      'hrm_account_',
+      'hrm_service',
+      accountSid => `/${process.env.NODE_ENV}/hrm/${accountSid}/database/password`,
+    )
+  : () => Promise.resolve(db);
