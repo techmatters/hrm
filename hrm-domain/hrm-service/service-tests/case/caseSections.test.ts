@@ -14,20 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  ApiTestSuiteParameters,
-  basicHeaders,
-  getInternalServer,
-  getRequest,
-  getServer,
-  headers,
-  useOpenRules,
-} from '../server';
-import {
-  mockingProxy,
-  mockSsmParameters,
-  mockSuccessfulTwilioAuthentication,
-} from '@tech-matters/testing';
+import { ApiTestSuiteParameters, basicHeaders, headers } from '../server';
 import { accountSid, ALWAYS_CAN, workerSid } from '../mocks';
 import {
   CaseService,
@@ -43,46 +30,15 @@ import {
   createCaseSection,
   getCaseSection,
 } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
-import { clearAllTables } from '../dbCleanup';
-import { setupTestQueues } from '../sqs';
+import { setupServiceTests } from '../setupServiceTest';
 
-const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
-
-useOpenRules();
-const publicServer = getServer();
-const publicRequest = getRequest(publicServer);
-
-const internalServer = getInternalServer();
-const internalRequest = getRequest(internalServer);
-
-beforeAll(async () => {
-  await clearAllTables();
-  await mockingProxy.start(false);
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  const mockttp = await mockingProxy.mockttpServer();
-  await mockSsmParameters(mockttp, [
-    {
-      pathPattern: /.*\/queue-url-consumer$/,
-      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
-    },
-  ]);
-});
-
-afterAll(async () => {
-  await mockingProxy.stop();
-});
-
-afterEach(async () => {
-  await clearAllTables();
-});
+const { request: publicRequest, internalRequest } = setupServiceTests(workerSid);
 
 let targetCase: CaseService;
 
 beforeEach(async () => {
   targetCase = await createCase({}, accountSid, workerSid, undefined, true);
 });
-
-setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 const getRoutePath = (caseId: string | number, sectionType: string, sectionId?: string) =>
   `/v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}${

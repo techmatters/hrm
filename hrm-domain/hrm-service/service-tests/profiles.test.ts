@@ -21,10 +21,9 @@ import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
-import { getRequest, getServer, headers, useOpenRules } from './server';
+import { headers } from './server';
 import * as mocks from './mocks';
 import { ALWAYS_CAN } from './mocks';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   getOrCreateProfileWithIdentifier,
   Profile,
@@ -32,10 +31,7 @@ import {
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { clearAllTables } from './dbCleanup';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from './setupServiceTest';
 
 const { case1, accountSid, workerSid, contact1 } = mocks;
 
@@ -47,19 +43,7 @@ const deleteFromTableById = (table: string) => async (id: number, accountSid: st
 `),
   );
 
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {
-  await mockingProxy.start();
-});
-
-beforeEach(async () => {
-  await mockSuccessfulTwilioAuthentication(workerSid);
-});
+const { request } = setupServiceTests();
 
 describe('/profiles', () => {
   const baseRoute = `/v0/accounts/${accountSid}/profiles`;

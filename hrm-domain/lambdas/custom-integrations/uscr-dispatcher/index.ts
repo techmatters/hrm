@@ -28,7 +28,6 @@ import {
 
 export const postHandler = async (event: AlbHandlerEvent) => {
   try {
-    console.log(JSON.stringify(event));
     const envResult = validateEnvironment();
     if (isErr(envResult)) {
       const message = `${JSON.stringify(envResult.error)} ${envResult.message}`;

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { mockConnection, mockTask } from '../mock-db';
+import { mockConnection, mockTask } from '../mockDb';
 import * as pgPromise from 'pg-promise';
 import { subDays } from 'date-fns';
 import {

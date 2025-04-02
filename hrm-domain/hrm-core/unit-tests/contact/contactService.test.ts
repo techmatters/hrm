@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import each from 'jest-each';
-import { mockTransaction, mockConnection } from '../mock-db';
+import { mockTransaction, mockConnection } from '../mockDb';
 import * as contactDb from '../../contact/contactDataAccess';
 import {
   connectContactToCase,

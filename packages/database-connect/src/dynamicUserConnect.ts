@@ -21,7 +21,10 @@ import {
   SsmParameterNotFound,
 } from '@tech-matters/ssm-cache';
 import { randomUUID } from 'node:crypto';
-import { CREATE_DYNAMIC_USER_SQL } from './createDynamicUserSql';
+import {
+  CREATE_DYNAMIC_USER_SQL,
+  RESET_DYNAMIC_USER_PASSWORD_SQL,
+} from './createDynamicUserSql';
 
 export type Database = ReturnType<typeof connectToPostgres>;
 
@@ -51,11 +54,23 @@ export const connectToPostgresWithDynamicUser = (
               poolSize: 1,
             });
           }
-          await lazyAdminConnection.none(CREATE_DYNAMIC_USER_SQL, {
-            role,
-            password,
-            user,
-          });
+          try {
+            await lazyAdminConnection.none(CREATE_DYNAMIC_USER_SQL, {
+              role,
+              password,
+              user,
+            });
+          } catch (dbError) {
+            if (dbError instanceof Error && error.message === 'role "" already exists') {
+              console.warn(
+                `User ${user} already exists but had no SSM parameter set for their password, resetting the database user password to match the one in SSM. [THIS IS EXPECTED IN SERVICE TESTS]`,
+              );
+              await lazyAdminConnection.none(RESET_DYNAMIC_USER_PASSWORD_SQL, {
+                password,
+                user,
+              });
+            }
+          }
         } else throw error;
       }
       connectionPoolMap[dynamicUserKey] = connectToPostgres({

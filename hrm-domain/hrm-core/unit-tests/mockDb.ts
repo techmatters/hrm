@@ -18,18 +18,47 @@ import * as pgPromise from 'pg-promise';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import * as pgMocking from '@tech-matters/testing';
 import { db } from '../dbConnection';
+import { Database } from '@tech-matters/database-connect';
+
+const userDbs: Record<string, Database> = {};
 
 jest.mock('../dbConnection', () => ({
   db: pgMocking.createMockConnection(),
-  userConnection: () => Promise.resolve(pgMocking.createMockConnection()),
+  getDbForUser: (accountSid: string) => {
+    // Might already have been populated by a call to mockTask
+    userDbs[accountSid] =
+      userDbs[accountSid] ?? (pgMocking.createMockConnection() as any);
+    return Promise.resolve(userDbs[accountSid]);
+  },
   pgp: jest.requireActual('../dbConnection').pgp,
 }));
 
 export const mockConnection = pgMocking.createMockConnection;
 
-export const mockTask = (mockConn: pgPromise.ITask<unknown>) => {
-  pgMocking.mockTask(db, mockConn);
+export const getMockUserDb = (userKey?: string) => {
+  if (!userDbs[userKey]) {
+    userDbs[userKey] = pgMocking.createMockConnection() as any;
+  }
+  return userDbs[userKey];
 };
+
+export const mockTask = (mockConn: pgPromise.ITask<unknown>, userKey?: string) => {
+  let userDb: Database;
+  if (userKey) {
+    userDb = getMockUserDb(userKey);
+  } else {
+    const userDbList = Object.values(userDbs);
+    if (userDbList.length === 1) {
+      // Most tests will only deal with a single user connect, so if there's only one, use that
+      userDb = userDbList[0];
+    } else {
+      // Assume legacy code
+      userDb = db;
+    }
+  }
+  pgMocking.mockTask(userDb, mockConn);
+};
+
 export const mockTransaction = (
   mockConn: pgPromise.ITask<unknown>,
   mockTx: pgPromise.ITask<unknown> | undefined = undefined,

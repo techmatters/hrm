@@ -295,7 +295,7 @@ export const createContact = async (
         result.constraint === 'Identifiers_identifier_accountSid')
     ) {
       if (retries === 1) {
-        console.log(
+        console.info(
           `Retrying createContact due to '${result.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
         );
       } else {

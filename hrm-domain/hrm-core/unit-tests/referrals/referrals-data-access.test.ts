@@ -16,7 +16,7 @@
 
 import * as pgPromise from 'pg-promise';
 import { subHours } from 'date-fns';
-import { mockConnection, mockTransaction } from '../mock-db';
+import { mockConnection, mockTransaction } from '../mockDb';
 import * as referralDb from '../../referral/referral-data-access';
 import {
   DuplicateReferralError,

@@ -15,7 +15,7 @@
  */
 
 import * as pgPromise from 'pg-promise';
-import { mockConnection, mockTask, mockTransaction } from '../mock-db';
+import { mockConnection, mockTask, mockTransaction } from '../mockDb';
 import { search, create } from '../../contact/contactDataAccess';
 import { ContactBuilder } from './contact-builder';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';

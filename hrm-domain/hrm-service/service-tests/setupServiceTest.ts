@@ -15,22 +15,41 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import { useOpenRules, getServer, getRequest } from './server';
+import {
+  mockAllSns,
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
+import { useOpenRules, getServer, getRequest, getInternalServer } from './server';
 import { clearAllTables } from './dbCleanup';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { WorkerSID } from '@tech-matters/types';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { mockDynamicDatabaseUserPasswordParameters } from './ssm';
+import { setupTestQueues } from './sqs';
+import { mockEntitySnsParameters } from './ssm';
+import { workerSid } from './mocks';
 
-export const setupServiceTests = (userTwilioWorkerId: WorkerSID) => {
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
+const ENTITY_SNS_TOPIC_NAME = 'mock-entity-sns-topic';
+
+export const setupServiceTests = (userTwilioWorkerId: WorkerSID = workerSid) => {
   const server = getServer();
   const request = getRequest(server);
 
+  const internalServer = getInternalServer();
+  const internalRequest = getRequest(internalServer);
+
   beforeAll(async () => {
+    const mockttp = await mockingProxy.mockttpServer();
+    await clearAllTables();
     await mockingProxy.start();
-    await mockSuccessfulTwilioAuthentication(userTwilioWorkerId);
-    await mockDynamicDatabaseUserPasswordParameters(await mockingProxy.mockttpServer());
+    await mockSsmParameters(mockttp);
+    await mockEntitySnsParameters(
+      mockttp,
+      SEARCH_INDEX_SQS_QUEUE_NAME,
+      ENTITY_SNS_TOPIC_NAME,
+    );
+    await mockAllSns(mockttp);
   });
 
   afterAll(async () => {
@@ -38,6 +57,7 @@ export const setupServiceTests = (userTwilioWorkerId: WorkerSID) => {
   });
 
   beforeEach(async () => {
+    await mockSuccessfulTwilioAuthentication(userTwilioWorkerId);
     useOpenRules();
   });
 
@@ -46,7 +66,10 @@ export const setupServiceTests = (userTwilioWorkerId: WorkerSID) => {
   });
 
   return {
+    ...setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]),
     server,
     request,
+    internalRequest,
+    internalServer,
   };
 };

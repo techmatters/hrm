@@ -26,7 +26,7 @@ export const db = connectToPostgres({
   applicationName: 'hrm-service',
 });
 
-export const userConnection = connectToPostgresWithDynamicUser(
+export const getDbForUser = connectToPostgresWithDynamicUser(
   {
     ...adminConnectionConfig,
     applicationName: 'hrm-service',

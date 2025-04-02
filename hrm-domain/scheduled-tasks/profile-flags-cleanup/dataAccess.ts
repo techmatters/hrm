@@ -21,7 +21,7 @@ import adminConnectionConfig from '@tech-matters/hrm-core/config/db';
 
 export const db = connectToPostgres({
   ...adminConnectionConfig,
-  applicationName: 'hrm-service',
+  applicationName: 'profile-flags-cleanup-scheduled-task',
 });
 
 export const cleanupProfileFlags = async (): Promise<

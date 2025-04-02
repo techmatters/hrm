@@ -15,5 +15,9 @@
  */
 
 export const CREATE_DYNAMIC_USER_SQL = `
-          CREATE ROLE $<user> WITH LOGIN PASSWORD $<password> VALID UNTIL 'infinity';
-          GRANT $<role> TO $<user>`;
+          CREATE ROLE $<user:name> WITH LOGIN PASSWORD $<password> VALID UNTIL 'infinity';
+          GRANT $<role:name> TO $<user:name>`;
+
+export const RESET_DYNAMIC_USER_PASSWORD_SQL = `
+    ALTER ROLE $<user:name> WITH PASSWORD $<password>
+`;
