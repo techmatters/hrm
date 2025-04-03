@@ -67,7 +67,7 @@ import {
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
   updateConversationMediaSpecificData,
-} from '../conversation-media/conversation-media';
+} from '../conversation-media/conversationMedia';
 import {
   type Profile,
   getOrCreateProfileWithIdentifier,

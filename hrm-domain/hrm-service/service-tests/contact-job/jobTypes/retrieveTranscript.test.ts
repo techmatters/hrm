@@ -21,7 +21,7 @@ import timers from 'timers';
 import { withTaskId, accountSid, workerSid } from '../../mocks';
 import { db } from '../../dbConnection';
 import '../../case/caseValidation';
-import * as conversationMediaApi from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import * as conversationMediaApi from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { JOB_MAX_ATTEMPTS } from '@tech-matters/hrm-core/contact-job/contact-job-processor';
 
 import {
@@ -30,7 +30,7 @@ import {
   ContactJobType,
 } from '@tech-matters/types';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { NewConversationMedia } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { NewConversationMedia } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { clearAllTables } from '../../dbCleanup';
 

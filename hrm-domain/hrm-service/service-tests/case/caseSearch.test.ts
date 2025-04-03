@@ -41,7 +41,7 @@ import {
 } from '@tech-matters/hrm-core/contact/contactService';
 import { headers, setRules, useOpenRules } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
 import { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { setupServiceTests } from '../setupServiceTest';

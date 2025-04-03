@@ -28,7 +28,7 @@ import each from 'jest-each';
 import { headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ruleFileActionOverride } from '../permissions-overrides';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMediaDataAccess';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import {
   cleanupCases,

@@ -24,7 +24,7 @@ import {
   isS3StoredTranscript,
   NewConversationMedia,
   S3ContactMediaType,
-} from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
+} from '@tech-matters/hrm-core/conversation-media/conversationMediaDataAccess';
 import each from 'jest-each';
 import { ContactJobType } from '@tech-matters/types/ContactJob';
 import { ruleFileActionOverride } from '../permissions-overrides';

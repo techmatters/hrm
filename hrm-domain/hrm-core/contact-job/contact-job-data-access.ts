@@ -32,7 +32,7 @@ import {
 import { txIfNotInOne } from '../sql';
 
 import { ContactJobType, HrmAccountId } from '@tech-matters/types';
-import { ConversationMedia } from '../conversation-media/conversation-media';
+import { ConversationMedia } from '../conversation-media/conversationMedia';
 import { ITask } from 'pg-promise';
 
 // Reflects the actual shape of a record in the ContactJobs table

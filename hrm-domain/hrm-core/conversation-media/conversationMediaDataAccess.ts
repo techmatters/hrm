@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '../dbConnection';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
@@ -45,6 +44,7 @@ import {
   isS3StoredRecording,
   isS3StoredConversationMedia,
 } from '@tech-matters/hrm-types';
+import { getDbForAccount } from '../dbConnection';
 
 export {
   S3ContactMediaType,
@@ -67,6 +67,7 @@ export const create =
     conversationMedia: NewConversationMedia & { contactId: number },
   ): Promise<ConversationMedia> => {
     try {
+      const db = await getDbForAccount(accountSid);
       const now = new Date();
       const statement = insertConversationMediaSql({
         ...conversationMedia,
@@ -74,7 +75,6 @@ export const create =
         createdAt: now,
         updatedAt: now,
       });
-
       return await txIfNotInOne(db, task, conn => conn.one(statement));
     } catch (err) {
       const dbErr = inferPostgresError(err);
@@ -98,7 +98,7 @@ export const getById = async (
   accountSid: HrmAccountId,
   id: number,
 ): Promise<ConversationMedia> =>
-  db.task(async connection =>
+  (await getDbForAccount(accountSid)).task(async connection =>
     connection.oneOrNone<ConversationMedia>(selectSingleConversationMediaByIdSql, {
       accountSid,
       id,
@@ -109,7 +109,7 @@ export const getByContactId = async (
   accountSid: HrmAccountId,
   contactId: number,
 ): Promise<ConversationMedia[]> =>
-  db.task(async connection =>
+  (await getDbForAccount(accountSid)).task(async connection =>
     connection.manyOrNone<ConversationMedia>(selectConversationMediaByContactIdSql, {
       accountSid,
       contactId,
@@ -124,7 +124,7 @@ export const updateSpecificData = async (
   id: ConversationMedia['id'],
   storeTypeSpecificData: ConversationMedia['storeTypeSpecificData'],
 ): Promise<void> =>
-  db.task(async connection =>
+  (await getDbForAccount(accountSid)).task(async connection =>
     connection.none(updateSpecificDataByIdSql, {
       accountSid,
       id,

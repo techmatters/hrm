@@ -15,7 +15,7 @@
  */
 
 import { pgp } from '../../dbConnection';
-import type { NewConversationMedia } from '../conversation-media-data-access';
+import type { NewConversationMedia } from '../conversationMediaDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
 
 export const insertConversationMediaSql = (

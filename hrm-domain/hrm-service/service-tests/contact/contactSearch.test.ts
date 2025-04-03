@@ -18,7 +18,7 @@ import each from 'jest-each';
 import { addSeconds, parseISO, subDays, subHours, subSeconds } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import {
   accountSid,
   ALWAYS_CAN,

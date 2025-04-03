@@ -32,7 +32,7 @@ import * as mocks from './mocks';
 import { ruleFileActionOverride } from './permissions-overrides';
 import { headers, setRules, useOpenRules } from './server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { ALWAYS_CAN } from './mocks';
 import { casePopulated } from './mocks';
 import { setupServiceTests } from './setupServiceTest';

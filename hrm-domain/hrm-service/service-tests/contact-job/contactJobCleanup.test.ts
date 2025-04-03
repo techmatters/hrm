@@ -24,7 +24,7 @@ import {
   mockSuccessfulTwilioAuthentication,
 } from '@tech-matters/testing';
 import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
-import { S3ContactMediaType } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { S3ContactMediaType } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { getById as getContactById } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { updateConversationMediaData } from '@tech-matters/hrm-core/contact/contactService';
 import * as cleanupContactJobsApi from '@tech-matters/contact-job-cleanup';

@@ -21,9 +21,9 @@ import { headers } from './server';
 import {
   NewConversationMedia,
   S3ContactMediaType,
-} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+} from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import * as contactDB from '@tech-matters/hrm-core/contact/contactDataAccess';
-import * as conversationMediaDB from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
+import * as conversationMediaDB from '@tech-matters/hrm-core/conversation-media/conversationMediaDataAccess';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { AccountSID } from '@tech-matters/types';
 import { setupServiceTestsWithConfig } from './setupServiceTest';
