@@ -47,6 +47,7 @@ export const connectToPostgresWithDynamicUser = (
       const user = `${dynamicUserPrefix}${dynamicUserKey}`;
       try {
         password = await getSsmParameter(passwordSsmKey);
+        console.debug('Read dynamic user', user, password);
       } catch (error) {
         if (error instanceof SsmParameterNotFound) {
           password = randomUUID();
@@ -54,6 +55,7 @@ export const connectToPostgresWithDynamicUser = (
           // If that happens the password could be overwritten by the time we use it
           try {
             await putSsmParameter(passwordSsmKey, password, { cacheValue: false });
+            console.debug('Set dynamic user in SSM', user, password);
           } catch (ssmUpdateError) {
             if (ssmUpdateError instanceof SsmParameterAlreadyExists) {
               // If the parameter already exists, it was set after we initially read it, so we need to read it again
@@ -80,6 +82,7 @@ export const connectToPostgresWithDynamicUser = (
               password,
               user,
             });
+            console.debug('Created dynamic user', user, password);
           } catch (dbError) {
             if (
               dbError instanceof Error &&
@@ -92,6 +95,7 @@ export const connectToPostgresWithDynamicUser = (
                 password,
                 user,
               });
+              console.debug('Updated dynamic user', user, password);
             }
           }
         } else throw error;
