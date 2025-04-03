@@ -33,10 +33,14 @@ import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { NewConversationMedia } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { clearAllTables } from '../../dbCleanup';
+import { setupServiceTests } from '../../setupServiceTest';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
 
 require('../mocks');
+
+setupServiceTests();
+
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const selectJobsByContactId = (contactId: number, accountSid: string) =>
   db.task(t =>
@@ -60,8 +64,6 @@ let SQSClient: typeof import('@tech-matters/hrm-core/contact-job/client-sqs');
 let contactJobComplete: typeof import('@tech-matters/hrm-core/contact-job/contact-job-complete');
 let contactJobPublish: typeof import('@tech-matters/hrm-core/contact-job/contact-job-publish');
 let contactJobProcessor: typeof import('@tech-matters/hrm-core/contact-job/contact-job-processor');
-
-beforeAll(clearAllTables);
 
 beforeEach(() => {
   jest.isolateModules(() => {
