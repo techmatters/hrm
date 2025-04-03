@@ -15,7 +15,7 @@
  */
 
 import { pgp } from '../../dbConnection';
-import { NewCSAMReport } from '../csam-report-data-access';
+import { NewCSAMReport } from '../csamReportDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
 
 export const insertCSAMReportSql = (

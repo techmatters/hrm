@@ -21,10 +21,10 @@ import {
   getById,
   getByContactId,
   updateAcknowledgedByCsamReportId,
-} from './csam-report-data-access';
+} from './csamReportDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
 
-export { CSAMReport } from './csam-report-data-access';
+export { CSAMReport } from './csamReportDataAccess';
 
 // While this is being used in test only, chances are we'll use it when we move out to making separate calls to fetch different entities
 export const getCSAMReport = getById;
