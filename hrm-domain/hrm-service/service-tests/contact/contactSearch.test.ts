@@ -195,6 +195,9 @@ describe('/contacts/search route', () => {
           expect(c2.taskId).toBe('contact2-tasksid-2');
           expect(count).toBe(2);
           expect(contacts.length).toBe(2);
+          expect(parseISO(contacts[0].timeOfContact).getTime()).toBeGreaterThanOrEqual(
+            parseISO(contacts[1].timeOfContact).getTime(),
+          );
         },
       },
       {
@@ -204,7 +207,8 @@ describe('/contacts/search route', () => {
           expect(response.status).toBe(200);
           const { contacts, count } = response.body;
 
-          const [c2, c1] = contacts; // result is sorted DESC
+          const c1 = contacts.find(c => c.id === createdContacts[0].id);
+          const c2 = contacts.find(c => c.id === createdContacts[1].id);
           expect(c1.rawJson).toStrictEqual(contact1.rawJson);
           expect(c2.rawJson).toStrictEqual(contact2.rawJson);
 
@@ -215,6 +219,10 @@ describe('/contacts/search route', () => {
           expect(c1.taskId).toBe('contact1-tasksid-2');
           expect(c2.taskId).toBe('contact2-tasksid-2');
           expect(count).toBe(2);
+          expect(contacts.length).toBe(2);
+          expect(parseISO(contacts[0].timeOfContact).getTime()).toBeGreaterThanOrEqual(
+            parseISO(contacts[1].timeOfContact).getTime(),
+          );
         },
       },
       {

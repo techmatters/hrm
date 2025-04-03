@@ -16,15 +16,19 @@
 
 import { cleanupProfileFlags } from '@tech-matters/profile-flags-cleanup';
 import { addDays, subDays } from 'date-fns';
-import { db } from '../dbConnection';
 import { accountSid, workerSid } from '../mocks';
 import * as profileDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { newTwilioUser, systemUser } from '@tech-matters/twilio-worker-auth';
+import { setupServiceTests } from '../setupServiceTest';
+import { db } from '../dbConnection';
+
+setupServiceTests();
 
 let createdProfile: profileDB.Profile;
-let createdProfileFlag: profileDB.ProfileFlag;
 let profileFlags: profileDB.ProfileFlag[];
-beforeAll(async () => {
+let createdProfileFlag: profileDB.ProfileFlag;
+
+beforeEach(async () => {
   [createdProfile, createdProfileFlag] = await Promise.all([
     profileDB.createProfile()(accountSid, {
       name: 'TEST_PROFILE',
@@ -39,34 +43,17 @@ beforeAll(async () => {
   profileFlags = await profileDB.getProfileFlagsForAccount(accountSid);
 });
 
-afterAll(async () => {
+afterEach(async () => {
   await db.task(async t => {
     await Promise.all([
       t.none(`DELETE FROM "ProfileFlags" WHERE id = $<id>`, {
         id: createdProfileFlag.id,
       }),
-      t.none(`DELETE FROM "Profiles" WHERE id = $<id>`, { id: createdProfile.id }),
     ]);
   });
 });
 
 describe('cleanupProfileFlags', () => {
-  afterEach(async () => {
-    db.task(t =>
-      t.none(`UPDATE "Profiles" SET "updatedBy" = null WHERE "id" = $<profileId>;`, {
-        profileId: createdProfile.id,
-      }),
-    );
-    const p = await profileDB.getProfileById()(accountSid, createdProfile.id);
-    await Promise.all(
-      p.profileFlags.map(pf =>
-        profileDB.disassociateProfileFromProfileFlag()(accountSid, p.id, pf.id, {
-          user: newTwilioUser(accountSid, workerSid, []),
-        }),
-      ),
-    );
-  });
-
   test('when associations are null, cleanupProfileFlags does nothing', async () => {
     await Promise.all(
       profileFlags.map(pf =>
