@@ -17,13 +17,14 @@
 import * as pgPromise from 'pg-promise';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import * as pgMocking from '@tech-matters/testing';
-import { db } from '../dbConnection';
 import { Database } from '@tech-matters/database-connect';
+import { getDbForAdmin } from '../dbConnection';
 
 const userDbs: Record<string, Database> = {};
+let adminDb: Database = pgMocking.createMockConnection() as any;
 
 jest.mock('../dbConnection', () => ({
-  db: pgMocking.createMockConnection(),
+  getDbForAdmin: () => adminDb,
   getDbForAccount: (accountSid: string) => {
     // Might already have been populated by a call to mockTask
     userDbs[accountSid] =
@@ -48,7 +49,7 @@ export const mockTask = (mockConn: pgPromise.ITask<unknown>, userKey?: string) =
     userDb = getMockAccountDb(userKey);
   } else {
     // Assume legacy code
-    userDb = db;
+    userDb = getDbForAdmin();
   }
   pgMocking.mockTask(userDb, mockConn);
 };
@@ -63,7 +64,7 @@ export const mockTransaction = (
     userDb = getMockAccountDb(userKey);
   } else {
     // Assume legacy code
-    userDb = db;
+    userDb = adminDb;
   }
   return pgMocking.mockTransaction(userDb, mockConn, mockTx);
 };

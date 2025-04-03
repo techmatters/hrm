@@ -17,10 +17,24 @@
 import {
   connectToPostgres,
   connectToPostgresWithDynamicUser,
+  Database,
 } from '@tech-matters/database-connect';
 import adminConnectionConfig from './config/db';
 import { enableDbUserPerAccount } from './featureFlags';
 export { pgp } from '@tech-matters/database-connect';
+
+let dbWithAdmin: Database;
+
+export const getDbForAdmin = () => {
+  // Instantiate lazily because only the poller instance uses this
+  if (!dbWithAdmin) {
+    dbWithAdmin = connectToPostgres({
+      ...adminConnectionConfig,
+      applicationName: 'hrm-service',
+    });
+  }
+  return dbWithAdmin;
+};
 
 export const db = connectToPostgres({
   ...adminConnectionConfig,
@@ -37,4 +51,4 @@ export const getDbForAccount = enableDbUserPerAccount
       'hrm_service',
       accountSid => `/${process.env.NODE_ENV}/hrm/${accountSid}/database/password`,
     )
-  : () => Promise.resolve(db);
+  : () => Promise.resolve(getDbForAdmin());
