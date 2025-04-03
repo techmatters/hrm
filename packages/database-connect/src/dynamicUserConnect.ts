@@ -92,7 +92,7 @@ export const connectToPostgresWithDynamicUser = (
     return password;
   };
 
-  const connect = async (dynamicUserKey: string, attempt: number) => {
+  const connect = async (dynamicUserKey: string, attempt: number): Promise<Database> => {
     if (!connectionPoolMap[dynamicUserKey]) {
       let password: string;
       const passwordSsmKey = getPasswordSsmKey(dynamicUserKey);
