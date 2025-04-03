@@ -118,6 +118,7 @@ export const connectToPostgresWithDynamicUser = (
             password = await createNewUser(user, passwordSsmKey, false);
           } catch (createUserError) {
             if (createUserError instanceof SsmParameterAlreadyExists) {
+              // Another process created the parameter after we initally checked, go around again
               return connect(dynamicUserKey, attempt + 1);
             } else throw error;
           }
