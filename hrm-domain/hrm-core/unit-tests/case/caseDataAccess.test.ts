@@ -16,7 +16,7 @@
 
 import { createMockCaseInsert, createMockCaseRecord } from './mock-cases';
 import * as pgPromise from 'pg-promise';
-import { getMockUserDb, mockConnection, mockTask } from '../mockDb';
+import { getMockAccountDb, mockConnection, mockTask } from '../mockDb';
 import * as caseDb from '../../case/caseDataAccess';
 import each from 'jest-each';
 import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
@@ -321,7 +321,7 @@ describe('delete', () => {
   test('returns deleted value if something at the specified ID exists to delete', async () => {
     const caseFromDB = createMockCaseRecord({});
     const oneOrNoneSpy = jest
-      .spyOn(getMockUserDb(accountSid), 'oneOrNone')
+      .spyOn(getMockAccountDb(accountSid), 'oneOrNone')
       .mockResolvedValue(caseFromDB);
 
     const result = await caseDb.deleteById(caseId, accountSid);
@@ -334,7 +334,7 @@ describe('delete', () => {
   });
   test('returns nothing if nothing at the specified ID exists to delete', async () => {
     const oneOrNoneSpy = jest
-      .spyOn(getMockUserDb(accountSid), 'oneOrNone')
+      .spyOn(getMockAccountDb(accountSid), 'oneOrNone')
       .mockResolvedValue(undefined);
 
     const result = await caseDb.deleteById(caseId, accountSid);

@@ -17,7 +17,6 @@
 import { performance } from 'perf_hooks';
 import { db } from '../dbConnection';
 
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   appendFailedAttemptPayload,
   createContactJob,
@@ -25,24 +24,13 @@ import {
 
 import { ContactJobType } from '@tech-matters/types';
 
-import { accountSid, contact1, workerSid } from '../mocks';
-import { headers, getRequest, getServer, useOpenRules } from '../server';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { accountSid, contact1 } from '../mocks';
+import { headers } from '../server';
 
 import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { setupServiceTests } from '../setupServiceTest';
 
-beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(workerSid);
-});
-
-afterAll(async () => {
-  await mockingProxy.stop();
-  server.close();
-});
+const { request } = setupServiceTests();
 
 describe('appendFailedAttemptPayload', () => {
   test('appendFailedAttemptPayload should execute quickly', async () => {

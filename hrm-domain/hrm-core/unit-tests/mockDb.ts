@@ -24,7 +24,7 @@ const userDbs: Record<string, Database> = {};
 
 jest.mock('../dbConnection', () => ({
   db: pgMocking.createMockConnection(),
-  getDbForUser: (accountSid: string) => {
+  getDbForAccount: (accountSid: string) => {
     // Might already have been populated by a call to mockTask
     userDbs[accountSid] =
       userDbs[accountSid] ?? (pgMocking.createMockConnection() as any);
@@ -35,7 +35,7 @@ jest.mock('../dbConnection', () => ({
 
 export const mockConnection = pgMocking.createMockConnection;
 
-export const getMockUserDb = (userKey?: string) => {
+export const getMockAccountDb = (userKey?: string) => {
   if (!userDbs[userKey]) {
     userDbs[userKey] = pgMocking.createMockConnection() as any;
   }
@@ -45,16 +45,10 @@ export const getMockUserDb = (userKey?: string) => {
 export const mockTask = (mockConn: pgPromise.ITask<unknown>, userKey?: string) => {
   let userDb: Database;
   if (userKey) {
-    userDb = getMockUserDb(userKey);
+    userDb = getMockAccountDb(userKey);
   } else {
-    const userDbList = Object.values(userDbs);
-    if (userDbList.length === 1) {
-      // Most tests will only deal with a single user connect, so if there's only one, use that
-      userDb = userDbList[0];
-    } else {
-      // Assume legacy code
-      userDb = db;
-    }
+    // Assume legacy code
+    userDb = db;
   }
   pgMocking.mockTask(userDb, mockConn);
 };
@@ -62,6 +56,14 @@ export const mockTask = (mockConn: pgPromise.ITask<unknown>, userKey?: string) =
 export const mockTransaction = (
   mockConn: pgPromise.ITask<unknown>,
   mockTx: pgPromise.ITask<unknown> | undefined = undefined,
+  userKey?: string,
 ) => {
-  return pgMocking.mockTransaction(db, mockConn, mockTx);
+  let userDb: Database;
+  if (userKey) {
+    userDb = getMockAccountDb(userKey);
+  } else {
+    // Assume legacy code
+    userDb = db;
+  }
+  return pgMocking.mockTransaction(userDb, mockConn, mockTx);
 };

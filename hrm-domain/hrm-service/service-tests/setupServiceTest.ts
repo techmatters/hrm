@@ -21,7 +21,13 @@ import {
   mockSsmParameters,
   mockSuccessfulTwilioAuthentication,
 } from '@tech-matters/testing';
-import { useOpenRules, getServer, getRequest, getInternalServer } from './server';
+import {
+  useOpenRules,
+  getServer,
+  getRequest,
+  getInternalServer,
+  defaultConfig,
+} from './server';
 import { clearAllTables } from './dbCleanup';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { WorkerSID } from '@tech-matters/types';
@@ -32,11 +38,16 @@ import { workerSid } from './mocks';
 const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 const ENTITY_SNS_TOPIC_NAME = 'mock-entity-sns-topic';
 
-export const setupServiceTests = (
-  userTwilioWorkerId: WorkerSID = workerSid,
+export const setupServiceTestsWithConfig = ({
+  userTwilioWorkerId = workerSid,
   queues = [SEARCH_INDEX_SQS_QUEUE_NAME],
-) => {
-  const server = getServer();
+  serverConfig,
+}: {
+  userTwilioWorkerId?: WorkerSID;
+  queues?: string[];
+  serverConfig?: Partial<typeof defaultConfig>;
+}) => {
+  const server = getServer(serverConfig);
   const request = getRequest(server);
 
   const internalServer = getInternalServer();
@@ -76,3 +87,8 @@ export const setupServiceTests = (
     internalServer,
   };
 };
+
+export const setupServiceTests = (
+  userTwilioWorkerId: WorkerSID = workerSid,
+  queues = [SEARCH_INDEX_SQS_QUEUE_NAME],
+) => setupServiceTestsWithConfig({ userTwilioWorkerId, queues });

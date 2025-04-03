@@ -16,31 +16,23 @@
 
 import each from 'jest-each';
 import { actionsMaps, rulesMap } from '@tech-matters/hrm-core/permissions/index';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import { withTaskId, workerSid } from './mocks';
-import { headers, getRequest, getServer } from './server';
+import { withTaskId } from './mocks';
+import { headers } from './server';
 import {
   NewConversationMedia,
   S3ContactMediaType,
 } from '@tech-matters/hrm-core/conversation-media/conversation-media';
-import { db } from './dbConnection';
 import * as contactDB from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as conversationMediaDB from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { AccountSID } from '@tech-matters/types';
+import { setupServiceTestsWithConfig } from './setupServiceTest';
 
-const server = getServer({
-  permissions: undefined,
+const { request } = setupServiceTestsWithConfig({
+  serverConfig: {
+    permissions: undefined,
+  },
 });
-
-const request = getRequest(server);
-
-beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(workerSid);
-});
-
-afterAll(async () => Promise.all([server.close(), mockingProxy.stop()]));
 
 describe('/permissions route', () => {
   describe('GET', () => {
@@ -92,33 +84,6 @@ describe('/permissions route', () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteContactById = (id: number, accountSid: string) =>
-  db.task(t =>
-    t.none(`
-      DELETE FROM "Contacts"
-      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
-  `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteJobsByContactId = (contactId: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      DELETE FROM "ContactJobs"
-      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteConversationMediaByContactId = (contactId: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      DELETE FROM "ConversationMedias"
-      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
-    `),
-  );
-
 describe('/permissions/:action route with contact objectType', () => {
   const accountSids: AccountSID[] = ['ACopen', 'ACclosed'];
   let createdContacts = {
@@ -128,7 +93,7 @@ describe('/permissions/:action route with contact objectType', () => {
   const bucket = 'bucket';
   const key = 'key';
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await Promise.all(
       accountSids.map(async accountSid => {
         const cm1: NewConversationMedia = {
@@ -168,18 +133,6 @@ describe('/permissions/:action route with contact objectType', () => {
             });
           }),
         );
-      }),
-    );
-  });
-
-  afterAll(async () => {
-    await Promise.all(
-      accountSids.map(async createdContactsKey => {
-        const contact = createdContacts[createdContactsKey];
-        // Remove records to not interfere with following tests
-        await deleteJobsByContactId(contact?.id, contact?.accountSid);
-        await deleteConversationMediaByContactId(contact?.id, contact?.accountSid);
-        await deleteContactById(contact?.id, contact?.accountSid);
       }),
     );
   });

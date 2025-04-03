@@ -59,7 +59,7 @@ describe('create', () => {
 
   test('Task ID specified in payload that is already associated with a contact - returns that contact', async () => {
     const returnValue = { ...new ContactBuilder().build(), isNewRecord: false };
-    mockTransaction(conn);
+    mockTransaction(conn, undefined, 'AC parameter accountSid');
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
@@ -82,7 +82,7 @@ describe('create', () => {
 
   test('Task ID specified in payload that is not already associated with a contact - creates contact as expected', async () => {
     const returnValue = { ...new ContactBuilder().build(), isNewRecord: true };
-    mockTransaction(conn);
+    mockTransaction(conn, undefined, 'AC parameter account sid');
 
     jest.spyOn(conn, 'one').mockResolvedValue(returnValue);
 
@@ -128,7 +128,7 @@ describe('search', () => {
 
   test('No parameters - searches with accountSid offset and limit only', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     await search(
       ACCOUNT_SID,
       { onlyDataContacts: false },
@@ -146,7 +146,7 @@ describe('search', () => {
 
   test('dateTo / dateFrom parameters - converts them to UTC', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     await search(
       ACCOUNT_SID,
       {
@@ -170,7 +170,7 @@ describe('search', () => {
 
   test('name parameters - converts them to ILIKE patterns', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     await search(
       ACCOUNT_SID,
       {
@@ -194,7 +194,7 @@ describe('search', () => {
 
   test('phone number parameter - removes non numeric characters & converts it to ILIKE patterns', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     await search(
       ACCOUNT_SID,
       {
@@ -216,7 +216,7 @@ describe('search', () => {
 
   test('other parameters - copies them over as is', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     await search(
       ACCOUNT_SID,
       {
@@ -242,7 +242,7 @@ describe('search', () => {
   });
   test('other parameters - set as undefined if empty strings', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     await search(
       ACCOUNT_SID,
       {
@@ -269,7 +269,7 @@ describe('search', () => {
 
   test('Empty results - returns empty row array and count of 0', async () => {
     jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     const result = await search(
       ACCOUNT_SID,
       { onlyDataContacts: false },
@@ -287,7 +287,7 @@ describe('search', () => {
       { id: 1234, totalCount: 1337 },
       { id: 4321, totalCount: 1337 },
     ]);
-    mockTask(conn);
+    mockTask(conn, ACCOUNT_SID);
     const result = await search(
       ACCOUNT_SID,
       { onlyDataContacts: false },

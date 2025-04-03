@@ -27,7 +27,7 @@ export const db = connectToPostgres({
   applicationName: 'hrm-service',
 });
 
-export const getDbForUser = enableDbUserPerAccount
+export const getDbForAccount = enableDbUserPerAccount
   ? connectToPostgresWithDynamicUser(
       {
         ...adminConnectionConfig,

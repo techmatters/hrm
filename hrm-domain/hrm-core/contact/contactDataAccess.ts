@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../dbConnection';
+import { getDbForAccount, pgp } from '../dbConnection';
 import {
   selectContactSearch,
   selectContactsByProfileId,
@@ -183,7 +183,7 @@ export const create =
     try {
       return newOkFromData(
         await txIfNotInOne(
-          db,
+          await getDbForAccount(accountSid),
           task,
           async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
             const now = new Date();
@@ -212,7 +212,7 @@ export const patch =
     finalize: boolean,
     contactUpdates: ContactUpdates,
   ): Promise<Contact | undefined> => {
-    return txIfNotInOne(db, task, async connection => {
+    return txIfNotInOne(await getDbForAccount(accountSid), task, async connection => {
       const updatedContact: Contact = await connection.oneOrNone<Contact>(
         UPDATE_CONTACT_BY_ID,
         {
@@ -235,7 +235,7 @@ export const connectToCase =
     caseId: string,
     updatedBy: string,
   ): Promise<Contact | undefined> => {
-    return txIfNotInOne(db, task, async connection => {
+    return txIfNotInOne(await getDbForAccount(accountSid), task, async connection => {
       const [[updatedContact]]: Contact[][] = await connection.multi<Contact>(
         [UPDATE_CASEID_BY_ID, TOUCH_CASE_SQL].join(';\n'),
         {
@@ -253,7 +253,7 @@ export const getById = async (
   accountSid: HrmAccountId,
   contactId: number,
 ): Promise<Contact> =>
-  db.task(async connection =>
+  (await getDbForAccount(accountSid)).task(async connection =>
     connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
       accountSid,
       contactId,
@@ -264,7 +264,7 @@ export const getByTaskSid = async (
   accountSid: HrmAccountId,
   taskId: string,
 ): Promise<Contact> =>
-  db.task(async connection =>
+  (await getDbForAccount(accountSid)).task(async connection =>
     connection.oneOrNone<Contact>(selectSingleContactByTaskId('Contacts'), {
       accountSid,
       taskId,
@@ -302,7 +302,7 @@ const generalizedSearchQueryFunction = <T>(
   sqlQueryParamsBuilder: SearchQueryParamsBuilder<T>,
 ): SearchQueryFunction<T> => {
   return async (accountSid, searchParameters, limit, offset, user, viewPermissions) => {
-    return db.task(async connection => {
+    return (await getDbForAccount(accountSid)).task(async connection => {
       const searchResults: (Contact & { totalCount: number })[] =
         await connection.manyOrNone<Contact & { totalCount: number }>(
           sqlQueryGenerator(viewPermissions, user.isSupervisor),
@@ -387,11 +387,12 @@ export const streamContactsAfterNotified = ({
       batchSize,
     },
   );
-
   // Expose the readable stream to the caller as a promise for further pipelining
   return new Promise(resolve => {
-    db.stream(qs, resultStream => {
-      resolve(resultStream);
-    });
+    getDbForAccount(accountSid).then(db =>
+      db.stream(qs, resultStream => {
+        resolve(resultStream);
+      }),
+    );
   });
 };
