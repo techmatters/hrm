@@ -60,7 +60,6 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
-import { db } from '../dbConnection';
 import {
   type ConversationMedia,
   type NewConversationMedia,
@@ -87,6 +86,7 @@ import {
   generateContactPermissionsFilters,
 } from './contactSearchIndex';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
+import { getDbForAccount } from '../dbConnection';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -227,6 +227,7 @@ export const createContact = async (
   skipSearchIndex = false,
 ): Promise<Contact> => {
   let result: Result<CreateError, Contact>;
+  const db = await getDbForAccount(accountSid);
   for (let retries = 1; retries < 4; retries++) {
     result = await ensureRejection<CreateError, Contact>(db.tx)(async conn => {
       const res = await initProfile(conn, accountSid, newContact);
@@ -320,7 +321,7 @@ export const patchContact = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> =>
-  db.tx(async conn => {
+  (await getDbForAccount(accountSid)).tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
     if (referrals) {
@@ -406,6 +407,7 @@ export const addConversationMediaToContact = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> => {
+  const db = await getDbForAccount(accountSid);
   const contactId = parseInt(contactIdString);
   const contact = await getById(accountSid, contactId);
   if (!contact) {

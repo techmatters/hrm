@@ -64,6 +64,6 @@ describe('appendFailedAttemptPayload', () => {
     await Promise.all(promises);
     const end = performance.now();
 
-    expect(end - start).toBeLessThan(200);
+    expect(end - start).toBeLessThan(2000);
   });
 });

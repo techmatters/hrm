@@ -95,7 +95,7 @@ afterEach(() => {
 describe('createContact', () => {
   beforeEach(() => {
     const conn = mockConnection();
-    mockTransaction(conn);
+    mockTransaction(conn, undefined, parameterAccountSid);
   });
   const sampleCreateContactPayload: NewContactRecord = {
     rawJson: {
@@ -329,6 +329,10 @@ describe('patchContact', () => {
       },
     },
   };
+  beforeEach(() => {
+    const conn = mockConnection();
+    mockTransaction(conn, undefined, accountSid);
+  });
   test('Passes callerInformation, childInformation, caseInformation & categories to data layer as separate properties', async () => {
     const patchSpy = jest.fn();
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
