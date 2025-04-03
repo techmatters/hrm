@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../../dbConnection';
+import { getDbForAccount, pgp } from '../../dbConnection';
 import { CaseSectionRecord, CaseSectionUpdate } from './types';
 import { SELECT_CASE_SECTION_BY_ID, selectCaseTimelineSql } from './sql/readSql';
 import { DELETE_CASE_SECTION_BY_ID } from './sql/deleteSql';
@@ -62,7 +62,7 @@ export const create =
         ],
         'CaseSections',
       )} RETURNING *`;
-
+      const db = await getDbForAccount(sectionRecord.accountSid);
       return await txIfNotInOne(db, task, async connection => {
         const [[createdSection]]: CaseSectionRecord[][] =
           await connection.multi<CaseSectionRecord>(
@@ -87,6 +87,7 @@ export const getById = async (
   sectionType,
   sectionId,
 ): Promise<CaseSectionRecord | undefined> => {
+  const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
     const queryValues = { accountSid, caseId, sectionType, sectionId };
     return connection.oneOrNone(SELECT_CASE_SECTION_BY_ID, queryValues);
@@ -102,6 +103,7 @@ export const deleteById =
     sectionId: CaseSectionRecord['sectionId'],
     updatedBy: TwilioUser['workerSid'],
   ): Promise<CaseSectionRecord | undefined> => {
+    const db = await getDbForAccount(accountSid);
     return txIfNotInOne(db, task, async connection => {
       const [[deletedSection]]: CaseSectionRecord[][] =
         await connection.multi<CaseSectionRecord>(
@@ -136,7 +138,7 @@ export const updateById =
       eventTimestamp: null,
       ...updates,
     };
-
+    const db = await getDbForAccount(accountSid);
     return txIfNotInOne(db, task, async connection => {
       const [[updatedSection]]: CaseSectionRecord[][] =
         await connection.multi<CaseSectionRecord>(
@@ -158,6 +160,7 @@ export const getTimeline = async (
   limit: number,
   offset: number,
 ): Promise<TimelineResult> => {
+  const db = await getDbForAccount(accountSid);
   const sqlRes = selectCaseTimelineSql(
     twilioUser,
     viewContactsPermissions,
