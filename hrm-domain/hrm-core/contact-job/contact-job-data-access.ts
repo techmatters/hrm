@@ -192,7 +192,9 @@ export const getPendingCleanupJobs = async (
 };
 
 export const getPendingCleanupJobAccountSids = async (): Promise<string[]> => {
-  const ret = await getDbForAdmin().task(tx => tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL));
+  const ret = await getDbForAdmin().task(tx =>
+    tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL),
+  );
   return ret?.map(r => r.accountSid);
 };
 
