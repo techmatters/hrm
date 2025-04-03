@@ -101,7 +101,7 @@ export const connectToPostgresWithDynamicUser = (
         password = await getSsmParameter(passwordSsmKey);
         console.debug('Read dynamic user', user, password);
         if (password === PENDING_PASSWORD) {
-          if (attempt >= MAX_ATTEMPTS) {
+          if (attempt <= MAX_ATTEMPTS) {
             // Another process or task in this process is creating the user, we need to wait for it to finish
             console.debug(
               `Waiting for another process to create the user ${user}, check ${
@@ -109,7 +109,9 @@ export const connectToPostgresWithDynamicUser = (
               } / ${MAX_ATTEMPTS}`,
               user,
             );
-            setTimeout(() => connect(dynamicUserKey, attempt + 1), 200);
+            return await new Promise(resolve => {
+              setTimeout(() => resolve(connect(dynamicUserKey, attempt + 1)), 200);
+            });
           } else {
             console.error(
               `Timed out waiting for another task to create the user ${user}, creating it now. This could cause temporary connection issues if the other task finishes after this one.`,
