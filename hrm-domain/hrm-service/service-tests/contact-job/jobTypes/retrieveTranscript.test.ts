@@ -32,7 +32,6 @@ import {
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { NewConversationMedia } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
-import { clearAllTables } from '../../dbCleanup';
 import { setupServiceTests } from '../../setupServiceTest';
 
 const { S3ContactMediaType, isS3StoredTranscriptPending } = conversationMediaApi;
@@ -74,8 +73,6 @@ beforeEach(() => {
     contactJobProcessor = require('@tech-matters/hrm-core/contact-job/contact-job-processor');
   });
 });
-
-afterEach(clearAllTables);
 
 const SAMPLE_CONVERSATION_MEDIA: NewConversationMedia = {
   storeType: 'S3' as const,
