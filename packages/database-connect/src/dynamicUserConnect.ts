@@ -18,6 +18,7 @@ import { ConnectionConfig, connectToPostgres } from './connectionPool';
 import {
   getSsmParameter,
   putSsmParameter,
+  SsmParameterAlreadyExists,
   SsmParameterNotFound,
 } from '@tech-matters/ssm-cache';
 import { randomUUID } from 'node:crypto';
@@ -25,6 +26,8 @@ import {
   CREATE_DYNAMIC_USER_SQL,
   RESET_DYNAMIC_USER_PASSWORD_SQL,
 } from './createDynamicUserSql';
+
+const MAX_ATTEMPTS = 5;
 
 export type Database = ReturnType<typeof connectToPostgres>;
 
@@ -37,7 +40,7 @@ export const connectToPostgresWithDynamicUser = (
   let lazyAdminConnection: Database | undefined = undefined;
   const connectionPoolMap: Record<string, Database> = {};
 
-  return async (dynamicUserKey: string) => {
+  const connect = async (dynamicUserKey: string, attempt: number) => {
     if (!connectionPoolMap[dynamicUserKey]) {
       let password: string;
       const passwordSsmKey = getPasswordSsmKey(dynamicUserKey);
@@ -49,7 +52,19 @@ export const connectToPostgresWithDynamicUser = (
           password = randomUUID();
           // Don't cache the value in case another process is trying to create the same user at the same time
           // If that happens the password could be overwritten by the time we use it
-          await putSsmParameter(passwordSsmKey, password, { cacheValue: false });
+          try {
+            await putSsmParameter(passwordSsmKey, password, { cacheValue: false });
+          } catch (ssmUpdateError) {
+            if (ssmUpdateError instanceof SsmParameterAlreadyExists) {
+              // If the parameter already exists, it was set after we initially read it, so we need to read it again
+              if (attempt < MAX_ATTEMPTS) {
+                return connect(dynamicUserKey, attempt + 1);
+              } else
+                throw new Error(
+                  `Failed to optimistically read/set password in SSM after ${MAX_ATTEMPTS} attempts. It should only ever fail once.`,
+                );
+            }
+          }
           if (!lazyAdminConnection) {
             lazyAdminConnection = connectToPostgres({
               ...adminConnectionConfig,
@@ -87,4 +102,5 @@ export const connectToPostgresWithDynamicUser = (
     }
     return connectionPoolMap[dynamicUserKey];
   };
+  return key => connect(key, 0);
 };

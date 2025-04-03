@@ -51,6 +51,13 @@ const NOT_FOUND_RESPONSE = {
   },
 };
 
+const ALREADY_EXISTS_RESPONSE = {
+  statusCode: 400,
+  headers: {
+    'x-amzn-errortype': 'ParameterAlreadyExists',
+  },
+};
+
 let currentPriority = 1;
 
 const singleKeyValues: Record<string, string | (() => string) | null> = {};
@@ -68,10 +75,14 @@ export const mockSsmParameters = async (
       .asPriority(currentPriority++)
       .thenCallback(async req => {
         if (req.headers['x-amz-target'] === 'AmazonSSM.PutParameter') {
-          const { Name, Value } = (await req.body.getJson()) as {
+          const { Name, Value, Overwrite } = (await req.body.getJson()) as {
             Name: string;
             Value: string;
+            Overwrite: boolean;
           };
+          if (!Overwrite && singleKeyValues[Name] !== undefined) {
+            return ALREADY_EXISTS_RESPONSE;
+          }
           console.debug(`Receiving SSM PutParameter command to set ${Name}=${Value}`);
           singleKeyValues[Name] = Value;
           return {
