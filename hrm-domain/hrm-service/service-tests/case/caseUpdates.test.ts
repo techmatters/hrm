@@ -23,20 +23,54 @@ import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { isBefore } from 'date-fns';
 
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSuccessfulTwilioAuthentication,
+  mockAllSns,
+} from '@tech-matters/testing';
 import * as mocks from '../mocks';
 import { ALWAYS_CAN, casePopulated } from '../mocks';
-import { ApiTestSuiteParameters, basicHeaders, headers } from '../server';
-import { setupServiceTests } from '../setupServiceTest';
+import {
+  ApiTestSuiteParameters,
+  basicHeaders,
+  getInternalServer,
+  getRequest,
+  getServer,
+  headers,
+  useOpenRules,
+} from '../server';
+import { clearAllTables } from '../dbCleanup';
+import { setupTestQueues } from '../sqs';
+import { mockEntitySnsParameters } from '../ssm';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
+const ENTITY_SNS_TOPIC_NAME = 'mock-entity-sns-topic';
+
+useOpenRules();
+const publicServer = getServer();
+const publicRequest = getRequest(publicServer);
+
+const internalServer = getInternalServer();
+const internalRequest = getRequest(internalServer);
 
 const { case1, case2, accountSid, workerSid } = mocks;
-const { internalRequest, request: publicRequest } = setupServiceTests(workerSid);
 
 const cases: Record<string, CaseService> = {};
 let nonExistingCaseId;
 const caseBaseRoute = `/v0/accounts/${accountSid}/cases`;
 
+beforeAll(clearAllTables);
+
 beforeEach(async () => {
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockEntitySnsParameters(
+    mockttp,
+    SEARCH_INDEX_SQS_QUEUE_NAME,
+    ENTITY_SNS_TOPIC_NAME,
+  );
+  await mockAllSns(mockttp);
   cases.blank = await caseApi.createCase(case1, accountSid, workerSid, undefined, true);
   cases.populated = await caseApi.createCase(
     casePopulated,
@@ -56,6 +90,13 @@ beforeEach(async () => {
   nonExistingCaseId = caseToBeDeleted.id;
   await caseDb.deleteById(caseToBeDeleted.id, accountSid);
 });
+
+afterEach(async () => {
+  await mockingProxy.stop();
+  await clearAllTables();
+});
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 const publicApiTestSuiteParameters = {
   request: publicRequest,

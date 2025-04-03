@@ -9,7 +9,6 @@
     { "path": "packages/sns-client" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sqs-client" },
-    { "path": "packages/database-connect" },
     { "path": "packages/elasticsearch-client" },
     { "path": "packages/twilio-client" },
     { "path": "packages/types" },

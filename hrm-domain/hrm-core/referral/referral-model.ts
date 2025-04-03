@@ -14,4 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export { Referral, createReferralRecord as createReferral } from './referralDataAccess';
+export { Referral, createReferralRecord as createReferral } from './referral-data-access';

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '../dbConnection';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import { accountSid, workerSid } from '../mocks';
 
 const cleanupWhereClause = `

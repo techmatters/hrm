@@ -14,16 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import { AccountSID } from '@tech-matters/types';
 import * as mocks from '../mocks';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
-import { db } from '../dbConnection';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import { isAfter, parseISO, subDays, subHours, subMinutes } from 'date-fns';
 import { transitionCaseStatuses } from '@tech-matters/case-status-transition';
 import { ALWAYS_CAN } from '../mocks';
-import { setupServiceTests } from '../setupServiceTest';
 
 const { case1, workerSid } = mocks;
 
@@ -46,13 +49,13 @@ const getUpdatedCases = async (
   return Object.fromEntries(updatedCaseEntries);
 };
 
-setupServiceTests(workerSid);
-
 describe('Single Rule', () => {
   const cases: Record<string, CaseService> = {};
 
   beforeAll(async () => {
     jest.setTimeout(20000);
+    await mockingProxy.start(false);
+    await mockSuccessfulTwilioAuthentication(workerSid);
     const mockttp = await mockingProxy.mockttpServer();
     const mockRuleSet: [AccountSID, Record<string, string>[]][] = [
       [
@@ -85,6 +88,10 @@ describe('Single Rule', () => {
           ]),
       },
     ]);
+  });
+
+  afterAll(async () => {
+    await mockingProxy.stop();
   });
 
   const validDateForTransition = subDays(new Date(), 2);

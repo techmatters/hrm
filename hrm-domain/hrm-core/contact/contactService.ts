@@ -60,6 +60,7 @@ import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referral-model';
 import { createContactJob } from '../contact-job/contact-job';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
+import { db } from '../connection-pool';
 import {
   type ConversationMedia,
   type NewConversationMedia,
@@ -67,12 +68,12 @@ import {
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
   updateConversationMediaSpecificData,
-} from '../conversation-media/conversationMedia';
+} from '../conversation-media/conversation-media';
 import {
   type Profile,
   getOrCreateProfileWithIdentifier,
 } from '../profile/profileService';
-import { deleteContactReferrals } from '../referral/referralDataAccess';
+import { deleteContactReferrals } from '../referral/referral-data-access';
 import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
@@ -86,7 +87,6 @@ import {
   generateContactPermissionsFilters,
 } from './contactSearchIndex';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
-import { getDbForAccount } from '../dbConnection';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -227,7 +227,6 @@ export const createContact = async (
   skipSearchIndex = false,
 ): Promise<Contact> => {
   let result: Result<CreateError, Contact>;
-  const db = await getDbForAccount(accountSid);
   for (let retries = 1; retries < 4; retries++) {
     result = await ensureRejection<CreateError, Contact>(db.tx)(async conn => {
       const res = await initProfile(conn, accountSid, newContact);
@@ -296,7 +295,7 @@ export const createContact = async (
         result.constraint === 'Identifiers_identifier_accountSid')
     ) {
       if (retries === 1) {
-        console.info(
+        console.log(
           `Retrying createContact due to '${result.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
         );
       } else {
@@ -321,7 +320,7 @@ export const patchContact = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> =>
-  (await getDbForAccount(accountSid)).tx(async conn => {
+  db.tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
     if (referrals) {
@@ -407,7 +406,6 @@ export const addConversationMediaToContact = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> => {
-  const db = await getDbForAccount(accountSid);
   const contactId = parseInt(contactIdString);
   const contact = await getById(accountSid, contactId);
   if (!contact) {

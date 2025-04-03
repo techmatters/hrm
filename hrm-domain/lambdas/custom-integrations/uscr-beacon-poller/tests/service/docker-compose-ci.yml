@@ -26,7 +26,6 @@ services:
 
       RDS_HOSTNAME: host.docker.internal
       RDS_PASSWORD: postgres
-      ENABLE_DB_USER_PER_ACCOUNT: 'false'
 
     env_file:
       - ./.env.service-test

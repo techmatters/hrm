@@ -16,7 +16,7 @@
 
 import each from 'jest-each';
 
-import { db } from '../dbConnection';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import {
   accountSid,
@@ -32,21 +32,61 @@ import {
 } from '../mocks';
 import '../case/caseValidation';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/contact/sql/contact-get-sql';
-import { basicHeaders, headers } from '../server';
+import {
+  basicHeaders,
+  getInternalServer,
+  getRequest,
+  getServer,
+  headers,
+  useOpenRules,
+} from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import * as profilesService from '@tech-matters/hrm-core/profile/profileService';
 
 import { isErr, HrmAccountId } from '@tech-matters/types';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
-import { setupServiceTests } from '../setupServiceTest';
+import { clearAllTables } from '../dbCleanup';
+import { setupTestQueues } from '../sqs';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
+
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
+
+const internalServer = getInternalServer();
+const internalRequest = getRequest(internalServer);
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const getContactByTaskId = (taskId: string, accountSid: HrmAccountId) =>
   db.oneOrNone(selectSingleContactByTaskId('Contacts'), { accountSid, taskId });
 
-const { request, internalRequest } = setupServiceTests();
+beforeAll(async () => {
+  await clearAllTables();
+  await mockingProxy.start();
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSuccessfulTwilioAuthentication(workerSid);
+  await mockSsmParameters(mockttp, [
+    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
+  ]);
+});
+
+afterAll(async () => {
+  await mockingProxy.stop();
+  server.close();
+  internalServer.close();
+});
+
+afterEach(clearAllTables);
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 each([
   {

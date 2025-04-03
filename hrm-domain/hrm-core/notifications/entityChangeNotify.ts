@@ -100,12 +100,7 @@ const publishToSns = async ({
       messageGroupId,
       messageAttributes: { operation: payload.operation },
     };
-    console.debug(
-      'Publishing HRM entity update:',
-      topicArn,
-      entityType,
-      payload.operation,
-    );
+    console.debug('Publishing HRM entity update:', publishParameters);
     return await publishSns(publishParameters);
   } catch (err) {
     console.debug('Error trying to publish message to SNS topic', err, payload);

@@ -80,7 +80,7 @@ export const handler = async ({ region, environment, accountSid, flagId }) => {
     }
 
     const jsonResp = await response.json();
-    console.info(JSON.stringify(jsonResp, null, 2));
+    console.log(JSON.stringify(jsonResp, null, 2));
   } catch (err) {
     console.error(
       `Failed to delete profile flag ${flagId} for account ${accountSid} (${region} ${environment})`,

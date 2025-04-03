@@ -16,19 +16,17 @@
 
 import * as pgPromise from 'pg-promise';
 import { subHours } from 'date-fns';
-import { mockConnection, mockTransaction } from '../mockDb';
-import * as referralDb from '../../referral/referralDataAccess';
+import { mockConnection, mockTransaction } from '../mock-db';
+import * as referralDb from '../../referral/referral-data-access';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
-} from '../../referral/referralDataAccess';
+} from '../../referral/referral-data-access';
 import {
   DatabaseForeignKeyViolationError,
   DatabaseUniqueConstraintViolationError,
   DatabaseError,
 } from '../../sql';
-
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { getSqlStatement } from '@tech-matters/testing';
 
 let conn: pgPromise.ITask<unknown>;
@@ -47,7 +45,7 @@ describe('createReferralRecord', () => {
   };
 
   test('Runs a INSERT against the Referrals table on the DB', async () => {
-    mockTransaction(conn, undefined, 'AC_FAKE');
+    mockTransaction(conn);
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(validReferral);
 
     const result = await referralDb.createReferralRecord()('AC_FAKE', validReferral);
@@ -62,7 +60,7 @@ describe('createReferralRecord', () => {
   });
 
   test('Inserts explicit NULL for resourceName if not provided', async () => {
-    mockTransaction(conn, undefined, 'AC_FAKE');
+    mockTransaction(conn);
 
     const { resourceName, ...withoutResourceName } = validReferral;
     const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(withoutResourceName);
@@ -83,7 +81,7 @@ describe('createReferralRecord', () => {
   });
 
   test('Query throws a foreign key violation against contact ID constraint - throws an OrphanedReferralError', async () => {
-    mockTransaction(conn, undefined, 'AC_FAKE');
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23503';
     dbError.constraint = 'FK_Referrals_Contacts';
@@ -96,7 +94,7 @@ describe('createReferralRecord', () => {
   });
 
   test('Query throws a foreign key violation against other constraint - throws an DatabaseForeignKeyViolationError', async () => {
-    mockTransaction(conn, undefined, 'AC_FAKE');
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23503';
     dbError.constraint = 'Other_Constraint';
@@ -109,7 +107,7 @@ describe('createReferralRecord', () => {
   });
 
   test('Query throws a unique constraint violation against primary key constraint - throws an DuplicateReferralError', async () => {
-    mockTransaction(conn, undefined, 'AC_FAKE');
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23505';
     dbError.constraint = 'Referrals_pkey';
@@ -121,8 +119,8 @@ describe('createReferralRecord', () => {
     ).rejects.toThrow(DuplicateReferralError);
   });
 
-  test('Query throws a unique constraint violation against other constraint - throws an DatabaseUniqueConstraintViolationError', async () => {
-    mockTransaction(conn, undefined, 'AC_FAKE');
+  test('Query throws a foreign key violation against other constraint - throws an DatabaseForeignKeyViolationError', async () => {
+    mockTransaction(conn);
     const dbError: any = new Error();
     dbError.code = '23505';
     dbError.constraint = 'Other_Constraint';
@@ -135,7 +133,7 @@ describe('createReferralRecord', () => {
   });
 
   test('Query throws any other error - throws an DatabaseError wrapping the original', async () => {
-    mockTransaction(conn, undefined, 'AC_FAKE');
+    mockTransaction(conn);
     const originalError: any = new Error();
     originalError.code = 'OTHER_CODE';
     jest.spyOn(conn, 'one').mockRejectedValue(originalError);
@@ -148,8 +146,8 @@ describe('createReferralRecord', () => {
   test('Passed a task - uses task', async () => {
     const mockTx = mockConnection();
     const mockOuterTask = mockConnection();
-    mockTransaction(conn, undefined, 'AC_FAKE');
-    mockTransaction(mockOuterTask, mockTx, 'AC_FAKE');
+    mockTransaction(conn);
+    mockTransaction(mockOuterTask, mockTx);
 
     const txOneSpy = jest.spyOn(mockTx, 'one').mockResolvedValue(validReferral);
     const dbOneSpy = jest.spyOn(conn, 'one').mockResolvedValue(validReferral);

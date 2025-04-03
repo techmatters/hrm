@@ -24,7 +24,6 @@ import {
   ParameterNotFound,
   PutParameterCommand,
   PutParameterCommandInput,
-  ParameterAlreadyExists,
 } from '@aws-sdk/client-ssm';
 
 const convertToEndpoint = (endpointUrl: string) => {
@@ -81,15 +80,6 @@ export class SsmParameterNotFound extends Error {
     // see: https://github.com/microsoft/TypeScript/wiki/FAQ#why-doesnt-extending-built-ins-like-error-array-and-map-work
     Object.setPrototypeOf(this, SsmParameterNotFound.prototype);
     this.name = 'SsmParameterNotFound';
-  }
-}
-export class SsmParameterAlreadyExists extends Error {
-  constructor(message: string) {
-    super(message);
-
-    // see: https://github.com/microsoft/TypeScript/wiki/FAQ#why-doesnt-extending-built-ins-like-error-array-and-map-work
-    Object.setPrototypeOf(this, SsmParameterAlreadyExists.prototype);
-    this.name = 'SsmParameterAlreadyExists';
   }
 }
 
@@ -192,11 +182,6 @@ export const putSsmParameter = async (
   } catch (e) {
     if (e instanceof ParameterNotFound) {
       return;
-    }
-    if (e instanceof ParameterAlreadyExists) {
-      throw new SsmParameterAlreadyExists(
-        `Parameter ${name} already exists and overwrite flag was not set`,
-      );
     }
     throw e;
   }

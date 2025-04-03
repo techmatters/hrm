@@ -17,9 +17,14 @@
 import each from 'jest-each';
 import * as mocks from './mocks';
 import './case/caseValidation';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import * as csamReportsApi from '@tech-matters/hrm-core/csam-report/csam-report';
-import { headers } from './server';
-import { setupServiceTests } from './setupServiceTest';
+import { headers, getRequest, getServer, useOpenRules } from './server';
+
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const { accountSid, workerSid } = mocks;
 
@@ -33,7 +38,33 @@ const csamReport1: CreateTestPayload = {
 
 const { contact1 } = mocks;
 
-const { request } = setupServiceTests();
+const whereTwilioWorkerIdClause = `WHERE "accountSid" = '${accountSid}' AND ("twilioWorkerId" = '${workerSid}' OR "twilioWorkerId" IS NULL)`;
+
+const cleanupContacts = async () =>
+  db.task(t => t.none(`DELETE FROM "Contacts" ${whereTwilioWorkerIdClause}`));
+
+const cleanupCsamReports = async () =>
+  db.task(t => t.none(`DELETE FROM "CSAMReports" ${whereTwilioWorkerIdClause}`));
+
+const cleanupContactJobs = async () =>
+  db.task(t => t.none(`DELETE FROM "ContactJobs" WHERE "accountSid" = '${accountSid}'`));
+
+beforeAll(async () => {
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
+  await cleanupCsamReports();
+  await cleanupContactJobs();
+  await cleanupContacts();
+});
+
+afterAll(async () => {
+  await cleanupCsamReports();
+  await cleanupContactJobs();
+  await cleanupContacts();
+  await mockingProxy.stop();
+  await server.close();
+  console.log('csam reports test cleaned up.');
+});
 
 describe('/csamReports', () => {
   const route = `/v0/accounts/${accountSid}/csamReports`;

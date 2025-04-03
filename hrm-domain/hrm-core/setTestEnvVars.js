@@ -48,4 +48,3 @@ process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX = true;
 process.env.ENABLE_CREATE_CONTACT_JOBS = true;
 process.env.ENABLE_PROCESS_CONTACT_JOBS = true;
 process.env.ENABLE_CLEANUP_JOBS = true;
-process.env.ENABLE_DB_USER_PER_ACCOUNT = true;

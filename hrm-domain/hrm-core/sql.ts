@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { ITask } from 'pg-promise';
+import { db } from './connection-pool';
 import { ErrorResult, newErr } from '@tech-matters/types';
-import { Database } from '@tech-matters/database-connect';
 
 export const OrderByDirection = {
   ascendingNullsLast: 'ASC NULLS LAST',
@@ -168,8 +168,7 @@ export const inferPostgresError = (rawError: Error): DatabaseError => {
 };
 
 export const txIfNotInOne = async <T>(
-  db: Database,
-  task: ITask<T>,
+  task: ITask<T> | undefined,
   work: (y: ITask<T>) => Promise<T>,
 ): Promise<T> => {
   if (task) {

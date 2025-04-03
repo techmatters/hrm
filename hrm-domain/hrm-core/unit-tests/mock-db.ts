@@ -14,14 +14,24 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import * as pgPromise from 'pg-promise';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { connectToPostgres } from '@tech-matters/database-connect';
-import adminConnectionConfig from '@tech-matters/hrm-core/config/db';
+import * as pgMocking from '@tech-matters/testing';
+import { db } from '../connection-pool';
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-export { pgp } from '@tech-matters/database-connect';
+jest.mock('../connection-pool', () => ({
+  db: pgMocking.createMockConnection(),
+  pgp: jest.requireActual('../connection-pool').pgp,
+}));
 
-export const db = connectToPostgres({
-  ...adminConnectionConfig,
-  applicationName: 'hrm-service',
-});
+export const mockConnection = pgMocking.createMockConnection;
+
+export const mockTask = (mockConn: pgPromise.ITask<unknown>) => {
+  pgMocking.mockTask(db, mockConn);
+};
+export const mockTransaction = (
+  mockConn: pgPromise.ITask<unknown>,
+  mockTx: pgPromise.ITask<unknown> | undefined = undefined,
+) => {
+  return pgMocking.mockTransaction(db, mockConn, mockTx);
+};

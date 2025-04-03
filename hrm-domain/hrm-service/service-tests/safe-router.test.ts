@@ -18,9 +18,9 @@ import {
   SafeRouter as MockSafeRouter,
   publicEndpoint as mockPublicEndpoint,
 } from '@tech-matters/hrm-core/permissions/index';
-import { accountSid } from './mocks';
-import { headers } from './server';
-import { setupServiceTests } from './setupServiceTest';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import { accountSid, workerSid } from './mocks';
+import { headers, getRequest, getServer, useOpenRules } from './server';
 
 jest.mock('@tech-matters/hrm-core/routes', () => {
   const mockRouter = MockSafeRouter();
@@ -47,14 +47,25 @@ jest.mock('@tech-matters/hrm-core/routes', () => {
   return {
     HRM_ROUTES: [],
     apiV0: () => mockRouter.expressRouter,
-    adminApiV0: () => mockRouter.expressRouter,
-    internalApiV0: () => mockRouter.expressRouter,
   };
 });
 
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
+
 const baseRoute = `/v0/accounts/${accountSid}`;
 
-const { request } = setupServiceTests();
+beforeAll(async () => {
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
+});
+
+afterAll(done => {
+  mockingProxy.stop().finally(() => {
+    server.close(done);
+  });
+});
 
 test('Unauthorize endpoints with no middleware', async () => {
   const response = await request.get(`${baseRoute}/without-middleware`).set(headers);

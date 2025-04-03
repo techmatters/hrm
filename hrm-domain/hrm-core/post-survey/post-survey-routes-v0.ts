@@ -21,7 +21,7 @@ import {
   actionsMaps,
   RequestWithPermissions,
 } from '../permissions';
-import { NewPostSurvey, PostSurvey } from './postSurveyDataAccess';
+import { NewPostSurvey, PostSurvey } from './post-survey-data-access';
 import { createPostSurvey, getPostSurveysByContactTaskId } from './post-survey';
 
 const postSurveysRouter = SafeRouter();

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { mockConnection, mockTask } from '../mockDb';
+import { mockConnection, mockTask } from '../mock-db';
 import * as pgPromise from 'pg-promise';
 import { subDays } from 'date-fns';
 import {
@@ -22,7 +22,7 @@ import {
   filterByContactTaskId,
   NewPostSurvey,
   create,
-} from '../../post-survey/postSurveyDataAccess';
+} from '../../post-survey/post-survey-data-access';
 let conn: pgPromise.ITask<unknown>;
 const accountSid = 'account-sid';
 
@@ -34,7 +34,7 @@ const baselineDate = new Date(2010, 6, 1);
 
 test('filterByContactTaskId runs query using account and contact task ids, and returns all matching post surveys.', async () => {
   const contactTaskId = 'CONTACT TASK ID';
-  mockTask(conn, accountSid);
+  mockTask(conn);
   const postSurveysFromDB: PostSurvey[] = [
     {
       id: '1',
@@ -73,7 +73,7 @@ test('filterByContactTaskId runs query using account and contact task ids, and r
 
 test('create runs query using account and provided post survey object, and returns created post survey.', async () => {
   const contactTaskId = 'INSERT CONTACT TASK ID';
-  mockTask(conn, accountSid);
+  mockTask(conn);
   const newPostSurvey: NewPostSurvey = {
     contactTaskId,
     taskId: 'TASK 1',

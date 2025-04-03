@@ -16,14 +16,15 @@
 
 import each from 'jest-each';
 import './case/caseValidation';
-import { db } from './dbConnection';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
-import { headers } from './server';
+import { getRequest, getServer, headers, useOpenRules } from './server';
 import * as mocks from './mocks';
 import { ALWAYS_CAN } from './mocks';
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   getOrCreateProfileWithIdentifier,
   Profile,
@@ -31,8 +32,10 @@ import {
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { clearAllTables } from './dbCleanup';
-import { setupServiceTests } from './setupServiceTest';
-import { addSeconds } from 'date-fns';
+
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 
 const { case1, accountSid, workerSid, contact1 } = mocks;
 
@@ -44,7 +47,19 @@ const deleteFromTableById = (table: string) => async (id: number, accountSid: st
 `),
   );
 
-const { request } = setupServiceTests();
+afterAll(done => {
+  mockingProxy.stop().finally(() => {
+    server.close(done);
+  });
+});
+
+beforeAll(async () => {
+  await mockingProxy.start();
+});
+
+beforeEach(async () => {
+  await mockSuccessfulTwilioAuthentication(workerSid);
+});
 
 describe('/profiles', () => {
   const baseRoute = `/v0/accounts/${accountSid}/profiles`;
@@ -559,7 +574,7 @@ describe('/profiles', () => {
               expectStatus: 200,
               expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(new Date(response.body.updatedAt).getTime()).toBeLessThan(
-                  addSeconds(new Date(startTime), 10).getTime(),
+                  startTime,
                 );
               },
             },
@@ -571,7 +586,7 @@ describe('/profiles', () => {
                 expect(response.body.profileFlags).not.toContain(profileFlagId);
                 expect(response.body.updatedBy).toBe(workerSid);
                 expect(new Date(startTime).getTime()).toBeLessThan(
-                  addSeconds(new Date(response.body.updatedAt), 10).getTime(),
+                  new Date(response.body.updatedAt).getTime(),
                 );
               },
             },

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getDbForAccount } from '@tech-matters/hrm-core/dbConnection';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 import { CaseStatusTransitionRule } from './caseStatusTransitionRule';
 import { AccountSID } from '@tech-matters/types';
 
@@ -28,7 +28,6 @@ export const applyTransitionRuleToCases = async (
   accountSid: AccountSID,
   rule: CaseStatusTransitionRule,
 ): Promise<string[]> => {
-  const db = await getDbForAccount(accountSid);
   const records = await db.task(async conn => {
     return conn.manyOrNone(
       `UPDATE "Cases" 

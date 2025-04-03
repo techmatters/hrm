@@ -14,7 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { headers } from '../server';
+import { getRequest, getServer, headers, useOpenRules } from '../server';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import {
   accountSid,
   ALWAYS_CAN,
@@ -27,6 +32,7 @@ import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService
 import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
 import each from 'jest-each';
 import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
+import { clearAllTables } from '../dbCleanup';
 import { addDays, addHours, parseISO } from 'date-fns';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import {
@@ -39,9 +45,34 @@ import {
   isCaseSectionTimelineActivity,
   TimelineActivity,
 } from '@tech-matters/hrm-core/case/caseSection/caseSectionDataAccess';
-import { setupServiceTests } from '../setupServiceTest';
+import { setupTestQueues } from '../sqs';
 
-const { request } = setupServiceTests(workerSid);
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
+
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
+
+beforeAll(async () => {
+  await clearAllTables();
+  await mockingProxy.start(false);
+  await mockSuccessfulTwilioAuthentication(workerSid);
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
+    },
+  ]);
+});
+
+afterAll(async () => {
+  await mockingProxy.stop();
+});
+
+afterEach(async () => {
+  await clearAllTables();
+});
 
 const BASELINE_DATE = new Date(2000, 0, 1);
 
@@ -155,6 +186,8 @@ beforeEach(async () => {
       };
     });
 });
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 const getRoutePath = (
   caseId: string | number,

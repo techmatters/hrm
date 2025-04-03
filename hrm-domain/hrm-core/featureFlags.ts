@@ -23,6 +23,3 @@ export const enablePublishHrmSearchIndex = /^true$/i.test(
 export const enableSnsHrmSearchIndex = /^true$/i.test(
   process.env.ENABLE_SNS_HRM_SEARCH_INDEX,
 );
-export const enableDbUserPerAccount = /^true$/i.test(
-  process.env.ENABLE_DB_USER_PER_ACCOUNT,
-);

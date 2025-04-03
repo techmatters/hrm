@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../dbConnection';
+import { pgp } from '../../connection-pool';
 import type { NewProfileRecord, NewRecordCommons } from './profile-insert-sql';
 
 const VALID_PROFILE_UPDATE_FIELDS = ['name', 'updatedAt', 'updatedBy'];

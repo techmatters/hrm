@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { NewPostSurvey } from '../postSurveyDataAccess';
-import { pgp } from '../../dbConnection';
+import { NewPostSurvey } from '../post-survey-data-access';
+import { pgp } from '../../connection-pool';
 
 export const insertPostSurveySql = (
   postSurvey: NewPostSurvey & { accountSid: string; createdAt: Date; updatedAt: Date },

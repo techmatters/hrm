@@ -33,7 +33,7 @@ import {
   getConversationMediaById,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
-} from '@tech-matters/hrm-core/conversation-media/conversationMedia';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 3650;
 

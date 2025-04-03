@@ -25,11 +25,16 @@ import * as mocks from '../mocks';
 import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import each from 'jest-each';
-import { headers, setRules, useOpenRules } from '../server';
+import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ruleFileActionOverride } from '../permissions-overrides';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMediaDataAccess';
-import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
+import {
+  mockAllSns,
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import {
   cleanupCases,
   cleanupContacts,
@@ -41,16 +46,71 @@ import {
 } from './dbCleanup';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { finalizeContact } from './finalizeContact';
-import { setupServiceTests } from '../setupServiceTest';
+import { clearAllTables } from '../dbCleanup';
+import sqslite from 'sqslite';
+import { SQS } from 'aws-sdk';
 
-const { request } = setupServiceTests();
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
+
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
+const sqsService = sqslite({});
+const sqsClient = new SQS({
+  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
+});
+
+let testQueueUrl: URL;
+
+const cleanup = async () => {
+  await mockSuccessfulTwilioAuthentication(workerSid);
+  await clearAllTables();
+};
+
+beforeAll(async () => {
+  process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] = 'mockAuthToken';
+  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
+});
+
+afterAll(async () => {
+  await sqsService.close();
+});
 
 beforeEach(async () => {
+  await mockingProxy.start();
+  await cleanup();
   const mockttp = await mockingProxy.mockttpServer();
   await mockSsmParameters(mockttp, [
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
+    },
     { pathPattern: /.*\/auth_token$/, valueGenerator: () => 'mockAuthToken' },
+    {
+      pathPattern: /.*\/notifications-sns-topic-arn$/,
+      valueGenerator: () => 'anything',
+    },
   ]);
+  await mockAllSns(mockttp);
+
+  const { QueueUrl } = await sqsClient
+    .createQueue({
+      QueueName: SEARCH_INDEX_SQS_QUEUE_NAME,
+    })
+    .promise();
+
+  testQueueUrl = new URL(QueueUrl!);
+});
+
+afterEach(async () => {
+  await cleanup();
+  await sqsClient
+    .deleteQueue({
+      QueueUrl: testQueueUrl.toString(),
+    })
+    .promise();
+  await mockingProxy.stop();
 });
 
 describe('/contacts/:contactId route', () => {

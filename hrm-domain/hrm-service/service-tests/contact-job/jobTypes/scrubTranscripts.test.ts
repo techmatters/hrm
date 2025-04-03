@@ -15,9 +15,15 @@
  */
 
 import { setInterval } from 'timers';
-import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
+import { getServer, useOpenRules } from '../../server';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../../mocks';
 import { clearAllTables } from '../../dbCleanup';
+import { setupTestQueues } from '../../sqs';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import {
   S3ContactMediaType,
@@ -36,20 +42,18 @@ import {
   pullDueContactJobs,
 } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { receiveSqsMessage } from '@tech-matters/sqs-client';
-import { db } from '../../dbConnection';
-import { setupServiceTests } from '../../setupServiceTest';
+import { db } from '@tech-matters/hrm-core/connection-pool';
 
 const CONTACT_JOB_COMPLETE_SQS_QUEUE = 'mock-completed-contact-jobs';
 const PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE = 'mock-pending-scrub-transcript-jobs';
 const SEARCH_INDEX_QUEUE = 'mock-search-index';
 
-const { sqsClient } = setupServiceTests(workerSid, [
-  CONTACT_JOB_COMPLETE_SQS_QUEUE,
-  PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE,
-  SEARCH_INDEX_QUEUE,
-]);
+useOpenRules();
+const server = getServer();
 
 beforeAll(async () => {
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
   const mockttp = await mockingProxy.mockttpServer();
 
   await mockSsmParameters(mockttp, [
@@ -67,6 +71,13 @@ beforeAll(async () => {
   await clearAllTables();
 });
 
+afterAll(async () => {
+  await mockingProxy.stop();
+  server.close();
+});
+
+afterEach(clearAllTables);
+
 jest.mock('timers', () => {
   return {
     setInterval: jest.fn(),
@@ -74,6 +85,12 @@ jest.mock('timers', () => {
 });
 
 const mockSetInterval = setInterval as jest.MockedFunction<typeof setInterval>;
+
+const { sqsClient } = setupTestQueues([
+  CONTACT_JOB_COMPLETE_SQS_QUEUE,
+  PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE,
+  SEARCH_INDEX_QUEUE,
+]);
 
 const verifyConversationMedia = (
   contact: contactApi.Contact,

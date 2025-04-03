@@ -14,13 +14,25 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
-import { db } from './dbConnection';
-import { create } from '@tech-matters/hrm-core/post-survey/postSurveyDataAccess';
-import { headers, basicHeaders } from './server';
-import { setupServiceTests } from './setupServiceTest';
+import { db } from '@tech-matters/hrm-core/connection-pool';
+import { create } from '@tech-matters/hrm-core/post-survey/post-survey-data-access';
+import { headers, getRequest, getServer, useOpenRules, basicHeaders } from './server';
 
-const { accountSid } = mocks;
+useOpenRules();
+const server = getServer();
+const request = getRequest(server);
+
+const { accountSid, workerSid } = mocks;
+
+const deleteAllPostSurveys = async () =>
+  db.task(t =>
+    t.none(`
+      DELETE FROM "PostSurveys" WHERE "accountSid" = '${accountSid}';
+  `),
+  );
+
 const countPostSurveys = async (
   contactTaskId: string,
   taskId: string,
@@ -36,7 +48,16 @@ const countPostSurveys = async (
   return parseInt(row[0].count);
 };
 
-const { request } = setupServiceTests();
+beforeAll(async () => {
+  await mockingProxy.start();
+  await mockSuccessfulTwilioAuthentication(workerSid);
+  await deleteAllPostSurveys();
+});
+
+afterAll(async () =>
+  Promise.all([mockingProxy.stop(), deleteAllPostSurveys(), server.close()]),
+);
+// afterEach(async () => PostSurvey.destroy(postSurveys2DestroyQuery));
 
 describe('/postSurveys route', () => {
   const route = `/v0/accounts/${accountSid}/postSurveys`;

@@ -18,27 +18,57 @@ import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import '../case/caseValidation';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
-import { headers, setRules, useOpenRules } from '../server';
+import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import {
   isS3StoredTranscript,
   NewConversationMedia,
   S3ContactMediaType,
-} from '@tech-matters/hrm-core/conversation-media/conversationMediaDataAccess';
+} from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
+import {
+  mockingProxy,
+  mockSsmParameters,
+  mockSuccessfulTwilioAuthentication,
+} from '@tech-matters/testing';
 import each from 'jest-each';
 import { ContactJobType } from '@tech-matters/types/ContactJob';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import { selectJobsByContactId } from './db-validations';
-import { setupServiceTests } from '../setupServiceTest';
+import { clearAllTables } from '../dbCleanup';
+import { setupTestQueues } from '../sqs';
+
+const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
 
 useOpenRules();
+const server = getServer({ enableProcessContactJobs: true });
+const request = getRequest(server);
 const route = `/v0/accounts/${accountSid}/contacts`;
+
+const cleanup = async () => {
+  await mockSuccessfulTwilioAuthentication(workerSid);
+  await clearAllTables();
+};
 
 let createdContact: contactDb.Contact;
 
-const { request } = setupServiceTests();
+beforeAll(async () => {
+  await mockingProxy.start();
+});
+
+afterAll(async () => {
+  await Promise.all([clearAllTables(), mockingProxy.stop()]);
+});
 
 beforeEach(async () => {
+  await cleanup();
+  const mockttp = await mockingProxy.mockttpServer();
+  await mockSsmParameters(mockttp, [
+    {
+      pathPattern: /.*\/queue-url-consumer$/,
+      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
+    },
+  ]);
+
   createdContact = await contactApi.createContact(
     accountSid,
     workerSid,
@@ -50,6 +80,12 @@ beforeEach(async () => {
     true,
   );
 });
+
+afterEach(async () => {
+  useOpenRules();
+});
+
+setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 describe('/contacts/:contactId/conversationMedia route', () => {
   const subRoute = contactId => `${route}/${contactId}/conversationMedia`;
