@@ -72,7 +72,7 @@ import {
   type Profile,
   getOrCreateProfileWithIdentifier,
 } from '../profile/profileService';
-import { deleteContactReferrals } from '../referral/referral-data-access';
+import { deleteContactReferrals } from '../referral/referralDataAccess';
 import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,

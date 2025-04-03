@@ -21,7 +21,7 @@ import {
   DuplicateReferralError,
   OrphanedReferralError,
   Referral,
-} from '../../referral/referral-data-access';
+} from '../../referral/referralDataAccess';
 import { subHours } from 'date-fns';
 import { SafeRouter } from '../../permissions';
 import { AssertionError } from 'assert';

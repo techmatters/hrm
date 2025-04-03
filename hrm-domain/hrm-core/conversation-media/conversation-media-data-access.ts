@@ -18,7 +18,7 @@ import { db } from '../dbConnection';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
-} from '../referral/referral-data-access';
+} from '../referral/referralDataAccess';
 import {
   DatabaseForeignKeyViolationError,
   DatabaseUniqueConstraintViolationError,

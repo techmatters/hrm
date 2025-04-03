@@ -19,7 +19,7 @@ import { db } from './dbConnection';
 import { headers } from './server';
 import { addSeconds, subHours } from 'date-fns';
 import { contact1, contact2 } from './mocks';
-import { Referral } from '@tech-matters/hrm-core/referral/referral-data-access';
+import { Referral } from '@tech-matters/hrm-core/referral/referralDataAccess';
 import each from 'jest-each';
 import { setupServiceTests } from './setupServiceTest';
 
