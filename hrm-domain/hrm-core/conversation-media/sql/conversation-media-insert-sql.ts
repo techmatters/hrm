@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
-import type { NewConversationMedia } from '../conversation-media-data-access';
+import { pgp } from '../../dbConnection';
+import type { NewConversationMedia } from '../conversationMediaDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
 
 export const insertConversationMediaSql = (

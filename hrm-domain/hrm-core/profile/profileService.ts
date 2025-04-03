@@ -28,7 +28,6 @@ import {
 import { isFuture } from 'date-fns';
 
 import * as profileDB from './profileDataAccess';
-import { db } from '../connection-pool';
 import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../sql';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { NewProfileSectionRecord } from './sql/profile-sections-sql';
@@ -36,6 +35,7 @@ import type { NewProfileFlagRecord } from './sql/profile-flags-sql';
 import type { NewIdentifierRecord, NewProfileRecord } from './sql/profile-insert-sql';
 import type { ITask } from 'pg-promise';
 import type { HrmAccountId } from '@tech-matters/types';
+import { getDbForAccount } from '../dbConnection';
 
 export {
   Identifier,
@@ -64,8 +64,9 @@ export const createIdentifierAndProfile =
     { user }: { user: TwilioUser },
   ): Promise<Result<DatabaseErrorResult, profileDB.IdentifierWithProfiles>> => {
     const { identifier, profile } = payload;
+    const db = await getDbForAccount(accountSid);
 
-    return txIfNotInOne(task, async t => {
+    return txIfNotInOne(db, task, async t => {
       try {
         const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
           identifier: identifier.identifier,
@@ -144,6 +145,7 @@ export const createProfileWithIdentifierOrError = async (
     profileDB.IdentifierWithProfiles
   >
 > => {
+  const db = await getDbForAccount(accountSid);
   const { identifier, profile } = payload;
   if (!identifier?.identifier) {
     return newErr({
@@ -213,7 +215,7 @@ export const associateProfileToProfileFlag = async (
       message: 'Invalid parameter "validUntil", must be a future date',
     });
   }
-
+  const db = await getDbForAccount(accountSid);
   return db.task(async t => {
     const result = await profileDB.associateProfileToProfileFlag(t)(
       accountSid,
@@ -255,6 +257,7 @@ export const disassociateProfileFromProfileFlag = async (
   },
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileWithRelationships> => {
+  const db = await getDbForAccount(accountSid);
   return db.task(async t => {
     const profile = await profileDB.disassociateProfileFromProfileFlag(t)(
       accountSid,

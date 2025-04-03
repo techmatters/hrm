@@ -19,7 +19,7 @@ import {
   filterByContactTaskId,
   NewPostSurvey,
   PostSurvey,
-} from './post-survey-data-access';
+} from './postSurveyDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
 
 export const createPostSurvey = async (

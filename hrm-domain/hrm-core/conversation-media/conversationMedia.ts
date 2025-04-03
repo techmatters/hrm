@@ -27,4 +27,4 @@ export {
   getById as getConversationMediaById,
   getByContactId as getConversationMediaByContactId,
   updateSpecificData as updateConversationMediaSpecificData,
-} from './conversation-media-data-access';
+} from './conversationMediaDataAccess';

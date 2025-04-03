@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
+import { pgp } from '../../dbConnection';
 import { DateExistsCondition, DateFilter } from '../../sql';
 import { SELECT_CASE_SECTIONS } from './case-sections-sql';
 import { CaseListFilters } from '../caseDataAccess';

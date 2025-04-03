@@ -14,23 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import pgPromise from 'pg-promise';
-import config from './config/db';
+export const CREATE_DYNAMIC_USER_SQL = `
+          CREATE ROLE $<user:name> WITH LOGIN PASSWORD $<password> VALID UNTIL 'infinity';
+          GRANT $<role:name> TO $<user:name>`;
 
-export const pgp = pgPromise({});
-
-export const db = pgp(
-  `postgres://${encodeURIComponent(config.username)}:${encodeURIComponent(
-    config.password,
-  )}@${config.host}:${config.port}/${encodeURIComponent(
-    config.database,
-  )}?&application_name=hrm-service`,
-);
-
-const { builtins } = pgp.pg.types;
-
-[builtins.DATE, builtins.TIMESTAMP, builtins.TIMESTAMPTZ].forEach(typeId => {
-  pgp.pg.types.setTypeParser(typeId, value => {
-    return value === null ? null : new Date(value).toISOString();
-  });
-});
+export const RESET_DYNAMIC_USER_PASSWORD_SQL = `
+    ALTER ROLE $<user:name> WITH PASSWORD $<password>
+`;

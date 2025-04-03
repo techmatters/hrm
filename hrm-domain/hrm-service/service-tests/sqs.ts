@@ -27,7 +27,6 @@ export const setupTestQueues = (queueNames: string[]) => {
   beforeAll(() => sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) }));
   afterAll(() => sqsService.close());
   beforeEach(async () => {
-    console.debug(expect.getState().currentTestName, '\ncreating queues', queueNames);
     await Promise.all(
       queueNames.map(async queueName =>
         sqsClient
@@ -37,10 +36,8 @@ export const setupTestQueues = (queueNames: string[]) => {
           .promise(),
       ),
     );
-    console.debug(expect.getState().currentTestName, '\ncreated queues', queueNames);
   });
   afterEach(async () => {
-    console.debug(expect.getState().currentTestName, '\ndeleting queues', queueNames);
     await Promise.allSettled(
       queueNames.map(async queueName => {
         try {
@@ -65,7 +62,6 @@ export const setupTestQueues = (queueNames: string[]) => {
         }
       }),
     );
-    console.debug(expect.getState().currentTestName, '\ndeleted queues', queueNames);
   });
   return {
     sqsService,

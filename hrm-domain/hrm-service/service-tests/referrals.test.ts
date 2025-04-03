@@ -14,32 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from './mocks';
-import { db } from '@tech-matters/hrm-core/connection-pool';
-import { headers, getRequest, getServer, useOpenRules } from './server';
+import { db } from './dbConnection';
+import { headers } from './server';
 import { addSeconds, subHours } from 'date-fns';
 import { contact1, contact2 } from './mocks';
-import { Referral } from '@tech-matters/hrm-core/referral/referral-data-access';
+import { Referral } from '@tech-matters/hrm-core/referral/referralDataAccess';
 import each from 'jest-each';
+import { setupServiceTests } from './setupServiceTest';
 
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
-
-const { accountSid, workerSid } = mocks;
-
-const clearDownDb = async () =>
-  db.task(t =>
-    t.none(
-      `
-      DELETE FROM "Referrals" WHERE "accountSid" = $<accountSid>;
-      DELETE FROM "ContactJobs" WHERE "accountSid" = $<accountSid>;
-      DELETE FROM "Contacts" WHERE "accountSid" = $<accountSid>;
-    `,
-      { accountSid },
-    ),
-  );
+const { accountSid } = mocks;
 
 const referralExistsInDb = async (referral: Referral) => {
   const record = await db.task(conn =>
@@ -57,11 +41,7 @@ const referralExistsInDb = async (referral: Referral) => {
 
 let existingContactId: string, otherExistingContactId: string;
 
-beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  await clearDownDb();
-});
+const { request } = setupServiceTests();
 
 beforeEach(async () => {
   const responses = await Promise.all([
@@ -71,12 +51,6 @@ beforeEach(async () => {
   [existingContactId, otherExistingContactId] = responses.map(r => r.body.id);
   console.log('Contact IDs for test:', existingContactId, otherExistingContactId);
 });
-
-afterEach(async () => {
-  await clearDownDb();
-});
-
-afterAll(async () => Promise.all([mockingProxy.stop(), server.close()]));
 
 const route = `/v0/accounts/${accountSid}/referrals`;
 

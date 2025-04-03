@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../connection-pool';
+import { getDbForAccount, pgp } from '../dbConnection';
 import { getPaginationElements } from '../search';
 import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
@@ -105,6 +105,7 @@ export type CaseListFilters = {
 };
 
 export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRecord> => {
+  const db = await getDbForAccount(caseRecord.accountSid);
   return db.task(async connection => {
     const statement = `${pgp.helpers.insert(
       {
@@ -134,6 +135,7 @@ export const getById = async (
   contactViewPermissions: TKConditionsSets<'contact'>,
   onlyEssentialData?: boolean,
 ): Promise<CaseRecord | undefined> => {
+  const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
     const statement = selectSingleCaseByIdSql(
       'Cases',
@@ -186,6 +188,7 @@ const generalizedSearchQueryFunction = <T>(
     filters,
     onlyEssentialData,
   ) => {
+    const db = await getDbForAccount(accountSid);
     const { limit, offset, sortBy, sortDirection } =
       getPaginationElements(listConfiguration);
     const orderClause = [{ sortBy, sortDirection }];
@@ -262,6 +265,7 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
 );
 
 export const deleteById = async (id: CaseService['id'], accountSid: AccountSID) => {
+  const db = await getDbForAccount(accountSid);
   return db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
 };
 
@@ -273,6 +277,7 @@ export const updateStatus = async (
   { isSupervisor }: TwilioUser,
   contactViewPermissions: TKConditionsSets<'contact'>,
 ) => {
+  const db = await getDbForAccount(accountSid);
   const statementValues = {
     accountSid,
     twilioWorkerSid: updatedBy,
@@ -299,6 +304,7 @@ export const updateCaseInfo = async (
   infoPatch: CaseRecord['info'],
   updatedBy: string,
 ) => {
+  const db = await getDbForAccount(accountSid);
   return db.tx(async transaction => {
     return transaction.oneOrNone(PATCH_CASE_INFO_BY_ID, {
       infoPatch,
@@ -322,7 +328,7 @@ export const searchByCaseIds = generalizedSearchQueryFunction<{
   };
 });
 
-export const streamCasesForReindexing = ({
+export const streamCasesForReindexing = async ({
   accountSid,
   filters,
   user,
@@ -364,6 +370,7 @@ export const streamCasesForReindexing = ({
     },
   );
 
+  const db = await getDbForAccount(accountSid);
   // Expose the readable stream to the caller as a promise for further pipelining
   return new Promise(resolve => {
     db.stream(qs, resultStream => {

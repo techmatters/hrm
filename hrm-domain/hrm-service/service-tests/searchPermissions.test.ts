@@ -17,11 +17,8 @@
 import formatISO from 'date-fns/formatISO';
 import subMinutes from 'date-fns/subMinutes';
 import { randomBytes } from 'crypto';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-
-import { db } from '@tech-matters/hrm-core/connection-pool';
 import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
-import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+import { headers, setRules, useOpenRules } from './server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as contactService from '@tech-matters/hrm-core/contact/contactService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
@@ -30,13 +27,14 @@ import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { AccountSID, WorkerSID } from '@tech-matters/types';
 import { ALWAYS_CAN } from './mocks';
-
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from './setupServiceTest';
 
 const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
 const anotherUserTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
+
+const { request } = setupServiceTests(userTwilioWorkerId);
+
 const rawJson: ContactRawJson = {
   callType: 'Silent',
   categories: {},
@@ -112,32 +110,6 @@ const createCase = async (twilioWorkerId: WorkerSID) => {
     twilioWorkerId,
   );
 };
-
-const cleanUpDB = async () => {
-  await db.task(async t => {
-    await Promise.all([
-      t.none(`DELETE FROM "Contacts";`),
-      t.none(`DELETE FROM "Cases";`),
-    ]);
-  });
-};
-
-beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(userTwilioWorkerId);
-});
-
-afterAll(async () => {
-  await Promise.all([mockingProxy.stop(), server.close()]);
-});
-
-beforeEach(async () => {
-  useOpenRules();
-});
-
-afterEach(async () => {
-  await cleanUpDB();
-});
 
 const overridePermissions = <T extends TargetKind>(
   key: keyof RulesFile,
