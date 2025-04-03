@@ -16,7 +16,7 @@
 
 import * as mocks from './mocks';
 import { db } from './dbConnection';
-import { create } from '@tech-matters/hrm-core//post-survey/postSurveyDataAccess';
+import { create } from '@tech-matters/hrm-core/post-survey/postSurveyDataAccess';
 import { headers, basicHeaders } from './server';
 import { setupServiceTests } from './setupServiceTest';
 
