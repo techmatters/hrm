@@ -27,7 +27,8 @@ import {
   RESET_DYNAMIC_USER_PASSWORD_SQL,
 } from './createDynamicUserSql';
 
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 15;
+const PENDING_PASSWORD = '__pending';
 
 export type Database = ReturnType<typeof connectToPostgres>;
 
@@ -40,6 +41,56 @@ export const connectToPostgresWithDynamicUser = (
   let lazyAdminConnection: Database | undefined = undefined;
   const connectionPoolMap: Record<string, Database> = {};
 
+  const createNewUser = async (
+    user: string,
+    passwordSsmKey: string,
+    overwriteSsm: boolean,
+  ) => {
+    const password = randomUUID();
+    // Don't cache the value in case another process is trying to create the same user at the same time
+    // If that happens the password could be overwritten by the time we use it
+    try {
+      await putSsmParameter(passwordSsmKey, '__pending', {
+        cacheValue: false,
+        overwrite: overwriteSsm,
+      });
+      console.debug('Set dynamic user in SSM', user, password);
+    } catch (ssmUpdateError) {}
+    if (!lazyAdminConnection) {
+      lazyAdminConnection = connectToPostgres({
+        ...adminConnectionConfig,
+        poolSize: 1,
+      });
+    }
+    try {
+      await lazyAdminConnection.none(CREATE_DYNAMIC_USER_SQL, {
+        role,
+        password,
+        user,
+      });
+      console.debug('Created dynamic user', user, password);
+    } catch (dbError) {
+      if (
+        dbError instanceof Error &&
+        dbError.message === `role "${user}" already exists`
+      ) {
+        console.warn(
+          `User ${user} already exists but had no SSM parameter set for their password, resetting the database user password to match the one in SSM. [THIS IS EXPECTED IN SERVICE TESTS]`,
+        );
+        await lazyAdminConnection.none(RESET_DYNAMIC_USER_PASSWORD_SQL, {
+          password,
+          user,
+        });
+        console.debug('Updated dynamic user', user, password);
+      }
+    }
+    await putSsmParameter(passwordSsmKey, password, {
+      cacheValue: false,
+      overwrite: true,
+    });
+    return password;
+  };
+
   const connect = async (dynamicUserKey: string, attempt: number) => {
     if (!connectionPoolMap[dynamicUserKey]) {
       let password: string;
@@ -48,55 +99,31 @@ export const connectToPostgresWithDynamicUser = (
       try {
         password = await getSsmParameter(passwordSsmKey);
         console.debug('Read dynamic user', user, password);
+        if (password === PENDING_PASSWORD) {
+          if (attempt >= MAX_ATTEMPTS) {
+            // Another process or task in this process is creating the user, we need to wait for it to finish
+            console.debug(
+              `Waiting for another process to create the user ${user}, check ${
+                attempt + 1
+              } / ${MAX_ATTEMPTS}`,
+              user,
+            );
+            setTimeout(() => connect(dynamicUserKey, attempt + 1), 200);
+          } else {
+            console.error(
+              `Timed out waiting for another task to create the user ${user}, creating it now. This could cause temporary connection issues if the other task finishes after this one.`,
+            );
+            password = await createNewUser(user, passwordSsmKey, true);
+          }
+        }
       } catch (error) {
         if (error instanceof SsmParameterNotFound) {
-          password = randomUUID();
-          // Don't cache the value in case another process is trying to create the same user at the same time
-          // If that happens the password could be overwritten by the time we use it
           try {
-            await putSsmParameter(passwordSsmKey, password, { cacheValue: false });
-            console.debug('Set dynamic user in SSM', user, password);
-          } catch (ssmUpdateError) {
-            if (ssmUpdateError instanceof SsmParameterAlreadyExists) {
-              // If the parameter already exists, it was set after we initially read it, so we need to read it again
-              if (attempt < MAX_ATTEMPTS) {
-                console.info(
-                  'Tried to set a new password parameter but it already exists. This indicates something set it after we read it. Reading it again.',
-                );
-                return connect(dynamicUserKey, attempt + 1);
-              } else
-                throw new Error(
-                  `Failed to optimistically read/set password in SSM after ${MAX_ATTEMPTS} attempts. It should only ever fail once.`,
-                );
-            }
-          }
-          if (!lazyAdminConnection) {
-            lazyAdminConnection = connectToPostgres({
-              ...adminConnectionConfig,
-              poolSize: 1,
-            });
-          }
-          try {
-            await lazyAdminConnection.none(CREATE_DYNAMIC_USER_SQL, {
-              role,
-              password,
-              user,
-            });
-            console.debug('Created dynamic user', user, password);
-          } catch (dbError) {
-            if (
-              dbError instanceof Error &&
-              dbError.message === `role "${user}" already exists`
-            ) {
-              console.warn(
-                `User ${user} already exists but had no SSM parameter set for their password, resetting the database user password to match the one in SSM. [THIS IS EXPECTED IN SERVICE TESTS]`,
-              );
-              await lazyAdminConnection.none(RESET_DYNAMIC_USER_PASSWORD_SQL, {
-                password,
-                user,
-              });
-              console.debug('Updated dynamic user', user, password);
-            }
+            password = await createNewUser(user, passwordSsmKey, false);
+          } catch (createUserError) {
+            if (createUserError instanceof SsmParameterAlreadyExists) {
+              return connect(dynamicUserKey, attempt + 1);
+            } else throw error;
           }
         } else throw error;
       }
