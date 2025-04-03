@@ -58,6 +58,9 @@ export const connectToPostgresWithDynamicUser = (
             if (ssmUpdateError instanceof SsmParameterAlreadyExists) {
               // If the parameter already exists, it was set after we initially read it, so we need to read it again
               if (attempt < MAX_ATTEMPTS) {
+                console.info(
+                  'Tried to set a new password parameter but it already exists. This indicates something set it after we read it. Reading it again.',
+                );
                 return connect(dynamicUserKey, attempt + 1);
               } else
                 throw new Error(

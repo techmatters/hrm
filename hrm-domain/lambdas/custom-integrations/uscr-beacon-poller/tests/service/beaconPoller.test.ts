@@ -274,10 +274,12 @@ beforeEach(async () => {
   await putSsmParameter(
     LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
     subDays(BASELINE_DATE, 1).toISOString(),
+    { overwrite: true },
   );
   await putSsmParameter(
     LAST_CASE_REPORT_SEEN_PARAMETER_NAME,
     subDays(BASELINE_DATE, 1).toISOString(),
+    { overwrite: true },
   );
 });
 
