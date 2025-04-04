@@ -173,12 +173,13 @@ export const getSsmParameter = async (
 export const putSsmParameter = async (
   name: string,
   value: string,
-  { cacheValue = true, overwrite = false } = {},
+  { cacheValue = true, overwrite = false, secure = false } = {},
 ) => {
   const params: PutParameterCommandInput = {
     Name: name,
     Value: value,
     Overwrite: overwrite,
+    Type: secure ? 'SecureString' : 'String',
   };
   const command = new PutParameterCommand(params);
   try {

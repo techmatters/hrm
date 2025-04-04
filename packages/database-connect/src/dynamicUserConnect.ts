@@ -52,6 +52,7 @@ export const connectToPostgresWithDynamicUser = (
     await putSsmParameter(passwordSsmKey, PENDING_PASSWORD, {
       cacheValue: false,
       overwrite: overwriteSsm,
+      secure: true,
     });
     if (!lazyAdminConnection) {
       lazyAdminConnection = connectToPostgres({
@@ -82,6 +83,7 @@ export const connectToPostgresWithDynamicUser = (
     await putSsmParameter(passwordSsmKey, password, {
       cacheValue: false,
       overwrite: true,
+      secure: true,
     });
     return password;
   };
