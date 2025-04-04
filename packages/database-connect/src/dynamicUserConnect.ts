@@ -52,6 +52,7 @@ export const connectToPostgresWithDynamicUser = (
     await putSsmParameter(passwordSsmKey, PENDING_PASSWORD, {
       cacheValue: false,
       overwrite: overwriteSsm,
+      secure: true,
     });
     if (!lazyAdminConnection) {
       lazyAdminConnection = connectToPostgres({
@@ -77,11 +78,12 @@ export const connectToPostgresWithDynamicUser = (
           password,
           user,
         });
-      }
+      } else throw dbError;
     }
     await putSsmParameter(passwordSsmKey, password, {
       cacheValue: false,
       overwrite: true,
+      secure: true,
     });
     return password;
   };
@@ -120,7 +122,7 @@ export const connectToPostgresWithDynamicUser = (
             if (createUserError instanceof SsmParameterAlreadyExists) {
               // Another process created the parameter after we initally checked, go around again
               return connect(dynamicUserKey, attempt + 1);
-            } else throw error;
+            } else throw createUserError;
           }
         } else throw error;
       }
