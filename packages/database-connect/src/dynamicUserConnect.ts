@@ -77,7 +77,7 @@ export const connectToPostgresWithDynamicUser = (
           password,
           user,
         });
-      }
+      } else throw dbError;
     }
     await putSsmParameter(passwordSsmKey, password, {
       cacheValue: false,
@@ -120,7 +120,7 @@ export const connectToPostgresWithDynamicUser = (
             if (createUserError instanceof SsmParameterAlreadyExists) {
               // Another process created the parameter after we initally checked, go around again
               return connect(dynamicUserKey, attempt + 1);
-            } else throw error;
+            } else throw createUserError;
           }
         } else throw error;
       }
