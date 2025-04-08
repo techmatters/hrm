@@ -326,12 +326,20 @@ export const case2: Partial<CaseService> = {
   accountSid,
 };
 
-export const casePopulated = {
+export const case3 = {
   ...case1,
   info: {
     summary: 'something summery',
     followUpDate: '2005-03-15T00:00:00.000Z',
     operatingArea: 'North',
+  },
+};
+
+export const casePopulated = {
+  ...case1,
+  info: {
+    summary: 'something summery',
+    followUpDate: '2005-03-15T00:00:00.000Z',
   },
 };
 

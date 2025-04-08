@@ -210,12 +210,6 @@ const newCaseRouter = (isPublic: boolean) => {
         ...searchCriteria
       } = req.body || {};
 
-      console.log(
-        `\x1b[35m>>> 1 Searching cases with criteria: \x1b[0m`,
-        searchCriteria,
-        filters,
-      );
-
       const searchResults = await caseApi.searchCases(
         hrmAccountId,
         req.query || {},

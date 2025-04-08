@@ -348,10 +348,6 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     orderByClauses,
     onlyEssentialData,
   ) => {
-    console.log(
-      `\x1b[35m>>> 3. CaseServiceSql selectSearchCaseBaseQuery >>>\x1b[0m`,
-      `\x1b[36m${JSON.stringify(filters)}\x1b[0m`,
-    );
     const whereSql = [
       whereClause,
       ...listCasesPermissionWhereClause(

@@ -46,7 +46,7 @@ import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
 import { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { setupServiceTests } from '../setupServiceTest';
 
-const { case1, contact1, accountSid, workerSid, casePopulated, case2 } = mocks;
+const { case1, contact1, accountSid, workerSid, case2, case3 } = mocks;
 const { request } = setupServiceTests(workerSid);
 
 type InsertSampleCaseSettings = {
@@ -1248,10 +1248,7 @@ describe('/cases route', () => {
                     sections: {},
                   },
                   {
-                    case: {
-                      ...casePopulated,
-                      info: { ...casePopulated.info, operatingArea: 'North' },
-                    },
+                    case: { ...case3, info: { ...case3.info, operatingArea: 'North' } },
                     sections: {},
                   },
                   {
@@ -1291,10 +1288,7 @@ describe('/cases route', () => {
                     sections: {},
                   },
                   {
-                    case: {
-                      ...casePopulated,
-                      info: { ...casePopulated.info, operatingArea: 'North' },
-                    },
+                    case: { ...case3, info: { ...case3.info, operatingArea: 'North' } },
                     sections: {},
                   },
                 ],
@@ -1322,15 +1316,15 @@ describe('/cases route', () => {
                 ...SIMPLE_SAMPLE_CONFIG,
                 cases: [
                   {
-                    case: { ...case1, info: { ...case1.info } }, // No followUpDate
+                    case: { ...case1, info: { ...case1.info } },
                     sections: {},
                   },
                   {
-                    case: { ...case2, info: { ...case2.info } }, // Has followUpDate
+                    case: { ...case2, info: { ...case2.info } },
                     sections: {},
                   },
                   {
-                    case: { ...casePopulated, info: { ...casePopulated.info } }, // Has followUpDate
+                    case: { ...case3, info: { ...case3.info } },
                     sections: {},
                   },
                 ],
@@ -1362,7 +1356,7 @@ describe('/cases route', () => {
                 ...SIMPLE_SAMPLE_CONFIG,
                 cases: [
                   {
-                    case: { ...case1, info: { ...case1.info } }, // No followUpDate
+                    case: { ...case1, info: { ...case1.info } },
                     sections: {},
                   },
                   {
@@ -1374,11 +1368,8 @@ describe('/cases route', () => {
                   },
                   {
                     case: {
-                      ...casePopulated,
-                      info: {
-                        ...casePopulated.info,
-                        followUpDate: '2005-03-15T00:00:00.000Z',
-                      },
+                      ...case3,
+                      info: { ...case3.info, followUpDate: '2005-03-15T00:00:00.000Z' },
                     },
                     sections: {},
                   },
