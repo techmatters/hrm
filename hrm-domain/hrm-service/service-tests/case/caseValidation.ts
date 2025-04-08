@@ -41,14 +41,18 @@ export const validateCaseListResponse = (
   }
 
   if (expectedCaseAndContactModels.length > 0 && actual.body.cases.length > 0) {
-    const hasExpectedCases = expectedCaseAndContactModels.some(({ case: expectedCase }) => {
-      if (expectedCase.info?.operatingArea) {
-        return actual.body.cases.some(actualCase => 
-          actualCase.info?.operatingArea === expectedCase.info.operatingArea);
-      }
-      return true;
-    });
-    
+    const hasExpectedCases = expectedCaseAndContactModels.some(
+      ({ case: expectedCase }) => {
+        if (expectedCase.info?.operatingArea) {
+          return actual.body.cases.some(
+            actualCase =>
+              actualCase.info?.operatingArea === expectedCase.info.operatingArea,
+          );
+        }
+        return true;
+      },
+    );
+
     expect(hasExpectedCases).toBe(true);
   }
 };
