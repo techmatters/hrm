@@ -306,7 +306,9 @@ export const populateCaseSections = async (
 export const case1 = {
   status: 'open',
   helpline: 'helpline',
-  info: {},
+  info: {
+    operatingArea: 'East',
+  },
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
@@ -315,10 +317,22 @@ export const case1 = {
 export const case2: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
-  info: {},
+  info: {
+    operatingArea: 'West',
+    followUpDate: '2022-01-15T00:00:00.000Z',
+  },
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
+};
+
+export const casePopulated = {
+  ...case1,
+  info: {
+    summary: 'something summery',
+    followUpDate: '2005-03-15T00:00:00.000Z',
+    operatingArea: 'North',
+  },
 };
 
 export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
@@ -438,13 +452,6 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   ],
 };
 
-export const casePopulated = {
-  ...case1,
-  info: {
-    summary: 'something summery',
-    followUpDate: '2005-03-15T00:00:00.000Z',
-  },
-};
 export const conversationMedia: NewConversationMedia[] = [
   {
     storeType: 'S3',
