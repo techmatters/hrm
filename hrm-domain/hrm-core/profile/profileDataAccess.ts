@@ -39,7 +39,6 @@ import {
   txIfNotInOne,
 } from '../sql';
 import * as profileGetSql from './sql/profile-get-sql';
-import { db } from '../connection-pool';
 import {
   type NewProfileSectionRecord,
   getProfileSectionByIdSql,
@@ -71,6 +70,7 @@ import type {
   ProfileFlag,
   ProfileSection,
 } from '@tech-matters/hrm-types';
+import { getDbForAccount } from '../dbConnection';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -95,7 +95,8 @@ export const getIdentifierWithProfiles =
     identifierId,
   }: IdentifierParams): Promise<IdentifierWithProfiles> => {
     const params = { accountSid, identifier, identifierId };
-    return txIfNotInOne<IdentifierWithProfiles>(task, async t => {
+    const db = await getDbForAccount(accountSid);
+    return txIfNotInOne<IdentifierWithProfiles>(db, task, async t => {
       /* We run two queries here, one to get the identifier and one to get the profiles
            because writing a single PERFORMANT query against tables that could eventually
            have millions of rows is hard. There is probably a better way to do this...
@@ -129,6 +130,7 @@ export const createIdentifier =
     accountSid: HrmAccountId,
     identifier: NewIdentifierRecord & Pick<RecordCommons, 'createdBy'>,
   ): Promise<Identifier> => {
+    const db = await getDbForAccount(accountSid);
     const now = new Date();
 
     const statement = insertIdentifierSql({
@@ -139,7 +141,7 @@ export const createIdentifier =
       updatedBy: null,
     });
 
-    return txIfNotInOne<Identifier>(task, conn => conn.one(statement));
+    return txIfNotInOne<Identifier>(db, task, conn => conn.one(statement));
   };
 
 export const createProfile =
@@ -148,6 +150,7 @@ export const createProfile =
     accountSid: HrmAccountId,
     profile: NewProfileRecord & Pick<RecordCommons, 'createdBy'>,
   ): Promise<Profile> => {
+    const db = await getDbForAccount(accountSid);
     const now = new Date();
 
     const statement = insertProfileSql({
@@ -158,7 +161,7 @@ export const createProfile =
       updatedBy: null,
     });
 
-    return txIfNotInOne<Profile>(task, t => t.one(statement));
+    return txIfNotInOne<Profile>(db, task, t => t.one(statement));
   };
 
 export const updateProfileById =
@@ -167,9 +170,10 @@ export const updateProfileById =
     accountSid: HrmAccountId,
     payload: Partial<NewProfileRecord> & { id: number; updatedBy: Profile['updatedBy'] },
   ): Promise<Profile> => {
+    const db = await getDbForAccount(accountSid);
     const { id, name, updatedBy } = payload;
     const now = new Date();
-    return txIfNotInOne<Profile>(task, async t => {
+    return txIfNotInOne<Profile>(db, task, async t => {
       return t.oneOrNone(
         updateProfileByIdSql({ name: name, updatedAt: now, updatedBy }),
         {
@@ -187,7 +191,8 @@ export const associateProfileToIdentifier =
     profileId: number,
     identifierId: number,
   ): Promise<IdentifierWithProfiles> => {
-    return txIfNotInOne(task, async t => {
+    const db = await getDbForAccount(accountSid);
+    return txIfNotInOne(db, task, async t => {
       const now = new Date();
       await t.none(
         associateProfileToIdentifierSql({
@@ -209,7 +214,8 @@ export const associateProfileToIdentifier =
 export const getProfileById =
   (task?) =>
   async (accountSid: string, profileId: number): Promise<ProfileWithRelationships> => {
-    return txIfNotInOne<ProfileWithRelationships>(task, async t => {
+    const db = await getDbForAccount(accountSid);
+    return txIfNotInOne<ProfileWithRelationships>(db, task, async t => {
       return t.oneOrNone(profileGetSql.getProfileByIdSql, { accountSid, profileId });
     });
   };
@@ -230,6 +236,7 @@ export const listProfiles = async (
   listConfiguration: ProfileListConfiguration,
   { filters }: SearchParameters,
 ): Promise<{ profiles: ProfileWithRelationships[]; count: number }> => {
+  const db = await getDbForAccount(accountSid);
   const { limit, offset, sortBy, sortDirection } =
     getPaginationElements(listConfiguration);
   const orderClause = [{ sortBy, sortDirection }];
@@ -277,58 +284,60 @@ export const associateProfileToProfileFlag =
           | 'ProfileAlreadyFlaggedError'
         >,
       ProfileWithRelationships
-    >(work => txIfNotInOne(task, work))(async t => {
-      try {
-        await t.none(
-          associateProfileToProfileFlagSql({
+    >(async work => txIfNotInOne(await getDbForAccount(accountSid), task, work))(
+      async t => {
+        try {
+          await t.none(
+            associateProfileToProfileFlagSql({
+              accountSid,
+              profileId,
+              profileFlagId,
+              createdAt: now,
+              updatedAt: now,
+              validUntil,
+            }),
+          );
+
+          await t.none(TOUCH_PROFILE_SQL, {
+            updatedBy: user.workerSid,
             accountSid,
             profileId,
-            profileFlagId,
-            createdAt: now,
-            updatedAt: now,
-            validUntil,
-          }),
-        );
-
-        await t.none(TOUCH_PROFILE_SQL, {
-          updatedBy: user.workerSid,
-          accountSid,
-          profileId,
-        });
-
-        const profile = await getProfileById(t)(accountSid, profileId);
-        return newOkFromData(profile);
-      } catch (e) {
-        console.error(e);
-        const errorResult = inferPostgresErrorResult(e);
-        if (isDatabaseForeignKeyViolationErrorResult(errorResult)) {
-          if (
-            errorResult.constraint ===
-            'ProfilesToProfileFlags_profileFlagId_ProfileFlags_id_fk'
-          ) {
-            return newErr({
-              error: 'ProfileFlagNotFoundError',
-              message: `[${accountSid}] Profile flag with id ${profileFlagId} not found - trying to set for profile ${profileId}.`,
-            });
-          }
-          if (
-            errorResult.constraint === 'ProfilesToProfileFlags_profileId_Profiles_id_fk'
-          ) {
-            return newErr({
-              error: 'ProfileNotFoundError',
-              message: `[${accountSid}] Profile with id ${profileId} not found - when trying to set flag ${profileFlagId} on it.`,
-            });
-          }
-        }
-        if (isDatabaseUniqueConstraintViolationErrorResult(errorResult)) {
-          return newErr({
-            error: 'ProfileAlreadyFlaggedError',
-            message: `[${accountSid}] Profile with id ${profileId} already has flag ${profileFlagId} set on it.`,
           });
+
+          const profile = await getProfileById(t)(accountSid, profileId);
+          return newOkFromData(profile);
+        } catch (e) {
+          console.error(e);
+          const errorResult = inferPostgresErrorResult(e);
+          if (isDatabaseForeignKeyViolationErrorResult(errorResult)) {
+            if (
+              errorResult.constraint ===
+              'ProfilesToProfileFlags_profileFlagId_ProfileFlags_id_fk'
+            ) {
+              return newErr({
+                error: 'ProfileFlagNotFoundError',
+                message: `[${accountSid}] Profile flag with id ${profileFlagId} not found - trying to set for profile ${profileId}.`,
+              });
+            }
+            if (
+              errorResult.constraint === 'ProfilesToProfileFlags_profileId_Profiles_id_fk'
+            ) {
+              return newErr({
+                error: 'ProfileNotFoundError',
+                message: `[${accountSid}] Profile with id ${profileId} not found - when trying to set flag ${profileFlagId} on it.`,
+              });
+            }
+          }
+          if (isDatabaseUniqueConstraintViolationErrorResult(errorResult)) {
+            return newErr({
+              error: 'ProfileAlreadyFlaggedError',
+              message: `[${accountSid}] Profile with id ${profileId} already has flag ${profileFlagId} set on it.`,
+            });
+          }
+          return errorResult;
         }
-        return errorResult;
-      }
-    });
+      },
+    );
   };
 
 export const disassociateProfileFromProfileFlag =
@@ -339,7 +348,7 @@ export const disassociateProfileFromProfileFlag =
     profileFlagId: number,
     { user }: { user: TwilioUser },
   ): Promise<ProfileWithRelationships> =>
-    txIfNotInOne(task, async t => {
+    txIfNotInOne(await getDbForAccount(accountSid), task, async t => {
       const { count } = await t.oneOrNone<{ count: string }>(
         disassociateProfileFromProfileFlagSql,
         {
@@ -364,6 +373,7 @@ export const disassociateProfileFromProfileFlag =
 export const getProfileFlagsForAccount = async (
   accountSid: HrmAccountId,
 ): Promise<ProfileFlag[]> => {
+  const db = await getDbForAccount(accountSid);
   return db.task<ProfileFlag[]>(async t =>
     t.manyOrNone(getProfileFlagsByAccountSql, { accountSid }),
   );
@@ -373,6 +383,7 @@ export const updateProfileFlagById = async (
   accountSid: HrmAccountId,
   payload: NewProfileFlagRecord & { id: number; updatedBy: ProfileFlag['updatedBy'] },
 ): Promise<ProfileFlag> => {
+  const db = await getDbForAccount(accountSid);
   const { id, name, updatedBy } = payload;
   const now = new Date();
   return db.task<ProfileFlag>(async t => {
@@ -387,6 +398,7 @@ export const deleteProfileFlagById = async (
   profileFlagId: number,
   accountSid: HrmAccountId,
 ): Promise<ProfileFlag> => {
+  const db = await getDbForAccount(accountSid);
   return db.task<ProfileFlag>(async t =>
     t.oneOrNone(deleteProfileFlagByIdSql, {
       accountSid,
@@ -399,6 +411,7 @@ export const getProfileFlagsByIdentifier = async (
   accountSid: HrmAccountId,
   identifier: string,
 ): Promise<ProfileFlag[]> => {
+  const db = await getDbForAccount(accountSid);
   return db.task<ProfileFlag[]>(async t =>
     t.manyOrNone(getProfileFlagsByIdentifierSql, { accountSid, identifier }),
   );
@@ -408,6 +421,7 @@ export const createProfileFlag = async (
   accountSid: HrmAccountId,
   payload: NewProfileFlagRecord & { createdBy: ProfileFlag['createdBy'] },
 ): Promise<ProfileFlag> => {
+  const db = await getDbForAccount(accountSid);
   const now = new Date();
   const statement = insertProfileFlagSql({
     name: payload.name,
@@ -427,6 +441,7 @@ export const createProfileSection =
     accountSid: string,
     payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
   ): Promise<ProfileSection> => {
+    const db = await getDbForAccount(accountSid);
     const now = new Date();
     const statement = insertProfileSectionSql({
       ...payload,
@@ -437,7 +452,7 @@ export const createProfileSection =
       updatedBy: null,
     });
 
-    return txIfNotInOne(task, async t => {
+    return txIfNotInOne(db, task, async t => {
       const section = await t.oneOrNone<ProfileSection>(statement);
 
       if (section) {
@@ -464,8 +479,9 @@ export const updateProfileSectionById =
       updatedBy: ProfileSection['updatedBy'];
     },
   ): Promise<ProfileSection> => {
+    const db = await getDbForAccount(accountSid);
     const now = new Date();
-    return txIfNotInOne(task, async t => {
+    return txIfNotInOne(db, task, async t => {
       const section = await t.oneOrNone<ProfileSection>(updateProfileSectionByIdSql, {
         accountSid,
         profileId: payload.profileId,
@@ -492,6 +508,6 @@ export const getProfileSectionById = async (
   accountSid: string,
   { profileId, sectionId }: { profileId: Profile['id']; sectionId: ProfileSection['id'] },
 ): Promise<ProfileSection> =>
-  db.task<ProfileSection>(async t =>
+  (await getDbForAccount(accountSid)).task<ProfileSection>(async t =>
     t.oneOrNone(getProfileSectionByIdSql, { accountSid, profileId, sectionId }),
   );

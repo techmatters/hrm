@@ -23,7 +23,7 @@ import { assertExhaustive } from '@tech-matters/types';
 import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
-} from '../conversation-media/conversation-media';
+} from '../conversation-media/conversationMedia';
 import { TResult, newErr, newOk, HrmAccountId } from '@tech-matters/types';
 import { RulesFile } from './rulesMap';
 

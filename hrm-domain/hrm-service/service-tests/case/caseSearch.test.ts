@@ -24,7 +24,7 @@ import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import { CaseListFilters } from '@tech-matters/hrm-core/case/caseDataAccess';
 import { DateExistsCondition } from '@tech-matters/hrm-core/sql';
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 import {
   fillNameAndPhone,
   validateCaseListResponse,
@@ -32,7 +32,6 @@ import {
 } from './caseValidation';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import * as mocks from '../mocks';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import {
@@ -40,17 +39,15 @@ import {
   connectContactToCase,
   createContact,
 } from '@tech-matters/hrm-core/contact/contactService';
-import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
+import { headers, setRules, useOpenRules } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
 import { HrmAccountId, WorkerSID } from '@tech-matters/types';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from '../setupServiceTest';
 
 const { case1, contact1, accountSid, workerSid, casePopulated, case2 } = mocks;
+const { request } = setupServiceTests(workerSid);
 
 type InsertSampleCaseSettings = {
   sampleSize: number;
@@ -170,25 +167,6 @@ const insertSampleCases = async ({
   }
   return createdCasesAndContacts;
 };
-
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(workerSid);
-});
-
-afterEach(async () => {
-  await db.none(`DELETE FROM "ConversationMedias"`);
-  await db.none(`DELETE FROM "Contacts"`);
-  await db.none(`DELETE FROM "CaseSections"`);
-  await db.none(`DELETE FROM "Cases"`);
-  useOpenRules();
-});
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;

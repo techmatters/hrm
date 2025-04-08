@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../dbConnection';
 import {
   accountSid,
   ALWAYS_CAN,
@@ -29,37 +29,15 @@ import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
-import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
+import { headers, setRules } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { deleteContactById } from './dbCleanup';
 import { actionsMaps } from '@tech-matters/hrm-core/permissions/index';
 import { TKConditionsSets } from '@tech-matters/hrm-core/permissions/rulesMap';
 import each from 'jest-each';
-import { clearAllTables } from '../dbCleanup';
+import { setupServiceTests } from '../setupServiceTest';
 
-const server = getServer();
-const request = getRequest(server);
-
-beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  await clearAllTables();
-});
-
-afterAll(async () => {
-  await mockingProxy.stop();
-  server.close();
-});
-
-beforeEach(() => {
-  useOpenRules();
-  jest.clearAllMocks();
-});
-
-afterEach(async () => {
-  await clearAllTables();
-});
+const { request } = setupServiceTests();
 
 const route = `/v0/accounts/${accountSid}/contacts`;
 

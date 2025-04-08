@@ -17,10 +17,9 @@
 import formatISO from 'date-fns/formatISO';
 import subMinutes from 'date-fns/subMinutes';
 import { randomBytes } from 'crypto';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
-import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
+import { headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as contactService from '@tech-matters/hrm-core/contact/contactService';
 import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
@@ -33,9 +32,7 @@ import { addMinutes, isAfter, parseISO, subDays, subHours } from 'date-fns';
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
 import { connectContactToCase } from '@tech-matters/hrm-core/contact/contactService';
-
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from '../setupServiceTest';
 
 const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
@@ -112,24 +109,6 @@ const createContact = async (
   );
 };
 
-beforeAll(async () => {
-  await clearAllTables();
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(userTwilioWorkerId);
-});
-
-afterAll(async () => {
-  await Promise.all([mockingProxy.stop(), server.close()]);
-});
-
-beforeEach(async () => {
-  useOpenRules();
-});
-
-afterEach(async () => {
-  await clearAllTables();
-});
-
 const overridePermissions = <T extends TargetKind>(
   key: keyof RulesFile,
   permissions: TKConditionsSets<T>,
@@ -143,6 +122,8 @@ const overridePermissions = <T extends TargetKind>(
 
 const overrideViewContactPermissions = (permissions: TKConditionsSets<'contact'>) =>
   overridePermissions('viewContact', permissions);
+
+const { request } = setupServiceTests(userTwilioWorkerId);
 
 describe('isOwner', () => {
   type TestCase = {

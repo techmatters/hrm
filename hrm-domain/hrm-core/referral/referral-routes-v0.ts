@@ -21,7 +21,7 @@ import {
   DuplicateReferralError,
   OrphanedReferralError,
   Referral,
-} from './referral-data-access';
+} from './referralDataAccess';
 import createError from 'http-errors';
 import { isValid, parseISO } from 'date-fns';
 

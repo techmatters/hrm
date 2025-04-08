@@ -18,7 +18,7 @@
 
 import each from 'jest-each';
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from './dbConnection';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import {
   createContact,
@@ -28,47 +28,18 @@ import {
 import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 
-import {
-  mockingProxy,
-  mockSsmParameters,
-  mockSuccessfulTwilioAuthentication,
-} from '@tech-matters/testing';
 import * as mocks from './mocks';
 import { ruleFileActionOverride } from './permissions-overrides';
-import { headers, getRequest, getServer, setRules, useOpenRules } from './server';
+import { headers, setRules, useOpenRules } from './server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { ALWAYS_CAN } from './mocks';
 import { casePopulated } from './mocks';
-import { setupTestQueues } from './sqs';
-const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from './setupServiceTest';
 
 const { case1, case2, accountSid, workerSid } = mocks;
 
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {
-  await mockingProxy.start();
-});
-
-beforeEach(async () => {
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  const mockttp = await mockingProxy.mockttpServer();
-  await mockSsmParameters(mockttp, [
-    {
-      pathPattern: /.*\/queue-url-consumer$/,
-      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
-    },
-  ]);
-});
+const { request } = setupServiceTests(workerSid);
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteContactById = (id: number, accountSid: string) =>
@@ -87,8 +58,6 @@ const deleteJobsByContactId = (contactId: number, accountSid: string) =>
       WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
     `),
   );
-
-setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;

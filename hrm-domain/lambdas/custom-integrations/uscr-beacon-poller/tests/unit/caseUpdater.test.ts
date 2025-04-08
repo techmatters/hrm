@@ -15,7 +15,10 @@
  */
 
 import { NewCaseSection } from '../../src/types';
-import { addSectionToAseloCase } from '../../src/caseUpdater';
+import {
+  addDependentSectionToAseloCase,
+  addSectionToAseloCase,
+} from '../../src/caseUpdater';
 import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
 
@@ -30,24 +33,29 @@ type Chicken = {
   boc: 'boc' | 'bwaaaaak' | 'bocARGGH';
 };
 
-describe('addSectionToAseloCase', () => {
-  const verifyAddSectionRequest = (
-    caseId: string,
-    expectedCaseSection: NewCaseSection,
-  ) => {
-    expect(mockFetch).toHaveBeenCalledWith(
-      `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/${caseId}/sections/chicken`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${process.env.STATIC_KEY}`,
-        },
-        body: JSON.stringify(expectedCaseSection),
+const verifyAddSectionRequest = (caseId: string, expectedCaseSection: NewCaseSection) => {
+  expect(mockFetch).toHaveBeenCalledWith(
+    `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${process.env.ACCOUNT_SID}/cases/${caseId}/sections/chicken`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${process.env.STATIC_KEY}`,
       },
-    );
-  };
+      body: JSON.stringify(expectedCaseSection),
+    },
+  );
+};
 
+beforeEach(async () => {
+  jest.clearAllMocks();
+  mockFetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({ message: 'OK' }),
+  } as Response);
+});
+
+describe('addSectionToAseloCase', () => {
   const chickenAdder = addSectionToAseloCase('chicken', (chicken: Chicken) => {
     return {
       caseId: chicken.case_id,
@@ -61,21 +69,16 @@ describe('addSectionToAseloCase', () => {
     };
   });
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ message: 'OK' }),
-    } as Response);
-  });
-
-  test('most beacon incident report properties map to equivalents in the Aselo case section', async () => {
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+  test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API, returning the updated last_seen', async () => {
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     verifyAddSectionRequest('1234', {
       sectionId: '5678',
       sectionTypeSpecificData: {
@@ -92,12 +95,15 @@ describe('addSectionToAseloCase', () => {
       status: 409,
       text: async () => 'Already exists',
     } as Response);
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'warn',
@@ -122,12 +128,15 @@ describe('addSectionToAseloCase', () => {
       status: 404,
       text: async () => 'No case',
     } as Response);
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'warn',
@@ -152,12 +161,15 @@ describe('addSectionToAseloCase', () => {
       status: 500,
       text: async () => 'No case',
     } as Response);
-    const result = await chickenAdder({
-      case_id: '1234',
-      id: '5678',
-      boc: 'bocARGGH',
-      chicken_counter: 42,
-    });
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'error',
@@ -182,7 +194,202 @@ describe('addSectionToAseloCase', () => {
       status: 500,
       text: async () => 'No case',
     } as Response);
-    const result = await chickenAdder({
+    const result = await chickenAdder(
+      {
+        case_id: undefined as any,
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
+    if (isErr(result)) {
+      expect(result.error).toEqual({
+        level: 'error',
+        lastUpdated: '42',
+        sectionId: '5678',
+        type: 'CaseNotSpecified',
+      });
+    } else {
+      throw new AssertionError({ message: 'Expected error', actual: result });
+    }
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+  test('Last updated value equals last seen value - skips, returning ok result without adding a section', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 409,
+      text: async () => 'No case',
+    } as Response);
+    const result = await chickenAdder(
+      {
+        case_id: '1234',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '42',
+    );
+    if (isOk(result)) {
+      expect(result.data).toEqual('42');
+    } else {
+      throw new AssertionError({ message: 'Did not expect error', actual: result });
+    }
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+  test('Error caused by something other than HTTP response code', async () => {
+    const thrownError = new Error('boom');
+    mockFetch.mockImplementation(() => {
+      throw thrownError;
+    });
+    const result = await chickenAdder(
+      {
+        case_id: 'boc',
+        id: '5678',
+        boc: 'bocARGGH',
+        chicken_counter: 42,
+      },
+      '40',
+    );
+    if (isErr(result)) {
+      expect(result.error).toEqual({
+        level: 'error',
+        thrownError,
+        type: 'UnexpectedError',
+      });
+      expect(result.message).toEqual('boom');
+    } else {
+      throw new AssertionError({ message: 'Expected error', actual: result });
+    }
+  });
+});
+
+describe('addDependentSectionToAseloCase', () => {
+  const dependentChickenAdder = addDependentSectionToAseloCase(
+    'chicken',
+    (chicken: Chicken) => {
+      return {
+        caseId: chicken.case_id,
+        section: {
+          sectionId: chicken.id,
+          sectionTypeSpecificData: {
+            boc: chicken.boc,
+          },
+        },
+      };
+    },
+  );
+  test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API', async () => {
+    const result = await dependentChickenAdder({
+      case_id: '1234',
+      id: '5678',
+      boc: 'bocARGGH',
+      chicken_counter: 42,
+    });
+    verifyAddSectionRequest('1234', {
+      sectionId: '5678',
+      sectionTypeSpecificData: {
+        boc: 'bocARGGH',
+      },
+    });
+    if (isOk(result)) {
+      expect(result.unwrap()).not.toBeDefined();
+    } else throw new AssertionError({ message: 'Did not expect error', actual: result });
+  });
+  test('Service responds with 409 - returns warn level error result', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 409,
+      text: async () => 'Already exists',
+    } as Response);
+    const result = await dependentChickenAdder({
+      case_id: '1234',
+      id: '5678',
+      boc: 'bocARGGH',
+      chicken_counter: 42,
+    });
+    if (isErr(result)) {
+      expect(result.error).toEqual({
+        level: 'warn',
+        caseId: '1234',
+        sectionId: '5678',
+        type: 'SectionExists',
+      });
+    } else {
+      throw new AssertionError({ message: 'Expected error', actual: result });
+    }
+    verifyAddSectionRequest('1234', {
+      sectionId: '5678',
+      sectionTypeSpecificData: {
+        boc: 'bocARGGH',
+      },
+    });
+  });
+  test('Service responds with 404 - returns warn level error result', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 404,
+      text: async () => 'No case',
+    } as Response);
+    const result = await dependentChickenAdder({
+      case_id: '1234',
+      id: '5678',
+      boc: 'bocARGGH',
+      chicken_counter: 42,
+    });
+    if (isErr(result)) {
+      expect(result.error).toEqual({
+        level: 'warn',
+        caseId: '1234',
+        sectionId: '5678',
+        type: 'CaseNotFound',
+      });
+    } else {
+      throw new AssertionError({ message: 'Expected error', actual: result });
+    }
+    verifyAddSectionRequest('1234', {
+      sectionId: '5678',
+      sectionTypeSpecificData: {
+        boc: 'bocARGGH',
+      },
+    });
+  });
+  test('Service responds with 500 - returns error level error result', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => 'No case',
+    } as Response);
+    const result = await dependentChickenAdder({
+      case_id: '1234',
+      id: '5678',
+      boc: 'bocARGGH',
+      chicken_counter: 42,
+    });
+    if (isErr(result)) {
+      expect(result.error).toEqual({
+        level: 'error',
+        status: 500,
+        type: 'UnexpectedHttpError',
+        body: 'No case',
+      });
+    } else {
+      throw new AssertionError({ message: 'Expected error', actual: result });
+    }
+    verifyAddSectionRequest('1234', {
+      sectionId: '5678',
+      sectionTypeSpecificData: {
+        boc: 'bocARGGH',
+      },
+    });
+  });
+  test('No case id provided - returns error without requesting', async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => 'No case',
+    } as Response);
+    const result = await dependentChickenAdder({
       case_id: undefined as any,
       id: '5678',
       boc: 'bocARGGH',
@@ -191,7 +398,6 @@ describe('addSectionToAseloCase', () => {
     if (isErr(result)) {
       expect(result.error).toEqual({
         level: 'error',
-        lastUpdated: '42',
         sectionId: '5678',
         type: 'CaseNotSpecified',
       });
@@ -205,7 +411,7 @@ describe('addSectionToAseloCase', () => {
     mockFetch.mockImplementation(() => {
       throw thrownError;
     });
-    const result = await chickenAdder({
+    const result = await dependentChickenAdder({
       case_id: 'boc',
       id: '5678',
       boc: 'bocARGGH',

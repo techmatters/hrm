@@ -9,6 +9,7 @@
     ".": "./dist/index.js"
   },
   "dependencies" : {
+    "@tech-matters/database-connect": "^1.0.0",
     "@tech-matters/hrm-core": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/twilio-client": "^1.0.0",

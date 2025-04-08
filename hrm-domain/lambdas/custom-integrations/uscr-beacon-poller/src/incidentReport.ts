@@ -14,16 +14,25 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { NewCaseSectionInfo } from './types';
+import { ItemProcessor, NewCaseSectionInfo } from './types';
+import {
+  addDependentSectionToAseloCase,
+  addSectionToAseloCase,
+  updateAseloCaseOverview,
+} from './caseUpdater';
+import { isErr, isOk, newErr } from '@tech-matters/types';
+import { Responder, responderToCaseSection } from './responder';
 
 export type IncidentReport = {
   id: number;
-  case_id: number;
-  contact_id: string;
+  class: string;
+  priority: string;
+  case_id: string | null;
+  contact_id: string | null;
   description: string;
   address: string;
   category_id: number;
-  incident_class_id: number;
+  category: string | null;
   status: string;
   caller_name: string;
   caller_number: string;
@@ -31,75 +40,119 @@ export type IncidentReport = {
   updated_at: string;
   latitude: number;
   longitude: number;
-  responder_name: string;
   transport_destination: string;
-  no_clients_transported: number;
-  en_route_timestamp: string;
-  on_scene_timestamp: string;
-  additional_resources_timestamp: string;
-  transport_timestamp: string;
-  destination_arrival_timestamp: string;
-  incident_complete_timestamp: string;
-  activation_interval: string;
-  en_route_interval: string;
-  scene_arrival_interval: string;
-  triage_interval: string;
-  transport_interval: string;
-  total_incident_interval: string;
+  number_of_patient_transports: number;
+  responders: Responder[];
+  tags: string[];
+  comment: string | null;
+  // Incident intervals
+  activation_interval: number | null;
+  enroute_time_interval: number | null;
+  scene_arrival_interval: number | null;
+  triage_interval: number | null;
+  total_scene_interval: number | null;
+  transport_interval: number | null;
+  total_incident_interval: number | null;
 };
 
 export const incidentReportToCaseSection = ({
   id,
   case_id,
   updated_at,
-  incident_class_id,
-  category_id,
+  created_at,
+  category,
   latitude,
   longitude,
   address,
-  responder_name,
   transport_destination,
-  no_clients_transported,
-  en_route_timestamp,
-  on_scene_timestamp,
-  additional_resources_timestamp,
-  transport_timestamp,
-  destination_arrival_timestamp,
-  incident_complete_timestamp,
+  number_of_patient_transports,
   activation_interval,
-  en_route_interval,
+  enroute_time_interval,
   scene_arrival_interval,
   triage_interval,
   transport_interval,
+  total_scene_interval,
   total_incident_interval,
+  tags,
+  comment,
 }: IncidentReport): NewCaseSectionInfo => {
   return {
-    caseId: case_id.toString(),
+    caseId: case_id as string,
     lastUpdated: updated_at,
     section: {
       sectionId: id.toString(),
       sectionTypeSpecificData: {
-        operatingArea: incident_class_id,
-        incidentType: category_id,
+        beaconIncidentId: id.toString(),
+        incidentCreationTimestamp: created_at,
+        incidentType: category,
         latitude,
         longitude,
         locationAddress: address,
-        responderName: responder_name,
+        numberOfClientsTransported: number_of_patient_transports,
         transportDestination: transport_destination,
-        numberOfClientsTransported: no_clients_transported,
-        enrouteTimestamp: en_route_timestamp,
-        onSceneTimestamp: on_scene_timestamp,
-        additionalResourcesTimestamp: additional_resources_timestamp,
-        transportTimestamp: transport_timestamp,
-        destinationArrivalTimestamp: destination_arrival_timestamp,
-        incidentCompleteTimestamp: incident_complete_timestamp,
         incidentActivationInterval: activation_interval,
-        enrouteInterval: en_route_interval,
+        enrouteInterval: enroute_time_interval,
         sceneArrivalInterval: scene_arrival_interval,
         triageInterval: triage_interval,
         transportInterval: transport_interval,
-        totalIncidentInterval: total_incident_interval,
+        totalSceneInterval: total_scene_interval,
+        totalIncidentTime: total_incident_interval,
+        tags,
+        comments: comment,
       },
     },
   };
+};
+
+const addIncidentReportSectionToAseloCase = addSectionToAseloCase(
+  'incidentReport',
+  incidentReportToCaseSection,
+);
+
+export const addIncidentReportSectionsToAseloCase: ItemProcessor<IncidentReport> = async (
+  incidentReport: IncidentReport,
+  lastSeen: string,
+) => {
+  const incidentReportResult = await addIncidentReportSectionToAseloCase(
+    incidentReport,
+    lastSeen,
+  );
+
+  if (isOk(incidentReportResult)) {
+    const addResponderToAseloCase = addDependentSectionToAseloCase(
+      'assignedResponder',
+      (responder: Responder) =>
+        responderToCaseSection(
+          incidentReport.case_id!,
+          incidentReport.id,
+          responder,
+          lastSeen,
+        ),
+    );
+    const responderResults = await Promise.all([
+      ...(incidentReport.responders ?? []).map(responder =>
+        addResponderToAseloCase(responder),
+      ),
+    ]);
+    const overviewPatchResult = await updateAseloCaseOverview(incidentReport.case_id!, {
+      operatingArea: incidentReport.class,
+      priority: incidentReport.priority,
+    });
+    const errors = [...responderResults, overviewPatchResult].filter(result =>
+      isErr(result),
+    );
+    if (errors.length) {
+      return newErr({
+        message: 'Failed to add responders from incident report to Aselo case',
+        error: {
+          type: 'AggregateError',
+          level: 'error',
+          lastUpdated: incidentReportResult.unwrap(),
+          errors,
+        },
+      });
+    }
+  }
+
+  return incidentReportResult;
 };

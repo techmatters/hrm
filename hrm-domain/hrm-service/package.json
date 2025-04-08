@@ -65,6 +65,7 @@
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
+    "@tech-matters/database-connect": "^1.0.0",
     "@tech-matters/testing": "^1.0.0",
     "@tech-matters/twilio-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0",

@@ -22,8 +22,11 @@ export const mockAllSns = async (mockttp: Mockttp) => {
   await mockttp
     .forPost(/http:\/\/mock-sns(.*)/)
     .always()
-    .thenJson(200, {
-      MessageId: randomUUID(),
-    });
+    .thenReply(
+      200,
+      `<a><PublishResult>
+<MessageId>${randomUUID()}</MessageId>
+</PublishResult></a>`,
+    );
   console.info('Mocked SNS on mock-ssm');
 };

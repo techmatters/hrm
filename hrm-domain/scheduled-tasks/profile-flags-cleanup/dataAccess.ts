@@ -14,9 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db } from '@tech-matters/hrm-core/connection-pool';
 import { TResult, newErr, newOk } from '@tech-matters/types';
 import { systemUser } from '@tech-matters/twilio-worker-auth';
+import { connectToPostgres } from '@tech-matters/database-connect';
+import adminConnectionConfig from '@tech-matters/hrm-core/config/db';
+
+export const db = connectToPostgres({
+  ...adminConnectionConfig,
+  applicationName: 'profile-flags-cleanup-scheduled-task',
+});
 
 export const cleanupProfileFlags = async (): Promise<
   TResult<'InternalServerError', { count: number }>

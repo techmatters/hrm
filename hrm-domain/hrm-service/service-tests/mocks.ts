@@ -18,7 +18,7 @@ import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
 import {
   NewConversationMedia,
   S3ContactMediaType,
-} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+} from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';

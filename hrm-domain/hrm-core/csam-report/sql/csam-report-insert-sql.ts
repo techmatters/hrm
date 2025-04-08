@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
-import { NewCSAMReport } from '../csam-report-data-access';
+import { pgp } from '../../dbConnection';
+import { NewCSAMReport } from '../csamReportDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
 
 export const insertCSAMReportSql = (

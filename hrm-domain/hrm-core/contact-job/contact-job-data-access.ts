@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../connection-pool';
+import { getDbForAdmin, pgp } from '../dbConnection';
 import type { Contact } from '../contact/contactDataAccess';
 import {
   ADD_FAILED_ATTEMPT_PAYLOAD,
@@ -32,7 +32,7 @@ import {
 import { txIfNotInOne } from '../sql';
 
 import { ContactJobType, HrmAccountId } from '@tech-matters/types';
-import { ConversationMedia } from '../conversation-media/conversation-media';
+import { ConversationMedia } from '../conversation-media/conversationMedia';
 import { ITask } from 'pg-promise';
 
 // Reflects the actual shape of a record in the ContactJobs table
@@ -78,7 +78,7 @@ export type ScrubContactTranscriptJob = Job<
 export type ContactJob = RetrieveContactTranscriptJob | ScrubContactTranscriptJob;
 
 export const getContactJobById = async (jobId: number): Promise<ContactJobRecord> =>
-  db.task(async connection =>
+  getDbForAdmin().task(async connection =>
     connection.oneOrNone<ContactJobRecord>(selectSingleContactJobByIdSql('ContactJobs'), {
       jobId,
     }),
@@ -126,7 +126,7 @@ export const completeContactJob = async ({
   const cleanupStatus = wasSuccessful
     ? ContactJobCleanupStatus.PENDING
     : ContactJobCleanupStatus.NOT_READY;
-  return db.task(tx => {
+  return getDbForAdmin().task(tx => {
     return tx.oneOrNone(COMPLETE_JOB_SQL, { id, completionPayload, cleanupStatus });
   });
 };
@@ -157,6 +157,7 @@ export const createContactJob =
       'ContactJobs',
     )} RETURNING *`;
     const { id, jobType, contactId, accountSid } = await txIfNotInOne<ContactJob>(
+      getDbForAdmin(),
       tk,
       conn => conn.one(insertSql),
     );
@@ -170,7 +171,7 @@ export const appendFailedAttemptPayload = async (
   attemptNumber: number,
   attemptPayload: any,
 ): Promise<ContactJob> =>
-  db.task(tx =>
+  getDbForAdmin().task(tx =>
     tx.oneOrNone<ContactJob>(ADD_FAILED_ATTEMPT_PAYLOAD, {
       contactJobId,
       attemptNumber,
@@ -182,7 +183,7 @@ export const getPendingCleanupJobs = async (
   accountSid: string,
   cleanupRetentionDays: number,
 ): Promise<RetrieveContactTranscriptJob[]> => {
-  return db.task(tx =>
+  return getDbForAdmin().task(tx =>
     tx.manyOrNone<RetrieveContactTranscriptJob>(PENDING_CLEANUP_JOBS_SQL, {
       accountSid,
       cleanupRetentionDays,
@@ -191,7 +192,9 @@ export const getPendingCleanupJobs = async (
 };
 
 export const getPendingCleanupJobAccountSids = async (): Promise<string[]> => {
-  const ret = await db.task(tx => tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL));
+  const ret = await getDbForAdmin().task(tx =>
+    tx.manyOrNone(PENDING_CLEANUP_JOB_ACCOUNT_SIDS_SQL),
+  );
   return ret?.map(r => r.accountSid);
 };
 
@@ -199,13 +202,13 @@ export const deleteContactJob = async (
   accountSid: HrmAccountId,
   jobId: number,
 ): Promise<void> => {
-  return db.task(tx => tx.none(DELETE_JOB_SQL, { accountSid, jobId }));
+  return getDbForAdmin().task(tx => tx.none(DELETE_JOB_SQL, { accountSid, jobId }));
 };
 
 export const setContactJobCleanupActive = async (jobId: number): Promise<void> => {
-  return db.task(tx => tx.none(UPDATE_JOB_CLEANUP_ACTIVE_SQL, { jobId }));
+  return getDbForAdmin().task(tx => tx.none(UPDATE_JOB_CLEANUP_ACTIVE_SQL, { jobId }));
 };
 
 export const setContactJobCleanupPending = async (jobId: number): Promise<void> => {
-  return db.task(tx => tx.none(UPDATE_JOB_CLEANUP_PENDING_SQL, { jobId }));
+  return getDbForAdmin().task(tx => tx.none(UPDATE_JOB_CLEANUP_PENDING_SQL, { jobId }));
 };
