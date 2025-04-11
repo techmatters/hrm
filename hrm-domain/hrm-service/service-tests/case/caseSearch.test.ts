@@ -46,7 +46,7 @@ import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
 import { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { setupServiceTests } from '../setupServiceTest';
 
-const { case1, contact1, accountSid, workerSid } = mocks;
+const { case1, contact1, accountSid, workerSid, case2, case3 } = mocks;
 const { request } = setupServiceTests(workerSid);
 
 type InsertSampleCaseSettings = {
@@ -1227,6 +1227,217 @@ describe('/cases route', () => {
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
               expectedCasesAndContacts: () => [],
               expectedTotalCount: 0,
+            },
+            {
+              description: 'should filter cases by operatingArea using caseInfoFilters',
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              body: {
+                caseInfoFilters: {
+                  operatingArea: ['East'],
+                },
+              },
+              sampleConfig: {
+                ...SIMPLE_SAMPLE_CONFIG,
+                cases: [
+                  {
+                    case: { ...case1, info: { ...case1.info, operatingArea: 'East' } },
+                    sections: {},
+                  },
+                  {
+                    case: { ...case2, info: { ...case2.info, operatingArea: 'West' } },
+                    sections: {},
+                  },
+                  {
+                    case: { ...case3, info: { ...case3.info, operatingArea: 'North' } },
+                    sections: {},
+                  },
+                  {
+                    case: { ...case1, info: { ...case1.info, operatingArea: 'East' } },
+                    sections: {},
+                  },
+                ],
+              },
+              expectedCasesAndContacts: sampleCasesAndContacts =>
+                sampleCasesAndContacts
+                  .filter(
+                    ccc =>
+                      ccc.case.accountSid === accounts[0] &&
+                      ccc.case.info?.operatingArea === 'East',
+                  )
+                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              expectedTotalCount: 2,
+            },
+            {
+              description:
+                'should filter cases by multiple operatingArea values using caseInfoFilters',
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              body: {
+                caseInfoFilters: {
+                  operatingArea: ['East', 'North'],
+                },
+              },
+              sampleConfig: {
+                ...SIMPLE_SAMPLE_CONFIG,
+                cases: [
+                  {
+                    case: { ...case1, info: { ...case1.info, operatingArea: 'East' } },
+                    sections: {},
+                  },
+                  {
+                    case: { ...case2, info: { ...case2.info, operatingArea: 'West' } },
+                    sections: {},
+                  },
+                  {
+                    case: { ...case3, info: { ...case3.info, operatingArea: 'North' } },
+                    sections: {},
+                  },
+                ],
+              },
+              expectedCasesAndContacts: sampleCasesAndContacts =>
+                sampleCasesAndContacts
+                  .filter(
+                    ccc =>
+                      ccc.case.accountSid === accounts[0] &&
+                      ['East', 'North'].includes(ccc.case.info?.operatingArea),
+                  )
+                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              expectedTotalCount: 2,
+            },
+            {
+              description:
+                'should filter cases where followUpDate does not exist using caseInfoFilters',
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              body: {
+                caseInfoFilters: {
+                  followUpDate: { option: 'WITHOUT_DATE', exists: 'MUST_NOT_EXIST' },
+                },
+              },
+              sampleConfig: {
+                ...SIMPLE_SAMPLE_CONFIG,
+                cases: [
+                  {
+                    case: { ...case1, info: { ...case1.info } },
+                    sections: {},
+                  },
+                  {
+                    case: { ...case2, info: { ...case2.info } },
+                    sections: {},
+                  },
+                  {
+                    case: { ...case3, info: { ...case3.info } },
+                    sections: {},
+                  },
+                ],
+              },
+              expectedCasesAndContacts: sampleCasesAndContacts =>
+                sampleCasesAndContacts
+                  .filter(
+                    ccc =>
+                      ccc.case.accountSid === accounts[0] && !ccc.case.info?.followUpDate,
+                  )
+                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              expectedTotalCount: 1,
+            },
+            {
+              description:
+                'should filter cases by followUpDate range using caseInfoFilters',
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              body: {
+                caseInfoFilters: {
+                  followUpDate: {
+                    option: 'CUSTOM_DATE_RANGE',
+                    exists: 'MUST_EXIST',
+                    from: '2005-01-01T00:00:00.000Z',
+                    to: '2006-01-01T00:00:00.000Z',
+                  },
+                },
+              },
+              sampleConfig: {
+                ...SIMPLE_SAMPLE_CONFIG,
+                cases: [
+                  {
+                    case: { ...case1, info: { ...case1.info } },
+                    sections: {},
+                  },
+                  {
+                    case: {
+                      ...case2,
+                      info: { ...case2.info, followUpDate: '2022-01-15T00:00:00.000Z' },
+                    },
+                    sections: {},
+                  },
+                  {
+                    case: {
+                      ...case3,
+                      info: { ...case3.info, followUpDate: '2005-03-15T00:00:00.000Z' },
+                    },
+                    sections: {},
+                  },
+                ],
+              },
+              expectedCasesAndContacts: sampleCasesAndContacts =>
+                sampleCasesAndContacts
+                  .filter(ccc => {
+                    if (ccc.case.accountSid !== accounts[0]) return false;
+                    const followUpDate = ccc.case.info?.followUpDate;
+                    if (!followUpDate) return false;
+                    const date = new Date(followUpDate);
+                    return (
+                      date >= new Date('2005-01-01T00:00:00.000Z') &&
+                      date <= new Date('2006-01-01T00:00:00.000Z')
+                    );
+                  })
+                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              expectedTotalCount: 1,
+            },
+            {
+              description: 'should combine caseInfoFilters with other filters correctly',
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              body: {
+                helpline: helplines[0],
+                caseInfoFilters: {
+                  operatingArea: ['East'],
+                },
+              },
+              sampleConfig: {
+                ...SIMPLE_SAMPLE_CONFIG,
+                cases: [
+                  {
+                    case: {
+                      ...case1,
+                      helpline: helplines[0],
+                      info: { ...case1.info, operatingArea: 'East' },
+                    },
+                    sections: {},
+                  },
+                  {
+                    case: {
+                      ...case1,
+                      helpline: helplines[1],
+                      info: { ...case1.info, operatingArea: 'East' },
+                    },
+                    sections: {},
+                  },
+                  {
+                    case: {
+                      ...case2,
+                      helpline: helplines[0],
+                      info: { ...case2.info, operatingArea: 'West' },
+                    },
+                    sections: {},
+                  },
+                ],
+              },
+              expectedCasesAndContacts: sampleCasesAndContacts =>
+                sampleCasesAndContacts
+                  .filter(
+                    ccc =>
+                      ccc.case.accountSid === accounts[0] &&
+                      ccc.case.helpline === helplines[0] &&
+                      ccc.case.info?.operatingArea === 'East',
+                  )
+                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              expectedTotalCount: 1,
             },
           ];
 

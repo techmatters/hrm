@@ -93,13 +93,14 @@ export type CategoryFilter = {
 };
 
 export type CaseListFilters = {
-  counsellors?: string[];
   statuses?: string[];
   excludedStatuses?: string[];
+  counsellors?: string[];
+  categories?: CategoryFilter[];
+  customFilter?: { [key: string]: string[] };
   createdAt?: DateFilter;
   updatedAt?: DateFilter;
   followUpDate?: DateFilter;
-  categories?: CategoryFilter[];
   helplines?: string[];
   includeOrphans?: boolean;
 };

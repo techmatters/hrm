@@ -76,7 +76,9 @@ describe('/cases route', () => {
       statusUpdatedBy: null,
       previousStatus: null,
       categories: {},
-      info: {},
+      info: {
+        operatingArea: 'East',
+      },
     };
 
     test('should return 401', async () => {
