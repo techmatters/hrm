@@ -28,14 +28,14 @@ export const validateCaseListResponse = (
 ) => {
   expect(actual.status).toBe(200);
   if (count === 0) {
-    expect(actual.body).toMatchObject({
-      cases: [],
-    });
+    expect(actual.body).toStrictEqual(
+      expect.objectContaining({
+        cases: [],
+        count,
+      }),
+    );
     return;
   }
-  expect(actual.body.cases).toBeDefined();
-  expect(Array.isArray(actual.body.cases)).toBe(true);
-
   if (expectedCaseAndContactModels.length > 0) {
     expect(actual.body.cases.length).toBeGreaterThan(0);
   }
