@@ -24,7 +24,7 @@ import {
   workerSid,
 } from '../mocks';
 import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
-import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
+import { isCaseSectionTimelineActivity, NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
 import each from 'jest-each';
 import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import { addDays, addHours, parseISO } from 'date-fns';
@@ -36,7 +36,6 @@ import {
   searchContacts,
 } from '@tech-matters/hrm-core/contact/contactService';
 import {
-  isCaseSectionTimelineActivity,
   TimelineActivity,
 } from '@tech-matters/hrm-core/case/caseSection/caseSectionDataAccess';
 import { setupServiceTests } from '../setupServiceTest';

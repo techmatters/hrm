@@ -21,7 +21,7 @@ import addDays from 'date-fns/addDays';
 
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as context from '../../context';
-import { pullCases } from '../../pull-cases';
+import { pullCases } from '../../pullCases';
 import { HrmAccountId } from '@tech-matters/types';
 import { defaultLimitAndOffset } from '@tech-matters/hrm-core/autoPaginate';
 

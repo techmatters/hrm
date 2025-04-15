@@ -145,8 +145,8 @@ const newCaseRouter = (isPublic: boolean) => {
       const timeline = await getCaseTimeline(
         hrmAccountId,
         req,
-        parseInt(caseId),
-        (sectionTypes ?? 'note,referral').split(','),
+        caseId,
+        (sectionTypes ?? '').split(','),
         includeContacts?.toLowerCase() !== 'false',
         { limit: limit ?? 20, offset: offset ?? 0 },
       );

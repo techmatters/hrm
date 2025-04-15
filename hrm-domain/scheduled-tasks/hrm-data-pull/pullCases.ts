@@ -18,10 +18,15 @@ import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
 import { putS3Object } from '@tech-matters/s3-client';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
+import * as caseSectionApi from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
 
 import { getContext, maxPermissions } from './context';
 import { parseISO } from 'date-fns';
+import {
+  isCaseSectionTimelineActivity,
+  isContactTimelineActivity,
+} from '@tech-matters/hrm-core/case/caseSection/types';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -51,13 +56,36 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     };
   });
 
-  const mapContactsToId = (contacts: Required<{ id: number }>[]) =>
-    contacts.map(contact => contact.id);
+  const { timelines } = await caseSectionApi.getMultipleCaseTimelines(
+    accountSid,
+    maxPermissions,
+    cases.map(cas => cas.id.toString()),
+    ['*'],
+    true,
+    { limit: '5000', offset: '0' },
+  );
 
-  const casesWithContactIdOnly = cases.map(cas => ({
-    ...cas,
-    connectedContacts: mapContactsToId(cas?.connectedContacts ?? []),
-  }));
+  const casesWithContactIdOnly = cases.map(c => {
+    const timeline = timelines[c.id.toString()] ?? [];
+    const sections: caseApi.CaseService['sections'] = {};
+    const connectedContacts: string[] = [];
+    for (const item of timeline) {
+      if (isCaseSectionTimelineActivity(item)) {
+        sections[item.activity.sectionType] = sections[item.activity.sectionType] ?? [];
+        sections[item.activity.sectionType].push(item.activity);
+      } else if (isContactTimelineActivity(item)) {
+        connectedContacts.push(item.activity.id.toString());
+      } else
+        console.warn(
+          `Unknown timeline activity type: ${item.activity.type}, caseId: ${c.id}`,
+        );
+    }
+    return {
+      ...c,
+      sections,
+      connectedContacts,
+    };
+  });
 
   const uploadPromises = casesWithContactIdOnly.map(cas => {
     /*
