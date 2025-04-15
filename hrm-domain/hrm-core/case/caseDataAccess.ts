@@ -133,7 +133,7 @@ export const getById = async (
   caseId: number,
   accountSid: HrmAccountId,
   { workerSid, isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>
+  contactViewPermissions: TKConditionsSets<'contact'>,
 ): Promise<CaseRecord | undefined> => {
   const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
