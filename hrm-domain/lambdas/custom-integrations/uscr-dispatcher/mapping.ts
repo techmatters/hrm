@@ -34,7 +34,7 @@ export const toCreateIncident = ({
         ? [`Reporting District: ${callerInformation.reportingDistrict}`]
         : []),
       ...(callerInformation?.identifier911
-        ? [`(911 Incident #${callerInformation.identifier911}`]
+        ? [`911 Incident #${callerInformation.identifier911}`]
         : []),
       childInformation?.incidentSummary,
     ].join('; ') as string,
