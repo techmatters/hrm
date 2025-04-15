@@ -133,8 +133,7 @@ export const getById = async (
   caseId: number,
   accountSid: HrmAccountId,
   { workerSid, isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-  onlyEssentialData?: boolean,
+  contactViewPermissions: TKConditionsSets<'contact'>
 ): Promise<CaseRecord | undefined> => {
   const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
@@ -142,7 +141,6 @@ export const getById = async (
       'Cases',
       contactViewPermissions,
       isSupervisor,
-      onlyEssentialData,
     );
     const queryValues = { accountSid, caseId, twilioWorkerSid: workerSid };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
@@ -172,7 +170,6 @@ export type SearchQueryFunction<T> = (
   accountSid: HrmAccountId,
   searchCriteria: T,
   filters?: CaseListFilters,
-  onlyEssentialData?: boolean,
 ) => Promise<{ cases: CaseRecord[]; count: number }>;
 
 const generalizedSearchQueryFunction = <T>(
@@ -187,7 +184,6 @@ const generalizedSearchQueryFunction = <T>(
     accountSid,
     searchCriteria,
     filters,
-    onlyEssentialData,
   ) => {
     const db = await getDbForAccount(accountSid);
     const { limit, offset, sortBy, sortDirection } =
@@ -201,7 +197,6 @@ const generalizedSearchQueryFunction = <T>(
         contactPermissions,
         filters,
         orderClause,
-        onlyEssentialData,
       );
       const queryValues = sqlQueryParamsBuilder(
         accountSid,

@@ -14,9 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
-import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
-import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
 import { TKConditionsSets } from '../../permissions/rulesMap';
 import {
   ContactListCondition,
@@ -33,10 +30,7 @@ export const selectContactsOwnedCount = (ownerVariableName: string) =>
 const leftJoinLateralContacts = (
   viewPermissions: TKConditionsSets<'contact'>,
   userIsSupervisor: boolean,
-  onlyEssentialData?: boolean,
-) => {
-  if (onlyEssentialData) {
-    return `
+) => `
       LEFT JOIN LATERAL (
         SELECT COALESCE(jsonb_agg(to_jsonb(c)), '[]') AS  "connectedContacts"
         FROM "Contacts" c 
@@ -58,51 +52,18 @@ const leftJoinLateralContacts = (
         )
           
       ) "contacts" ON true`;
-  }
 
-  return `
-    LEFT JOIN LATERAL (
-      SELECT COALESCE(jsonb_agg(to_jsonb(c) || to_jsonb("joinedReports") || to_jsonb("joinedReferrals") || to_jsonb("joinedConversationMedia") ORDER BY c."timeOfContact"), '[]') AS  "connectedContacts"
-      FROM "Contacts" c 
-      LEFT JOIN LATERAL (
-        ${selectCoalesceCsamReportsByContactId('c')}
-      ) "joinedReports" ON true
-      LEFT JOIN LATERAL (
-        ${selectCoalesceReferralsByContactId('c')}
-      ) "joinedReferrals" ON true
-      LEFT JOIN LATERAL (
-        ${selectCoalesceConversationMediasByContactId('c')}
-      ) "joinedConversationMedia" ON true
-      WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
-        AND ${listContactsPermissionWhereClause(
-          viewPermissions as ContactListCondition[][],
-          userIsSupervisor,
-          'c',
-        )}
-      
-    ) "contacts" ON true`;
-};
-
-/**
- * Should remove "contactsOwnedCount" when onlyEssentialData?
- * Or is it used for permissions?
- */
 export const selectSingleCaseByIdSql = (
   tableName: string,
   contactViewPermissions: TKConditionsSets<'contact'>,
   userIsSupervisor: boolean,
-  onlyEssentialData?: boolean,
 ) => `SELECT
       "cases".*,
       "caseSections"."caseSections",
       "contacts"."connectedContacts",
       "contactsOwnedCount"."contactsOwnedByUserCount"
       FROM "${tableName}" AS "cases"
-      ${leftJoinLateralContacts(
-        contactViewPermissions,
-        userIsSupervisor,
-        onlyEssentialData,
-      )}
+      ${leftJoinLateralContacts(contactViewPermissions, userIsSupervisor)}
       LEFT JOIN LATERAL (
         SELECT COALESCE(jsonb_agg(to_jsonb(cs) ORDER BY cs."createdAt"), '[]') AS  "caseSections"
         FROM "CaseSections" cs

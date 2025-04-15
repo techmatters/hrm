@@ -16,11 +16,7 @@
 
 import { pgp } from '../../dbConnection';
 import { DateExistsCondition, DateFilter } from '../../sql';
-import { SELECT_CASE_SECTIONS } from './case-sections-sql';
 import { CaseListFilters } from '../caseDataAccess';
-import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
-import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
-import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
 import { selectContactsOwnedCount } from './caseGetSql';
 import { CaseListCondition, listCasesPermissionWhereClause } from './casePermissionSql';
@@ -65,26 +61,7 @@ const generateOrderByClause = (clauses: OrderByClauseItem[]): string => {
 const selectContacts = (
   contactViewPermissions: TKConditionsSets<'contact'>,
   userIsSupervisor: boolean,
-  onlyEssentialData?: boolean,
-) => {
-  const innerSelect = onlyEssentialData
-    ? '(SELECT c.*)'
-    : '(SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia")';
-
-  const leftJoins = onlyEssentialData
-    ? ''
-    : `
-      LEFT JOIN LATERAL (
-        ${selectCoalesceCsamReportsByContactId('c')}
-      ) reports ON true
-      LEFT JOIN LATERAL (
-        ${selectCoalesceReferralsByContactId('c')}
-      ) joinedReferrals ON true
-      LEFT JOIN LATERAL (
-        ${selectCoalesceConversationMediasByContactId('c')}
-      ) media ON true`;
-
-  return `
+) => `
     SELECT COALESCE(jsonb_agg(DISTINCT contacts."jsonBlob") FILTER (WHERE contacts."caseId" IS NOT NULL), '[]') AS "connectedContacts"
     FROM ( 
       SELECT
@@ -92,9 +69,8 @@ const selectContacts = (
         c."caseId",
         c."twilioWorkerId",
         c."timeOfContact",
-        (SELECT to_jsonb(_row) FROM ${innerSelect} AS _row) AS "jsonBlob"
+        (SELECT to_jsonb(_row) FROM (SELECT c.*) AS _row) AS "jsonBlob"
       FROM "Contacts" c
-      ${leftJoins}
       ) AS "contacts" 
       WHERE "contacts"."caseId" = "cases".id AND "contacts"."accountSid" = "cases"."accountSid"
       AND ${listContactsPermissionWhereClause(
@@ -103,7 +79,6 @@ const selectContacts = (
       )}
       GROUP BY "contacts"."caseId", "contacts"."accountSid"
       `;
-};
 
 const enum FilterableDateField {
   CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',
@@ -272,10 +247,7 @@ const selectCasesUnorderedSql = (
   { whereClause, havingClause = '' }: Omit<SelectCasesParams, 'orderByClause'>,
   contactViewPermissions: TKConditionsSets<'contact'>,
   userIsSupervisor: boolean,
-  onlyEssentialData?: boolean,
 ) => {
-  const ifCaseSections = (query: string) => (onlyEssentialData ? '' : query);
-
   return `
   SELECT DISTINCT ON (cases."accountSid", cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
@@ -289,21 +261,17 @@ const selectCasesUnorderedSql = (
         contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "lastName"}'
       )
     , ' ') AS "childName"
-    ${ifCaseSections(`, "caseSections"."caseSections"`)}
   FROM "Cases" "cases"
   LEFT JOIN LATERAL (${selectContacts(
     contactViewPermissions,
     userIsSupervisor,
-    onlyEssentialData,
   )}) contacts ON true
-  ${ifCaseSections(`LEFT JOIN LATERAL (${SELECT_CASE_SECTIONS}) "caseSections" ON true`)}
   LEFT JOIN LATERAL (
       ${selectContactsOwnedCount('twilioWorkerSid')}
   ) "contactsOwnedCount" ON true
   ${whereClause} GROUP BY
     "cases"."accountSid",
     "cases"."id",
-    ${ifCaseSections(`"caseSections"."caseSections",`)}
     "contacts"."connectedContacts",
     "contactsOwnedCount"."contactsOwnedByUserCount"
   ${havingClause}`;
@@ -319,13 +287,11 @@ const selectCasesPaginatedSql = (
   { whereClause, orderByClause, havingClause = '' }: SelectCasesParams,
   contactViewPermissions: TKConditionsSets<'contact'>,
   userIsSupervisor: boolean,
-  onlyEssentialData?: boolean,
 ) => `
 SELECT * FROM (${selectCasesUnorderedSql(
   { whereClause, havingClause },
   contactViewPermissions,
   userIsSupervisor,
-  onlyEssentialData,
 )}) "unordered" ${orderByClause}
 LIMIT $<limit>
 OFFSET $<offset>`;
@@ -336,7 +302,6 @@ export type SearchQueryBuilder = (
   viewContactPermissions: TKConditionsSets<'contact'>,
   filters: CaseListFilters,
   orderByClauses: OrderByClauseItem[],
-  onlyEssentialData?: boolean,
 ) => string;
 
 const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
@@ -346,7 +311,6 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     contactViewPermissions: TKConditionsSets<'contact'>,
     filters,
     orderByClauses,
-    onlyEssentialData,
   ) => {
     const whereSql = [
       whereClause,
@@ -362,7 +326,6 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
       { whereClause: whereSql, orderByClause: orderBySql },
       contactViewPermissions,
       user.isSupervisor,
-      onlyEssentialData,
     );
   };
 };

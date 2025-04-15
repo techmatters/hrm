@@ -135,42 +135,38 @@ const mapContactTransformations =
  * - GET /cases/ (case list)
  * - POST /cases/search (search cases)
  */
-const mapEssentialData =
-  (essentialDataOnly: boolean) =>
-  (caseRecord: CaseService): RecursivePartial<CaseService> => {
-    if (!essentialDataOnly) return caseRecord;
+const mapEssentialData = (caseRecord: CaseService): RecursivePartial<CaseService> => {
+  const {
+    id,
+    createdAt,
+    updatedAt,
+    status,
+    info,
+    twilioWorkerId,
+    connectedContacts,
+    categories,
+  } = caseRecord;
 
-    const {
-      id,
-      createdAt,
-      updatedAt,
-      status,
-      info,
-      twilioWorkerId,
-      connectedContacts,
-      categories,
-    } = caseRecord;
+  const { summary, followUpDate, definitionVersion } = info;
 
-    const { summary, followUpDate, definitionVersion } = info;
-
-    const infoEssentialData = {
-      summary,
-      followUpDate,
-      definitionVersion,
-    };
-
-    return {
-      id,
-      status,
-      connectedContacts: connectedContacts.slice(0, 1),
-      twilioWorkerId,
-      categories,
-      createdAt,
-      updatedAt,
-      info: infoEssentialData,
-      precalculatedPermissions: caseRecord.precalculatedPermissions,
-    };
+  const infoEssentialData = {
+    summary,
+    followUpDate,
+    definitionVersion,
   };
+
+  return {
+    id,
+    status,
+    connectedContacts: connectedContacts.slice(0, 1),
+    twilioWorkerId,
+    categories,
+    createdAt,
+    updatedAt,
+    info: infoEssentialData,
+    precalculatedPermissions: caseRecord.precalculatedPermissions,
+  };
+};
 
 const doCaseChangeNotification =
   (operation: NotificationOperation) =>
@@ -305,14 +301,12 @@ export const getCase = async (
     user: TwilioUser;
     permissions: Pick<RulesFile, 'viewContact'>;
   },
-  onlyEssentialData?: boolean,
 ): Promise<CaseService | undefined> => {
   const caseFromDb = await getById(
     id,
     accountSid,
     user,
     permissions.viewContact as TKConditionsSets<'contact'>,
-    onlyEssentialData,
   );
 
   if (caseFromDb) {
@@ -360,7 +354,6 @@ const generalizedSearchCases =
       user: TwilioUser;
       permissions: RulesFile;
     },
-    onlyEssentialData?: boolean,
   ): Promise<CaseSearchReturn> => {
     const { filters, helpline, counselor, closedCases } = filterParameters;
     const caseFilters = filters ?? {};
@@ -384,14 +377,13 @@ const generalizedSearchCases =
       accountSid,
       searchParameters,
       caseFilters,
-      onlyEssentialData,
     );
     return {
       ...dbResult,
       cases: dbResult.cases
         .map(mapContactTransformations({ can, user }))
         .map(caseRecordToCase)
-        .map(mapEssentialData(onlyEssentialData)),
+        .map(mapEssentialData),
     };
   };
 
