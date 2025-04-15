@@ -30,8 +30,12 @@ export const toCreateIncident = ({
     contact_id: contact.id.toString(),
     case_id: caseObj.id,
     description: [
-      callerInformation?.reportingDistrict,
-      callerInformation?.identifier911,
+      ...(callerInformation?.reportingDistrict
+        ? [`Reporting District: ${callerInformation.reportingDistrict}`]
+        : []),
+      ...(callerInformation?.identifier911
+        ? [`(911 Incident #${callerInformation.identifier911}`]
+        : []),
       childInformation?.incidentSummary,
     ].join('; ') as string,
     address: childInformation?.specificLocation as string,
