@@ -36,7 +36,6 @@ export const OrderByColumn = {
   CREATED_AT: 'createdAt',
   UPDATED_AT: 'updatedAt',
   CHILD_NAME: 'childName',
-  FOLLOW_UP_DATE: 'info.followUpDate',
 } as const;
 
 export type OrderByColumnType = (typeof OrderByColumn)[keyof typeof OrderByColumn];
@@ -45,7 +44,6 @@ const ORDER_BY_FIELDS: Record<OrderByColumnType, string> = {
   id: pgp.as.name('id'),
   createdAt: pgp.as.name('createdAt'),
   updatedAt: pgp.as.name('updatedAt'),
-  'info.followUpDate': `"info"->>'followUpDate'`,
   childName: pgp.as.name('childName'),
 } as const;
 
@@ -108,11 +106,10 @@ const selectContacts = (
 const enum FilterableDateField {
   CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',
   UPDATED_AT = 'cases."updatedAt"::TIMESTAMP WITH TIME ZONE',
-  FOLLOW_UP_DATE = `CAST(NULLIF(cases."info"->>'followUpDate', '') AS TIMESTAMP WITH TIME ZONE)`,
 }
 
 const dateFilterCondition = (
-  field: FilterableDateField,
+  field: FilterableDateField | string,
   filterName: string,
   filter: DateFilter,
 ): string | undefined => {
@@ -149,12 +146,11 @@ const filterSql = ({
   statuses,
   createdAt = {},
   updatedAt = {},
-  followUpDate = {},
   categories,
   helplines,
   excludedStatuses,
   includeOrphans,
-  customFilter,
+  caseInfoFilters,
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
@@ -169,24 +165,33 @@ const filterSql = ({
   if (statuses && statuses.length) {
     filterSqlClauses.push(`cases."status" IN ($<statuses:csv>)`);
   }
-  if (customFilter) {
-    Object.entries(customFilter).forEach(([key, values]) => {
-      if (values && values.length) {
-        filterSqlClauses.push(`cases."info"->>'${key}' IN ($<customFilter.${key}:csv>)`);
-      }
-    });
-  }
   filterSqlClauses.push(
     ...[
       dateFilterCondition(FilterableDateField.CREATED_AT, 'createdAt', createdAt),
       dateFilterCondition(FilterableDateField.UPDATED_AT, 'updatedAt', updatedAt),
-      dateFilterCondition(
-        FilterableDateField.FOLLOW_UP_DATE,
-        'followUpDate',
-        followUpDate,
-      ),
     ].filter(sql => sql),
   );
+  if (caseInfoFilters) {
+    Object.entries(caseInfoFilters).forEach(([key, values]) => {
+      // Handle multi-select filters
+      if (Array.isArray(values) && values.length) {
+        const clause = `cases."info"->>'${key}' IN ($<caseInfoFilters.${key}:csv>)`;
+        filterSqlClauses.push(clause);
+      }
+      // Handle date range filters like FilterableDateField
+      else if (
+        typeof values === 'object' &&
+        !Array.isArray(values) &&
+        (values as DateFilter)
+      ) {
+        const fieldExpr = `CAST(NULLIF(cases."info"->>'${key}', '') AS TIMESTAMP WITH TIME ZONE)`;
+        const paramName = `caseInfoFilters.${key}`;
+        const dateClause = dateFilterCondition(fieldExpr, paramName, values);
+        filterSqlClauses.push(dateClause);
+      }
+    });
+  }
+
   if (categories && categories.length) {
     filterSqlClauses.push(CATEGORIES_FILTER_SQL);
   }
