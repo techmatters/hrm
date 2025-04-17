@@ -3,7 +3,7 @@
   "closeCase": [["everyone"]],
   "reopenCase": [["isSupervisor"]],
   "caseStatusTransition": [["everyone"]],
-  "addCaseSection": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "addCaseSection": [["everyone"]],
   "editCaseSection": [["everyone"]],
   "editCaseOverview": [["everyone"]],
   "updateCaseContacts": [["everyone"]],
