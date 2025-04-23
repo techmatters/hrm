@@ -24,7 +24,10 @@ import {
   workerSid,
 } from '../mocks';
 import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
-import { isCaseSectionTimelineActivity, NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
+import {
+  isCaseSectionTimelineActivity,
+  NewCaseSection,
+} from '@tech-matters/hrm-core/case/caseSection/types';
 import each from 'jest-each';
 import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import { addDays, addHours, parseISO } from 'date-fns';
@@ -35,9 +38,7 @@ import {
   createContact,
   searchContacts,
 } from '@tech-matters/hrm-core/contact/contactService';
-import {
-  TimelineActivity,
-} from '@tech-matters/hrm-core/case/caseSection/caseSectionDataAccess';
+import { TimelineActivity } from '@tech-matters/hrm-types';
 import { setupServiceTests } from '../setupServiceTest';
 
 const { request } = setupServiceTests(workerSid);
@@ -284,11 +285,14 @@ describe('GET /cases/:caseId/timeline', () => {
         .filter(ev => !isCaseSectionTimelineActivity(ev))
         .map(ev => ev.activity);
       expect(count).toBe(expectedTotalCount);
-      activityContacts.forEach(ec =>
-        expect(ec).toStrictEqual(
-          expectedContacts.find(expected => expected.id === ec.id),
-        ),
-      );
+      activityContacts.forEach(ec => {
+        const {
+          accountSid: acct,
+          caseId,
+          ...expectedContact
+        } = expectedContacts.find(expected => expected.id === ec.id);
+        expect(ec).toStrictEqual(expectedContact);
+      });
     },
   );
 });

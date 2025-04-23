@@ -206,7 +206,7 @@ const generalizedSearchQueryFunction = <T>(
         limit,
         offset,
       );
-
+      console.log(statement);
       const result: CaseWithCount[] = await connection.any<CaseWithCount>(
         statement,
         queryValues,
@@ -270,26 +270,15 @@ export const updateStatus = async (
   status: string,
   updatedBy: TwilioUserIdentifier,
   accountSid: HrmAccountId,
-  { isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-) => {
+): Promise<CaseRecord> => {
   const db = await getDbForAccount(accountSid);
-  const statementValues = {
-    accountSid,
-    twilioWorkerSid: updatedBy,
-    caseId: id,
-  };
   return db.tx(async transaction => {
-    await transaction.none(
+    return transaction.oneOrNone(
       updateByIdSql(
         { status, updatedBy, updatedAt: new Date().toISOString() },
         accountSid,
         id,
       ),
-    );
-    return transaction.oneOrNone(
-      selectSingleCaseByIdSql('Cases', contactViewPermissions, isSupervisor),
-      statementValues,
     );
   });
 };

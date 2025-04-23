@@ -18,7 +18,6 @@ import format from 'date-fns/format';
 import formatISO from 'date-fns/formatISO';
 import { putS3Object } from '@tech-matters/s3-client';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
-import * as caseSectionApi from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
 
 import { getContext, maxPermissions } from './context';
@@ -27,6 +26,7 @@ import {
   isCaseSectionTimelineActivity,
   isContactTimelineActivity,
 } from '@tech-matters/hrm-core/case/caseSection/types';
+import { getTimelinesForCases } from '@tech-matters/hrm-core/case/caseService';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -56,17 +56,9 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     };
   });
 
-  const { timelines } = await caseSectionApi.getMultipleCaseTimelines(
-    accountSid,
-    maxPermissions,
-    cases.map(cas => cas.id.toString()),
-    ['*'],
-    true,
-    { limit: '5000', offset: '0' },
-  );
-
-  const casesWithContactIdOnly = cases.map(c => {
-    const timeline = timelines[c.id.toString()] ?? [];
+  const casesWithContactIdOnly = (
+    await getTimelinesForCases(accountSid, maxPermissions, cases)
+  ).map(({ case: c, timeline }) => {
     const sections: caseApi.CaseService['sections'] = {};
     const connectedContacts: string[] = [];
     for (const item of timeline) {

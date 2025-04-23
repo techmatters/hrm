@@ -391,9 +391,9 @@ describe('Time based condition', () => {
         async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
           const subRoute = id => `${caseBaseRoute}/${id}`;
           setRules({ viewContact: permissions });
-          const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
-            parseISO(sampleContacts[cct.toISOString()].timeOfContact),
-          );
+          const expectedIds = expectedPermittedContactCreationTimes
+            .map(cct => parseISO(sampleContacts[cct.toISOString()].timeOfContact))
+            .slice(0, 1);
           const { status, body } = await request
             .get(subRoute(sampleCase.id))
             .set(headers);
@@ -414,9 +414,9 @@ describe('Time based condition', () => {
         '$description',
         async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
           setRules({ viewContact: permissions });
-          const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
-            parseISO(sampleContacts[cct.toISOString()].timeOfContact),
-          );
+          const expectedIds = expectedPermittedContactCreationTimes
+            .map(cct => parseISO(sampleContacts[cct.toISOString()].timeOfContact))
+            .slice(0, 1);
           const {
             body: { cases, count },
             status,

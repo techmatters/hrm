@@ -60,7 +60,7 @@ const selectCaseContactsForTimeline = (
         'contact' as "activityType",
         to_jsonb("contacts") AS  "activity"
         FROM "Contacts" "contacts"
-        WHERE "contacts"."caseId" = IN ($<caseIds:csv>) AND "contacts"."accountSid" = $<accountSid>
+        WHERE "contacts"."caseId" IN ($<caseIds:csv>) AND "contacts"."accountSid" = $<accountSid>
         AND ${listContactsPermissionWhereClause(
           viewContactPermissions as ContactListCondition[][],
           userIsSupervisor,

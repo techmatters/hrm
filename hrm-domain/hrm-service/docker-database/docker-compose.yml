@@ -14,7 +14,7 @@
 
 services:
   db:
-    image: library/postgres:12.10
+    image: library/postgres:16.8
 
     environment:
       POSTGRES_USER: rdsadmin

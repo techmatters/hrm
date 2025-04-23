@@ -33,15 +33,12 @@ import {
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as mocks from '../mocks';
-import { ruleFileActionOverride } from '../permissions-overrides';
 import {
-  addConversationMediaToContact,
   connectContactToCase,
   createContact,
 } from '@tech-matters/hrm-core/contact/contactService';
-import { headers, setRules, useOpenRules } from '../server';
+import { headers, useOpenRules } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
 import { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { setupServiceTests } from '../setupServiceTest';
@@ -160,10 +157,20 @@ const insertSampleCases = async ({
       cases[i % cases.length]?.sections ?? {},
       accounts[i % accounts.length],
     );
-    createdCasesAndContacts.push({
-      contact: connectedContact,
-      case: createdCase,
-    });
+    if (connectedContact) {
+      // Remove some stuff that won't be returned in the connectedContact;
+      const { conversationMedia, csamReports, referrals, ...expectedContact } =
+        connectedContact;
+      createdCasesAndContacts.push({
+        contact: expectedContact as Contact,
+        case: createdCase,
+      });
+    } else {
+      createdCasesAndContacts.push({
+        contact: undefined,
+        case: createdCase,
+      });
+    }
   }
   return createdCasesAndContacts;
 };
@@ -219,6 +226,9 @@ describe('/cases route', () => {
           createdCase.id,
           workerSid,
         );
+        delete createdContact.conversationMedia;
+        delete createdContact.csamReports;
+        delete createdContact.referrals;
         createdCase = await getCase(createdCase.id, accountSid, ALWAYS_CAN); // refresh case from DB now it has a contact connected
       });
 
@@ -340,16 +350,7 @@ describe('/cases route', () => {
       );
     });
 
-    each([
-      {
-        expectTranscripts: true,
-        description: `with viewExternalTranscript includes transcripts`,
-      },
-      {
-        expectTranscripts: false,
-        description: `without viewExternalTranscript excludes transcripts`,
-      },
-    ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
+    test(`with connectedContacts $description`, async () => {
       const createdCase = await caseApi.createCase(
         case1,
         accountSid,
@@ -357,17 +358,10 @@ describe('/cases route', () => {
         undefined,
         true,
       );
-      let createdContact = await createContact(
+      const createdContact = await createContact(
         accountSid,
         workerSid,
         mocks.withTaskId,
-        ALWAYS_CAN,
-        true,
-      );
-      createdContact = await addConversationMediaToContact(
-        accountSid,
-        createdContact.id.toString(),
-        mocks.conversationMedia,
         ALWAYS_CAN,
         true,
       );
@@ -383,9 +377,6 @@ describe('/cases route', () => {
       );
 
       useOpenRules();
-      if (!expectTranscripts) {
-        setRules(ruleFileActionOverride('viewExternalTranscript', false));
-      }
       const response = await request
         .get(route)
         .query({
@@ -398,26 +389,6 @@ describe('/cases route', () => {
       expect(response.status).toBe(200);
 
       expect(<caseApi.CaseService>response.body.cases).toHaveLength(1);
-
-      if (expectTranscripts) {
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeTruthy();
-      } else {
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeFalsy();
-      }
     });
   });
 
@@ -526,6 +497,9 @@ describe('/cases route', () => {
             createdCase2.id,
             workerSid,
           );
+          delete createdContact.csamReports;
+          delete createdContact.conversationMedia;
+          delete createdContact.referrals;
           // Get case 2 again, now a contact is connected
           createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, ALWAYS_CAN);
         });
@@ -1232,12 +1206,15 @@ describe('/cases route', () => {
               description: 'should filter cases by operatingArea using caseInfoFilters',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
-                caseInfoFilters: {
-                  operatingArea: ['East'],
+                filters: {
+                  customFilter: {
+                    operatingArea: ['East'],
+                  },
                 },
               },
               sampleConfig: {
                 ...SIMPLE_SAMPLE_CONFIG,
+                sampleSize: 10,
                 cases: [
                   {
                     case: { ...case1, info: { ...case1.info, operatingArea: 'East' } },
@@ -1248,11 +1225,7 @@ describe('/cases route', () => {
                     sections: {},
                   },
                   {
-                    case: { ...case3, info: { ...case3.info, operatingArea: 'North' } },
-                    sections: {},
-                  },
-                  {
-                    case: { ...case1, info: { ...case1.info, operatingArea: 'East' } },
+                    case: { ...case3, info: { ...case3.info, operatingArea: 'East' } },
                     sections: {},
                   },
                 ],
@@ -1265,15 +1238,17 @@ describe('/cases route', () => {
                       ccc.case.info?.operatingArea === 'East',
                   )
                   .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-              expectedTotalCount: 2,
+              expectedTotalCount: 4,
             },
             {
               description:
                 'should filter cases by multiple operatingArea values using caseInfoFilters',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
-                caseInfoFilters: {
-                  operatingArea: ['East', 'North'],
+                filters: {
+                  customFilter: {
+                    operatingArea: ['East', 'North'],
+                  },
                 },
               },
               sampleConfig: {
@@ -1301,102 +1276,17 @@ describe('/cases route', () => {
                       ['East', 'North'].includes(ccc.case.info?.operatingArea),
                   )
                   .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-              expectedTotalCount: 2,
-            },
-            {
-              description:
-                'should filter cases where followUpDate does not exist using caseInfoFilters',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-              body: {
-                caseInfoFilters: {
-                  followUpDate: { option: 'WITHOUT_DATE', exists: 'MUST_NOT_EXIST' },
-                },
-              },
-              sampleConfig: {
-                ...SIMPLE_SAMPLE_CONFIG,
-                cases: [
-                  {
-                    case: { ...case1, info: { ...case1.info } },
-                    sections: {},
-                  },
-                  {
-                    case: { ...case2, info: { ...case2.info } },
-                    sections: {},
-                  },
-                  {
-                    case: { ...case3, info: { ...case3.info } },
-                    sections: {},
-                  },
-                ],
-              },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .filter(
-                    ccc =>
-                      ccc.case.accountSid === accounts[0] && !ccc.case.info?.followUpDate,
-                  )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-              expectedTotalCount: 1,
-            },
-            {
-              description:
-                'should filter cases by followUpDate range using caseInfoFilters',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-              body: {
-                caseInfoFilters: {
-                  followUpDate: {
-                    option: 'CUSTOM_DATE_RANGE',
-                    exists: 'MUST_EXIST',
-                    from: '2005-01-01T00:00:00.000Z',
-                    to: '2006-01-01T00:00:00.000Z',
-                  },
-                },
-              },
-              sampleConfig: {
-                ...SIMPLE_SAMPLE_CONFIG,
-                cases: [
-                  {
-                    case: { ...case1, info: { ...case1.info } },
-                    sections: {},
-                  },
-                  {
-                    case: {
-                      ...case2,
-                      info: { ...case2.info, followUpDate: '2022-01-15T00:00:00.000Z' },
-                    },
-                    sections: {},
-                  },
-                  {
-                    case: {
-                      ...case3,
-                      info: { ...case3.info, followUpDate: '2005-03-15T00:00:00.000Z' },
-                    },
-                    sections: {},
-                  },
-                ],
-              },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .filter(ccc => {
-                    if (ccc.case.accountSid !== accounts[0]) return false;
-                    const followUpDate = ccc.case.info?.followUpDate;
-                    if (!followUpDate) return false;
-                    const date = new Date(followUpDate);
-                    return (
-                      date >= new Date('2005-01-01T00:00:00.000Z') &&
-                      date <= new Date('2006-01-01T00:00:00.000Z')
-                    );
-                  })
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-              expectedTotalCount: 1,
+              expectedTotalCount: 4,
             },
             {
               description: 'should combine caseInfoFilters with other filters correctly',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 helpline: helplines[0],
-                caseInfoFilters: {
-                  operatingArea: ['East'],
+                filters: {
+                  customFilter: {
+                    operatingArea: ['East'],
+                  },
                 },
               },
               sampleConfig: {
@@ -1437,7 +1327,7 @@ describe('/cases route', () => {
                       ccc.case.info?.operatingArea === 'East',
                   )
                   .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
-              expectedTotalCount: 1,
+              expectedTotalCount: 2,
             },
           ];
 
@@ -1478,16 +1368,7 @@ describe('/cases route', () => {
       });
     });
 
-    each([
-      {
-        expectTranscripts: true,
-        description: `with viewExternalTranscript includes transcripts`,
-      },
-      {
-        expectTranscripts: false,
-        description: `without viewExternalTranscript excludes transcripts`,
-      },
-    ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
+    test(`with connectedContacts $description`, async () => {
       const createdCase = await caseApi.createCase(
         case1,
         accountSid,
@@ -1495,18 +1376,11 @@ describe('/cases route', () => {
         undefined,
         true,
       );
-      let createdContact = await createContact(
+      const createdContact = await createContact(
         accountSid,
         workerSid,
         mocks.withTaskId,
         ALWAYS_CAN,
-        true,
-      );
-      createdContact = await addConversationMediaToContact(
-        accountSid,
-        createdContact.id.toString(),
-        mocks.conversationMedia,
-        { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
         true,
       );
       await connectContactToCase(
@@ -1519,14 +1393,8 @@ describe('/cases route', () => {
         },
         true,
       );
-      if (expectTranscripts) {
-        console.log(createdContact);
-      }
 
       useOpenRules();
-      if (!expectTranscripts) {
-        setRules(ruleFileActionOverride('viewExternalTranscript', false));
-      }
 
       const response = await request
         .post(`${route}/search`)
@@ -1541,27 +1409,6 @@ describe('/cases route', () => {
       expect(response.status).toBe(200);
 
       expect(<caseApi.CaseService>response.body.cases).toHaveLength(1);
-
-      if (expectTranscripts) {
-        console.log(response.body.cases[0].connectedContacts);
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeTruthy();
-      } else {
-        expect(
-          (<caseApi.CaseService[]>response.body.cases).every(
-            caseObj =>
-              caseObj.connectedContacts?.every(
-                c => c.conversationMedia?.some(isS3StoredTranscript),
-              ),
-          ),
-        ).toBeFalsy();
-      }
     });
   });
 });

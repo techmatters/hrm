@@ -88,19 +88,6 @@ describe('searchCases', () => {
     accountSid,
     status: 'open',
     info: {},
-    sections: {
-      note: [
-        {
-          createdBy: 'WK-contact-adder',
-          sectionId: 'NOTE_1',
-          createdAt: baselineCreatedDate,
-          eventTimestamp: baselineCreatedDate,
-          sectionTypeSpecificData: {
-            note: 'Child with covid-19',
-          },
-        },
-      ],
-    },
     twilioWorkerId,
     connectedContacts: [
       {
@@ -281,7 +268,7 @@ describe('searchCases', () => {
       ],
     },
     {
-      description: 'list cases asking for onlyEssentialData',
+      description: 'list cases',
       listConfig: { offset: 30, limit: 45 },
       casesFromDb: [caseRecordWithoutContact],
       expectedCases: [
@@ -293,22 +280,6 @@ describe('searchCases', () => {
           },
         },
       ],
-      onlyEssentialData: true,
-    },
-    {
-      description: 'list cases asking explicitly asking for NOT onlyEssentialData',
-      listConfig: { offset: 30, limit: 45 },
-      casesFromDb: [caseRecordWithoutContact],
-      expectedCases: [
-        {
-          ...caseWithoutContact,
-          categories: {},
-          precalculatedPermissions: {
-            userOwnsContact: false,
-          },
-        },
-      ],
-      onlyEssentialData: false,
     },
   ]).test(
     '$description',
@@ -320,7 +291,6 @@ describe('searchCases', () => {
       filterParameters = {},
       expectedDbSearchCriteria = {},
       expectedDbFilters = {},
-      onlyEssentialData = undefined,
     }) => {
       const expected = { cases: expectedCases, count: 1337 };
 
@@ -339,7 +309,6 @@ describe('searchCases', () => {
           user: newTwilioUser(accountSid, workerSid, []),
           permissions: rulesMap.open,
         },
-        onlyEssentialData,
       );
 
       const user = { ...newTwilioUser(accountSid, workerSid, []), isSupervisor: false };
@@ -356,7 +325,6 @@ describe('searchCases', () => {
           counsellors: undefined,
           ...expectedDbFilters,
         },
-        onlyEssentialData,
       );
       expect(result).toStrictEqual(expected);
 
@@ -402,61 +370,51 @@ describe('search cases permissions', () => {
       canOnlyViewOwnCases: true,
       counsellors: undefined,
     },
-  ]).test(
-    '$description',
-    async ({
-      isSupervisor,
-      canOnlyViewOwnCases,
-      counsellors,
-      onlyEssentialData = undefined,
-    }) => {
-      const searchParameters = {};
-      const filterParameters = {
-        helpline: 'helpline',
-        closedCases: true,
-        filters: {
-          counsellors,
-        },
-      };
-      const viewOwnCasesRulesFile: RulesFile = {
-        ...rulesMap.open,
-        ['viewCase']: [['isCreator']],
-      };
-      const limitOffset = { limit: '10', offset: '0' };
-      const can = () => true;
-      const roles = [];
-      const user = {
-        ...newTwilioUser(accountSid, workerSid, roles),
-        isSupervisor: isSupervisor,
-      };
-      const reqData = {
-        can,
-        user,
-        permissions: canOnlyViewOwnCases ? viewOwnCasesRulesFile : rulesMap.open,
-      };
+  ]).test('$description', async ({ isSupervisor, canOnlyViewOwnCases, counsellors }) => {
+    const searchParameters = {};
+    const filterParameters = {
+      helpline: 'helpline',
+      closedCases: true,
+      filters: {
+        counsellors,
+      },
+    };
+    const viewOwnCasesRulesFile: RulesFile = {
+      ...rulesMap.open,
+      ['viewCase']: [['isCreator']],
+    };
+    const limitOffset = { limit: '10', offset: '0' };
+    const can = () => true;
+    const roles = [];
+    const user = {
+      ...newTwilioUser(accountSid, workerSid, roles),
+      isSupervisor: isSupervisor,
+    };
+    const reqData = {
+      can,
+      user,
+      permissions: canOnlyViewOwnCases ? viewOwnCasesRulesFile : rulesMap.open,
+    };
 
-      const searchSpy = jest
-        .spyOn(caseDb, 'search')
-        .mockResolvedValue({ cases: [], count: 0 });
-      await caseApi.searchCases(
-        accountSid,
-        limitOffset,
-        searchParameters,
-        filterParameters,
-        reqData,
-        onlyEssentialData,
-      );
+    const searchSpy = jest
+      .spyOn(caseDb, 'search')
+      .mockResolvedValue({ cases: [], count: 0 });
+    await caseApi.searchCases(
+      accountSid,
+      limitOffset,
+      searchParameters,
+      filterParameters,
+      reqData,
+    );
 
-      expect(searchSpy).toHaveBeenCalledWith(
-        user,
-        canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
-        [['everyone']],
-        limitOffset,
-        accountSid,
-        {},
-        filterParameters.filters,
-        onlyEssentialData,
-      );
-    },
-  );
+    expect(searchSpy).toHaveBeenCalledWith(
+      user,
+      canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
+      [['everyone']],
+      limitOffset,
+      accountSid,
+      {},
+      filterParameters.filters,
+    );
+  });
 });

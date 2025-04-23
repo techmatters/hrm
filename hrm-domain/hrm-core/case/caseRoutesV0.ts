@@ -41,14 +41,10 @@ const newCaseRouter = (isPublic: boolean) => {
         hrmAccountId,
         user,
         body: { status },
-        can,
-        permissions,
       } = req;
       const { id } = req.params;
       const updatedCase = await caseApi.updateCaseStatus(id, status, hrmAccountId, {
-        can,
         user,
-        permissions,
       });
       if (!updatedCase) {
         throw createError(404);
