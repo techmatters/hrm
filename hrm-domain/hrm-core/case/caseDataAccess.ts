@@ -201,7 +201,6 @@ const generalizedSearchQueryFunction = <T>(
         limit,
         offset,
       );
-      console.log(statement);
       const result: CaseWithCount[] = await connection.any<CaseWithCount>(
         statement,
         queryValues,
