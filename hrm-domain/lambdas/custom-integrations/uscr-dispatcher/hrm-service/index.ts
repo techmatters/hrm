@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseSection, CaseService, TimelineApiResponse } from '@tech-matters/hrm-types';
+import type {
+  CaseSection,
+  CaseService,
+  TimelineApiResponse,
+} from '@tech-matters/hrm-types';
 import {
   createCase,
   createCaseSection,
