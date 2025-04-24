@@ -16,7 +16,8 @@
 
 import * as caseDb from '../../case/caseDataAccess';
 import * as caseApi from '../../case/caseService';
-import { createMockCase, createMockCaseRecord } from './mock-cases';
+import * as caseSectionApi from '../../case/caseSection/caseSectionService';
+import { createMockCase, createMockCaseRecord } from './mockCases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
 import '@tech-matters/testing/expectToParseAsDate';
@@ -61,6 +62,9 @@ test('create case', async () => {
   const createSpy = jest.spyOn(caseDb, 'create').mockResolvedValue(createdCaseRecord);
   // const getByIdSpy =
   jest.spyOn(caseDb, 'getById').mockResolvedValueOnce(createdCaseRecord);
+  jest
+    .spyOn(caseSectionApi, 'getMultipleCaseTimelines')
+    .mockResolvedValue({ count: 0, timelines: {} });
 
   const createdCase = await caseApi.createCase(caseToBeCreated, accountSid, workerSid);
   // any worker & account specified on the object should be overwritten with the ones from the user
@@ -108,50 +112,12 @@ describe('searchCases', () => {
     ],
   });
 
-  const firstChild = caseWithContact.connectedContacts![0];
-  const caseWithContactEssentialData = {
-    id: caseWithContact.id,
-    status: caseWithContact.status,
-    connectedContacts: [
-      {
-        rawJson: {
-          childInformation: {
-            firstName: firstChild.rawJson?.childInformation.firstName,
-            lastName: firstChild.rawJson?.childInformation.firstName,
-          },
-        },
-      },
-    ],
-    twilioWorkerId: caseWithContact.twilioWorkerId,
-    categories: caseWithContact.categories,
-    createdAt: caseWithContact.createdAt,
-    updatedAt: caseWithContact.updatedAt,
-    info: {
-      summary: caseWithContact.info.summary,
-      followUpDate: caseWithContact.info.followUpDate,
-      definitionVersion: caseWithContact.info.definitionVersion,
-    },
-    precalculatedPermissions: caseWithContact.precalculatedPermissions,
-  };
-
   const caseRecordWithContact = createMockCaseRecord({
     accountSid,
     id: caseId,
     helpline: 'helpline',
     status: 'open',
     info: {},
-    caseSections: [
-      {
-        accountSid,
-        sectionTypeSpecificData: { note: 'Child with covid-19' },
-        createdBy: 'WK-contact-adder',
-        createdAt: baselineCreatedDate,
-        eventTimestamp: baselineCreatedDate,
-        caseId,
-        sectionType: 'note',
-        sectionId: 'NOTE_1',
-      },
-    ],
     twilioWorkerId,
     connectedContacts: [
       {
@@ -177,28 +143,11 @@ describe('searchCases', () => {
     connectedContacts: [],
   };
 
-  const caseWithoutContactEssentialData = {
-    ...caseWithContactEssentialData,
-    connectedContacts: [],
-  };
-
   const caseRecordWithoutContact = createMockCaseRecord({
     id: caseId,
     accountSid,
     helpline: 'helpline',
     status: 'open',
-    caseSections: [
-      {
-        accountSid,
-        sectionTypeSpecificData: { note: 'Child with covid-19' },
-        createdBy: 'WK-contact-adder',
-        createdAt: baselineCreatedDate,
-        eventTimestamp: baselineCreatedDate,
-        caseId,
-        sectionType: 'note',
-        sectionId: 'NOTE_1',
-      },
-    ],
     twilioWorkerId,
     connectedContacts: [],
   });
@@ -260,20 +209,6 @@ describe('searchCases', () => {
       expectedCases: [
         {
           ...caseWithoutContact,
-          categories: {},
-          precalculatedPermissions: {
-            userOwnsContact: false,
-          },
-        },
-      ],
-    },
-    {
-      description: 'list cases',
-      listConfig: { offset: 30, limit: 45 },
-      casesFromDb: [caseRecordWithoutContact],
-      expectedCases: [
-        {
-          ...caseWithoutContactEssentialData,
           categories: {},
           precalculatedPermissions: {
             userOwnsContact: false,

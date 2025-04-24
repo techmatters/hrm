@@ -78,6 +78,7 @@ const selectContacts = (
         userIsSupervisor,
       )}
       GROUP BY "contacts"."caseId", "contacts"."accountSid"
+      
       `;
 
 const enum FilterableDateField {

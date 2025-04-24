@@ -15,10 +15,7 @@
  */
 
 import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
-import { CaseSectionRecord } from './CaseSection';
 import { Contact } from './Contact';
-
-type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'sectionType' | 'caseId'>;
 
 export type PrecalculatedCasePermissionConditions = {
   isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
@@ -54,5 +51,4 @@ export type CaseService = CaseRecordCommon & {
   categories: Record<string, string[]>;
   precalculatedPermissions?: PrecalculatedPermissions;
   connectedContacts?: Contact[];
-  sections: Record<string, CaseSection[]>;
 };

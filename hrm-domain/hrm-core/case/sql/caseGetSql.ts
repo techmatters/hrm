@@ -50,7 +50,7 @@ const leftJoinLateralContacts = (
             'c2',
           )}
         )
-          
+        LIMIT 1  
       ) "contacts" ON true`;
 
 export const selectSingleCaseByIdSql = (
@@ -59,16 +59,10 @@ export const selectSingleCaseByIdSql = (
   userIsSupervisor: boolean,
 ) => `SELECT
       "cases".*,
-      "caseSections"."caseSections",
       "contacts"."connectedContacts",
       "contactsOwnedCount"."contactsOwnedByUserCount"
       FROM "${tableName}" AS "cases"
       ${leftJoinLateralContacts(contactViewPermissions, userIsSupervisor)}
-      LEFT JOIN LATERAL (
-        SELECT COALESCE(jsonb_agg(to_jsonb(cs) ORDER BY cs."createdAt"), '[]') AS  "caseSections"
-        FROM "CaseSections" cs
-        WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
-      ) "caseSections" ON true
       LEFT JOIN LATERAL (
         ${selectContactsOwnedCount('twilioWorkerSid')}
       ) "contactsOwnedCount" ON true

@@ -22,11 +22,15 @@ import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
 
 import { getContext, maxPermissions } from './context';
 import { parseISO } from 'date-fns';
+import { CaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
 import {
-  isCaseSectionTimelineActivity,
-  isContactTimelineActivity,
-} from '@tech-matters/hrm-core/case/caseSection/types';
-import { getTimelinesForCases } from '@tech-matters/hrm-core/case/caseService';
+  timelineToLegacySections,
+  timelineToLegacyConnectedContacts,
+} from '@tech-matters/hrm-core/case/caseSection/timelineToLegacyCaseProperties';
+import {
+  CaseService,
+  getTimelinesForCases,
+} from '@tech-matters/hrm-core/case/caseService';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -56,28 +60,22 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     };
   });
 
-  const casesWithContactIdOnly = (
-    await getTimelinesForCases(accountSid, maxPermissions, cases)
-  ).map(({ case: c, timeline }) => {
-    const sections: caseApi.CaseService['sections'] = {};
-    const connectedContacts: string[] = [];
-    for (const item of timeline) {
-      if (isCaseSectionTimelineActivity(item)) {
-        sections[item.activity.sectionType] = sections[item.activity.sectionType] ?? [];
-        sections[item.activity.sectionType].push(item.activity);
-      } else if (isContactTimelineActivity(item)) {
-        connectedContacts.push(item.activity.id.toString());
-      } else
-        console.warn(
-          `Unknown timeline activity type: ${item.activity.type}, caseId: ${c.id}`,
-        );
-    }
-    return {
-      ...c,
-      sections,
-      connectedContacts,
-    };
-  });
+  const casesWithContactIdOnly: (Omit<CaseService, 'connectedContacts' | 'categories'> & {
+    connectedContacts: string[];
+    sections: Record<string, CaseSection[]>;
+  })[] = (await getTimelinesForCases(accountSid, maxPermissions, cases)).map(
+    ({ case: c, timeline }) => {
+      const sections: Record<string, CaseSection[]> = timelineToLegacySections(timeline);
+      const connectedContacts: string[] = timelineToLegacyConnectedContacts(timeline).map(
+        contact => contact.id.toString(),
+      );
+      return {
+        ...c,
+        sections,
+        connectedContacts,
+      };
+    },
+  );
 
   const uploadPromises = casesWithContactIdOnly.map(cas => {
     /*

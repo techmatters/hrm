@@ -36,7 +36,6 @@ import {
   CaseRecordCommon,
   CaseService,
 } from '@tech-matters/hrm-types';
-import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
@@ -56,16 +55,12 @@ export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
 
 export type NewCaseRecord = CaseRecordCommon;
 
-export type CaseRecordUpdate = Partial<NewCaseRecord> &
-  Pick<NewCaseRecord, 'updatedBy'> & {
-    caseSections?: CaseSectionRecord[];
-  };
+export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'updatedBy'>;
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
   connectedContacts?: Contact[];
   contactsOwnedByUserCount?: number;
-  caseSections?: CaseSectionRecord[];
 };
 
 type CaseWithCount = CaseRecord & { totalCount: number };
@@ -215,7 +210,15 @@ const generalizedSearchQueryFunction = <T>(
       return { rows: result, count: totalCount };
     });
 
-    return { cases: rows, count };
+    return {
+      cases: rows.map(r => ({
+        ...r,
+        ...(r.connectedContacts
+          ? { connectedContacts: r.connectedContacts.slice(0, 1) }
+          : {}),
+      })),
+      count,
+    };
   };
 };
 

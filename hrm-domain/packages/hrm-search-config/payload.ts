@@ -15,6 +15,7 @@
  */
 
 import type {
+  CaseSection,
   CaseService,
   Contact,
   NotificationOperation,
@@ -47,9 +48,7 @@ export type IndexCaseMessage = {
   entityType: 'case';
   operation: SupportedNotificationOperation;
   case: Pick<CaseService, 'id'> &
-    Partial<Omit<CaseService, 'sections'>> & {
-      sections: NonNullable<CaseService['sections']>;
-    };
+    Partial<CaseService> & { sections?: Record<string, CaseSection[]> };
 };
 
 export type IndexMessage = { accountSid: AccountSID } & (

@@ -53,24 +53,20 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
 };
 
 export const createMockCaseInsert = (partial: Partial<NewCaseRecord>): NewCaseRecord => {
-  const insert = Object.assign(
+  return Object.assign(
     {
       ...createMockCaseRecord({}),
     },
     partial,
   );
-  delete insert.caseSections;
-  return insert;
 };
 
 export const createMockCase = (partial: Partial<CaseService>): CaseService => {
   const record = createMockCaseRecord({});
-  delete record.caseSections;
   return Object.assign(
     {
       ...record,
       categories: {},
-      sections: {},
     },
     partial,
   );

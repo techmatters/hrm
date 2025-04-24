@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { createMockCaseInsert, createMockCaseRecord } from './mock-cases';
+import { createMockCaseInsert, createMockCaseRecord } from './mockCases';
 import * as pgPromise from 'pg-promise';
 import { getMockAccountDb, mockConnection, mockTask } from '../mockDb';
 import * as caseDb from '../../case/caseDataAccess';
@@ -64,7 +64,7 @@ describe('getById', () => {
     const result = await caseDb.getById(caseId, accountSid, user, [['everyone']]);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
-      expect.stringContaining('CSAMReports'),
+      expect.stringContaining('"Cases"'),
       expect.objectContaining({ accountSid, caseId }),
     );
     expect(result).not.toBeDefined();
@@ -310,7 +310,6 @@ describe('search', () => {
       );
       const statementExecuted = getSqlStatement(anySpy);
       expect(statementExecuted).toContain('Contacts');
-      expect(statementExecuted).toContain('CSAMReports');
       expect(result.count).toEqual(1337);
       expect(result.cases).toStrictEqual(expectedResult);
     },
