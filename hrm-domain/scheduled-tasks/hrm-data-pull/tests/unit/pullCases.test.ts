@@ -22,6 +22,7 @@ import addDays from 'date-fns/addDays';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as context from '../../context';
 import { pullCases } from '../../pullCases';
+import type { CaseSection } from '@tech-matters/hrm-types';
 import { HrmAccountId } from '@tech-matters/types';
 import { defaultLimitAndOffset } from '@tech-matters/hrm-core/autoPaginate';
 
@@ -45,7 +46,9 @@ jest.mock('@tech-matters/s3-client', () => {
   };
 });
 
-const getExpectedS3Params = (cas: caseApi.CaseService) => {
+const getExpectedS3Params = (
+  cas: caseApi.CaseService & { sections: Record<string, CaseSection[]> },
+) => {
   const date = format(parseISO(cas.updatedAt), 'yyyy/MM/dd');
   return {
     bucket,
@@ -61,6 +64,8 @@ beforeEach(() => {
     hrmEnv,
     shortCode,
   });
+
+  jest.spyOn(caseApi, 'getTimelinesForCases').mockResolvedValue([]);
 
   jest.spyOn(context, 'getContext').mockReturnValue(getContextResponse);
 });
@@ -92,6 +97,10 @@ describe('KHP Data Pull - Pull Cases', () => {
       .spyOn(caseApi, 'searchCases')
       .mockReturnValue(searchCasesResponse);
 
+    const getTimelinesForCasesSpy = jest
+      .spyOn(caseApi, 'getTimelinesForCases')
+      .mockResolvedValue([]);
+
     await pullCases(startDate, endDate);
 
     expect(searchCasesSpy).toHaveBeenCalledWith(
@@ -101,6 +110,8 @@ describe('KHP Data Pull - Pull Cases', () => {
       filterParams,
       maxPermissions,
     );
+
+    expect(getTimelinesForCasesSpy).toHaveBeenCalledWith(accountSid, maxPermissions, []);
   });
 
   test('should call upload to S3 with the correct params', async () => {
@@ -109,7 +120,6 @@ describe('KHP Data Pull - Pull Cases', () => {
       categories: {},
       connectedContacts: [],
       info: {},
-      sections: {},
       helpline: 'helpline',
       status: 'open',
       twilioWorkerId: 'WKxxx',
@@ -127,7 +137,6 @@ describe('KHP Data Pull - Pull Cases', () => {
       categories: {},
       connectedContacts: [],
       info: {},
-      sections: {},
       helpline: 'helpline',
       status: 'open',
       twilioWorkerId: 'WKxxx',
@@ -146,11 +155,19 @@ describe('KHP Data Pull - Pull Cases', () => {
     };
 
     jest.spyOn(caseApi, 'searchCases').mockResolvedValue(searchCasesResponse);
+    jest.spyOn(caseApi, 'getTimelinesForCases').mockResolvedValue([
+      { case: case1, timeline: [] },
+      { case: case2, timeline: [] },
+    ]);
 
     await pullCases(startDate, endDate);
 
-    expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(case1));
-    expect(putS3ObjectSpy).toHaveBeenCalledWith(getExpectedS3Params(case2));
+    expect(putS3ObjectSpy).toHaveBeenCalledWith(
+      getExpectedS3Params({ ...case1, sections: {} }),
+    );
+    expect(putS3ObjectSpy).toHaveBeenCalledWith(
+      getExpectedS3Params({ ...case2, sections: {} }),
+    );
     expect(putS3ObjectSpy).toBeCalledTimes(2);
   });
 });

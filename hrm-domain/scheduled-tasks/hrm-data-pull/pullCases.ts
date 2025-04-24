@@ -27,10 +27,7 @@ import {
   timelineToLegacySections,
   timelineToLegacyConnectedContacts,
 } from '@tech-matters/hrm-core/case/caseSection/timelineToLegacyCaseProperties';
-import {
-  CaseService,
-  getTimelinesForCases,
-} from '@tech-matters/hrm-core/case/caseService';
+import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -63,7 +60,7 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
   const casesWithContactIdOnly: (Omit<CaseService, 'connectedContacts' | 'categories'> & {
     connectedContacts: string[];
     sections: Record<string, CaseSection[]>;
-  })[] = (await getTimelinesForCases(accountSid, maxPermissions, cases)).map(
+  })[] = (await caseApi.getTimelinesForCases(accountSid, maxPermissions, cases)).map(
     ({ case: c, timeline }) => {
       const sections: Record<string, CaseSection[]> = timelineToLegacySections(timeline);
       const connectedContacts: string[] = timelineToLegacyConnectedContacts(timeline).map(
