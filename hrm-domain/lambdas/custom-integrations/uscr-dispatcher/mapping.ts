@@ -24,6 +24,10 @@ export const toCreateIncident = ({
   caseObj: CaseService;
   contact: Contact;
 }): CreateIncidentParams => {
+  console.log(
+    '>>>> categories will be',
+    Object.values(contact.rawJson?.categories || {})[0][0],
+  );
   const { callerInformation, childInformation, caseInformation, categories } =
     contact.rawJson || {};
   return {
