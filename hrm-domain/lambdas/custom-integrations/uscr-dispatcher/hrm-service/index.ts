@@ -189,8 +189,6 @@ export const getOrCreateCase = async ({
       return contactResult;
     }
 
-    console.log('>>>> contact result', contactResult);
-
     if (contactResult.data.caseId) {
       const caseResult = await getCase({
         accountSid,

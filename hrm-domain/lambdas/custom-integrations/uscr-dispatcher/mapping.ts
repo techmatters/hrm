@@ -31,10 +31,6 @@ export const toCreateIncident = ({
     .find(c => c.length)
     ?.shift();
 
-  console.log(
-    '>>>> categories will be',
-    Object.values(contact.rawJson?.categories || {})[0][0],
-  );
   return {
     contact_id: contact.id.toString(),
     case_id: caseObj.id,
