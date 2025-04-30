@@ -312,6 +312,10 @@ const generateContactsQueriesFromFilters = ({
           boost: BOOST_FACTORS.contact,
         },
         {
+          field: 'number',
+          boost: BOOST_FACTORS.contact,
+        },
+        {
           field: 'id',
           boost: BOOST_FACTORS.id * BOOST_FACTORS.contact,
         },
