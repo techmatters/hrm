@@ -26,6 +26,11 @@ export const toCreateIncident = ({
 }): CreateIncidentParams => {
   const { callerInformation, childInformation, caseInformation, categories } =
     contact.rawJson || {};
+
+  const category = Object.values(categories || {})
+    .find(c => c.length)
+    ?.shift();
+
   return {
     contact_id: contact.id.toString(),
     case_id: caseObj.id,
@@ -50,7 +55,7 @@ export const toCreateIncident = ({
       gender: childInformation?.gender as string,
       race: childInformation?.race as string,
     },
-    category: Object.values(categories || {})[0][0],
+    category: category!,
     priority: caseInformation?.priority as string,
     is_officer_on_standby: callerInformation?.officerStandby as boolean,
   };
