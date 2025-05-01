@@ -24,6 +24,7 @@ import {
   CaseSectionUpdate,
   NewCaseSection,
   CaseSectionRecord,
+  isContactRecordTimelineActivity,
 } from './types';
 import {
   create,
@@ -43,6 +44,7 @@ import {
   isDatabaseForeignKeyViolationErrorResult,
 } from '../../sql';
 import { SuccessResult } from '@tech-matters/types';
+import { contactRecordToContact } from '../../contact/contactService';
 
 type ResourceAlreadyExists = 'ResourceAlreadyExists';
 type ForeignKeyViolation = 'ForeignKeyViolation';
@@ -130,7 +132,7 @@ export const createCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId });
   }
 
   return newOkFromData(sectionRecordToSection(createdResult.unwrap()));
@@ -163,7 +165,7 @@ export const replaceCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId });
   }
 
   return sectionRecordToSection(updated);
@@ -206,10 +208,19 @@ export const getCaseTimeline = async (
   );
   return {
     ...dbResult,
-    activities: dbResult.activities.map(event => ({
-      ...event,
-      activity: sectionRecordToSection(event.activity),
-    })),
+    activities: dbResult.activities.map(({ caseId: _, ...event }) => {
+      if (isContactRecordTimelineActivity(event)) {
+        return {
+          ...event,
+          activity: contactRecordToContact(event.activity),
+        };
+      } else {
+        return {
+          ...event,
+          activity: sectionRecordToSection(event.activity),
+        };
+      }
+    }),
   };
 };
 
@@ -243,12 +254,16 @@ export const getMultipleCaseTimelines = async (
     parseInt(offset),
   );
   const timelines: Record<string, TimelineActivity<any>[]> = {};
-  for (const { caseId, ...activity } of dbResult.activities) {
+  for (const { caseId, ...activityEntry } of dbResult.activities) {
     timelines[caseId] = timelines[caseId] || [];
-    timelines[caseId].push({
-      ...activity,
-      activity: sectionRecordToSection(activity.activity),
-    });
+    if (isContactRecordTimelineActivity(activityEntry)) {
+      timelines[caseId].push({
+        ...activityEntry,
+        activity: contactRecordToContact(activityEntry.activity),
+      });
+    } else {
+      timelines[caseId].push(activityEntry);
+    }
   }
   return {
     count: dbResult.count,
@@ -291,7 +306,7 @@ export const deleteCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId });
   }
 
   return sectionRecordToSection(deleted);

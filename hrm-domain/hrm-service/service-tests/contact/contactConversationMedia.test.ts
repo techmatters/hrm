@@ -242,7 +242,7 @@ describe('/contacts/:contactId/conversationMedia route', () => {
             ...media,
             createdAt: expect.toParseAsDate(),
             updatedAt: expect.toParseAsDate(),
-            contactId: createdContact.id,
+            contactId: parseInt(createdContact.id),
             id: expect.any(Number),
             accountSid,
           }),

@@ -164,7 +164,7 @@ export const canPerformViewContactAction = canPerformActionOnContact(
 );
 
 const canRemoveFromCase = async (
-  originalCaseId: number,
+  originalCaseId: string,
   { can, user, hrmAccountId, permissions },
 ): Promise<boolean> => {
   if (originalCaseId) {
@@ -195,7 +195,7 @@ const canConnectContact = canPerformActionOnContact(
     ) {
       return false;
     }
-    const targetCaseObj = await getCase(parseInt(targetCaseId, 10), hrmAccountId, {
+    const targetCaseObj = await getCase(targetCaseId, hrmAccountId, {
       can,
       user,
       permissions,

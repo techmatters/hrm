@@ -14,10 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Contact } from '../../contact/contactDataAccess';
+import { Contact, ContactRecord } from '../../contact/contactDataAccess';
 import { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 
-const defaultContact: Contact = {
+const defaultContactRecord: ContactRecord = {
   id: 0,
   createdAt: new Date(2000, 0, 1).toISOString(),
   accountSid: 'AC-account-sid',
@@ -142,9 +142,9 @@ export class ContactBuilder {
     return this;
   }
 
-  build(): Contact {
+  build(): ContactRecord {
     return {
-      ...defaultContact,
+      ...defaultContactRecord,
       ...(this.id && { id: this.id }),
       ...(this.helpline && { helpline: this.helpline }),
       ...(this.taskId && { taskId: this.taskId }),
@@ -155,16 +155,16 @@ export class ContactBuilder {
       ...(this.finalizedAt && { finalizedAt: this.finalizedAt }),
       ...(this.timeOfContact && { timeOfContact: this.timeOfContact }),
       rawJson: {
-        ...defaultContact.rawJson,
+        ...defaultContactRecord.rawJson,
         ...(this.number && { number: this.number }),
         ...(this.callType && { callType: this.callType }),
         childInformation: {
-          ...defaultContact.rawJson!.childInformation,
+          ...defaultContactRecord.rawJson!.childInformation,
           ...(this.childFirstName && { firstName: this.childFirstName }),
           ...(this.childLastName && { lastName: this.childLastName }),
         },
         caseInformation: {
-          ...defaultContact.rawJson!.caseInformation,
+          ...defaultContactRecord.rawJson!.caseInformation,
           ...(this.callSummary && { callSummary: this.callSummary }),
         },
       },
@@ -176,5 +176,14 @@ export class ContactBuilder {
       referrals: [],
       conversationMedia: [],
     };
+  }
+
+  buildContact(): Contact {
+    const record = this.build();
+    return {
+      ...record,
+      id: record.id.toString(),
+      ...(record.caseId ? { caseId: record.caseId.toString() } : {}),
+    } as unknown as Contact;
   }
 }

@@ -13,17 +13,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+'use strict';
 
-import { Referral } from '../referralDataAccess';
-import { pgp } from '../../dbConnection';
-
-export type ReferralRecord = Omit<Referral, 'contactId'> & { contactId: number };
-
-export const insertReferralSql = (referral: ReferralRecord & { accountSid: string }) => `
-${pgp.helpers.insert(
-  referral,
-  ['contactId', 'accountSid', 'referredAt', 'resourceId', 'resourceName'],
-  'Referrals',
-)}
-  RETURNING "contactId", "referredAt", "resourceId", "resourceName"
-`;
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(
+      `ALTER TABLE public."Cases" ADD COLUMN IF NOT EXISTS "label" character varying(255) COLLATE pg_catalog."default";`,
+    );
+    console.info('ADDED label column to Cases table');
+  },
+  down: async queryInterface => {
+    await queryInterface.sequelize.query(
+      `ALTER TABLE public."Cases" DROP COLUMN IF EXISTS "label";`,
+    );
+    console.info('DROPPED label column from Cases table');
+  },
+};

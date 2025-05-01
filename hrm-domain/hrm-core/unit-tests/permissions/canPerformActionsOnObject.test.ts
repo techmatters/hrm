@@ -82,7 +82,7 @@ describe('canPerformActionsOnObject', () => {
         hrmAccountId: accountSid,
         targetKind,
         actions: [action],
-        objectId: 123,
+        objectId: '123',
         can: mockedCan ? mockedCan : () => shouldCan,
         user: newTwilioUser(accountSid, 'WK-workerSid', []),
       });

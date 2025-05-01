@@ -16,7 +16,7 @@
 
 import createError from 'http-errors';
 import { SafeRouter, publicEndpoint } from '../permissions';
-import { acknowledgeCsamReport, createCSAMReport } from './csam-report';
+import { acknowledgeCsamReport, createCSAMReport } from './csamReportService';
 
 import type { Request, Response } from 'express';
 

@@ -63,7 +63,7 @@ export const reindexCasesStream = async (
         try {
           const { MessageId } = await publishCaseChangeNotification({
             accountSid,
-            timeline: await getTimelineForCase(accountSid, maxPermissions, caseObj),
+            timeline: await getTimelineForCase(accountSid, maxPermissions, caseRecord),
             case: caseObj,
             operation: 'reindex',
           });

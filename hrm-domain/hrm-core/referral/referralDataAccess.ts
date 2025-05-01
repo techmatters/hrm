@@ -16,7 +16,7 @@
 
 import { Referral } from '@tech-matters/hrm-types';
 
-import { insertReferralSql } from './sql/referral-insert-sql';
+import { insertReferralSql, ReferralRecord } from './sql/referral-insert-sql';
 import {
   DatabaseForeignKeyViolationError,
   DatabaseUniqueConstraintViolationError,
@@ -56,7 +56,7 @@ export { Referral };
 
 export const createReferralRecord =
   (task?) =>
-  async (accountSid: string, referral: Referral): Promise<Referral> => {
+  async (accountSid: string, referral: ReferralRecord): Promise<ReferralRecord> => {
     try {
       const db = await getDbForAccount(accountSid);
 
@@ -79,7 +79,7 @@ export const createReferralRecord =
         dbErr instanceof DatabaseForeignKeyViolationError &&
         dbErr.constraint === 'FK_Referrals_Contacts'
       ) {
-        throw new OrphanedReferralError(referral.contactId, dbErr);
+        throw new OrphanedReferralError(referral.contactId.toString(), dbErr);
       }
       throw dbErr;
     }

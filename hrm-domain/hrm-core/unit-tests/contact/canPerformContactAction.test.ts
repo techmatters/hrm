@@ -133,7 +133,7 @@ const draftContactTests =
         new ContactBuilder()
           .withCreatedBy(thisWorkerSid)
           .withTwilioWorkerId(otherWorkerSid)
-          .build(),
+          .buildContact(),
       );
       await canPerformEditContactAction(req, {}, next);
       expectation();
@@ -144,7 +144,7 @@ const draftContactTests =
         new ContactBuilder()
           .withCreatedBy(otherWorkerSid)
           .withTwilioWorkerId(thisWorkerSid)
-          .build(),
+          .buildContact(),
       );
       await canPerformEditContactAction(req, {}, next);
       expectation();
@@ -156,7 +156,7 @@ const draftContactTests =
           .withCreatedBy(otherWorkerSid)
           .withTwilioWorkerId(otherWorkerSid)
           .withTaskId('original task')
-          .build(),
+          .buildContact(),
       );
       req.body.taskId = 'transfer task';
       mockIsTwilioTaskTransferTarget.mockResolvedValue(true);
@@ -179,7 +179,7 @@ const draftContactTests =
           .withCreatedBy(otherWorkerSid)
           .withTwilioWorkerId(otherWorkerSid)
           .withTaskId('original task')
-          .build(),
+          .buildContact(),
       );
       req.body.taskId = 'transfer task';
       mockRequestMethods.can.mockImplementation(
@@ -200,7 +200,7 @@ const draftContactTests =
           .withCreatedBy(otherWorkerSid)
           .withTwilioWorkerId(otherWorkerSid)
           .withTaskId('original task')
-          .build(),
+          .buildContact(),
       );
       req.body.taskId = 'transfer task';
       mockIsTwilioTaskTransferTarget.mockResolvedValue(false);
@@ -228,7 +228,7 @@ describe('canPerformEditContactAction', () => {
   test('Request is not already permitted - looks up contact using contactID parameter', async () => {
     mockRequestMethods.can.mockReturnValue(false);
     mockGetContactById.mockResolvedValue(
-      new ContactBuilder().withFinalizedAt(BASELINE_DATE).build(),
+      new ContactBuilder().withFinalizedAt(BASELINE_DATE).buildContact(),
     );
     await canPerformEditContactAction(req, {}, next);
     expect(mockGetContactById).toHaveBeenCalledWith(req.hrmAccountId, 'contact1', req);
@@ -257,7 +257,7 @@ describe('canPerformEditContactAction', () => {
 
     beforeEach(() => {
       mockGetContactById.mockResolvedValue(
-        new ContactBuilder().withFinalizedAt(BASELINE_DATE).build(),
+        new ContactBuilder().withFinalizedAt(BASELINE_DATE).buildContact(),
       );
     });
 
@@ -304,10 +304,10 @@ describe('canDisconnectContact', () => {
   });
 
   describe('finalized contact', function () {
-    let contact = new ContactBuilder().withFinalizedAt(BASELINE_DATE).build();
+    let contact = new ContactBuilder().withFinalizedAt(BASELINE_DATE).buildContact();
     beforeEach(() => {
       mockGetContactById.mockResolvedValue(contact);
-      contact.caseId = 123;
+      contact.caseId = '123';
     });
     test('can returns true to permit & case id not set on contact - permits', async () => {
       delete contact.caseId;

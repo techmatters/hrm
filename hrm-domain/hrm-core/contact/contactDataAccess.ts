@@ -68,6 +68,11 @@ export type ContactUpdates = Omit<
 > &
   Partial<ContactRawJson>;
 
+export type ContactRecord = Omit<Contact, 'id' | 'caseId'> & {
+  id: number;
+  caseId?: number;
+};
+
 const BLANK_CONTACT_UPDATES: ContactUpdates = {
   caseInformation: undefined,
   callerInformation: undefined,
@@ -171,8 +176,8 @@ const searchParametersToQueryParameters = (
   return queryParams;
 };
 
-type CreateResultRecord = Contact & { isNewRecord: boolean };
-type CreateResult = { contact: Contact; isNewRecord: boolean };
+type CreateResultRecord = ContactRecord & { isNewRecord: boolean };
+type CreateResult = { contact: ContactRecord; isNewRecord: boolean };
 
 export const create =
   (task?) =>
@@ -185,7 +190,7 @@ export const create =
         await txIfNotInOne(
           await getDbForAccount(accountSid),
           task,
-          async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
+          async (conn: ITask<{ contact: ContactRecord; isNewRecord: boolean }>) => {
             const now = new Date();
             const { isNewRecord, ...created }: CreateResultRecord =
               await conn.one<CreateResultRecord>(INSERT_CONTACT_SQL, {
@@ -211,9 +216,9 @@ export const patch =
     contactId: string,
     finalize: boolean,
     contactUpdates: ContactUpdates,
-  ): Promise<Contact | undefined> => {
+  ): Promise<ContactRecord | undefined> => {
     return txIfNotInOne(await getDbForAccount(accountSid), task, async connection => {
-      const updatedContact: Contact = await connection.oneOrNone<Contact>(
+      const updatedContact: ContactRecord = await connection.oneOrNone<ContactRecord>(
         UPDATE_CONTACT_BY_ID,
         {
           ...BLANK_CONTACT_UPDATES,
@@ -234,9 +239,9 @@ export const connectToCase =
     contactId: string,
     caseId: string,
     updatedBy: string,
-  ): Promise<Contact | undefined> => {
+  ): Promise<ContactRecord | undefined> => {
     return txIfNotInOne(await getDbForAccount(accountSid), task, async connection => {
-      const [[updatedContact]]: Contact[][] = await connection.multi<Contact>(
+      const [[updatedContact]]: ContactRecord[][] = await connection.multi<ContactRecord>(
         [UPDATE_CASEID_BY_ID, TOUCH_CASE_SQL].join(';\n'),
         {
           accountSid,
@@ -252,9 +257,9 @@ export const connectToCase =
 export const getById = async (
   accountSid: HrmAccountId,
   contactId: number,
-): Promise<Contact> =>
+): Promise<ContactRecord> =>
   (await getDbForAccount(accountSid)).task(async connection =>
-    connection.oneOrNone<Contact>(selectSingleContactByIdSql('Contacts'), {
+    connection.oneOrNone<ContactRecord>(selectSingleContactByIdSql('Contacts'), {
       accountSid,
       contactId,
     }),
@@ -263,9 +268,9 @@ export const getById = async (
 export const getByTaskSid = async (
   accountSid: HrmAccountId,
   taskId: string,
-): Promise<Contact> =>
+): Promise<ContactRecord> =>
   (await getDbForAccount(accountSid)).task(async connection =>
-    connection.oneOrNone<Contact>(selectSingleContactByTaskId('Contacts'), {
+    connection.oneOrNone<ContactRecord>(selectSingleContactByTaskId('Contacts'), {
       accountSid,
       taskId,
     }),
@@ -292,7 +297,7 @@ export type SearchQueryFunction<T> = (
   offset: number,
   user: TwilioUser,
   viewPermissions: TKConditionsSets<'contact'>,
-) => Promise<{ rows: Contact[]; count: number }>;
+) => Promise<{ rows: ContactRecord[]; count: number }>;
 
 const generalizedSearchQueryFunction = <T>(
   sqlQueryGenerator: (
@@ -303,8 +308,8 @@ const generalizedSearchQueryFunction = <T>(
 ): SearchQueryFunction<T> => {
   return async (accountSid, searchParameters, limit, offset, user, viewPermissions) => {
     return (await getDbForAccount(accountSid)).task(async connection => {
-      const searchResults: (Contact & { totalCount: number })[] =
-        await connection.manyOrNone<Contact & { totalCount: number }>(
+      const searchResults: (ContactRecord & { totalCount: number })[] =
+        await connection.manyOrNone<ContactRecord & { totalCount: number }>(
           sqlQueryGenerator(viewPermissions, user.isSupervisor),
           sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
         );
@@ -339,7 +344,7 @@ export const searchByProfileId: SearchQueryFunction<
 
 export const searchByIds: SearchQueryFunction<
   Pick<OptionalSearchQueryParams, 'counselor'> & {
-    contactIds: Contact['id'][];
+    contactIds: ContactRecord['id'][];
   }
 > = generalizedSearchQueryFunction(
   getContactsByIds,

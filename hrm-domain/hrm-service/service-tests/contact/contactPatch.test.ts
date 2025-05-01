@@ -37,7 +37,6 @@ import {
   cleanupCsamReports,
   cleanupReferrals,
   deleteContactById,
-  deleteJobsByContactId,
 } from './dbCleanup';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { finalizeContact } from './finalizeContact';
@@ -316,44 +315,44 @@ describe('/contacts/:contactId route', () => {
           );
           createdContact = await finalizeContact(createdContact);
 
-          try {
-            const existingContactId = createdContact.id;
-            const response = await request
-              .patch(subRoute(existingContactId))
-              .set(headers)
-              .send({ rawJson: patch });
+          const existingContactId = createdContact.id;
+          const response = await request
+            .patch(subRoute(existingContactId))
+            .set(headers)
+            .send({ rawJson: patch });
 
-            expect(response.status).toBe(200);
+          expect(response.status).toBe(200);
 
-            expect(response.body).toStrictEqual({
-              ...createdContact,
-              timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
-              createdAt: expect.toParseAsDate(createdContact.createdAt),
-              finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              rawJson: expected,
-              conversationMedia: [],
-              csamReports: [],
-              referrals: [],
-            });
-            // Test the association
-            expect(response.body.csamReports).toHaveLength(0);
-            const savedContact = await contactDb.getById(accountSid, existingContactId);
+          expect(response.body).toStrictEqual({
+            ...createdContact,
+            timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
+            createdAt: expect.toParseAsDate(createdContact.createdAt),
+            finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            rawJson: expected,
+            conversationMedia: [],
+            csamReports: [],
+            referrals: [],
+          });
+          // Test the association
+          expect(response.body.csamReports).toHaveLength(0);
+          const savedContact = await contactApi.getContactById(
+            accountSid,
+            existingContactId,
+            ALWAYS_CAN,
+          );
 
-            expect(savedContact).toStrictEqual({
-              ...createdContact,
-              createdAt: expect.toParseAsDate(createdContact.createdAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              rawJson: expected,
-              conversationMedia: [],
-              csamReports: [],
-              referrals: [],
-            });
-          } finally {
-            await deleteContactById(createdContact.id, createdContact.accountSid);
-          }
+          expect(savedContact).toStrictEqual({
+            ...createdContact,
+            createdAt: expect.toParseAsDate(createdContact.createdAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            rawJson: expected,
+            conversationMedia: [],
+            csamReports: [],
+            referrals: [],
+          });
         },
       );
     });
@@ -457,39 +456,39 @@ describe('/contacts/:contactId route', () => {
               },
             },
           };
-          try {
-            const existingContactId = createdContact.id;
-            const response = await request
-              .patch(`${subRoute(existingContactId)}?finalize=${finalize}`)
-              .set(headers)
-              .send(patch);
+          const existingContactId = createdContact.id;
+          const response = await request
+            .patch(`${subRoute(existingContactId)}?finalize=${finalize}`)
+            .set(headers)
+            .send(patch);
 
-            expect(response.status).toBe(200);
-            expect(response.body).toStrictEqual({
-              ...expected,
-              timeOfContact: expect.toParseAsDate(expected.timeOfContact),
-              createdAt: expect.toParseAsDate(expected.createdAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              referrals: [],
-              conversationMedia: [],
-            });
-            // Test the association
-            expect(response.body.csamReports).toHaveLength(0);
-            const savedContact = await contactDb.getById(accountSid, existingContactId);
+          expect(response.status).toBe(200);
+          expect(response.body).toStrictEqual({
+            ...expected,
+            timeOfContact: expect.toParseAsDate(expected.timeOfContact),
+            createdAt: expect.toParseAsDate(expected.createdAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            referrals: [],
+            conversationMedia: [],
+          });
+          // Test the association
+          expect(response.body.csamReports).toHaveLength(0);
+          const savedContact = await contactApi.getContactById(
+            accountSid,
+            existingContactId,
+            ALWAYS_CAN,
+          );
 
-            expect(savedContact).toStrictEqual({
-              ...expected,
-              createdAt: expect.toParseAsDate(createdContact.createdAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              csamReports: [],
-              referrals: [],
-              conversationMedia: [],
-            });
-          } finally {
-            await deleteContactById(createdContact.id, createdContact.accountSid);
-          }
+          expect(savedContact).toStrictEqual({
+            ...expected,
+            createdAt: expect.toParseAsDate(createdContact.createdAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            csamReports: [],
+            referrals: [],
+            conversationMedia: [],
+          });
         },
       );
     });
@@ -503,7 +502,10 @@ describe('/contacts/:contactId route', () => {
         true,
       );
       const nonExistingContactId = contactToBeDeleted.id;
-      await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
+      await deleteContactById(
+        parseInt(contactToBeDeleted.id),
+        contactToBeDeleted.accountSid,
+      );
       const response = await request
         .patch(subRoute(nonExistingContactId))
         .set(headers)
@@ -661,10 +663,6 @@ describe('/contacts/:contactId route', () => {
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeFalsy();
       }
-
-      await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
-      await deleteContactById(createdContact.id, createdContact.accountSid);
-      useOpenRules();
     });
   });
 });
