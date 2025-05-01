@@ -165,13 +165,11 @@ export const canPerformViewContactAction = canPerformActionOnContact(
 
 const canRemoveFromCase = async (
   originalCaseId: string,
-  { can, user, hrmAccountId, permissions },
+  { can, user, hrmAccountId },
 ): Promise<boolean> => {
   if (originalCaseId) {
     const originalCaseObj = await getCase(originalCaseId, hrmAccountId, {
-      can,
       user,
-      permissions,
     });
     if (!originalCaseObj) return true; // Allow to disconnect from non existent case I guess
     return can(user, actionsMaps.case.UPDATE_CASE_CONTACTS, originalCaseObj);
@@ -183,22 +181,19 @@ const canConnectContact = canPerformActionOnContact(
   actionsMaps.contact.ADD_CONTACT_TO_CASE,
   async (
     { caseId: originalCaseId }: Contact,
-    { can, user, hrmAccountId, body: { caseId: targetCaseId }, permissions },
+    { can, user, hrmAccountId, body: { caseId: targetCaseId } },
   ) => {
     if (
       !(await canRemoveFromCase(originalCaseId, {
         can,
         user,
         hrmAccountId,
-        permissions,
       }))
     ) {
       return false;
     }
     const targetCaseObj = await getCase(targetCaseId, hrmAccountId, {
-      can,
       user,
-      permissions,
     });
     if (!targetCaseObj) throw createError(404);
     return can(user, actionsMaps.case.UPDATE_CASE_CONTACTS, targetCaseObj);

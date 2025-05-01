@@ -69,7 +69,7 @@ describe('/cases route', () => {
       expect(response.body).toStrictEqual(expected);
       // Check the DB is actually updated
       const fromDb = await caseApi.getCase(response.body.id, accountSid, ALWAYS_CAN);
-      expect(fromDb).toStrictEqual({ ...expected, connectedContacts: [] });
+      expect(fromDb).toStrictEqual(expected);
     });
   });
 
@@ -162,7 +162,6 @@ describe('/cases route', () => {
           parseInt(cases.blank.id),
           accountSid,
           newTwilioUser(accountSid, workerSid, ['supervisor']),
-          [['everyone']],
         );
         expect(fromDb).toBeFalsy();
       });

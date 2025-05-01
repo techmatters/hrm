@@ -409,11 +409,7 @@ describe('/profiles', () => {
                 .sort(sortById),
             ).toStrictEqual(
               createdCases
-                .map(({ createdAt, updatedAt, ...rest }) => ({
-                  ...rest,
-                  childName: null,
-                  connectedContacts: expect.anything(),
-                }))
+                .map(({ createdAt, updatedAt, ...rest }) => rest)
                 .sort(sortById),
             );
           });

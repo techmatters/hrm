@@ -129,8 +129,7 @@ const doCaseChangeNotification =
       }
 
       const caseObj =
-        caseRecord ??
-        (await getById(parseInt(caseId), accountSid, maxPermissions.user, []));
+        caseRecord ?? (await getById(parseInt(caseId), accountSid, maxPermissions.user));
 
       if (caseObj) {
         const timeline = await getTimelineForCase(accountSid, maxPermissions, caseObj);
@@ -228,19 +227,11 @@ export const getCase = async (
   accountSid: HrmAccountId,
   {
     user,
-    permissions,
   }: {
-    can: InitializedCan;
     user: TwilioUser;
-    permissions: Pick<RulesFile, 'viewContact'>;
   },
 ): Promise<CaseService | undefined> => {
-  const caseFromDb = await getById(
-    parseInt(id),
-    accountSid,
-    user,
-    permissions.viewContact as TKConditionsSets<'contact'>,
-  );
+  const caseFromDb = await getById(parseInt(id), accountSid, user);
 
   if (caseFromDb) {
     return caseRecordToCase(caseFromDb);
@@ -299,12 +290,10 @@ const generalizedSearchCases =
     }
     caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
     const viewCasePermissions = permissions.viewCase as TKConditionsSets<'case'>;
-    const viewContactPermissions = permissions.viewContact as TKConditionsSets<'contact'>;
 
     const dbResult = await searchQuery(
       user,
       viewCasePermissions,
-      viewContactPermissions,
       listConfiguration,
       accountSid,
       searchParameters,

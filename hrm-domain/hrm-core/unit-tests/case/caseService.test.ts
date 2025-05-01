@@ -165,7 +165,6 @@ describe('searchCases', () => {
       expect(searchSpy).toHaveBeenCalledWith(
         user,
         [['everyone']],
-        [['everyone']],
         listConfig ?? {},
         accountSid,
         expectedDbSearchCriteria,
@@ -260,7 +259,6 @@ describe('search cases permissions', () => {
     expect(searchSpy).toHaveBeenCalledWith(
       user,
       canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
-      [['everyone']],
       limitOffset,
       accountSid,
       {},

@@ -20,11 +20,8 @@ import each from 'jest-each';
 
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
-import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
-import { CaseListFilters } from '@tech-matters/hrm-core/case/caseDataAccess';
 import { DateExistsCondition } from '@tech-matters/hrm-core/sql';
 
-import { db } from '../dbConnection';
 import {
   fillNameAndPhone,
   validateCaseListResponse,
@@ -78,8 +75,8 @@ const insertSampleCases = async ({
   updatedAtGenerator = () => undefined,
   followUpDateGenerator = () => undefined,
   categoriesGenerator = () => undefined,
-}: InsertSampleCaseSettings): Promise<CaseWithContact[]> => {
-  const createdCasesAndContacts: CaseWithContact[] = [];
+}: InsertSampleCaseSettings): Promise<CaseService[]> => {
+  const createdCasesAndContacts: CaseService[] = [];
   for (let i = 0; i < sampleSize; i += 1) {
     const toCreate: Partial<CaseService> = {
       ...cases[i % cases.length]?.case,
@@ -113,7 +110,6 @@ const insertSampleCases = async ({
       undefined,
       true,
     );
-    let connectedContact: contactDb.Contact;
     if (contactNames[i % contactNames.length]) {
       const contactToCreate = fillNameAndPhone(
         {
@@ -145,7 +141,7 @@ const insertSampleCases = async ({
       const { contact: savedContact } = (
         await contactDb.create()(accounts[i % accounts.length], contactToCreate)
       ).unwrap();
-      connectedContact = await contactDb.connectToCase()(
+      await contactDb.connectToCase()(
         savedContact.accountSid,
         savedContact.id.toString(),
         createdCase.id.toString(),
@@ -157,20 +153,7 @@ const insertSampleCases = async ({
       cases[i % cases.length]?.sections ?? {},
       accounts[i % accounts.length],
     );
-    if (connectedContact) {
-      // Remove some stuff that won't be returned in the connectedContact;
-      const { conversationMedia, csamReports, referrals, ...expectedContact } =
-        connectedContact;
-      createdCasesAndContacts.push({
-        contact: expectedContact as Contact,
-        case: createdCase,
-      });
-    } else {
-      createdCasesAndContacts.push({
-        contact: undefined,
-        case: createdCase,
-      });
-    }
+    createdCasesAndContacts.push(createdCase);
   }
   return createdCasesAndContacts;
 };
@@ -193,7 +176,6 @@ describe('/cases route', () => {
     });
     describe('With single record', () => {
       let createdCase;
-      let createdContact: contactDb.Contact;
 
       beforeEach(async () => {
         createdCase = await caseApi.createCase(
@@ -218,17 +200,15 @@ describe('/cases route', () => {
         contactToCreate.taskId = `TASK_SID`;
         contactToCreate.channelSid = `CHANNEL_SID`;
         contactToCreate.serviceSid = 'SERVICE_SID';
-        createdContact = (await contactDb.create()(accountSid, contactToCreate)).unwrap()
-          .contact;
-        createdContact = await contactDb.connectToCase()(
+        const createdContact = (
+          await contactDb.create()(accountSid, contactToCreate)
+        ).unwrap().contact;
+        await contactDb.connectToCase()(
           accountSid,
           createdContact.id.toString(),
           createdCase.id,
           workerSid,
         );
-        delete createdContact.conversationMedia;
-        delete createdContact.csamReports;
-        delete createdContact.referrals;
         createdCase = await getCase(createdCase.id, accountSid, ALWAYS_CAN); // refresh case from DB now it has a contact connected
       });
 
@@ -236,17 +216,17 @@ describe('/cases route', () => {
       test('should return 200 when populated', async () => {
         const response = await request.get(route).set(headers);
 
-        validateSingleCaseResponse(response, createdCase, createdContact);
+        validateSingleCaseResponse(response, createdCase);
       });
     });
     describe('With multiple records', () => {
       const CASE_SAMPLE_SIZE = 10;
-      const createdCasesAndContacts: CaseWithContact[] = [];
+      const createdCases: CaseService[] = [];
       const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'] as const;
       const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
       beforeEach(async () => {
-        createdCasesAndContacts.length = 0;
-        createdCasesAndContacts.push(
+        createdCases.length = 0;
+        createdCases.push(
           ...(await insertSampleCases({
             sampleSize: CASE_SAMPLE_SIZE,
             helplines,
@@ -258,7 +238,7 @@ describe('/cases route', () => {
       type TestCase = {
         description: string;
         listRoute: string;
-        expectedCasesAndContacts: () => CaseWithContact[];
+        expectedCases: () => CaseService[];
         expectedTotalCount: number;
       };
 
@@ -267,33 +247,31 @@ describe('/cases route', () => {
           description:
             'should return all cases for account when no helpline, limit or offset is specified',
           listRoute: `/v0/accounts/${accounts[0]}/cases`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+          expectedCases: () =>
+            createdCases
+              .filter(cas => cas.accountSid === accounts[0])
+              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
           expectedTotalCount: 5,
         },
         {
           description:
             'should return all cases for account & helpline when helpline is specified',
           listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[1]}`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
+          expectedCases: () =>
+            createdCases
               .filter(
-                ccc =>
-                  ccc.case.accountSid === accounts[0] &&
-                  ccc.case.helpline === helplines[1],
+                cas => cas.accountSid === accounts[0] && cas.helpline === helplines[1],
               )
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
           expectedTotalCount: 1,
         },
         {
           description: 'should return first X cases when limit X is specified',
           listRoute: `/v0/accounts/${accounts[0]}/cases?limit=3`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+          expectedCases: () =>
+            createdCases
+              .filter(cas => cas.accountSid === accounts[0])
+              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
               .slice(0, 3),
           expectedTotalCount: 5,
         },
@@ -301,10 +279,10 @@ describe('/cases route', () => {
           description:
             'should return X cases, starting at Y when limit X and offset Y are specified',
           listRoute: `/v0/accounts/${accounts[0]}/cases?limit=2&offset=1`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+          expectedCases: () =>
+            createdCases
+              .filter(cas => cas.accountSid === accounts[0])
+              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
               .slice(1, 3),
           expectedTotalCount: 5,
         },
@@ -312,10 +290,10 @@ describe('/cases route', () => {
           description:
             'should return remaining cases, starting at Y when offset Y and no limit is specified',
           listRoute: `/v0/accounts/${accounts[0]}/cases?offset=2`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
-              .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+          expectedCases: () =>
+            createdCases
+              .filter(cas => cas.accountSid === accounts[0])
+              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
               .slice(2),
           expectedTotalCount: 5,
         },
@@ -323,14 +301,12 @@ describe('/cases route', () => {
           description:
             'should apply offset and limit to filtered set when helpline filter is applied',
           listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[0]}&limit=1&offset=1`,
-          expectedCasesAndContacts: () =>
-            createdCasesAndContacts
+          expectedCases: () =>
+            createdCases
               .filter(
-                ccc =>
-                  ccc.case.accountSid === accounts[0] &&
-                  ccc.case.helpline === helplines[0],
+                cas => cas.accountSid === accounts[0] && cas.helpline === helplines[0],
               )
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
               .slice(1, 2),
           expectedTotalCount: 2,
         },
@@ -339,13 +315,9 @@ describe('/cases route', () => {
       // eslint-disable-next-line jest/expect-expect
       each(testCases).test(
         '$description',
-        async ({ listRoute, expectedCasesAndContacts, expectedTotalCount }: TestCase) => {
+        async ({ listRoute, expectedCases, expectedTotalCount }: TestCase) => {
           const response = await request.get(listRoute).set(headers);
-          validateCaseListResponse(
-            response,
-            expectedCasesAndContacts(),
-            expectedTotalCount,
-          );
+          validateCaseListResponse(response, expectedCases(), expectedTotalCount);
         },
       );
     });
@@ -443,14 +415,14 @@ describe('/cases route', () => {
   describe('/cases/search route', () => {
     describe('POST', () => {
       describe('3 sample records', () => {
-        let createdCase1;
-        let createdCase2;
-        let createdCase3;
-        let createdContact: contactDb.Contact;
+        let createdCase1: CaseService;
+        let createdCase2: CaseService;
+        let createdCase3: CaseService;
         const subRoute = `${route}/search`;
         const searchTestRunStart = new Date().toISOString();
 
         beforeEach(async () => {
+          let createdContact: contactDb.ContactRecord;
           createdCase1 = await caseApi.createCase(
             case1,
             accountSid,
@@ -502,15 +474,6 @@ describe('/cases route', () => {
           delete createdContact.referrals;
           // Get case 2 again, now a contact is connected
           createdCase2 = await caseApi.getCase(createdCase2.id, accountSid, ALWAYS_CAN);
-        });
-
-        afterEach(async () => {
-          await db.none(`DELETE FROM "Contacts" WHERE id = $<id>`, {
-            id: createdContact.id,
-          });
-          await caseDb.deleteById(createdCase1.id, accountSid);
-          await caseDb.deleteById(createdCase2.id, accountSid);
-          await caseDb.deleteById(createdCase3.id, accountSid);
         });
 
         test('should return 401', async () => {
@@ -573,7 +536,7 @@ describe('/cases route', () => {
             .query({ limit: 20, offset: 0 })
             .set(headers)
             .send(body);
-          validateSingleCaseResponse(response, createdCase2, createdContact);
+          validateSingleCaseResponse(response, createdCase2);
         });
 
         // eslint-disable-next-line jest/expect-expect
@@ -586,7 +549,7 @@ describe('/cases route', () => {
             .query({ limit: 20, offset: 0 })
             .set(headers)
             .send(body);
-          validateSingleCaseResponse(response, createdCase2, createdContact);
+          validateSingleCaseResponse(response, createdCase2);
         });
 
         // eslint-disable-next-line jest/expect-expect
@@ -672,9 +635,7 @@ describe('/cases route', () => {
             description: string;
             searchRoute: string;
             sampleConfig: InsertSampleCaseSettings;
-            expectedCasesAndContacts: (
-              sampleCasesAndContacts: CaseWithContact[],
-            ) => CaseWithContact[];
+            expectedCases: (sampleCases: CaseService[]) => CaseService[];
             body?: any;
             expectedTotalCount: number;
           };
@@ -685,10 +646,10 @@ describe('/cases route', () => {
                 'should return all cases for account when no helpline, limit or offset is specified',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .filter(cas => cas.accountSid === accounts[0])
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -699,14 +660,13 @@ describe('/cases route', () => {
                 helpline: helplines[1],
               },
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      ccc.case.accountSid === accounts[0] &&
-                      ccc.case.helpline === helplines[1],
+                    cas =>
+                      cas.accountSid === accounts[0] && cas.helpline === helplines[1],
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 1,
             },
             {
@@ -719,24 +679,24 @@ describe('/cases route', () => {
                 },
               },
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      ccc.case.accountSid === accounts[0] &&
-                      [helplines[1], helplines[2]].indexOf(ccc.case.helpline) !== -1,
+                    cas =>
+                      cas.accountSid === accounts[0] &&
+                      [helplines[1], helplines[2]].indexOf(cas.helpline) !== -1,
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 3,
             },
             {
               description: 'should return first X cases when limit X is specified',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search?limit=3`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .filter(cas => cas.accountSid === accounts[0])
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
                   .slice(0, 3),
               expectedTotalCount: 5,
             },
@@ -745,10 +705,10 @@ describe('/cases route', () => {
                 'should return X cases, starting at Y when limit X and offset Y are specified',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search?limit=2&offset=1`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .filter(cas => cas.accountSid === accounts[0])
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
                   .slice(1, 3),
               expectedTotalCount: 5,
             },
@@ -757,10 +717,10 @@ describe('/cases route', () => {
                 'should return remaining cases, starting at Y when offset Y and no limit is specified',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search?offset=2`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .filter(cas => cas.accountSid === accounts[0])
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
                   .slice(2),
               expectedTotalCount: 5,
             },
@@ -772,14 +732,13 @@ describe('/cases route', () => {
                 helpline: helplines[0],
               },
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      ccc.case.accountSid === accounts[0] &&
-                      ccc.case.helpline === helplines[0],
+                    cas =>
+                      cas.accountSid === accounts[0] && cas.helpline === helplines[0],
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
                   .slice(1, 2),
               expectedTotalCount: 2,
             },
@@ -787,10 +746,10 @@ describe('/cases route', () => {
               description: 'should order by ID ASC when this is specified in the query',
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search?sortBy=id&sortDirection=ASC`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc1.case.id - ccc2.case.id),
+                  .filter(cas => cas.accountSid === accounts[0])
+                  .sort((c1, c2) => parseInt(c1.id) - parseInt(c2.id)),
               expectedTotalCount: 5,
             },
             {
@@ -801,10 +760,10 @@ describe('/cases route', () => {
                 phoneNumber: '111 222 333',
               },
               sampleConfig: SEARCHABLE_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 0 || idx % 4 === 3)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -815,10 +774,10 @@ describe('/cases route', () => {
                 phoneNumber: '444',
               },
               sampleConfig: SEARCHABLE_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 1)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 3,
             },
             {
@@ -828,10 +787,10 @@ describe('/cases route', () => {
                 phoneNumber: '111 222 333',
               },
               sampleConfig: SEARCHABLE_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 0 || idx % 4 === 3)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
                   .slice(0, 3),
               expectedTotalCount: 5,
             },
@@ -843,10 +802,10 @@ describe('/cases route', () => {
                 phoneNumber: '111 222 333',
               },
               sampleConfig: SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 1 || idx % 4 === 3)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -861,10 +820,10 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 statuses: ['open', 'closed', 'other'],
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ['other', 'closed'].indexOf(ccc.case.status) !== -1)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .filter(cas => ['other', 'closed'].indexOf(cas.status) !== -1)
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 6,
             },
             {
@@ -879,12 +838,12 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 workers: ['WK-worker-1', 'WK-worker-2', 'WK-worker-3', 'WK-worker-4'],
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc => ['WK-worker-1', 'WK-worker-3'].indexOf(ccc.case.status) !== -1,
+                    cas => ['WK-worker-1', 'WK-worker-3'].indexOf(cas.status) !== -1,
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -900,10 +859,10 @@ describe('/cases route', () => {
                 ...SIMPLE_SAMPLE_CONFIG,
                 contactNames: [{ firstName: 'a', lastName: 'z' }, null],
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ccc.case.connectedContacts.length > 0)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .filter((cas, idx) => idx % 2 === 0)
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -921,14 +880,14 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 followUpDateGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      new Date(ccc.case.info.followUpDate) <
+                    cas =>
+                      new Date(cas.info.followUpDate) <
                       add(baselineDate, { days: 4, hours: 12 }),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -947,16 +906,16 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 followUpDateGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      new Date(ccc.case.info.followUpDate) >
+                    cas =>
+                      new Date(cas.info.followUpDate) >
                         add(baselineDate, { days: 2, hours: 12 }) &&
-                      new Date(ccc.case.info.followUpDate) <
+                      new Date(cas.info.followUpDate) <
                         add(baselineDate, { days: 6, hours: 12 }),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 4,
             },
             {
@@ -976,17 +935,17 @@ describe('/cases route', () => {
                 followUpDateGenerator: idx =>
                   idx % 2 ? '' : addDays(baselineDate, idx).toISOString(),
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      ccc.case.info.followUpDate &&
-                      new Date(ccc.case.info.followUpDate) >
+                    cas =>
+                      cas.info.followUpDate &&
+                      new Date(cas.info.followUpDate) >
                         add(baselineDate, { days: 2, hours: 12 }) &&
-                      new Date(ccc.case.info.followUpDate) <
+                      new Date(cas.info.followUpDate) <
                         add(baselineDate, { days: 6, hours: 12 }),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 2,
             },
             {
@@ -1005,10 +964,10 @@ describe('/cases route', () => {
                 followUpDateGenerator: idx =>
                   idx % 2 === 1 ? addDays(baselineDate, idx).toISOString() : undefined,
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => !ccc.case.info.followUpDate)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .filter(cas => !cas.info.followUpDate)
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -1027,10 +986,10 @@ describe('/cases route', () => {
                 followUpDateGenerator: idx =>
                   idx % 2 === 1 ? addDays(baselineDate, idx).toISOString() : '',
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => !ccc.case.info.followUpDate)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .filter(cas => !cas.info.followUpDate)
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 5,
             },
             {
@@ -1049,7 +1008,7 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 createdAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
-              expectedCasesAndContacts: () => [],
+              expectedCases: () => [],
               expectedTotalCount: 0,
             },
             {
@@ -1068,8 +1027,10 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 createdAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts.sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              expectedCases: sampleCasesAndContacts =>
+                sampleCasesAndContacts.sort(
+                  (c1, c2) => parseInt(c2.id) - parseInt(c1.id),
+                ),
               expectedTotalCount: 10,
             },
             {
@@ -1088,7 +1049,7 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 updatedAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
-              expectedCasesAndContacts: () => [],
+              expectedCases: () => [],
               expectedTotalCount: 0,
             },
             {
@@ -1107,99 +1068,18 @@ describe('/cases route', () => {
                 ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
                 updatedAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts.sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              expectedCases: sampleCasesAndContacts =>
+                sampleCasesAndContacts.sort(
+                  (c1, c2) => parseInt(c2.id) - parseInt(c1.id),
+                ),
               expectedTotalCount: 10,
-            },
-            {
-              description:
-                'should include only cases matching category if one is specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-              body: {
-                filters: <CaseListFilters>{
-                  categories: [{ category: 'a', subcategory: 'ab' }],
-                },
-              },
-              sampleConfig: <InsertSampleCaseSettings>{
-                ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-                categoriesGenerator: idx => ({
-                  a: ['aa', ...(!!(idx % 2) ? ['ab'] : [])],
-                  b: !(idx % 3) ? ['ba'] : [],
-                }),
-              },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-                  .filter(ccc => ccc.contact.rawJson.categories.a.includes('ab')),
-              expectedTotalCount: 5,
-            },
-            {
-              description:
-                'should include only cases matching any category if multiple are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-              body: {
-                filters: <CaseListFilters>{
-                  categories: [
-                    { category: 'a', subcategory: 'ab' },
-                    { category: 'b', subcategory: 'ba' },
-                    { category: 'b', subcategory: 'bb' },
-                  ],
-                },
-              },
-              sampleConfig: <InsertSampleCaseSettings>{
-                ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-                categoriesGenerator: idx => ({
-                  a: ['aa', ...(!(idx % 2) ? ['ab'] : [])],
-                  b: !(idx % 3) ? ['ba'] : [],
-                }),
-              },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-                  .filter(
-                    ccc =>
-                      ccc.contact.rawJson.categories.a.includes('ab') ||
-                      ccc.contact.rawJson.categories.b.includes('ba') ||
-                      ccc.contact.rawJson.categories.b.includes('bb'),
-                  ),
-              expectedTotalCount: 7,
-            },
-            {
-              description: 'should allow any characters in categories and subcategories',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-              body: {
-                filters: <CaseListFilters>{
-                  categories: [
-                    { category: 'a', subcategory: "a'b\n,.!\t:{}" },
-                    { category: "'b\n\r,.!\t:{}", subcategory: 'ba' },
-                    { category: 'b', subcategory: 'bb' },
-                  ],
-                },
-              },
-              sampleConfig: <InsertSampleCaseSettings>{
-                ...SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-                categoriesGenerator: idx => ({
-                  a: ['aa', ...(!(idx % 2) ? ["a'b\n,.!\t:{}"] : [])],
-                  "'b\n\r,.!	:{}": !(idx % 3) ? ['ba'] : [],
-                }),
-              },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
-                  .filter(
-                    ccc =>
-                      ccc.contact.rawJson.categories.a.includes("a'b\n,.!\t:{}") ||
-                      ccc.contact.rawJson.categories["'b\n\r,.!	:{}"].includes('ba') ||
-                      ccc.contact.rawJson.categories["'b\n\r,.!	:{}"].includes('bb'),
-                  ),
-              expectedTotalCount: 7,
             },
             {
               description:
                 'should return empty set if different HRM sub account specified',
               searchRoute: `/v0/accounts/${accounts[0]}-other/cases/search`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
-              expectedCasesAndContacts: () => [],
+              expectedCases: () => [],
               expectedTotalCount: 0,
             },
             {
@@ -1230,14 +1110,14 @@ describe('/cases route', () => {
                   },
                 ],
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      ccc.case.accountSid === accounts[0] &&
-                      ccc.case.info?.operatingArea === 'East',
+                    cas =>
+                      cas.accountSid === accounts[0] &&
+                      cas.info?.operatingArea === 'East',
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 4,
             },
             {
@@ -1268,14 +1148,14 @@ describe('/cases route', () => {
                   },
                 ],
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      ccc.case.accountSid === accounts[0] &&
-                      ['East', 'North'].includes(ccc.case.info?.operatingArea),
+                    cas =>
+                      cas.accountSid === accounts[0] &&
+                      ['East', 'North'].includes(cas.info?.operatingArea),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 4,
             },
             {
@@ -1318,28 +1198,20 @@ describe('/cases route', () => {
                   },
                 ],
               },
-              expectedCasesAndContacts: sampleCasesAndContacts =>
+              expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(
-                    ccc =>
-                      ccc.case.accountSid === accounts[0] &&
-                      ccc.case.helpline === helplines[0] &&
-                      ccc.case.info?.operatingArea === 'East',
+                    cas =>
+                      cas.accountSid === accounts[0] &&
+                      cas.helpline === helplines[0] &&
+                      cas.info?.operatingArea === 'East',
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
               expectedTotalCount: 2,
             },
           ];
 
-          let createdCasesAndContacts: CaseWithContact[];
-          afterEach(async () => {
-            await db.none(`DELETE FROM "Contacts" WHERE id IN ($<ids:csv>)`, {
-              ids: createdCasesAndContacts.map(ccc => ccc.contact?.id).filter(id => id),
-            });
-            await db.none(`DELETE FROM "Cases" WHERE id IN ($<ids:csv>)`, {
-              ids: createdCasesAndContacts.map(ccc => ccc.case.id),
-            });
-          });
+          let createdCasesAndContacts: CaseService[];
 
           each(testCases).test(
             '$description',
@@ -1347,19 +1219,14 @@ describe('/cases route', () => {
               sampleConfig,
               body,
               searchRoute,
-              expectedCasesAndContacts,
+              expectedCases,
               expectedTotalCount,
-            }) => {
+            }: SearchTest) => {
               createdCasesAndContacts = await insertSampleCases(sampleConfig);
               const response = await request.post(searchRoute).set(headers).send(body);
               validateCaseListResponse(
                 response,
-                expectedCasesAndContacts(
-                  createdCasesAndContacts.map(cc => ({
-                    case: cc.case,
-                    contact: cc?.contact,
-                  })),
-                ),
+                expectedCases(createdCasesAndContacts),
                 expectedTotalCount,
               );
             },
