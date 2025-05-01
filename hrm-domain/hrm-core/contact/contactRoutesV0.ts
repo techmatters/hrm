@@ -127,47 +127,6 @@ const newContactRouter = (isPublic: boolean) => {
       },
     );
 
-    const validatePatchPayload = (
-      { body }: Request,
-      res: Response,
-      next: NextFunction,
-    ) => {
-      if (typeof body !== 'object' || Array.isArray(body)) {
-        throw createError(400);
-      }
-
-      next();
-    };
-
-    contactsRouter.patch(
-      '/:contactId',
-      validatePatchPayload,
-      canPerformEditContactAction,
-      async (req, res) => {
-        const { hrmAccountId, user } = req;
-        const { contactId } = req.params;
-        const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
-        try {
-          const contact = await patchContact(
-            hrmAccountId,
-            user.workerSid,
-            finalize,
-            contactId,
-            req.body,
-            {
-              can: req.can,
-              user,
-            },
-          );
-          res.json(contact);
-        } catch (err) {
-          if (err.message.toLowerCase().includes('contact not found')) {
-            throw createError(404);
-          } else throw err;
-        }
-      },
-    );
-
     contactsRouter.post(
       '/:contactId/conversationMedia',
       openEndpoint,
@@ -196,14 +155,6 @@ const newContactRouter = (isPublic: boolean) => {
   }
 
   // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
-
-  /**
-   * @param {any} req. - Request
-   * @param {any} res - User for requested
-   * @param {NewContactRecord} req.body - Contact to create
-   *
-   * @returns {Contact} - Created contact
-   */
   contactsRouter.post('/', openEndpoint, async (req: Request, res) => {
     const getCreatedBy = ({ body, user }: { user: Request['user']; body: any }) => {
       if (isPublic) {
@@ -251,6 +202,43 @@ const newContactRouter = (isPublic: boolean) => {
           err.message.toLowerCase().includes('violates foreign key constraint') ||
           err.message.toLowerCase().includes('contact not found')
         ) {
+          throw createError(404);
+        } else throw err;
+      }
+    },
+  );
+
+  const validatePatchPayload = ({ body }: Request, res: Response, next: NextFunction) => {
+    if (typeof body !== 'object' || Array.isArray(body)) {
+      throw createError(400);
+    }
+
+    next();
+  };
+
+  contactsRouter.patch(
+    '/:contactId',
+    validatePatchPayload,
+    isPublic ? canPerformEditContactAction : openEndpoint,
+    async (req, res) => {
+      const { hrmAccountId, user } = req;
+      const { contactId } = req.params;
+      const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
+      try {
+        const contact = await patchContact(
+          hrmAccountId,
+          user.workerSid,
+          finalize,
+          contactId,
+          req.body,
+          {
+            can: req.can,
+            user,
+          },
+        );
+        res.json(contact);
+      } catch (err) {
+        if (err.message.toLowerCase().includes('contact not found')) {
           throw createError(404);
         } else throw err;
       }
