@@ -85,29 +85,29 @@ export const getTimelinesForCases = async (
     user: TwilioUser;
     permissions: RulesFile;
   },
-  cases: CaseRecord[],
-): Promise<{ case: CaseRecord; timeline: TimelineActivity<any>[] }[]> => {
+  cases: CaseService[],
+): Promise<{ case: CaseService; timeline: TimelineActivity<any>[] }[]> => {
   const { timelines } = await getMultipleCaseTimelines(
     accountSid,
     userData,
-    cases.map(c => c.id.toString()),
+    cases.map(c => c.id),
     ['*'],
     true,
     { offset: '0', limit: '5000' },
   );
   return cases.map(c => ({
     case: c,
-    timeline: timelines[c.id.toString()] ?? [],
+    timeline: timelines[c.id] ?? [],
   }));
 };
 
 export const getTimelineForCase = async (
-  accountSid: CaseRecord['accountSid'],
+  accountSid: CaseService['accountSid'],
   userData: {
     user: TwilioUser;
     permissions: RulesFile;
   },
-  cas: CaseRecord,
+  cas: CaseService,
 ): Promise<TimelineActivity<any>[]> => {
   return (await getTimelinesForCases(accountSid, userData, [cas]))[0].timeline;
 };
@@ -132,10 +132,15 @@ const doCaseChangeNotification =
         caseRecord ?? (await getById(parseInt(caseId), accountSid, maxPermissions.user));
 
       if (caseObj) {
-        const timeline = await getTimelineForCase(accountSid, maxPermissions, caseObj);
+        const caseService = caseRecordToCase(caseObj);
+        const timeline = await getTimelineForCase(
+          accountSid,
+          maxPermissions,
+          caseService,
+        );
         await publishCaseChangeNotification({
           accountSid,
-          case: caseRecordToCase(caseObj),
+          case: caseService,
           timeline,
           operation,
         });
