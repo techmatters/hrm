@@ -274,6 +274,69 @@ const generateTranscriptQueriesFromFilters = ({
   }));
 };
 
+const generateContactNumberQueries = ({
+  searchParameters,
+  buildParams = { parentPath: '' },
+  queryWrapper = p => p,
+}: {
+  searchParameters: SearchParametersContact;
+  buildParams?: { parentPath: string };
+  queryWrapper?: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
+}): QueryDslQueryContainer[] => {
+  const defaultQueries = [
+    generateQueryFromSearchTerms({
+      documentType: DocumentType.Contact,
+      fields: [
+        {
+          field: 'number',
+          boost: BOOST_FACTORS.contact,
+        },
+      ],
+      searchTerm: searchParameters.searchTerm,
+      parentPath: buildParams.parentPath,
+      queryWrapper,
+    }),
+  ];
+  const numberTerm = searchParameters.searchTerm.match(/\d+/g)?.join('');
+
+  if (
+    numberTerm &&
+    (searchParameters.searchTerm.startsWith('+') || numberTerm.length > 8)
+  ) {
+    return [
+      ...defaultQueries,
+      generateQueryFromSearchTerms({
+        documentType: DocumentType.Contact,
+        fields: [
+          {
+            field: 'number',
+            boost: BOOST_FACTORS.contact,
+          },
+        ],
+        searchTerm: numberTerm,
+        parentPath: buildParams.parentPath,
+        queryWrapper,
+      }),
+      generateQueryFromSearchTerms({
+        documentType: DocumentType.Contact,
+        fields: [
+          {
+            field: 'number',
+            boost: BOOST_FACTORS.contact,
+          },
+        ],
+        searchTerm: `+${numberTerm}`,
+        parentPath: buildParams.parentPath,
+        queryWrapper,
+      }),
+    ];
+  }
+
+  return defaultQueries;
+};
+
 const generateContactsQueriesFromFilters = ({
   searchParameters,
   buildParams = { parentPath: '' },
@@ -303,16 +366,18 @@ const generateContactsQueriesFromFilters = ({
     queryWrapper,
   });
 
+  const numberQueries = generateContactNumberQueries({
+    searchParameters,
+    buildParams,
+    queryWrapper,
+  });
+
   const queries = [
     generateQueryFromSearchTerms({
       documentType: DocumentType.Contact,
       fields: [
         {
           field: 'content',
-          boost: BOOST_FACTORS.contact,
-        },
-        {
-          field: 'number',
           boost: BOOST_FACTORS.contact,
         },
         {
@@ -333,6 +398,7 @@ const generateContactsQueriesFromFilters = ({
         ...queries.map(q => ({
           bool: { must: [q] },
         })),
+        ...numberQueries,
         ...transcriptQueries,
       ],
     },
