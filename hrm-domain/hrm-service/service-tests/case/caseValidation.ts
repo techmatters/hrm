@@ -45,7 +45,8 @@ export const validateCaseListResponse = (
   );
   expectedCaseAndContactModels.forEach(
     ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
-      const { connectedContacts, ...caseDataValues } = expectedCaseModel;
+      const { ...caseDataValues } = expectedCaseModel;
+      delete (caseDataValues as any).connectedContacts;
       expect(actual.body.cases[index]).toMatchObject({
         ...caseDataValues,
         createdAt: expectedCaseModel.createdAt,
@@ -55,6 +56,8 @@ export const validateCaseListResponse = (
       expect(actual.body.cases[index].connectedContacts).toStrictEqual([
         expect.objectContaining({
           ...expectedContactModel,
+          id: parseInt(expectedContactModel.id),
+          caseId: parseInt(expectedContactModel.caseId),
           timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
           createdAt: expect.toParseAsDate(expectedContactModel.createdAt),
           finalizedAt: expect.toParseAsDate(expectedContactModel.finalizedAt),

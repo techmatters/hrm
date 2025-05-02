@@ -35,6 +35,7 @@ import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as mocks from '../mocks';
 import {
   connectContactToCase,
+  contactRecordToContact,
   createContact,
 } from '@tech-matters/hrm-core/contact/contactService';
 import { headers, useOpenRules } from '../server';
@@ -145,11 +146,13 @@ const insertSampleCases = async ({
       const { contact: savedContact } = (
         await contactDb.create()(accounts[i % accounts.length], contactToCreate)
       ).unwrap();
-      connectedContact = await contactDb.connectToCase()(
-        savedContact.accountSid,
-        savedContact.id.toString(),
-        createdCase.id.toString(),
-        workerSid,
+      connectedContact = contactRecordToContact(
+        await contactDb.connectToCase()(
+          savedContact.accountSid,
+          savedContact.id.toString(),
+          createdCase.id.toString(),
+          workerSid,
+        ),
       );
     }
     createdCase = await populateCaseSections(
@@ -218,13 +221,16 @@ describe('/cases route', () => {
         contactToCreate.taskId = `TASK_SID`;
         contactToCreate.channelSid = `CHANNEL_SID`;
         contactToCreate.serviceSid = 'SERVICE_SID';
-        createdContact = (await contactDb.create()(accountSid, contactToCreate)).unwrap()
-          .contact;
-        createdContact = await contactDb.connectToCase()(
-          accountSid,
-          createdContact.id.toString(),
-          createdCase.id,
-          workerSid,
+        createdContact = contactRecordToContact(
+          (await contactDb.create()(accountSid, contactToCreate)).unwrap().contact,
+        );
+        createdContact = contactRecordToContact(
+          await contactDb.connectToCase()(
+            accountSid,
+            createdContact.id.toString(),
+            createdCase.id,
+            workerSid,
+          ),
         );
         delete createdContact.conversationMedia;
         delete createdContact.csamReports;
@@ -270,7 +276,7 @@ describe('/cases route', () => {
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
           expectedTotalCount: 5,
         },
         {
@@ -284,7 +290,7 @@ describe('/cases route', () => {
                   ccc.case.accountSid === accounts[0] &&
                   ccc.case.helpline === helplines[1],
               )
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+              .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
           expectedTotalCount: 1,
         },
         {
@@ -293,7 +299,7 @@ describe('/cases route', () => {
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
               .slice(0, 3),
           expectedTotalCount: 5,
         },
@@ -304,7 +310,7 @@ describe('/cases route', () => {
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
               .slice(1, 3),
           expectedTotalCount: 5,
         },
@@ -315,7 +321,7 @@ describe('/cases route', () => {
           expectedCasesAndContacts: () =>
             createdCasesAndContacts
               .filter(ccc => ccc.case.accountSid === accounts[0])
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
               .slice(2),
           expectedTotalCount: 5,
         },
@@ -330,7 +336,7 @@ describe('/cases route', () => {
                   ccc.case.accountSid === accounts[0] &&
                   ccc.case.helpline === helplines[0],
               )
-              .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+              .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
               .slice(1, 2),
           expectedTotalCount: 2,
         },
@@ -489,13 +495,16 @@ describe('/cases route', () => {
           toCreate.channelSid = `CHANNEL_SID`;
           toCreate.serviceSid = 'SERVICE_SID';
           // Connects createdContact with createdCase2
-          createdContact = (await contactDb.create()(accountSid, toCreate)).unwrap()
-            .contact;
-          createdContact = await contactDb.connectToCase()(
-            accountSid,
-            createdContact.id.toString(),
-            createdCase2.id,
-            workerSid,
+          createdContact = contactRecordToContact(
+            (await contactDb.create()(accountSid, toCreate)).unwrap().contact,
+          );
+          createdContact = contactRecordToContact(
+            await contactDb.connectToCase()(
+              accountSid,
+              createdContact.id,
+              createdCase2.id,
+              workerSid,
+            ),
           );
           delete createdContact.csamReports;
           delete createdContact.conversationMedia;
@@ -688,7 +697,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -706,7 +715,7 @@ describe('/cases route', () => {
                       ccc.case.accountSid === accounts[0] &&
                       ccc.case.helpline === helplines[1],
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 1,
             },
             {
@@ -726,7 +735,7 @@ describe('/cases route', () => {
                       ccc.case.accountSid === accounts[0] &&
                       [helplines[1], helplines[2]].indexOf(ccc.case.helpline) !== -1,
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 3,
             },
             {
@@ -736,7 +745,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .slice(0, 3),
               expectedTotalCount: 5,
             },
@@ -748,7 +757,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .slice(1, 3),
               expectedTotalCount: 5,
             },
@@ -760,7 +769,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .slice(2),
               expectedTotalCount: 5,
             },
@@ -779,7 +788,7 @@ describe('/cases route', () => {
                       ccc.case.accountSid === accounts[0] &&
                       ccc.case.helpline === helplines[0],
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .slice(1, 2),
               expectedTotalCount: 2,
             },
@@ -790,7 +799,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => ccc.case.accountSid === accounts[0])
-                  .sort((ccc1, ccc2) => ccc1.case.id - ccc2.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc1.case.id) - parseInt(ccc2.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -804,7 +813,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 0 || idx % 4 === 3)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -818,7 +827,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 1)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 3,
             },
             {
@@ -831,7 +840,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 0 || idx % 4 === 3)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .slice(0, 3),
               expectedTotalCount: 5,
             },
@@ -846,7 +855,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter((ccc, idx) => idx % 4 === 1 || idx % 4 === 3)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -864,7 +873,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => ['other', 'closed'].indexOf(ccc.case.status) !== -1)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 6,
             },
             {
@@ -884,7 +893,7 @@ describe('/cases route', () => {
                   .filter(
                     ccc => ['WK-worker-1', 'WK-worker-3'].indexOf(ccc.case.status) !== -1,
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -902,8 +911,8 @@ describe('/cases route', () => {
               },
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .filter(ccc => ccc.case.connectedContacts.length > 0)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .filter(ccc => (ccc.case as any).connectedContacts.length > 0)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -928,7 +937,7 @@ describe('/cases route', () => {
                       new Date(ccc.case.info.followUpDate) <
                       add(baselineDate, { days: 4, hours: 12 }),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -956,7 +965,7 @@ describe('/cases route', () => {
                       new Date(ccc.case.info.followUpDate) <
                         add(baselineDate, { days: 6, hours: 12 }),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 4,
             },
             {
@@ -986,7 +995,7 @@ describe('/cases route', () => {
                       new Date(ccc.case.info.followUpDate) <
                         add(baselineDate, { days: 6, hours: 12 }),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 2,
             },
             {
@@ -1008,7 +1017,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => !ccc.case.info.followUpDate)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -1030,7 +1039,7 @@ describe('/cases route', () => {
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
                   .filter(ccc => !ccc.case.info.followUpDate)
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 5,
             },
             {
@@ -1069,7 +1078,9 @@ describe('/cases route', () => {
                 createdAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
               expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts.sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                sampleCasesAndContacts.sort(
+                  (ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id),
+                ),
               expectedTotalCount: 10,
             },
             {
@@ -1108,7 +1119,9 @@ describe('/cases route', () => {
                 updatedAtGenerator: idx => addDays(baselineDate, idx).toISOString(),
               },
               expectedCasesAndContacts: sampleCasesAndContacts =>
-                sampleCasesAndContacts.sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                sampleCasesAndContacts.sort(
+                  (ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id),
+                ),
               expectedTotalCount: 10,
             },
             {
@@ -1129,7 +1142,7 @@ describe('/cases route', () => {
               },
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .filter(ccc => ccc.contact.rawJson.categories.a.includes('ab')),
               expectedTotalCount: 5,
             },
@@ -1155,7 +1168,7 @@ describe('/cases route', () => {
               },
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .filter(
                     ccc =>
                       ccc.contact.rawJson.categories.a.includes('ab') ||
@@ -1185,7 +1198,7 @@ describe('/cases route', () => {
               },
               expectedCasesAndContacts: sampleCasesAndContacts =>
                 sampleCasesAndContacts
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id)
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id))
                   .filter(
                     ccc =>
                       ccc.contact.rawJson.categories.a.includes("a'b\n,.!\t:{}") ||
@@ -1237,7 +1250,7 @@ describe('/cases route', () => {
                       ccc.case.accountSid === accounts[0] &&
                       ccc.case.info?.operatingArea === 'East',
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 4,
             },
             {
@@ -1275,7 +1288,7 @@ describe('/cases route', () => {
                       ccc.case.accountSid === accounts[0] &&
                       ['East', 'North'].includes(ccc.case.info?.operatingArea),
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 4,
             },
             {
@@ -1326,7 +1339,7 @@ describe('/cases route', () => {
                       ccc.case.helpline === helplines[0] &&
                       ccc.case.info?.operatingArea === 'East',
                   )
-                  .sort((ccc1, ccc2) => ccc2.case.id - ccc1.case.id),
+                  .sort((ccc1, ccc2) => parseInt(ccc2.case.id) - parseInt(ccc1.case.id)),
               expectedTotalCount: 2,
             },
           ];
