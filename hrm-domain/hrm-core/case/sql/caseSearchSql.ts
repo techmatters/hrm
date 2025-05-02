@@ -81,25 +81,12 @@ const dateFilterCondition = (
   return existsCondition;
 };
 
-// Produces a table of category / subcategory pairs from the input category filters, and another from the categories specified in the contact json, and joins on them
-const CATEGORIES_FILTER_SQL = `EXISTS (
-SELECT 1 FROM 
-(
-    SELECT categories.key AS category, subcategories AS subcategory 
-    FROM "Contacts" c, jsonb_each(c."rawJson"->'categories') categories, jsonb_array_elements_text(categories.value) AS subcategories 
-    WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
-) AS availableCategories
-INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category text, subcategory text) 
-ON requiredCategories.category = availableCategories.category AND requiredCategories.subcategory = availableCategories.subcategory
-)`;
-
 const filterSql = ({
   counsellors,
   statuses,
   createdAt = {},
   updatedAt = {},
   followUpDate = {},
-  categories,
   helplines,
   excludedStatuses,
   includeOrphans,
@@ -136,9 +123,6 @@ const filterSql = ({
       ),
     ].filter(sql => sql),
   );
-  if (categories && categories.length) {
-    filterSqlClauses.push(CATEGORIES_FILTER_SQL);
-  }
   if (!includeOrphans) {
     filterSqlClauses.push(`EXISTS (
         SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"

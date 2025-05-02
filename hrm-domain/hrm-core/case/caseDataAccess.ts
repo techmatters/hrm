@@ -81,16 +81,10 @@ export type CaseSearchCriteria = {
   lastName?: string;
 };
 
-export type CategoryFilter = {
-  category: string;
-  subcategory: string;
-};
-
 export type CaseListFilters = {
   statuses?: string[];
   excludedStatuses?: string[];
   counsellors?: string[];
-  categories?: CategoryFilter[];
   customFilter?: { [key: string]: string[] };
   createdAt?: DateFilter;
   updatedAt?: DateFilter;
