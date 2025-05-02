@@ -701,10 +701,10 @@ describe('/profiles', () => {
                 expect(response.body.updatedBy).not.toBeNull();
 
                 createdProfileSection = response.body;
-
+                console.debug('Profile ID', profileId, typeof profileId);
                 const updatedProfile = await profilesDB.getProfileById()(
                   accountSid,
-                  profileId,
+                  typeof profileId !== 'number' ? parseInt(profileId) : profileId,
                 );
 
                 expect(new Date(updatedProfile.updatedAt).getTime()).toBeGreaterThan(
