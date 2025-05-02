@@ -20,6 +20,7 @@ import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
+  selectCaseFilterOnly,
   selectCasesByIds,
   selectCaseSearch,
   selectCaseSearchByProfileId,
@@ -226,10 +227,24 @@ const searchParametersToQueryParameters: SearchQueryParamsBuilder<CaseSearchCrit
   twilioWorkerSid: user.workerSid,
 });
 
-export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
-  selectCaseSearch,
-  searchParametersToQueryParameters,
-);
+export const search: SearchQueryFunction<CaseSearchCriteria> = (
+  user,
+  permissions,
+  listConfiguration,
+  accountSid,
+  searchCriteria,
+  filters,
+) =>
+  // searchCriteria is only set in legacy search queries. Once support for this is removed, remove this check and all supporting SQL
+  generalizedSearchQueryFunction<CaseSearchCriteria>(
+    searchCriteria?.contactNumber ||
+      searchCriteria?.phoneNumber ||
+      searchCriteria?.firstName ||
+      searchCriteria?.lastName
+      ? selectCaseSearch
+      : selectCaseFilterOnly,
+    searchParametersToQueryParameters,
+  )(user, permissions, listConfiguration, accountSid, searchCriteria, filters);
 
 export const searchByProfileId = generalizedSearchQueryFunction<{
   profileId: number;

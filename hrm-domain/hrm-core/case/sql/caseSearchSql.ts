@@ -232,7 +232,7 @@ const selectCasesUnorderedSql = ({
   LEFT JOIN LATERAL (
       ${selectContactsOwnedCount('twilioWorkerSid')}
   ) "contactsOwnedCount" ON true
-  ${whereClause} GROUP BY
+  ${whereClause ?? ''} GROUP BY
     "cases"."accountSid",
     "cases"."id",
     "contactsOwnedCount"."contactsOwnedByUserCount"
@@ -281,23 +281,29 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     ].filter(sql => sql).join(`
     AND `);
     const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
-    return selectCasesPaginatedSql({ whereClause: whereSql, orderByClause: orderBySql });
+    return selectCasesPaginatedSql({
+      whereClause: whereSql ? `WHERE ${whereSql}` : null,
+      orderByClause: orderBySql,
+    });
   };
 };
 
 export const selectCaseSearch = selectSearchCaseBaseQuery(
-  `WHERE
-      $<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>
+  `$<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>
     AND ${SEARCH_WHERE_CLAUSE}
   `,
 );
 
+export const selectCaseFilterOnly = selectSearchCaseBaseQuery(
+  'cases."accountSid" = $<accountSid>',
+);
+
 export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
-  `WHERE cases."accountSid" = $<accountSid> AND cases."id" IN (
+  `cases."accountSid" = $<accountSid> AND cases."id" IN (
     SELECT "caseId" FROM "Contacts" "c" WHERE "c"."profileId" = $<profileId> AND "c"."accountSid" = $<accountSid>
   )`,
 );
 
 export const selectCasesByIds = selectSearchCaseBaseQuery(
-  `WHERE cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
+  `cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
 );
