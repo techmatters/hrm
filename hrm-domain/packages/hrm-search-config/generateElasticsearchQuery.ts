@@ -29,6 +29,7 @@ import { assertExhaustive } from '@tech-matters/types';
 const BOOST_FACTORS = {
   id: 10,
   transcript: 1,
+  number: 2,
   contact: 2,
   case: 3,
 };
@@ -285,37 +286,41 @@ const generateContactNumberQueries = ({
     p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
 }): QueryDslQueryContainer[] => {
-  const defaultQueries = [
+  const terms = searchParameters.searchTerm.split(' ');
+
+  const boost = BOOST_FACTORS.number * BOOST_FACTORS.contact;
+
+  const defaultQueries = terms.map(t =>
     generateQueryFromSearchTerms({
       documentType: DocumentType.Contact,
       fields: [
         {
           field: 'number',
-          boost: BOOST_FACTORS.contact,
+          boost,
         },
       ],
-      searchTerm: searchParameters.searchTerm,
+      searchTerm: t,
       parentPath: buildParams.parentPath,
       queryWrapper,
     }),
-  ];
-  const numberTerm = searchParameters.searchTerm.match(/\d+/g)?.join('');
+  );
 
-  if (
-    numberTerm &&
-    (searchParameters.searchTerm.startsWith('+') || numberTerm.length > 8)
-  ) {
-    return [
+  const numberTerms = terms
+    .map(t => t.match(/\d+/g)?.join(''))
+    .filter(t => t && t.length > 8);
+
+  if (numberTerms.length) {
+    return numberTerms.flatMap(t => [
       ...defaultQueries,
       generateQueryFromSearchTerms({
         documentType: DocumentType.Contact,
         fields: [
           {
             field: 'number',
-            boost: BOOST_FACTORS.contact,
+            boost,
           },
         ],
-        searchTerm: numberTerm,
+        searchTerm: t,
         parentPath: buildParams.parentPath,
         queryWrapper,
       }),
@@ -324,14 +329,14 @@ const generateContactNumberQueries = ({
         fields: [
           {
             field: 'number',
-            boost: BOOST_FACTORS.contact,
+            boost,
           },
         ],
-        searchTerm: `+${numberTerm}`,
+        searchTerm: `+${t}`,
         parentPath: buildParams.parentPath,
         queryWrapper,
       }),
-    ];
+    ]);
   }
 
   return defaultQueries;
@@ -389,6 +394,7 @@ const generateContactsQueriesFromFilters = ({
       parentPath: buildParams.parentPath,
       queryWrapper,
     }),
+    ...numberQueries,
   ];
 
   const contactQueries = permissionFilters.contactFilters.map(contactFilter => ({
@@ -398,7 +404,6 @@ const generateContactsQueriesFromFilters = ({
         ...queries.map(q => ({
           bool: { must: [q] },
         })),
-        ...numberQueries,
         ...transcriptQueries,
       ],
     },
