@@ -288,58 +288,29 @@ const generateContactNumberQueries = ({
 }): QueryDslQueryContainer[] => {
   const terms = searchParameters.searchTerm.split(' ');
 
-  const boost = BOOST_FACTORS.number * BOOST_FACTORS.contact;
+  const numericTerms = terms
+    .map(t => t.match(/\d+/g)?.join(''))
+    .filter(t => t && t.length > 8);
 
-  const defaultQueries = terms.map(t =>
+  // filter duplicates
+  const numberTerms = Array.from(
+    new Set([...terms, ...numericTerms.flatMap(t => [t, `+${t}`])]),
+  );
+
+  return [
     generateQueryFromSearchTerms({
       documentType: DocumentType.Contact,
       fields: [
         {
           field: 'number',
-          boost,
+          boost: BOOST_FACTORS.number * BOOST_FACTORS.contact,
         },
       ],
-      searchTerm: t,
+      searchTerm: numberTerms.join(' OR '),
       parentPath: buildParams.parentPath,
       queryWrapper,
     }),
-  );
-
-  const numberTerms = terms
-    .map(t => t.match(/\d+/g)?.join(''))
-    .filter(t => t && t.length > 8);
-
-  if (numberTerms.length) {
-    return numberTerms.flatMap(t => [
-      ...defaultQueries,
-      generateQueryFromSearchTerms({
-        documentType: DocumentType.Contact,
-        fields: [
-          {
-            field: 'number',
-            boost,
-          },
-        ],
-        searchTerm: t,
-        parentPath: buildParams.parentPath,
-        queryWrapper,
-      }),
-      generateQueryFromSearchTerms({
-        documentType: DocumentType.Contact,
-        fields: [
-          {
-            field: 'number',
-            boost,
-          },
-        ],
-        searchTerm: `+${t}`,
-        parentPath: buildParams.parentPath,
-        queryWrapper,
-      }),
-    ]);
-  }
-
-  return defaultQueries;
+  ];
 };
 
 const generateContactsQueriesFromFilters = ({
