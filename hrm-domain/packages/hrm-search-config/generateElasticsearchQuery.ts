@@ -288,13 +288,19 @@ const generateContactNumberQueries = ({
 }): QueryDslQueryContainer[] => {
   const terms = searchParameters.searchTerm.split(' ');
 
-  const numericTerms = terms
-    .map(t => t.match(/\d+/g)?.join(''))
-    .filter(t => t && t.length > 8);
+  const numericTerms = searchParameters.searchTerm
+    .match(/[\d\s\-]{8,}/g) // find sequences of 8 consecutive numbers, maybe separed by spaces or dashes
+    .map(t => t.trim());
 
   // filter duplicates
   const numberTerms = Array.from(
-    new Set([...terms, ...numericTerms.flatMap(t => [t, `+${t}`])]),
+    new Set([
+      ...terms,
+      ...numericTerms.flatMap(t => {
+        const sanitized = t.replaceAll(/[\s\-]/g, ''); // remove spaces or dashes if any
+        return [t, `+${t}`, sanitized, `+${sanitized}`]; // use original format and sanitized
+      }),
+    ]),
   );
 
   return [
