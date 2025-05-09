@@ -290,7 +290,8 @@ const generateContactNumberQueries = ({
 
   const numericTerms = searchParameters.searchTerm
     .match(/[\d\s\-]{8,}/g) // find sequences of 8 consecutive numbers, maybe separed by spaces or dashes
-    .map(t => t.trim());
+    .map(t => t && t.trim())
+    .filter(t => Boolean(t));
 
   // filter duplicates
   const numberTerms = Array.from(
