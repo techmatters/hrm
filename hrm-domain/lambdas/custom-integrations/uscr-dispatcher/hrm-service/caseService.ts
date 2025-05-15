@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseService, CaseSection, TimelineResult } from '@tech-matters/hrm-types';
+import type {
+  CaseService,
+  CaseSection,
+  TimelineApiResponse,
+} from '@tech-matters/hrm-types';
 import { callHrmApi } from '@tech-matters/hrm-authentication';
 import { isErr, newErr } from '@tech-matters/types';
 
@@ -224,7 +228,7 @@ export const getCaseSections = async ({
 
     const authHeader = `Basic ${staticKey}`;
 
-    const result = await callHrmApi<TimelineResult>(baseUrl)({
+    const result = await callHrmApi<TimelineApiResponse>(baseUrl)({
       urlPath,
       authHeader,
       method: 'GET',

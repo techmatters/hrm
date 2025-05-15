@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CaseSection, CaseService, TimelineResult } from '@tech-matters/hrm-types';
+import type {
+  CaseSection,
+  CaseService,
+  TimelineApiResponse,
+} from '@tech-matters/hrm-types';
 import {
   createCase,
   createCaseSection,
@@ -282,7 +286,7 @@ export const getOrCreateCase = async ({
   }
 };
 
-export const wasPendingIncidentCreated = (timeline: TimelineResult) =>
+export const wasPendingIncidentCreated = (timeline: TimelineApiResponse) =>
   Boolean(timeline.activities.length) &&
   timeline.activities.some(
     t =>

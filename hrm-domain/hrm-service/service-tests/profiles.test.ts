@@ -413,7 +413,7 @@ describe('/profiles', () => {
               createdCases
                 .map(({ createdAt, updatedAt, childName, ...rest }) => ({
                   ...rest,
-                  connectedContacts: rest.connectedContacts?.sort(sortById),
+                  connectedContacts: rest.connectedContacts?.sort(sortById).slice(0, 1),
                 }))
                 .sort(sortById),
             );

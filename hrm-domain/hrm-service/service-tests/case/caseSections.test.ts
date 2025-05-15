@@ -149,25 +149,20 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         updatedBy: null,
       });
       const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
-      const { sectionType, ...expectedSection } = apiSection;
 
       // Test that parent case updatedAt is bumped
       expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
-      expect(updatedCase).toEqual({
-        ...targetCase,
-        updatedAt: updatedCase?.updatedAt,
-        updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
-        connectedContacts: [],
-        info: null,
-        sections: {
-          note: [
-            {
-              ...expectedSection,
-              createdAt: expect.toParseAsDate(apiSection.createdAt),
-              eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
-            },
-          ],
-        },
+      const { sectionId, ...expectedSection } = apiSection;
+      const updatedSection = await getCaseSection(
+        accountSid,
+        targetCase.id.toString(),
+        'note',
+        apiSection.sectionId,
+      );
+      expect(updatedSection).toEqual({
+        ...expectedSection,
+        createdAt: expect.toParseAsDate(apiSection.createdAt),
+        eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
       });
     });
 
@@ -192,26 +187,24 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
 
       // Test that parent case updatedAt is bumped
       expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
-      expect(updatedCase).toEqual({
-        ...targetCase,
-        updatedAt: updatedCase?.updatedAt,
-        updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
-        connectedContacts: [],
-        info: null,
-        sections: {
-          note: expect.arrayContaining(
-            apiSections.map(apiSection => {
-              const { sectionType, ...expectedSection } = apiSection;
-              return {
-                ...expectedSection,
-                createdAt: expect.toParseAsDate(apiSection.createdAt),
-                eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
-              };
-            }),
-          ),
-        },
-      });
-      expect(updatedCase.sections.note).toHaveLength(3);
+      await Promise.all(
+        apiSections.map(async apiSection => {
+          const updatedSection = await getCaseSection(
+            accountSid,
+            targetCase.id.toString(),
+            'note',
+            apiSection.sectionId,
+          );
+
+          const { sectionId, ...expectedSection } = apiSection;
+          expect(updatedSection).toEqual({
+            ...expectedSection,
+            createdAt: expect.toParseAsDate(apiSection.createdAt),
+            updatedAt: expect.toParseAsDate(apiSection.updatedAt),
+            eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
+          });
+        }),
+      );
     });
 
     test('Multiple calls with same specific section ID - will return a 409 after the first', async () => {
@@ -235,25 +228,18 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
 
       const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
       expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
-      const { sectionType, ...expectedSection } = addedSection;
-      expect(updatedCase).toEqual({
-        ...targetCase,
-        updatedAt: updatedCase?.updatedAt,
-        updatedBy: requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
-        connectedContacts: [],
-        info: null,
-        sections: {
-          note: [
-            {
-              ...expectedSection,
-              sectionId: 'specific-id',
-              createdAt: expect.toParseAsDate(addedSection.createdAt),
-              eventTimestamp: expect.toParseAsDate(addedSection.eventTimestamp),
-            },
-          ],
-        },
+      const { sectionId, ...expectedSection } = addedSection;
+      const updatedSection = await getCaseSection(
+        accountSid,
+        targetCase.id.toString(),
+        'note',
+        'specific-id',
+      );
+      expect(updatedSection).toEqual({
+        ...expectedSection,
+        createdAt: expect.toParseAsDate(addedSection.createdAt),
+        eventTimestamp: expect.toParseAsDate(addedSection.eventTimestamp),
       });
-      expect(updatedCase.sections.note).toHaveLength(1);
     });
   },
 );
@@ -408,27 +394,22 @@ describe('/cases/:caseId/sections/:sectionId', () => {
           updatedAt: expect.toParseAsDate(),
         });
         const updatedCase = await getCase(targetCase.id, accountSid, ALWAYS_CAN);
-        const { sectionType, ...expectedSection } = apiSection;
 
         // Test that parent case updatedAt is bumped
         expect(new Date(updatedCase!.updatedAt).getTime()).toBeGreaterThan(startTime);
-        expect(updatedCase).toEqual({
-          ...targetCase,
-          updatedAt: updatedCase?.updatedAt,
-          updatedBy:
-            requestDescription === 'PUBLIC' ? workerSid : `account-${accountSid}`,
-          connectedContacts: [],
-          info: null,
-          sections: {
-            note: [
-              {
-                ...expectedSection,
-                createdAt: expect.toParseAsDate(apiSection.createdAt),
-                updatedAt: expect.toParseAsDate(apiSection.updatedAt),
-                eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
-              },
-            ],
-          },
+        const updatedSection = await getCaseSection(
+          accountSid,
+          targetCase.id.toString(),
+          'note',
+          targetSection.sectionId,
+        );
+
+        const { sectionId, ...expectedSection } = apiSection;
+        expect(updatedSection).toEqual({
+          ...expectedSection,
+          createdAt: expect.toParseAsDate(apiSection.createdAt),
+          updatedAt: expect.toParseAsDate(apiSection.updatedAt),
+          eventTimestamp: expect.toParseAsDate(apiSection.eventTimestamp),
         });
       });
     },

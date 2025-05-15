@@ -36,7 +36,6 @@ import {
   CaseRecordCommon,
   CaseService,
 } from '@tech-matters/hrm-types';
-import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
@@ -56,16 +55,12 @@ export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
 
 export type NewCaseRecord = CaseRecordCommon;
 
-export type CaseRecordUpdate = Partial<NewCaseRecord> &
-  Pick<NewCaseRecord, 'updatedBy'> & {
-    caseSections?: CaseSectionRecord[];
-  };
+export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'updatedBy'>;
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
   connectedContacts?: Contact[];
   contactsOwnedByUserCount?: number;
-  caseSections?: CaseSectionRecord[];
 };
 
 type CaseWithCount = CaseRecord & { totalCount: number };
@@ -133,7 +128,6 @@ export const getById = async (
   accountSid: HrmAccountId,
   { workerSid, isSupervisor }: TwilioUser,
   contactViewPermissions: TKConditionsSets<'contact'>,
-  onlyEssentialData?: boolean,
 ): Promise<CaseRecord | undefined> => {
   const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
@@ -141,7 +135,6 @@ export const getById = async (
       'Cases',
       contactViewPermissions,
       isSupervisor,
-      onlyEssentialData,
     );
     const queryValues = { accountSid, caseId, twilioWorkerSid: workerSid };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
@@ -171,7 +164,6 @@ export type SearchQueryFunction<T> = (
   accountSid: HrmAccountId,
   searchCriteria: T,
   filters?: CaseListFilters,
-  onlyEssentialData?: boolean,
 ) => Promise<{ cases: CaseRecord[]; count: number }>;
 
 const generalizedSearchQueryFunction = <T>(
@@ -186,7 +178,6 @@ const generalizedSearchQueryFunction = <T>(
     accountSid,
     searchCriteria,
     filters,
-    onlyEssentialData,
   ) => {
     const db = await getDbForAccount(accountSid);
     const { limit, offset, sortBy, sortDirection } =
@@ -200,7 +191,6 @@ const generalizedSearchQueryFunction = <T>(
         contactPermissions,
         filters,
         orderClause,
-        onlyEssentialData,
       );
       const queryValues = sqlQueryParamsBuilder(
         accountSid,
@@ -210,7 +200,6 @@ const generalizedSearchQueryFunction = <T>(
         limit,
         offset,
       );
-
       const result: CaseWithCount[] = await connection.any<CaseWithCount>(
         statement,
         queryValues,
@@ -219,7 +208,15 @@ const generalizedSearchQueryFunction = <T>(
       return { rows: result, count: totalCount };
     });
 
-    return { cases: rows, count };
+    return {
+      cases: rows.map(r => ({
+        ...r,
+        ...(r.connectedContacts
+          ? { connectedContacts: r.connectedContacts.slice(0, 1) }
+          : {}),
+      })),
+      count,
+    };
   };
 };
 
@@ -274,26 +271,15 @@ export const updateStatus = async (
   status: string,
   updatedBy: TwilioUserIdentifier,
   accountSid: HrmAccountId,
-  { isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-) => {
+): Promise<CaseRecord> => {
   const db = await getDbForAccount(accountSid);
-  const statementValues = {
-    accountSid,
-    twilioWorkerSid: updatedBy,
-    caseId: id,
-  };
   return db.tx(async transaction => {
-    await transaction.none(
+    return transaction.oneOrNone(
       updateByIdSql(
         { status, updatedBy, updatedAt: new Date().toISOString() },
         accountSid,
         id,
       ),
-    );
-    return transaction.oneOrNone(
-      selectSingleCaseByIdSql('Cases', contactViewPermissions, isSupervisor),
-      statementValues,
     );
   });
 };

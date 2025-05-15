@@ -299,7 +299,6 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
         const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
         expect(fromDb).toStrictEqual({
           ...expected,
-          sections: {},
           connectedContacts: [],
         });
 

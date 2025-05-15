@@ -13,7 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { CaseSectionRecord, CaseSection } from '@tech-matters/hrm-types';
+import {
+  CaseSection,
+  CaseSectionRecord,
+  CaseSectionTimelineActivity,
+  ContactTimelineActivity,
+  TimelineActivity,
+} from '@tech-matters/hrm-types';
 
 export { CaseSectionRecord, CaseSection };
 
@@ -26,3 +32,17 @@ export type CaseSectionUpdate = Omit<
 export type NewCaseSection = Omit<CaseSectionUpdate, 'updatedAt' | 'updatedBy'> & {
   sectionId?: string;
 };
+
+export type TimelineActivityRecord = TimelineActivity<any> & { caseId: string };
+
+export type TimelineDbRecords = {
+  count: number;
+  activities: TimelineActivityRecord[];
+};
+export const isCaseSectionTimelineActivity = (
+  activity: TimelineActivity<any>,
+): activity is CaseSectionTimelineActivity => activity.activityType === 'case-section';
+
+export const isContactTimelineActivity = (
+  activity: TimelineActivity<any>,
+): activity is ContactTimelineActivity => activity.activityType === 'contact';

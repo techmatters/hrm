@@ -18,7 +18,7 @@ import subHours from 'date-fns/subHours';
 import parseISO from 'date-fns/parseISO';
 import isValid from 'date-fns/isValid';
 import { applyContextConfigOverrides } from './context';
-import { pullCases } from './pull-cases';
+import { pullCases } from './pullCases';
 import { pullContacts } from './pull-contacts';
 import { pullProfiles } from './pull-profiles';
 

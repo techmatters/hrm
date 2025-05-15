@@ -47,7 +47,7 @@ export const updateByIdSql = (
         ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 
         ${statusUpdatedSetSql(updatedValues)}
         ${pgp.as.format(
-          `WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId>`,
+          `WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId> RETURNING *`,
           {
             accountSid,
             caseId,

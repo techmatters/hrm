@@ -18,6 +18,7 @@
  * This is the 'business logic' module for Case Section CRUD operations.
  */
 import { randomUUID } from 'crypto';
+import { TimelineActivity, TimelineApiResponse } from '@tech-matters/hrm-types';
 import {
   CaseSection,
   CaseSectionUpdate,
@@ -29,7 +30,6 @@ import {
   deleteById,
   getById,
   getTimeline,
-  TimelineResult,
   updateById,
 } from './caseSectionDataAccess';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
@@ -189,21 +189,71 @@ export const getCaseTimeline = async (
     user: TwilioUser;
     permissions: RulesFile;
   },
-  caseId: number,
+  caseId: string,
   sectionTypes: string[],
   includeContacts: boolean,
   { limit, offset }: ListConfiguration,
-): Promise<TimelineResult> => {
-  return getTimeline(
+): Promise<TimelineApiResponse> => {
+  const dbResult = await getTimeline(
     accountSid,
     user,
     permissions.viewContact as TKConditionsSets<'contact'>,
-    caseId,
+    [caseId],
     sectionTypes,
     includeContacts,
     parseInt(limit),
     parseInt(offset),
   );
+  return {
+    ...dbResult,
+    activities: dbResult.activities.map(event => ({
+      ...event,
+      activity: sectionRecordToSection(event.activity),
+    })),
+  };
+};
+
+type MultipleCaseTimelinesResponse = {
+  timelines: Record<string, TimelineActivity<any>[]>;
+  count: number;
+};
+
+export const getMultipleCaseTimelines = async (
+  accountSid: HrmAccountId,
+  {
+    user,
+    permissions,
+  }: {
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+  caseIds: string[],
+  sectionTypes: string[],
+  includeContacts: boolean,
+  { limit, offset }: ListConfiguration,
+): Promise<MultipleCaseTimelinesResponse> => {
+  const dbResult = await getTimeline(
+    accountSid,
+    user,
+    permissions.viewContact as TKConditionsSets<'contact'>,
+    caseIds,
+    sectionTypes,
+    includeContacts,
+    parseInt(limit),
+    parseInt(offset),
+  );
+  const timelines: Record<string, TimelineActivity<any>[]> = {};
+  for (const { caseId, ...activity } of dbResult.activities) {
+    timelines[caseId] = timelines[caseId] || [];
+    timelines[caseId].push({
+      ...activity,
+      activity: sectionRecordToSection(activity.activity),
+    });
+  }
+  return {
+    count: dbResult.count,
+    timelines,
+  };
 };
 
 export const getCaseSectionTypeList = async (
@@ -213,7 +263,7 @@ export const getCaseSectionTypeList = async (
     user: TwilioUser;
     permissions: RulesFile;
   },
-  caseId: number,
+  caseId: string,
   sectionType: string,
 ): Promise<CaseSection[]> =>
   (

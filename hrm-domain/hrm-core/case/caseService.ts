@@ -23,25 +23,25 @@ import {
   CaseListConfiguration,
   CaseListFilters,
   CaseRecord,
+  CaseRecordUpdate,
   CaseSearchCriteria,
-  SearchQueryFunction,
   create,
+  deleteById,
   getById,
   search,
-  searchByProfileId,
-  updateStatus,
-  CaseRecordUpdate,
-  updateCaseInfo,
-  deleteById,
   searchByCaseIds,
+  searchByProfileId,
+  SearchQueryFunction,
+  updateCaseInfo,
+  updateStatus,
 } from './caseDataAccess';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
-import { HrmAccountId, TResult, newErr, newOk } from '@tech-matters/types';
-import { CaseService, CaseInfoSection } from '@tech-matters/hrm-types';
+import { HrmAccountId, newErr, newOk, TResult } from '@tech-matters/types';
+import { CaseInfoSection, CaseService, TimelineActivity } from '@tech-matters/hrm-types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 
 import {
@@ -60,6 +60,7 @@ import {
 import { ContactListCondition } from '../contact/contactSearchIndex';
 import { maxPermissions } from '../permissions';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
+import { getMultipleCaseTimelines } from './caseSection/caseSectionService';
 
 export { CaseService, CaseInfoSection };
 
@@ -88,25 +89,7 @@ const caseToCaseRecord = (inputCase: CaseServiceUpdate): CaseRecordUpdate => {
 };
 
 export const caseRecordToCase = (record: CaseRecord): CaseService => {
-  const { caseSections, contactsOwnedByUserCount, ...output } = addCategories(record);
-  const precalculatedPermissions = { userOwnsContact: contactsOwnedByUserCount > 0 };
-
-  if (record.caseSections) {
-    return {
-      ...output,
-      // Separate case sections by type
-      sections: record.caseSections.reduce(
-        (sections, sectionRecord) => {
-          const { sectionType, caseId, accountSid, ...restOfSection } = sectionRecord;
-          sections[sectionType] = sections[sectionType] ?? [];
-          sections[sectionType].push(restOfSection);
-          return sections;
-        },
-        {} as CaseService['sections'],
-      ),
-      precalculatedPermissions,
-    };
-  }
+  const { contactsOwnedByUserCount, ...output } = addCategories(record);
 
   return {
     ...output,
@@ -127,50 +110,38 @@ const mapContactTransformations =
     };
   };
 
-/**
- * This function omits the non-essential data from a case record.
- * Only the properties that are essential for the client to display the case are kept.
- *
- * This is used on both:
- * - GET /cases/ (case list)
- * - POST /cases/search (search cases)
- */
-const mapEssentialData =
-  (essentialDataOnly: boolean) =>
-  (caseRecord: CaseService): RecursivePartial<CaseService> => {
-    if (!essentialDataOnly) return caseRecord;
+export const getTimelinesForCases = async (
+  accountSid: CaseRecord['accountSid'],
+  userData: {
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+  cases: CaseRecord[],
+): Promise<{ case: CaseRecord; timeline: TimelineActivity<any>[] }[]> => {
+  const { timelines } = await getMultipleCaseTimelines(
+    accountSid,
+    userData,
+    cases.map(c => c.id.toString()),
+    ['*'],
+    true,
+    { offset: '0', limit: '5000' },
+  );
+  return cases.map(c => ({
+    case: c,
+    timeline: timelines[c.id.toString()] ?? [],
+  }));
+};
 
-    const {
-      id,
-      createdAt,
-      updatedAt,
-      status,
-      info,
-      twilioWorkerId,
-      connectedContacts,
-      categories,
-    } = caseRecord;
-
-    const { summary, followUpDate, definitionVersion } = info;
-
-    const infoEssentialData = {
-      summary,
-      followUpDate,
-      definitionVersion,
-    };
-
-    return {
-      id,
-      status,
-      connectedContacts: connectedContacts.slice(0, 1),
-      twilioWorkerId,
-      categories,
-      createdAt,
-      updatedAt,
-      info: infoEssentialData,
-      precalculatedPermissions: caseRecord.precalculatedPermissions,
-    };
-  };
+export const getTimelineForCase = async (
+  accountSid: CaseRecord['accountSid'],
+  userData: {
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+  cas: CaseRecord,
+): Promise<TimelineActivity<any>[]> => {
+  return (await getTimelinesForCases(accountSid, userData, [cas]))[0].timeline;
+};
 
 const doCaseChangeNotification =
   (operation: NotificationOperation) =>
@@ -189,12 +160,14 @@ const doCaseChangeNotification =
       }
 
       const caseObj =
-        caseRecord || (await getById(caseId, accountSid, maxPermissions.user, []));
+        caseRecord ?? (await getById(caseId, accountSid, maxPermissions.user, []));
 
       if (caseObj) {
+        const timeline = await getTimelineForCase(accountSid, maxPermissions, caseObj);
         await publishCaseChangeNotification({
           accountSid,
           case: caseRecordToCase(caseObj),
+          timeline,
           operation,
         });
       }
@@ -243,34 +216,21 @@ export const updateCaseStatus = async (
   id: CaseService['id'],
   status: string,
   accountSid: CaseService['accountSid'],
-  {
-    can,
-    user,
-    permissions,
-  }: { can: InitializedCan; user: TwilioUser; permissions: RulesFile },
+  { user }: { user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<CaseService> => {
   const { workerSid } = user;
-  const updated = await updateStatus(
-    id,
-    status,
-    workerSid,
-    accountSid,
-    user,
-    permissions.viewContact as TKConditionsSets<'contact'>,
-  );
+  const updated = await updateStatus(id, status, workerSid, accountSid);
 
   // Case not found
   if (!updated) return null;
-
-  const withTransformedContacts = mapContactTransformations({ can, user })(updated);
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
     updateCaseNotify({ accountSid, caseId: updated.id });
   }
 
-  return caseRecordToCase(withTransformedContacts);
+  return caseRecordToCase(updated);
 };
 
 export const updateCaseOverview = async (
@@ -305,14 +265,12 @@ export const getCase = async (
     user: TwilioUser;
     permissions: Pick<RulesFile, 'viewContact'>;
   },
-  onlyEssentialData?: boolean,
 ): Promise<CaseService | undefined> => {
   const caseFromDb = await getById(
     id,
     accountSid,
     user,
     permissions.viewContact as TKConditionsSets<'contact'>,
-    onlyEssentialData,
   );
 
   if (caseFromDb) {
@@ -360,7 +318,6 @@ const generalizedSearchCases =
       user: TwilioUser;
       permissions: RulesFile;
     },
-    onlyEssentialData?: boolean,
   ): Promise<CaseSearchReturn> => {
     const { filters, helpline, counselor, closedCases } = filterParameters;
     const caseFilters = filters ?? {};
@@ -384,14 +341,12 @@ const generalizedSearchCases =
       accountSid,
       searchParameters,
       caseFilters,
-      onlyEssentialData,
     );
     return {
       ...dbResult,
       cases: dbResult.cases
         .map(mapContactTransformations({ can, user }))
-        .map(caseRecordToCase)
-        .map(mapEssentialData(onlyEssentialData)),
+        .map(r => caseRecordToCase(r)),
     };
   };
 

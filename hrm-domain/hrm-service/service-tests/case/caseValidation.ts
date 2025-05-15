@@ -36,25 +36,33 @@ export const validateCaseListResponse = (
     );
     return;
   }
-  if (expectedCaseAndContactModels.length > 0) {
-    expect(actual.body.cases.length).toBeGreaterThan(0);
-  }
 
-  if (expectedCaseAndContactModels.length > 0 && actual.body.cases.length > 0) {
-    const hasExpectedCases = expectedCaseAndContactModels.some(
-      ({ case: expectedCase }) => {
-        if (expectedCase.info?.operatingArea) {
-          return actual.body.cases.some(
-            actualCase =>
-              actualCase.info?.operatingArea === expectedCase.info.operatingArea,
-          );
-        }
-        return true;
-      },
-    );
+  expect(actual.body).toStrictEqual(
+    expect.objectContaining({
+      cases: expect.arrayContaining([expect.anything()]),
+      count,
+    }),
+  );
+  expectedCaseAndContactModels.forEach(
+    ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
+      const { connectedContacts, ...caseDataValues } = expectedCaseModel;
+      expect(actual.body.cases[index]).toMatchObject({
+        ...caseDataValues,
+        createdAt: expectedCaseModel.createdAt,
+        updatedAt: expectedCaseModel.updatedAt,
+      });
 
-    expect(hasExpectedCases).toBe(true);
-  }
+      expect(actual.body.cases[index].connectedContacts).toStrictEqual([
+        expect.objectContaining({
+          ...expectedContactModel,
+          timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
+          createdAt: expect.toParseAsDate(expectedContactModel.createdAt),
+          finalizedAt: expect.toParseAsDate(expectedContactModel.finalizedAt),
+          updatedAt: expect.toParseAsDate(expectedContactModel.updatedAt),
+        }),
+      ]);
+    },
+  );
 };
 
 export const validateSingleCaseResponse = (
