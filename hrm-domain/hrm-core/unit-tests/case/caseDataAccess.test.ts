@@ -49,7 +49,7 @@ describe('getById', () => {
     });
     const oneOrNoneSpy = jest.spyOn(conn, 'oneOrNone').mockResolvedValue(caseFromDB);
 
-    const result = await caseDb.getById(caseId, accountSid, user, [['everyone']]);
+    const result = await caseDb.getById(caseId, accountSid, user);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.stringContaining('Cases'),
@@ -61,7 +61,7 @@ describe('getById', () => {
   test('get non existing case returns undefined', async () => {
     const oneOrNoneSpy = jest.spyOn(conn, 'oneOrNone').mockResolvedValue(undefined);
 
-    const result = await caseDb.getById(caseId, accountSid, user, [['everyone']]);
+    const result = await caseDb.getById(caseId, accountSid, user);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.stringContaining('"Cases"'),
@@ -213,7 +213,6 @@ describe('search', () => {
         const result = await caseDb.search(
           user,
           rulesMap.open.viewCase as TKConditionsSets<'case'>,
-          rulesMap.open.viewCase as TKConditionsSets<'contact'>,
           listConfig,
           accountSid,
           {},
@@ -292,7 +291,6 @@ describe('search', () => {
       const result = await caseDb.search(
         user,
         openViewPermissions,
-        [['everyone']],
         listConfig,
         accountSid,
         {},

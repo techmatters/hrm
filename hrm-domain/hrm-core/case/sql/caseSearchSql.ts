@@ -22,10 +22,6 @@ import { selectContactsOwnedCount } from './caseGetSql';
 import { CaseListCondition, listCasesPermissionWhereClause } from './casePermissionSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
-import {
-  ContactListCondition,
-  listContactsPermissionWhereClause,
-} from '../../contact/sql/contactPermissionSql';
 
 export const OrderByColumn = {
   ID: 'id',
@@ -57,29 +53,6 @@ const generateOrderByClause = (clauses: OrderByClauseItem[]): string => {
       .join(', ')}`;
   } else return '';
 };
-
-const selectContacts = (
-  contactViewPermissions: TKConditionsSets<'contact'>,
-  userIsSupervisor: boolean,
-) => `
-    SELECT COALESCE(jsonb_agg(DISTINCT contacts."jsonBlob") FILTER (WHERE contacts."caseId" IS NOT NULL), '[]') AS "connectedContacts"
-    FROM ( 
-      SELECT
-        c."accountSid",
-        c."caseId",
-        c."twilioWorkerId",
-        c."timeOfContact",
-        (SELECT to_jsonb(_row) FROM (SELECT c.*) AS _row) AS "jsonBlob"
-      FROM "Contacts" c
-      ) AS "contacts" 
-      WHERE "contacts"."caseId" = "cases".id AND "contacts"."accountSid" = "cases"."accountSid"
-      AND ${listContactsPermissionWhereClause(
-        contactViewPermissions as ContactListCondition[][],
-        userIsSupervisor,
-      )}
-      GROUP BY "contacts"."caseId", "contacts"."accountSid"
-      
-      `;
 
 const enum FilterableDateField {
   CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',
@@ -167,7 +140,9 @@ const filterSql = ({
     filterSqlClauses.push(CATEGORIES_FILTER_SQL);
   }
   if (!includeOrphans) {
-    filterSqlClauses.push(`jsonb_array_length(contacts."connectedContacts") > 0`);
+    filterSqlClauses.push(`EXISTS (
+        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
+      )`);
   }
   return filterSqlClauses.join(`
   AND `);
@@ -244,36 +219,22 @@ const SEARCH_WHERE_CLAUSE = `(
       )
     )`;
 
-const selectCasesUnorderedSql = (
-  { whereClause, havingClause = '' }: Omit<SelectCasesParams, 'orderByClause'>,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-  userIsSupervisor: boolean,
-) => {
+const selectCasesUnorderedSql = ({
+  whereClause,
+  havingClause = '',
+}: Omit<SelectCasesParams, 'orderByClause'>) => {
   return `
   SELECT DISTINCT ON (cases."accountSid", cases.id)
     (count(*) OVER())::INTEGER AS "totalCount",
     "cases".*,
-    "contacts"."connectedContacts",
-    "contactsOwnedCount"."contactsOwnedByUserCount",
-    NULLIF(
-      CONCAT(
-        contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "firstName"}', 
-        ' ', 
-        contacts."connectedContacts"::JSONB#>>'{0, "rawJson", "childInformation", "name", "lastName"}'
-      )
-    , ' ') AS "childName"
+    "contactsOwnedCount"."contactsOwnedByUserCount"
   FROM "Cases" "cases"
-  LEFT JOIN LATERAL (${selectContacts(
-    contactViewPermissions,
-    userIsSupervisor,
-  )}) contacts ON true
   LEFT JOIN LATERAL (
       ${selectContactsOwnedCount('twilioWorkerSid')}
   ) "contactsOwnedCount" ON true
   ${whereClause} GROUP BY
     "cases"."accountSid",
     "cases"."id",
-    "contacts"."connectedContacts",
     "contactsOwnedCount"."contactsOwnedByUserCount"
   ${havingClause}`;
 };
@@ -284,23 +245,21 @@ type SelectCasesParams = {
   havingClause?: string;
 };
 
-const selectCasesPaginatedSql = (
-  { whereClause, orderByClause, havingClause = '' }: SelectCasesParams,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-  userIsSupervisor: boolean,
-) => `
-SELECT * FROM (${selectCasesUnorderedSql(
-  { whereClause, havingClause },
-  contactViewPermissions,
-  userIsSupervisor,
-)}) "unordered" ${orderByClause}
+const selectCasesPaginatedSql = ({
+  whereClause,
+  orderByClause,
+  havingClause = '',
+}: SelectCasesParams) => `
+SELECT * FROM (${selectCasesUnorderedSql({
+  whereClause,
+  havingClause,
+})}) "unordered" ${orderByClause}
 LIMIT $<limit>
 OFFSET $<offset>`;
 
 export type SearchQueryBuilder = (
   user: TwilioUser,
   viewCasePermissions: TKConditionsSets<'case'>,
-  viewContactPermissions: TKConditionsSets<'contact'>,
   filters: CaseListFilters,
   orderByClauses: OrderByClauseItem[],
 ) => string;
@@ -309,7 +268,6 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
   return (
     user: TwilioUser,
     viewCasePermissions: TKConditionsSets<'case'>,
-    contactViewPermissions: TKConditionsSets<'contact'>,
     filters,
     orderByClauses,
   ) => {
@@ -323,11 +281,7 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     ].filter(sql => sql).join(`
     AND `);
     const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
-    return selectCasesPaginatedSql(
-      { whereClause: whereSql, orderByClause: orderBySql },
-      contactViewPermissions,
-      user.isSupervisor,
-    );
+    return selectCasesPaginatedSql({ whereClause: whereSql, orderByClause: orderBySql });
   };
 };
 

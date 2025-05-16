@@ -13,13 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { TKConditionsSets } from '../../permissions/rulesMap';
-import {
-  ContactListCondition,
-  listContactsPermissionWhereClause,
-} from '../../contact/sql/contactPermissionSql';
-
 const ID_WHERE_CLAUSE = `WHERE "cases"."accountSid" = $<accountSid> AND "cases"."id" = $<caseId>`;
 
 export const selectContactsOwnedCount = (ownerVariableName: string) =>
@@ -27,42 +20,10 @@ export const selectContactsOwnedCount = (ownerVariableName: string) =>
    FROM "Contacts" 
    WHERE "caseId" = cases.id AND "accountSid" = cases."accountSid" AND "twilioWorkerId" = $<${ownerVariableName}>`;
 
-const leftJoinLateralContacts = (
-  viewPermissions: TKConditionsSets<'contact'>,
-  userIsSupervisor: boolean,
-) => `
-      LEFT JOIN LATERAL (
-        SELECT COALESCE(jsonb_agg(to_jsonb(c)), '[]') AS  "connectedContacts"
-        FROM "Contacts" c 
-        WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
-        AND ${listContactsPermissionWhereClause(
-          viewPermissions as ContactListCondition[][],
-          userIsSupervisor,
-          'c',
-        )}
-        AND c."timeOfContact" = (
-          SELECT MIN("timeOfContact")
-          FROM "Contacts" c2
-          WHERE c2."caseId" = cases.id AND c2."accountSid" = cases."accountSid"
-          AND ${listContactsPermissionWhereClause(
-            viewPermissions as ContactListCondition[][],
-            userIsSupervisor,
-            'c2',
-          )}
-        )
-        LIMIT 1  
-      ) "contacts" ON true`;
-
-export const selectSingleCaseByIdSql = (
-  tableName: string,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-  userIsSupervisor: boolean,
-) => `SELECT
+export const selectSingleCaseByIdSql = (tableName: string) => `SELECT
       "cases".*,
-      "contacts"."connectedContacts",
       "contactsOwnedCount"."contactsOwnedByUserCount"
       FROM "${tableName}" AS "cases"
-      ${leftJoinLateralContacts(contactViewPermissions, userIsSupervisor)}
       LEFT JOIN LATERAL (
         ${selectContactsOwnedCount('twilioWorkerSid')}
       ) "contactsOwnedCount" ON true

@@ -64,9 +64,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
       }
       case 'case': {
         const object = await getCaseById(objectId, hrmAccountId, {
-          can,
           user,
-          permissions: OPEN_VIEW_CONTACT_PERMISSIONS,
         });
 
         const canPerform = actions.every(action => can(user, action, object));

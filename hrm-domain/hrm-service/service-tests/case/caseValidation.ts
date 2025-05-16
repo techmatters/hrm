@@ -17,15 +17,10 @@
 import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
-import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import '@tech-matters/testing/expectToParseAsDate';
 
-export const validateCaseListResponse = (
-  actual,
-  expectedCaseAndContactModels: { case: CaseService; contact: Contact }[],
-  count,
-) => {
+export const validateCaseListResponse = (actual, expectedCases: CaseService[], count) => {
   expect(actual.status).toBe(200);
   if (count === 0) {
     expect(actual.body).toStrictEqual(
@@ -43,41 +38,18 @@ export const validateCaseListResponse = (
       count,
     }),
   );
-  expectedCaseAndContactModels.forEach(
-    ({ case: expectedCaseModel, contact: expectedContactModel }, index) => {
-      const { ...caseDataValues } = expectedCaseModel;
-      delete (caseDataValues as any).connectedContacts;
-      expect(actual.body.cases[index]).toMatchObject({
-        ...caseDataValues,
-        createdAt: expectedCaseModel.createdAt,
-        updatedAt: expectedCaseModel.updatedAt,
-      });
-
-      expect(actual.body.cases[index].connectedContacts).toStrictEqual([
-        expect.objectContaining({
-          ...expectedContactModel,
-          id: parseInt(expectedContactModel.id),
-          caseId: parseInt(expectedContactModel.caseId),
-          timeOfContact: expect.toParseAsDate(expectedContactModel.timeOfContact),
-          createdAt: expect.toParseAsDate(expectedContactModel.createdAt),
-          finalizedAt: expect.toParseAsDate(expectedContactModel.finalizedAt),
-          updatedAt: expect.toParseAsDate(expectedContactModel.updatedAt),
-        }),
-      ]);
-    },
-  );
+  expectedCases.forEach((expectedCaseModel, index) => {
+    const { ...caseDataValues } = expectedCaseModel;
+    expect(actual.body.cases[index]).toMatchObject({
+      ...caseDataValues,
+      createdAt: expectedCaseModel.createdAt,
+      updatedAt: expectedCaseModel.updatedAt,
+    });
+  });
 };
 
-export const validateSingleCaseResponse = (
-  actual,
-  expectedCaseModel,
-  expectedContactModel,
-) => {
-  validateCaseListResponse(
-    actual,
-    [{ case: expectedCaseModel, contact: expectedContactModel }],
-    1,
-  );
+export const validateSingleCaseResponse = (actual, expectedCaseModel: CaseService) => {
+  validateCaseListResponse(actual, [expectedCaseModel], 1);
 };
 
 export const fillNameAndPhone = (
