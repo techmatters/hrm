@@ -28,7 +28,7 @@ export type NewCSAMReport = {
   acknowledged: boolean;
   twilioWorkerId?: WorkerSID;
   csamReportId?: string;
-  contactId?: number;
+  contactId?: string;
 };
 
 export type CSAMReport = NewCSAMReport & {
@@ -37,6 +37,8 @@ export type CSAMReport = NewCSAMReport & {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type CSAMReportRecord = Omit<CSAMReport, 'contactId'> & { contactId: number };
 
 export const create = async (newCsamReport: NewCSAMReport, accountSid: HrmAccountId) => {
   const now = new Date();
@@ -49,13 +51,13 @@ export const create = async (newCsamReport: NewCSAMReport, accountSid: HrmAccoun
       accountSid,
     });
 
-    return connection.one<CSAMReport>(statement);
+    return connection.one<CSAMReportRecord>(statement);
   });
 };
 
 export const getById = async (reportId: number, accountSid: HrmAccountId) =>
   (await getDbForAccount(accountSid)).task(async connection =>
-    connection.oneOrNone<CSAMReport>(selectSingleCsamReportByIdSql, {
+    connection.oneOrNone<CSAMReportRecord>(selectSingleCsamReportByIdSql, {
       accountSid,
       reportId,
     }),
@@ -63,7 +65,7 @@ export const getById = async (reportId: number, accountSid: HrmAccountId) =>
 
 export const getByContactId = async (contactId: number, accountSid: HrmAccountId) =>
   (await getDbForAccount(accountSid)).task(async connection =>
-    connection.manyOrNone<CSAMReport>(selectCsamReportsByContactIdSql, {
+    connection.manyOrNone<CSAMReportRecord>(selectCsamReportsByContactIdSql, {
       contactId,
       accountSid,
     }),
@@ -72,7 +74,7 @@ export const getByContactId = async (contactId: number, accountSid: HrmAccountId
 export const updateAcknowledgedByCsamReportId =
   (acknowledged: boolean) => async (reportId: number, accountSid: HrmAccountId) =>
     (await getDbForAccount(accountSid)).task(async connection =>
-      connection.oneOrNone<CSAMReport>(updateAcknowledgedByCsamReportIdSql, {
+      connection.oneOrNone<CSAMReportRecord>(updateAcknowledgedByCsamReportIdSql, {
         reportId,
         accountSid,
         acknowledged,

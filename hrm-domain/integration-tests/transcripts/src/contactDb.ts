@@ -97,7 +97,7 @@ export const createDueRetrieveTranscriptJob = async (
   const job: Omit<ContactJob, 'id' | 'resource'> = {
     requested: new Date().toISOString(),
     jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-    contactId: contact.id,
+    contactId: parseInt(contact.id),
     accountSid: ACCOUNT_SID,
     additionalPayload: {
       conversationMediaId,

@@ -21,28 +21,44 @@ import {
   getById,
   getByContactId,
   updateAcknowledgedByCsamReportId,
+  CSAMReport,
+  CSAMReportRecord,
 } from './csamReportDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
 
 export { CSAMReport } from './csamReportDataAccess';
 
+const csamReportRecordToCsamReport = ({
+  contactId,
+  ...record
+}: CSAMReportRecord): CSAMReport => ({
+  ...record,
+  ...(contactId ? { contactId: contactId.toString() } : {}),
+});
+
 // While this is being used in test only, chances are we'll use it when we move out to making separate calls to fetch different entities
-export const getCSAMReport = getById;
+export const getCSAMReport = async (
+  reportId: string,
+  accountSid: HrmAccountId,
+): Promise<CSAMReport> => {
+  const record = await getById(parseInt(reportId), accountSid);
+  return csamReportRecordToCsamReport(record);
+};
 
 export const createCSAMReport = async (
   body: Omit<NewCSAMReport, 'acknowledged'>,
   accountSid: HrmAccountId,
-) => {
-  const { reportType, contactId, twilioWorkerId } = body;
+): Promise<CSAMReport> => {
+  const { reportType, twilioWorkerId, contactId: inputContactId } = body;
 
   const acknowledged = reportType !== 'self-generated';
   const csamReportId = acknowledged ? body.csamReportId : randomUUID();
 
   // TODO: Should we check if the randomUUID exists in DB here?
 
-  return create(
+  const record = await create(
     {
-      contactId: contactId || null,
+      contactId: inputContactId || null,
       reportType,
       csamReportId,
       twilioWorkerId: twilioWorkerId || null,
@@ -50,9 +66,16 @@ export const createCSAMReport = async (
     },
     accountSid,
   );
+  return csamReportRecordToCsamReport(record);
 };
 
 // While this is being used in test only, chances are we'll use it when we move out to making separate calls to fetch different entities
-export const getCsamReportsByContactId = getByContactId;
+export const getCsamReportsByContactId = async (
+  contactId: string,
+  accountSid: HrmAccountId,
+) => {
+  const records = await getByContactId(parseInt(contactId), accountSid);
+  return records.map(csamReportRecordToCsamReport);
+};
 
 export const acknowledgeCsamReport = updateAcknowledgedByCsamReportId(true);

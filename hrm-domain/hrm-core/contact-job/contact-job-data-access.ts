@@ -15,7 +15,7 @@
  */
 
 import { getDbForAdmin, pgp } from '../dbConnection';
-import type { Contact } from '../contact/contactDataAccess';
+import type { ContactRecord } from '../contact/contactDataAccess';
 import {
   ADD_FAILED_ATTEMPT_PAYLOAD,
   ContactJobCleanupStatus,
@@ -50,13 +50,14 @@ export type ContactJobRecord = {
 };
 
 // ContactJob base interface, picks the properties used from ContactJobRecord plus the resource Contact
+// TODO: Make id & contactId strings in this type, all IDs HRM should be strings outside the data access layer
 type Job<TComplete, TAdditional> = Omit<
   ContactJobRecord,
   'completionPayload' | 'additionalPayload'
 > & {
   completionPayload: TComplete;
   additionalPayload: TAdditional;
-  resource: Contact;
+  resource: ContactRecord;
 };
 
 export type RetrieveContactTranscriptJob = Job<

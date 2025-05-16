@@ -286,11 +286,7 @@ describe('GET /cases/:caseId/timeline', () => {
         .map(ev => ev.activity);
       expect(count).toBe(expectedTotalCount);
       activityContacts.forEach(ec => {
-        const {
-          accountSid: acct,
-          caseId,
-          ...expectedContact
-        } = expectedContacts.find(expected => expected.id === ec.id);
+        const expectedContact = expectedContacts.find(expected => expected.id === ec.id);
         expect(ec).toStrictEqual(expectedContact);
       });
     },

@@ -28,6 +28,7 @@ import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { AccountSID, WorkerSID } from '@tech-matters/types';
 import { ALWAYS_CAN } from './mocks';
 import { setupServiceTests } from './setupServiceTest';
+import { create } from '@tech-matters/hrm-core/case/caseDataAccess';
 
 const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
@@ -104,11 +105,15 @@ const createContact = async (twilioWorkerId: WorkerSID): Promise<contactDb.Conta
 };
 
 const createCase = async (twilioWorkerId: WorkerSID) => {
-  return caseService.createCase(
-    { status: 'open', helpline: 'helpline', info: { summary: 'something summery' } },
+  return create({
+    createdAt: new Date().toISOString(),
+    createdBy: twilioWorkerId,
     accountSid,
     twilioWorkerId,
-  );
+    status: 'open',
+    helpline: 'helpline',
+    info: { summary: 'something summery' },
+  });
 };
 
 const overridePermissions = <T extends TargetKind>(
@@ -164,7 +169,7 @@ describe('search cases permissions', () => {
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(1);
     expect(response.body.cases.length).toBe(1);
-    expect(response.body.cases[0].id).toBe(otherUserCase.id);
+    expect(response.body.cases[0].id).toBe(otherUserCase.id.toString());
   });
 
   test('return own cases when view is restricted', async () => {
@@ -174,7 +179,7 @@ describe('search cases permissions', () => {
     expect(response.status).toBe(200);
     expect(response.body.count).toBe(1);
     expect(response.body.cases.length).toStrictEqual(1);
-    expect(response.body.cases[0].id).toBe(userCase.id);
+    expect(response.body.cases[0].id).toBe(userCase.id.toString());
   });
 
   test('return all cases', async () => {
@@ -214,10 +219,10 @@ describe('search cases permissions', () => {
         createCase(userTwilioWorkerId),
       ]);
       await Promise.all([
-        connect(userContact.id, caseWithUserContact.id),
-        connect(otherUserContact.id, caseWithUserContact.id),
-        connect(otherUserContact.id, caseWithNoUserContact.id),
-        connect(userContact2.id, userCaseWithUserContact.id),
+        connect(parseInt(userContact.id), caseWithUserContact.id),
+        connect(parseInt(otherUserContact.id), caseWithUserContact.id),
+        connect(parseInt(otherUserContact.id), caseWithNoUserContact.id),
+        connect(parseInt(userContact2.id), userCaseWithUserContact.id),
       ]);
     });
     test('Ignores owned contact when isCaseContactOwner permission is not in use', async () => {
@@ -237,7 +242,8 @@ describe('search cases permissions', () => {
           userCaseWithUserContact,
         ]
           .map((c: caseDb.CaseRecord) => c.id)
-          .sort(),
+          .sort()
+          .map(id => id.toString()),
       );
     });
     test('Returns only cases with a connected contact owned by the user when isCaseContactOwner permission is in use', async () => {
@@ -251,7 +257,8 @@ describe('search cases permissions', () => {
       expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
         [caseWithUserContact, userCaseWithUserContact]
           .map((c: caseDb.CaseRecord) => c.id)
-          .sort(),
+          .sort()
+          .map(id => id.toString()),
       );
     });
     test('Combines with counselor filters to only return cases created by counselors listed in the filter with contacts owned by the user', async () => {
@@ -270,7 +277,10 @@ describe('search cases permissions', () => {
       expect(response.body.count).toBe(1);
       expect(response.body.cases.length).toBe(1);
       expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
-        [caseWithUserContact].map((c: caseDb.CaseRecord) => c.id).sort(),
+        [caseWithUserContact]
+          .map((c: caseDb.CaseRecord) => c.id)
+          .sort()
+          .map(id => id.toString()),
       );
     });
     test('Combines with isCreator condition to only return cases created by the user AND with contacts owned by the user', async () => {
@@ -282,7 +292,10 @@ describe('search cases permissions', () => {
       expect(response.body.count).toBe(1);
       expect(response.body.cases.length).toBe(1);
       expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
-        [userCaseWithUserContact].map((c: caseDb.CaseRecord) => c.id).sort(),
+        [userCaseWithUserContact]
+          .map((c: caseDb.CaseRecord) => c.id)
+          .sort()
+          .map(id => id.toString()),
       );
     });
     test('Combines with a separate isCreator condition set to return cases created by the user OR with contacts owned by the user', async () => {
@@ -296,7 +309,8 @@ describe('search cases permissions', () => {
       expect(response.body.cases.map((c: caseDb.CaseRecord) => c.id).sort()).toEqual(
         [userCase, caseWithUserContact, userCaseWithUserContact]
           .map((c: caseDb.CaseRecord) => c.id)
-          .sort(),
+          .sort()
+          .map(id => id.toString()),
       );
     });
   });

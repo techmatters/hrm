@@ -17,7 +17,7 @@
 import each from 'jest-each';
 import * as mocks from './mocks';
 import './case/caseValidation';
-import * as csamReportsApi from '@tech-matters/hrm-core/csam-report/csam-report';
+import * as csamReportsApi from '@tech-matters/hrm-core/csam-report/csamReportService';
 import { headers } from './server';
 import { setupServiceTests } from './setupServiceTest';
 
@@ -160,7 +160,7 @@ describe('/csamReports', () => {
           if (contact) {
             expect(response.body.contactId).toBe(csamReportToSave.contactId);
           } else {
-            expect(response.body.contactId).toBeNull();
+            expect(response.body.contactId).not.toBeDefined();
           }
 
           const reportFromDB = await csamReportsApi.getCSAMReport(
@@ -202,7 +202,7 @@ describe('/csamReports', () => {
             twilioWorkerId: workerSid,
             reportType: 'counsellor-generated',
             csamReportId: 'csam-report-id',
-            contactId: 99999999,
+            contactId: '99999999',
           },
         },
         {
@@ -211,7 +211,7 @@ describe('/csamReports', () => {
             twilioWorkerId: workerSid,
             reportType: 'self-generated',
             csamReportId: 'csam-report-id',
-            contactId: 99999999,
+            contactId: '99999999',
           },
         },
       ];

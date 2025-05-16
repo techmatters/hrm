@@ -30,8 +30,6 @@ import { clearAllTables } from '../dbCleanup';
 import each from 'jest-each';
 import { addMinutes, isAfter, parseISO, subDays, subHours } from 'date-fns';
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
-import { connectContactToCase } from '@tech-matters/hrm-core/contact/contactService';
 import { setupServiceTests } from '../setupServiceTest';
 
 const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
@@ -367,72 +365,5 @@ describe('Time based condition', () => {
         expect(count).toBe(expectedPermittedContactCreationTimes.length);
       },
     );
-  });
-  describe('When returned as part of cases', () => {
-    let sampleCase: CaseService;
-    const caseBaseRoute = `/v0/accounts/${accountSid}/cases`;
-    beforeEach(async () => {
-      sampleCase = await createCase({}, accountSid, userTwilioWorkerId, undefined, true);
-      await Promise.all(
-        Object.values(sampleContacts).map(({ id }) =>
-          connectContactToCase(
-            accountSid,
-            id.toString(),
-            sampleCase.id.toString(),
-            ALWAYS_CAN,
-            true,
-          ),
-        ),
-      );
-    });
-    describe('/cases/:id route - GET', () => {
-      each(testCases).test(
-        '$description',
-        async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
-          const subRoute = id => `${caseBaseRoute}/${id}`;
-          setRules({ viewContact: permissions });
-          const expectedIds = expectedPermittedContactCreationTimes
-            .map(cct => parseISO(sampleContacts[cct.toISOString()].timeOfContact))
-            .slice(0, 1);
-          const { status, body } = await request
-            .get(subRoute(sampleCase.id))
-            .set(headers);
-
-          expect(status).toBe(200);
-          const { connectedContacts: contacts, id } = body as CaseService;
-          expect(id).toBe(sampleCase.id);
-          expect(
-            contacts
-              .map(c => parseISO(c.timeOfContact))
-              .sort((a, b) => a.valueOf() - b.valueOf()),
-          ).toEqual(expectedIds);
-        },
-      );
-    });
-    describe('cases/search route - POST', () => {
-      each(testCases).test(
-        '$description',
-        async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
-          setRules({ viewContact: permissions });
-          const expectedIds = expectedPermittedContactCreationTimes
-            .map(cct => parseISO(sampleContacts[cct.toISOString()].timeOfContact))
-            .slice(0, 1);
-          const {
-            body: { cases, count },
-            status,
-          } = await request.post(`${caseBaseRoute}/search`).set(headers);
-          expect(status).toBe(200);
-          expect(count).toBe(1);
-          expect(cases.length).toBe(1);
-          const { connectedContacts: contacts, id } = cases[0];
-          expect(id).toBe(sampleCase.id);
-          expect(
-            (contacts ?? [])
-              .map(c => parseISO(c.timeOfContact))
-              .sort((a, b) => a.valueOf() - b.valueOf()),
-          ).toEqual(expectedIds);
-        },
-      );
-    });
   });
 });

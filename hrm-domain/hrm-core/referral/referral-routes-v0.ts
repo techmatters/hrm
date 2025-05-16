@@ -16,7 +16,7 @@
 
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { Request, Response } from 'express';
-import { createReferral } from './referral-model';
+import { createReferral } from './referralService';
 import {
   DuplicateReferralError,
   OrphanedReferralError,

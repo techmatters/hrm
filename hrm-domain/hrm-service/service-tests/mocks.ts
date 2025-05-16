@@ -300,7 +300,7 @@ export const populateCaseSections = async (
       await new Promise(resolve => setTimeout(resolve, 10));
     }
   }
-  return getCase(parseInt(caseId), caseAccountSid, ALWAYS_CAN);
+  return getCase(caseId, caseAccountSid, ALWAYS_CAN);
 };
 
 export const case1 = {

@@ -37,6 +37,7 @@ import { receiveSqsMessage } from '@tech-matters/sqs-client';
 import { db } from '../../dbConnection';
 import { setupServiceTests } from '../../setupServiceTest';
 import subDays from 'date-fns/subDays';
+import { getById } from '@tech-matters/hrm-core/contact/contactDataAccess';
 
 const CONTACT_JOB_COMPLETE_SQS_QUEUE = 'mock-completed-contact-jobs';
 const PENDING_RETRIEVE_TRANSCRIPT_JOBS_QUEUE = 'mock-pending-retrieve-transcript-jobs';
@@ -106,7 +107,7 @@ const verifyConversationMedia = (
   expect(transcriptMedia.storeTypeSpecificData.location.key).toBe(expectedKey);
 };
 
-let testContactId: number;
+let testContactId: string;
 let singleProcessContactJobsRun: () => Promise<void>;
 
 beforeEach(async () => {
@@ -120,7 +121,7 @@ beforeEach(async () => {
   testContactId = testContact.id;
   await contactApi.addConversationMediaToContact(
     accountSid,
-    testContact.id.toString(),
+    testContact.id,
     [
       {
         storeType: 'S3',
@@ -169,7 +170,7 @@ describe('Contact created', () => {
       ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
     );
     expect(pendingRetrieveTranscriptJob.resource).toBeDefined();
-    expect(pendingRetrieveTranscriptJob.resource.id).toBe(testContactId);
+    expect(pendingRetrieveTranscriptJob.resource.id.toString()).toBe(testContactId);
     expect(pendingRetrieveTranscriptJob.resource.accountSid).toBe(accountSid);
     expect(pendingRetrieveTranscriptJob.additionalPayload).toBeDefined();
   });
@@ -183,7 +184,7 @@ describe('Contact created', () => {
     expect(messages).toHaveLength(1);
     const pendingRetrieveTranscriptJob = JSON.parse(messages[0].Body);
     console.log('pendingRetrieveTranscriptJob', pendingRetrieveTranscriptJob);
-    expect(pendingRetrieveTranscriptJob.contactId).toBe(testContactId);
+    expect(pendingRetrieveTranscriptJob.contactId).toBe(parseInt(testContactId));
     expect(pendingRetrieveTranscriptJob.jobType).toBe(
       ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
     );
@@ -204,7 +205,7 @@ describe('Contact created', () => {
     expect(messages).toHaveLength(1);
     const pendingRetrieveTranscriptJob = JSON.parse(messages[0].Body);
     console.log('pendingRetrieveTranscriptJob', pendingRetrieveTranscriptJob);
-    expect(pendingRetrieveTranscriptJob.contactId).toBe(testContactId);
+    expect(pendingRetrieveTranscriptJob.contactId).toBe(parseInt(testContactId));
     expect(pendingRetrieveTranscriptJob.jobType).toBe(
       ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
     );
@@ -230,7 +231,7 @@ describe('Contact created', () => {
       expect(messages).toHaveLength(1);
       const pendingRetrieveTranscriptJob = JSON.parse(messages[0].Body);
       console.log('pendingRetrieveTranscriptJob', pendingRetrieveTranscriptJob);
-      expect(pendingRetrieveTranscriptJob.contactId).toBe(testContactId);
+      expect(pendingRetrieveTranscriptJob.contactId).toBe(parseInt(testContactId));
       expect(pendingRetrieveTranscriptJob.jobType).toBe(
         ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       );
@@ -248,14 +249,10 @@ describe('Retrieve transcript job complete', () => {
   });
 
   test('Receive a completed retrieve transcript job and create a scrub job', async () => {
-    const originalContact = await contactApi.getContactById(
-      accountSid,
-      testContactId,
-      ALWAYS_CAN,
-    );
+    const originalContact = await getById(accountSid, parseInt(testContactId));
 
     await createContactJob()({
-      resource: await contactApi.getContactById(accountSid, testContactId, ALWAYS_CAN),
+      resource: await getById(accountSid, parseInt(testContactId)),
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       additionalPayload: {
         originalLocation: {
@@ -275,7 +272,7 @@ describe('Retrieve transcript job complete', () => {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       taskId: 'TKx',
       twilioWorkerId: workerSid,
-      contactId: testContactId,
+      contactId: parseInt(testContactId),
       accountSid,
       attemptNumber: 0,
       serviceSid: 'string',

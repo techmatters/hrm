@@ -67,7 +67,7 @@ export const processCompletedRetrieveContactTranscript = async (
     location: completedJob.attemptPayload,
   };
 
-  await updateConversationMediaData(completedJob.contactId)(
+  await updateConversationMediaData(completedJob.contactId?.toString())(
     completedJob.accountSid,
     completedJob.conversationMediaId,
     storeTypeSpecificData,

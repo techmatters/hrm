@@ -25,7 +25,10 @@ import {
 } from '@tech-matters/testing';
 import { createContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { S3ContactMediaType } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
-import { getById as getContactById } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import {
+  ContactRecord,
+  getById as getContactById,
+} from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { updateConversationMediaData } from '@tech-matters/hrm-core/contact/contactService';
 import * as cleanupContactJobsApi from '@tech-matters/contact-job-cleanup';
 import {
@@ -106,7 +109,7 @@ describe('cleanupContactJobs', () => {
     await db.tx(connection => {
       createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        resource: contact,
+        resource: { ...contact, id: parseInt(contact.id) } as unknown as ContactRecord,
         additionalPayload: {
           conversationMediaId: 9999,
         },
@@ -206,7 +209,7 @@ describe('cleanupContactJobs', () => {
     expect(job).toBeNull();
     expect(twilioSpy).toHaveBeenCalledTimes(1);
 
-    const contactAfterCleanup = await getContactById(accountSid, contact.id);
+    const contactAfterCleanup = await getContactById(accountSid, parseInt(contact.id));
     expect(contactAfterCleanup).not.toBeNull();
   });
 });

@@ -145,7 +145,7 @@ const generatePayloadFromContact = (
           ...(ps[HRM_CONTACTS_INDEX_TYPE] ?? []),
           {
             ...m,
-            documentId: m.message.contact.id,
+            documentId: parseInt(m.message.contact.id),
             payload: { ...m.message, transcript: m.transcript },
             indexHandler: 'updateDocument',
           },
@@ -156,7 +156,7 @@ const generatePayloadFromContact = (
               ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
               {
                 ...m,
-                documentId: m.message.contact.caseId,
+                documentId: parseInt(m.message.contact.caseId),
                 payload: { ...m.message, transcript: m.transcript },
                 indexHandler: 'updateScript',
               },
@@ -198,7 +198,7 @@ const generatePayloadFromCase = (
           ...(ps[HRM_CASES_INDEX_TYPE] ?? []),
           {
             ...m,
-            documentId: m.message.case.id,
+            documentId: parseInt(m.message.case.id),
             payload: { ...m.message },
             indexHandler: 'updateDocument',
           },
@@ -263,7 +263,5 @@ export const messagesToPayloadsByAccountSid = async (
     }),
   );
 
-  const payloadsByAccountSid = Object.fromEntries(payloadsByAccountSidEntries);
-
-  return payloadsByAccountSid;
+  return Object.fromEntries(payloadsByAccountSidEntries);
 };

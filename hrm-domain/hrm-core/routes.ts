@@ -18,7 +18,7 @@ import { IRouter, Router } from 'express';
 
 import cases from './case/caseRoutesV0';
 import contacts from './contact/contactRoutesV0';
-import csamReports from './csam-report/csam-report-routes-v0';
+import csamReports from './csam-report/csamReportRoutesV0';
 import postSurveys from './post-survey/post-survey-routes-v0';
 import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';

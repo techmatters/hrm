@@ -78,7 +78,7 @@ const getIdentifierWithProfilesSpy = jest
     ],
   }));
 
-const mockContact: contactDb.Contact = {
+const mockContactRecord: contactDb.ContactRecord = {
   id: 1234,
   accountSid: 'AC-accountSid',
   csamReports: [],
@@ -87,6 +87,11 @@ const mockContact: contactDb.Contact = {
   rawJson: {} as any,
   createdAt: baselineDate.toISOString(),
 };
+
+const mockContact: contactDb.Contact = {
+  ...mockContactRecord,
+  id: '1234',
+} as unknown as contactDb.Contact;
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -128,20 +133,22 @@ describe('createContact', () => {
   }: {
     mocks?: {
       contactMockReturn: ReturnType<typeof contactDb.create>;
-      getContactMock: contactDb.Contact;
+      getContactMock: contactDb.ContactRecord;
     };
   } = {}) => {
     const createContactMock = mocks
       ? jest.fn(mocks.contactMockReturn)
       : jest.fn(() =>
-          Promise.resolve(newOkFromData({ contact: mockContact, isNewRecord: true })),
+          Promise.resolve(
+            newOkFromData({ contact: mockContactRecord, isNewRecord: true }),
+          ),
         );
     const createSpy = jest
       .spyOn(contactDb, 'create')
       .mockReturnValueOnce(createContactMock);
     const getByIdSpy = mocks
       ? jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mocks.getContactMock)
-      : jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContact);
+      : jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContactRecord);
 
     return { createContactMock, createSpy, getByIdSpy };
   };
@@ -283,8 +290,8 @@ describe('createContact', () => {
 describe('connectContactToCase', () => {
   test('Returns contact produced by data access layer', async () => {
     const connectSpy = jest.fn();
-    jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContact);
-    connectSpy.mockResolvedValue(mockContact);
+    jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContactRecord);
+    connectSpy.mockResolvedValue(mockContactRecord);
     jest.spyOn(contactDb, 'connectToCase').mockImplementation(() => connectSpy);
     const result = await connectContactToCase(accountSid, '1234', '4321', ALWAYS_CAN);
     expect(connectSpy).toHaveBeenCalledWith(
@@ -336,8 +343,8 @@ describe('patchContact', () => {
   test('Passes callerInformation, childInformation, caseInformation & categories to data layer as separate properties', async () => {
     const patchSpy = jest.fn();
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
-    jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContact);
-    patchSpy.mockResolvedValue(mockContact);
+    jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContactRecord);
+    patchSpy.mockResolvedValue(mockContactRecord);
     const result = await patchContact(
       accountSid,
       contactPatcherSid,
@@ -383,7 +390,7 @@ describe('patchContact', () => {
 describe('searchContacts', () => {
   const contactSearcher = 'WK-contact-searcher';
   test('Returns contacts returned by data layer unmodified', async () => {
-    const jillSmith = new ContactBuilder()
+    const jillSmithBuilder = new ContactBuilder()
       .withId(4321)
       .withHelpline('a helpline')
       .withTaskId('jill-smith-task')
@@ -397,9 +404,8 @@ describe('searchContacts', () => {
       .withCreatedAt(new Date('2020-03-10T00:00:00Z'))
       .withTimeOfContact(new Date('2020-03-10T00:00:00Z'))
       .withChannel('voice')
-      .withConversationDuration(10)
-      .build();
-    const sarahPark = new ContactBuilder()
+      .withConversationDuration(10);
+    const sarahParkBuilder = new ContactBuilder()
       .withId(1234)
       .withTaskId('sarah-park-task')
       .withChildFirstName('Sarah')
@@ -410,16 +416,15 @@ describe('searchContacts', () => {
       .withTwilioWorkerId(workerSid)
       .withCreatedBy(contactSearcher)
       .withCreatedAt(new Date('2020-03-15T00:00:00Z'))
-      .withTimeOfContact(new Date('2020-03-15T00:00:00Z'))
-      .build();
+      .withTimeOfContact(new Date('2020-03-15T00:00:00Z'));
     const expectedSearchResult: { count: number; contacts: contactDb.Contact[] } = {
       count: 2,
-      contacts: [jillSmith, sarahPark],
+      contacts: [jillSmithBuilder.buildContact(), sarahParkBuilder.buildContact()],
     };
 
     const mockedResult = {
       count: 2,
-      rows: [jillSmith, sarahPark],
+      rows: [jillSmithBuilder.build(), sarahParkBuilder.build()],
     };
     const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue(mockedResult);
     const parameters = { helpline: 'helpline', onlyDataContacts: false };

@@ -54,7 +54,7 @@ beforeEach(async () => {
     true,
   );
   nonExistingCaseId = caseToBeDeleted.id;
-  await caseDb.deleteById(caseToBeDeleted.id, accountSid);
+  await caseDb.deleteById(parseInt(caseToBeDeleted.id), accountSid);
 });
 
 const publicApiTestSuiteParameters = {

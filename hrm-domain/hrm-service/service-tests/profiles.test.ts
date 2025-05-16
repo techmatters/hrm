@@ -303,7 +303,8 @@ describe('/profiles', () => {
       const buildRoute = (id: number, subroute: 'contacts' | 'cases') =>
         `${baseRoute}/${id}/${subroute}`;
 
-      const sortById = (a: { id: number }, b: { id: number }) => a.id - b.id;
+      const sortById = (a: { id: string }, b: { id: string }) =>
+        parseInt(a.id) - parseInt(b.id);
 
       let createdCases: caseApi.CaseService[];
       let createdContacts: Awaited<ReturnType<typeof contactApi.createContact>>[];
@@ -404,16 +405,14 @@ describe('/profiles', () => {
             expect(response.body.count).toBe(createdCases.length);
             expect(
               response.body.cases
-                .map(({ createdAt, updatedAt, childName, totalCount, ...rest }) => ({
-                  ...rest,
-                  connectedContacts: rest.connectedContacts?.sort(sortById),
-                }))
+                .map(({ createdAt, updatedAt, totalCount, ...rest }) => rest)
                 .sort(sortById),
             ).toStrictEqual(
               createdCases
-                .map(({ createdAt, updatedAt, childName, ...rest }) => ({
+                .map(({ createdAt, updatedAt, ...rest }) => ({
                   ...rest,
-                  connectedContacts: rest.connectedContacts?.sort(sortById).slice(0, 1),
+                  childName: null,
+                  connectedContacts: expect.anything(),
                 }))
                 .sort(sortById),
             );

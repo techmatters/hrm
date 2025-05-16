@@ -27,7 +27,7 @@ import { ContactJobType } from '@tech-matters/types';
 import { accountSid, contact1 } from '../mocks';
 import { headers } from '../server';
 
-import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { Contact, ContactRecord } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { setupServiceTests } from '../setupServiceTest';
 
 const { request } = setupServiceTests();
@@ -44,7 +44,7 @@ describe('appendFailedAttemptPayload', () => {
     await db.tx(connection => {
       createContactJob(connection)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        resource: contact,
+        resource: { ...contact, id: parseInt(contact.id) } as unknown as ContactRecord,
         additionalPayload: undefined,
       });
     });

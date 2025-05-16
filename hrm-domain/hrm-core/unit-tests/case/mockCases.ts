@@ -23,6 +23,7 @@ const baselineDate = new Date(2000, 5, 1);
 export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord => {
   return Object.assign(
     <CaseRecord>{
+      label: 'case1 label',
       id: 1,
       helpline: 'helpline',
       status: 'open',
@@ -62,12 +63,5 @@ export const createMockCaseInsert = (partial: Partial<NewCaseRecord>): NewCaseRe
 };
 
 export const createMockCase = (partial: Partial<CaseService>): CaseService => {
-  const record = createMockCaseRecord({});
-  return Object.assign(
-    {
-      ...record,
-      categories: {},
-    },
-    partial,
-  );
+  return Object.assign(createMockCaseRecord({}), partial);
 };
