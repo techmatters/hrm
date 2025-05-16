@@ -28,7 +28,6 @@ export const OrderByColumn = {
   CREATED_AT: 'createdAt',
   UPDATED_AT: 'updatedAt',
   CHILD_NAME: 'childName',
-  FOLLOW_UP_DATE: 'info.followUpDate',
 } as const;
 
 export type OrderByColumnType = (typeof OrderByColumn)[keyof typeof OrderByColumn];
@@ -37,7 +36,6 @@ const ORDER_BY_FIELDS: Record<OrderByColumnType, string> = {
   id: pgp.as.name('id'),
   createdAt: pgp.as.name('createdAt'),
   updatedAt: pgp.as.name('updatedAt'),
-  'info.followUpDate': `"info"->>'followUpDate'`,
   childName: pgp.as.name('childName'),
 } as const;
 
@@ -57,11 +55,10 @@ const generateOrderByClause = (clauses: OrderByClauseItem[]): string => {
 const enum FilterableDateField {
   CREATED_AT = 'cases."createdAt"::TIMESTAMP WITH TIME ZONE',
   UPDATED_AT = 'cases."updatedAt"::TIMESTAMP WITH TIME ZONE',
-  FOLLOW_UP_DATE = `CAST(NULLIF(cases."info"->>'followUpDate', '') AS TIMESTAMP WITH TIME ZONE)`,
 }
 
 const dateFilterCondition = (
-  field: FilterableDateField,
+  field: FilterableDateField | string,
   filterName: string,
   filter: DateFilter,
 ): string | undefined => {
@@ -81,29 +78,15 @@ const dateFilterCondition = (
   return existsCondition;
 };
 
-// Produces a table of category / subcategory pairs from the input category filters, and another from the categories specified in the contact json, and joins on them
-const CATEGORIES_FILTER_SQL = `EXISTS (
-SELECT 1 FROM 
-(
-    SELECT categories.key AS category, subcategories AS subcategory 
-    FROM "Contacts" c, jsonb_each(c."rawJson"->'categories') categories, jsonb_array_elements_text(categories.value) AS subcategories 
-    WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
-) AS availableCategories
-INNER JOIN jsonb_to_recordset($<categories:json>) AS requiredCategories(category text, subcategory text) 
-ON requiredCategories.category = availableCategories.category AND requiredCategories.subcategory = availableCategories.subcategory
-)`;
-
 const filterSql = ({
   counsellors,
   statuses,
   createdAt = {},
   updatedAt = {},
-  followUpDate = {},
-  categories,
   helplines,
   excludedStatuses,
   includeOrphans,
-  customFilter,
+  caseInfoFilters,
 }: CaseListFilters) => {
   const filterSqlClauses: string[] = [];
   if (helplines && helplines.length) {
@@ -118,27 +101,33 @@ const filterSql = ({
   if (statuses && statuses.length) {
     filterSqlClauses.push(`cases."status" IN ($<statuses:csv>)`);
   }
-  if (customFilter) {
-    Object.entries(customFilter).forEach(([key, values]) => {
-      if (values && values.length) {
-        filterSqlClauses.push(`cases."info"->>'${key}' IN ($<customFilter.${key}:csv>)`);
-      }
-    });
-  }
   filterSqlClauses.push(
     ...[
       dateFilterCondition(FilterableDateField.CREATED_AT, 'createdAt', createdAt),
       dateFilterCondition(FilterableDateField.UPDATED_AT, 'updatedAt', updatedAt),
-      dateFilterCondition(
-        FilterableDateField.FOLLOW_UP_DATE,
-        'followUpDate',
-        followUpDate,
-      ),
     ].filter(sql => sql),
   );
-  if (categories && categories.length) {
-    filterSqlClauses.push(CATEGORIES_FILTER_SQL);
+  if (caseInfoFilters) {
+    Object.entries(caseInfoFilters).forEach(([key, values]) => {
+      // Handle multi-select filters
+      if (Array.isArray(values) && values.length) {
+        const clause = `cases."info"->>'${key}' IN ($<caseInfoFilters.${key}:csv>)`;
+        filterSqlClauses.push(clause);
+      }
+      // Handle date range filters like FilterableDateField
+      else if (
+        typeof values === 'object' &&
+        !Array.isArray(values) &&
+        (values as DateFilter)
+      ) {
+        const fieldExpr = `CAST(NULLIF(cases."info"->>'${key}', '') AS TIMESTAMP WITH TIME ZONE)`;
+        const paramName = `caseInfoFilters.${key}`;
+        const dateClause = dateFilterCondition(fieldExpr, paramName, values);
+        filterSqlClauses.push(dateClause);
+      }
+    });
   }
+
   if (!includeOrphans) {
     filterSqlClauses.push(`EXISTS (
         SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid"
@@ -232,7 +221,7 @@ const selectCasesUnorderedSql = ({
   LEFT JOIN LATERAL (
       ${selectContactsOwnedCount('twilioWorkerSid')}
   ) "contactsOwnedCount" ON true
-  ${whereClause} GROUP BY
+  ${whereClause ?? ''} GROUP BY
     "cases"."accountSid",
     "cases"."id",
     "contactsOwnedCount"."contactsOwnedByUserCount"
@@ -281,23 +270,29 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     ].filter(sql => sql).join(`
     AND `);
     const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
-    return selectCasesPaginatedSql({ whereClause: whereSql, orderByClause: orderBySql });
+    return selectCasesPaginatedSql({
+      whereClause: whereSql ? `WHERE ${whereSql}` : null,
+      orderByClause: orderBySql,
+    });
   };
 };
 
 export const selectCaseSearch = selectSearchCaseBaseQuery(
-  `WHERE
-      $<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>
+  `$<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>
     AND ${SEARCH_WHERE_CLAUSE}
   `,
 );
 
+export const selectCaseFilterOnly = selectSearchCaseBaseQuery(
+  'cases."accountSid" = $<accountSid>',
+);
+
 export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
-  `WHERE cases."accountSid" = $<accountSid> AND cases."id" IN (
+  `cases."accountSid" = $<accountSid> AND cases."id" IN (
     SELECT "caseId" FROM "Contacts" "c" WHERE "c"."profileId" = $<profileId> AND "c"."accountSid" = $<accountSid>
   )`,
 );
 
 export const selectCasesByIds = selectSearchCaseBaseQuery(
-  `WHERE cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
+  `cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
 );
