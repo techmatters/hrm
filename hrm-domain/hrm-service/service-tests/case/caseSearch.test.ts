@@ -871,8 +871,10 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  followUpDate: {
-                    to: add(baselineDate, { days: 4, hours: 12 }).toISOString(),
+                  caseInfoFilters: {
+                    followUpDate: {
+                      to: add(baselineDate, { days: 4, hours: 12 }).toISOString(),
+                    },
                   },
                 },
               },
@@ -896,9 +898,11 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  followUpDate: {
-                    from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
-                    to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                  caseInfoFilters: {
+                    followUpDate: {
+                      from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                      to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                    },
                   },
                 },
               },
@@ -924,9 +928,11 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  followUpDate: {
-                    from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
-                    to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                  caseInfoFilters: {
+                    followUpDate: {
+                      from: add(baselineDate, { days: 2, hours: 12 }).toISOString(),
+                      to: add(baselineDate, { days: 6, hours: 12 }).toISOString(),
+                    },
                   },
                 },
               },
@@ -954,8 +960,10 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  followUpDate: {
-                    exists: DateExistsCondition.MUST_NOT_EXIST,
+                  caseInfoFilters: {
+                    followUpDate: {
+                      exists: DateExistsCondition.MUST_NOT_EXIST,
+                    },
                   },
                 },
               },
@@ -976,8 +984,10 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  followUpDate: {
-                    exists: DateExistsCondition.MUST_NOT_EXIST,
+                  caseInfoFilters: {
+                    followUpDate: {
+                      exists: DateExistsCondition.MUST_NOT_EXIST,
+                    },
                   },
                 },
               },
@@ -1087,7 +1097,7 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  customFilter: {
+                  caseInfoFilters: {
                     operatingArea: ['East'],
                   },
                 },
@@ -1126,7 +1136,7 @@ describe('/cases route', () => {
               searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
               body: {
                 filters: {
-                  customFilter: {
+                  caseInfoFilters: {
                     operatingArea: ['East', 'North'],
                   },
                 },
@@ -1164,7 +1174,7 @@ describe('/cases route', () => {
               body: {
                 helpline: helplines[0],
                 filters: {
-                  customFilter: {
+                  caseInfoFilters: {
                     operatingArea: ['East'],
                   },
                 },
