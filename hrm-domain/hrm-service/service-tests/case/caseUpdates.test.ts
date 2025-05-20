@@ -297,10 +297,7 @@ each([publicApiTestSuiteParameters, internalApiTestSuiteParameters]).describe(
 
         // Check the DB is actually updated
         const fromDb = await caseApi.getCase(originalCase.id, accountSid, ALWAYS_CAN);
-        expect(fromDb).toStrictEqual({
-          ...expected,
-          connectedContacts: [],
-        });
+        expect(fromDb).toStrictEqual(expected);
 
         if (!fromDb || !caseBeforeUpdate) {
           throw new Error('fromDB is falsy');

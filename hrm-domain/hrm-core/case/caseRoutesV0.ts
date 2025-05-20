@@ -102,13 +102,11 @@ const newCaseRouter = (isPublic: boolean) => {
   });
 
   casesRouter.get('/:id', isPublic ? canViewCase : openEndpoint, async (req, res) => {
-    const { hrmAccountId, permissions, can, user } = req;
+    const { hrmAccountId, user } = req;
     const { id } = req.params;
 
     const caseFromDB = await caseApi.getCase(id, hrmAccountId, {
-      can,
       user,
-      permissions,
     });
 
     if (!caseFromDB) {

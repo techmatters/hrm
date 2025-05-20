@@ -48,8 +48,6 @@ export const reindexCasesStream = async (
     filters,
     user: maxPermissions.user,
     viewCasePermissions: maxPermissions.permissions.viewCase as TKConditionsSets<'case'>,
-    viewContactPermissions: maxPermissions.permissions
-      .viewContact as TKConditionsSets<'contact'>,
     batchSize: highWaterMark,
   });
 

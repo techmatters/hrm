@@ -124,16 +124,11 @@ export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRe
 export const getById = async (
   caseId: number,
   accountSid: HrmAccountId,
-  { workerSid, isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>,
+  { workerSid }: TwilioUser,
 ): Promise<CaseRecord | undefined> => {
   const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
-    const statement = selectSingleCaseByIdSql(
-      'Cases',
-      contactViewPermissions,
-      isSupervisor,
-    );
+    const statement = selectSingleCaseByIdSql('Cases');
     const queryValues = {
       accountSid,
       caseId,
@@ -161,7 +156,6 @@ type SearchQueryParamsBuilder<T> = (
 export type SearchQueryFunction<T> = (
   user: TwilioUser,
   viewCasePermissions: TKConditionsSets<'case'>,
-  viewContactPermissions: TKConditionsSets<'contact'>,
   listConfiguration: CaseListConfiguration,
   accountSid: HrmAccountId,
   searchCriteria: T,
@@ -175,7 +169,6 @@ const generalizedSearchQueryFunction = <T>(
   return async (
     user,
     casePermissions,
-    contactPermissions,
     listConfiguration,
     accountSid,
     searchCriteria,
@@ -187,13 +180,7 @@ const generalizedSearchQueryFunction = <T>(
     const orderClause = [{ sortBy, sortDirection }];
 
     const { count, rows } = await db.task(async connection => {
-      const statement = sqlQueryBuilder(
-        user,
-        casePermissions,
-        contactPermissions,
-        filters,
-        orderClause,
-      );
+      const statement = sqlQueryBuilder(user, casePermissions, filters, orderClause);
       const queryValues = sqlQueryParamsBuilder(
         accountSid,
         user,
@@ -316,14 +303,12 @@ export const streamCasesForReindexing = async ({
   filters,
   user,
   viewCasePermissions,
-  viewContactPermissions,
   batchSize = 1000,
 }: {
   accountSid: HrmAccountId;
   filters: NonNullable<Pick<CaseListFilters, 'createdAt' | 'updatedAt'>>;
   user: TwilioUser;
   viewCasePermissions: TKConditionsSets<'case'>;
-  viewContactPermissions: TKConditionsSets<'contact'>;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
   const { sortBy, sortDirection } = getPaginationElements({});
@@ -331,13 +316,7 @@ export const streamCasesForReindexing = async ({
 
   const qs = new QueryStream(
     pgp.as.format(
-      selectCaseSearch(
-        user,
-        viewCasePermissions,
-        viewContactPermissions,
-        filters,
-        orderByClause,
-      ),
+      selectCaseSearch(user, viewCasePermissions, filters, orderByClause),
       searchParametersToQueryParameters(
         accountSid,
         user,
