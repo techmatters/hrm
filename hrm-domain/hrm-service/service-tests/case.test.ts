@@ -16,23 +16,13 @@
 
 /* eslint-disable jest/no-standalone-expect,no-await-in-loop */
 
-import each from 'jest-each';
-
-import { db } from './dbConnection';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
-import {
-  createContact,
-  connectContactToCase,
-  addConversationMediaToContact,
-} from '@tech-matters/hrm-core/contact/contactService';
 import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 
 import * as mocks from './mocks';
-import { ruleFileActionOverride } from './permissions-overrides';
-import { headers, setRules, useOpenRules } from './server';
+import { headers } from './server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { ALWAYS_CAN } from './mocks';
 import { casePopulated } from './mocks';
 import { setupServiceTests } from './setupServiceTest';
@@ -40,24 +30,6 @@ import { setupServiceTests } from './setupServiceTest';
 const { case1, case2, accountSid, workerSid } = mocks;
 
 const { request } = setupServiceTests(workerSid);
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteContactById = (id: number, accountSid: string) =>
-  db.task(t =>
-    t.none(`
-      DELETE FROM "Contacts"
-      WHERE "id" = ${id} AND "accountSid" = '${accountSid}';
-  `),
-  );
-
-// eslint-disable-next-line @typescript-eslint/no-shadow
-const deleteJobsByContactId = (contactId: number, accountSid: string) =>
-  db.task(t =>
-    t.manyOrNone(`
-      DELETE FROM "ContactJobs"
-      WHERE "contactId" = ${contactId} AND "accountSid" = '${accountSid}';
-    `),
-  );
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
@@ -94,7 +66,7 @@ describe('/cases route', () => {
       expect(response.body).toStrictEqual(expected);
       // Check the DB is actually updated
       const fromDb = await caseApi.getCase(response.body.id, accountSid, ALWAYS_CAN);
-      expect(fromDb).toStrictEqual({ ...expected, sections: {}, connectedContacts: [] });
+      expect(fromDb).toStrictEqual({ ...expected, connectedContacts: [] });
     });
   });
 
@@ -162,81 +134,11 @@ describe('/cases route', () => {
 
         const expected = {
           ...cases.populated,
-          sections: {},
           createdAt: expect.toParseAsDate(cases.populated.createdAt),
           updatedAt: expect.toParseAsDate(cases.populated.createdAt),
         };
 
         expect(response.body).toMatchObject(expected);
-      });
-
-      each([
-        {
-          expectTranscripts: true,
-          description: `with viewExternalTranscript includes transcripts`,
-        },
-        {
-          expectTranscripts: false,
-          description: `without viewExternalTranscript excludes transcripts`,
-        },
-      ]).test(`with connectedContacts $description`, async ({ expectTranscripts }) => {
-        const createdCase = await caseApi.createCase(
-          case1,
-          accountSid,
-          workerSid,
-          undefined,
-          true,
-        );
-        let createdContact = await createContact(
-          accountSid,
-          workerSid,
-          mocks.withTaskId,
-          ALWAYS_CAN,
-        );
-        createdContact = await addConversationMediaToContact(
-          accountSid,
-          createdContact.id.toString(),
-          mocks.conversationMedia,
-          { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
-        );
-
-        await connectContactToCase(
-          accountSid,
-          String(createdContact.id),
-          String(createdCase.id),
-          {
-            user: newTwilioUser(accountSid, workerSid, []),
-            can: () => true,
-          },
-        );
-
-        useOpenRules();
-        if (!expectTranscripts) {
-          setRules(ruleFileActionOverride('viewExternalTranscript', false));
-        }
-
-        const response = await request.get(subRoute(createdCase.id)).set(headers);
-
-        expect(response.status).toBe(200);
-
-        if (expectTranscripts) {
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.conversationMedia?.some(isS3StoredTranscript),
-            ),
-          ).toBeTruthy();
-        } else {
-          expect(
-            (<caseApi.CaseService>response.body).connectedContacts?.every(
-              c => c.conversationMedia?.some(isS3StoredTranscript),
-            ),
-          ).toBeFalsy();
-        }
-
-        await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
-        await deleteContactById(createdContact.id, createdContact.accountSid);
-        await caseDb.deleteById(createdCase.id, accountSid);
-        useOpenRules();
       });
     });
 

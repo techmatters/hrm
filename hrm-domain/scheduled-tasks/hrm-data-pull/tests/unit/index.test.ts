@@ -20,11 +20,11 @@ import parseISO from 'date-fns/parseISO';
 
 import { pullData } from '../../index';
 import * as pullContactsModule from '../../pull-contacts';
-import * as pullCasesModule from '../../pull-cases';
+import * as pullCasesModule from '../../pullCases';
 import * as pullProfilesModule from '../../pull-profiles';
 
 jest.mock('../../pull-contacts');
-jest.mock('../../pull-cases');
+jest.mock('../../pullCases');
 jest.mock('../../pull-profiles');
 
 const getParamsFromSpy = (spy: jest.SpyInstance) => ({

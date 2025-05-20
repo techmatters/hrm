@@ -22,6 +22,12 @@ import { autoPaginate } from '@tech-matters/hrm-core/autoPaginate';
 
 import { getContext, maxPermissions } from './context';
 import { parseISO } from 'date-fns';
+import { CaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
+import {
+  timelineToLegacySections,
+  timelineToLegacyConnectedContacts,
+} from '@tech-matters/hrm-core/case/caseSection/timelineToLegacyCaseProperties';
+import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 
 const getSearchParams = (startDate: Date, endDate: Date) => ({
   filters: {
@@ -51,13 +57,22 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     };
   });
 
-  const mapContactsToId = (contacts: Required<{ id: number }>[]) =>
-    contacts.map(contact => contact.id);
-
-  const casesWithContactIdOnly = cases.map(cas => ({
-    ...cas,
-    connectedContacts: mapContactsToId(cas?.connectedContacts ?? []),
-  }));
+  const casesWithContactIdOnly: (Omit<CaseService, 'connectedContacts' | 'categories'> & {
+    connectedContacts: string[];
+    sections: Record<string, CaseSection[]>;
+  })[] = (await caseApi.getTimelinesForCases(accountSid, maxPermissions, cases)).map(
+    ({ case: c, timeline }) => {
+      const sections: Record<string, CaseSection[]> = timelineToLegacySections(timeline);
+      const connectedContacts: string[] = timelineToLegacyConnectedContacts(timeline).map(
+        contact => contact.id.toString(),
+      );
+      return {
+        ...c,
+        sections,
+        connectedContacts,
+      };
+    },
+  );
 
   const uploadPromises = casesWithContactIdOnly.map(cas => {
     /*

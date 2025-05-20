@@ -45,4 +45,7 @@ export type CaseSectionTimelineActivity = TimelineActivity<CaseSectionRecord> & 
   activityType: 'case-section';
 };
 
-export type TimelineResult = { count: number; activities: TimelineActivity<any>[] };
+export type TimelineApiResponse = {
+  count: number;
+  activities: TimelineActivity<any>[];
+};

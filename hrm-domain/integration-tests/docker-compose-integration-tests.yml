@@ -16,7 +16,7 @@ version: '3'
 
 services:
   db:
-    image: library/postgres:16.3
+    image: library/postgres:16.8
 
     environment:
       POSTGRES_USER: rdsadmin

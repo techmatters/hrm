@@ -41,14 +41,10 @@ const newCaseRouter = (isPublic: boolean) => {
         hrmAccountId,
         user,
         body: { status },
-        can,
-        permissions,
       } = req;
       const { id } = req.params;
       const updatedCase = await caseApi.updateCaseStatus(id, status, hrmAccountId, {
-        can,
         user,
-        permissions,
       });
       if (!updatedCase) {
         throw createError(404);
@@ -108,18 +104,12 @@ const newCaseRouter = (isPublic: boolean) => {
   casesRouter.get('/:id', isPublic ? canViewCase : openEndpoint, async (req, res) => {
     const { hrmAccountId, permissions, can, user } = req;
     const { id } = req.params;
-    const onlyEssentialData = Boolean(req.query.onlyEssentialData);
 
-    const caseFromDB = await caseApi.getCase(
-      id,
-      hrmAccountId,
-      {
-        can,
-        user,
-        permissions,
-      },
-      onlyEssentialData,
-    );
+    const caseFromDB = await caseApi.getCase(id, hrmAccountId, {
+      can,
+      user,
+      permissions,
+    });
 
     if (!caseFromDB) {
       throw createError(404);
@@ -151,8 +141,8 @@ const newCaseRouter = (isPublic: boolean) => {
       const timeline = await getCaseTimeline(
         hrmAccountId,
         req,
-        parseInt(caseId),
-        (sectionTypes ?? 'note,referral').split(','),
+        caseId,
+        (sectionTypes ?? '').split(','),
         includeContacts?.toLowerCase() !== 'false',
         { limit: limit ?? 20, offset: offset ?? 0 },
       );
@@ -176,17 +166,9 @@ const newCaseRouter = (isPublic: boolean) => {
      */
     casesRouter.get('/', openEndpoint, async (req, res) => {
       const { hrmAccountId } = req;
-      const {
-        sortDirection,
-        sortBy,
-        limit,
-        offset,
-        onlyEssentialData: onlyEssentialDataParam,
-        ...search
-      } = req.query;
+      const { sortDirection, sortBy, limit, offset, ...search } = req.query;
 
       const { closedCases, counselor, helpline, ...searchCriteria } = search;
-      const onlyEssentialData = Boolean(onlyEssentialDataParam);
 
       const cases = await caseApi.searchCases(
         hrmAccountId,
@@ -194,21 +176,14 @@ const newCaseRouter = (isPublic: boolean) => {
         searchCriteria,
         { filters: { includeOrphans: false }, closedCases, counselor, helpline },
         req,
-        onlyEssentialData,
       );
       res.json(cases);
     });
 
     casesRouter.post('/search', openEndpoint, async (req, res) => {
       const { hrmAccountId } = req;
-      const {
-        closedCases,
-        counselor,
-        helpline,
-        filters,
-        onlyEssentialData,
-        ...searchCriteria
-      } = req.body || {};
+      const { closedCases, counselor, helpline, filters, ...searchCriteria } =
+        req.body || {};
 
       const searchResults = await caseApi.searchCases(
         hrmAccountId,
@@ -216,7 +191,6 @@ const newCaseRouter = (isPublic: boolean) => {
         searchCriteria,
         { closedCases, counselor, helpline, filters },
         req,
-        onlyEssentialData,
       );
       res.json(searchResults);
     });
