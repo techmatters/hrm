@@ -20,12 +20,12 @@ import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 
-import * as mocks from './mocks';
-import { headers } from './server';
+import * as mocks from '../mocks';
+import { headers } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { ALWAYS_CAN } from './mocks';
-import { casePopulated } from './mocks';
-import { setupServiceTests } from './setupServiceTest';
+import { ALWAYS_CAN } from '../mocks';
+import { casePopulated } from '../mocks';
+import { setupServiceTests } from '../setupServiceTest';
 
 const { case1, case2, accountSid, workerSid } = mocks;
 
@@ -47,7 +47,7 @@ describe('/cases route', () => {
       statusUpdatedAt: null,
       statusUpdatedBy: null,
       previousStatus: null,
-      categories: {},
+      label: 'Created case',
       info: {
         operatingArea: 'East',
       },
@@ -60,7 +60,10 @@ describe('/cases route', () => {
       expect(response.body.error).toBe('Authorization failed');
     });
     test('should return 200', async () => {
-      const response = await request.post(route).set(headers).send(case1);
+      const response = await request
+        .post(route)
+        .set(headers)
+        .send({ ...case1, label: 'Created case' });
 
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual(expected);
@@ -100,17 +103,14 @@ describe('/cases route', () => {
         true,
       );
       nonExistingCaseId = caseToBeDeleted.id;
-      await caseDb.deleteById(caseToBeDeleted.id, accountSid);
-    });
-
-    afterEach(async () => {
-      await caseDb.deleteById(cases.blank.id, accountSid);
-      await caseDb.deleteById(cases.populated.id, accountSid);
+      await caseDb.deleteById(parseInt(caseToBeDeleted.id), accountSid);
     });
 
     describe('GET', () => {
       test('should return 401', async () => {
-        const response = await request.put(subRoute(cases.blank.id)).send(case1);
+        const response = await request
+          .put(subRoute(cases.blank.id.toString()))
+          .send(case1);
 
         expect(response.status).toBe(401);
         expect(response.body.error).toBe('Authorization failed');
@@ -159,7 +159,7 @@ describe('/cases route', () => {
 
         // Check the DB is actually updated
         const fromDb = await caseDb.getById(
-          cases.blank.id,
+          parseInt(cases.blank.id),
           accountSid,
           newTwilioUser(accountSid, workerSid, ['supervisor']),
           [['everyone']],

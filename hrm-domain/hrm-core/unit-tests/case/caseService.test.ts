@@ -32,7 +32,6 @@ const publishCaseChangeNotificationSpy = jest
   .mockImplementation(() => Promise.resolve('Ok') as any);
 
 jest.mock('../../case/caseDataAccess');
-const baselineCreatedDate = new Date(2013, 6, 13).toISOString();
 const twilioWorkerId = 'WK-twilio-worker-id';
 
 test('create case', async () => {
@@ -71,8 +70,7 @@ test('create case', async () => {
   expect(createSpy).toHaveBeenCalledWith(expectedCaseDbParameter);
   expect(createdCase).toStrictEqual({
     ...caseToBeCreated,
-    id: 1,
-    categories: {},
+    id: '1',
     createdBy: workerSid,
     accountSid,
     precalculatedPermissions: {
@@ -86,115 +84,33 @@ test('create case', async () => {
 
 describe('searchCases', () => {
   const caseId = 1;
-  const caseWithContact = createMockCase({
-    id: caseId,
+  const caseObject = createMockCase({
+    id: caseId.toString(),
     helpline: 'helpline',
     accountSid,
     status: 'open',
     info: {},
     twilioWorkerId,
-    connectedContacts: [
-      {
-        id: 1,
-        accountSid,
-        csamReports: [],
-        createdAt: baselineCreatedDate,
-        rawJson: {
-          childInformation: { firstName: 'name', lastName: 'last' },
-          caseInformation: {},
-          callerInformation: {},
-          callType: '',
-          categories: {
-            cat1: ['sub2'],
-          },
-        },
-      },
-    ],
   });
 
-  const caseRecordWithContact = createMockCaseRecord({
+  const caseRecord = createMockCaseRecord({
     accountSid,
     id: caseId,
     helpline: 'helpline',
     status: 'open',
     info: {},
     twilioWorkerId,
-    connectedContacts: [
-      {
-        id: 1,
-        createdAt: baselineCreatedDate,
-        accountSid,
-        csamReports: [],
-        rawJson: {
-          childInformation: { firstName: 'name', lastName: 'last' },
-          caseInformation: {},
-          callerInformation: {},
-          callType: '',
-          categories: {
-            cat1: ['sub2'],
-          },
-        },
-      },
-    ],
-  });
-
-  const caseWithoutContact = {
-    ...caseWithContact,
-    connectedContacts: [],
-  };
-
-  const caseRecordWithoutContact = createMockCaseRecord({
-    id: caseId,
-    accountSid,
-    helpline: 'helpline',
-    status: 'open',
-    twilioWorkerId,
-    connectedContacts: [],
   });
 
   each([
     {
-      description:
-        'list cases (with 1st contact, no limit/offset) - extracts child name and categories',
-      filterParameters: { helpline: 'helpline' },
-      expectedDbFilters: { helplines: ['helpline'] },
-      casesFromDb: [caseRecordWithContact],
-      expectedCases: [
-        {
-          ...caseWithContact,
-          categories: { cat1: ['sub2'] },
-          precalculatedPermissions: {
-            userOwnsContact: false,
-          },
-        },
-      ],
-    },
-    {
-      description:
-        'list cases (with 1st contact, with limit/offset) - extracts categories',
-      filterParameters: { helpline: 'helpline' },
-      expectedDbFilters: { helplines: ['helpline'] },
-      listConfig: { offset: 30, limit: 45 },
-      casesFromDb: [caseRecordWithContact],
-      expectedCases: [
-        {
-          ...caseWithContact,
-          categories: { cat1: ['sub2'] },
-          precalculatedPermissions: {
-            userOwnsContact: false,
-          },
-        },
-      ],
-    },
-    {
       description: 'list cases (without contacts) - creates empty categories',
       filterParameters: { helpline: 'helpline' },
       expectedDbFilters: { helplines: ['helpline'] },
-      casesFromDb: [caseRecordWithoutContact],
+      casesFromDb: [caseRecord],
       expectedCases: [
         {
-          ...caseWithoutContact,
-          categories: {},
+          ...caseObject,
           precalculatedPermissions: {
             userOwnsContact: false,
           },
@@ -205,11 +121,10 @@ describe('searchCases', () => {
       description:
         'list cases without helpline - sends offset & limit to db layer but no helpline',
       listConfig: { offset: 30, limit: 45 },
-      casesFromDb: [caseRecordWithoutContact],
+      casesFromDb: [caseRecord],
       expectedCases: [
         {
-          ...caseWithoutContact,
-          categories: {},
+          ...caseObject,
           precalculatedPermissions: {
             userOwnsContact: false,
           },

@@ -39,7 +39,7 @@ import '../case/caseValidation';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ruleFileActionOverride } from '../permissions-overrides';
-import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
+import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csamReportService';
 import { headers, setRules, useOpenRules } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 

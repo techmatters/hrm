@@ -23,7 +23,6 @@ import {
   CaseListConfiguration,
   CaseListFilters,
   CaseRecord,
-  CaseRecordUpdate,
   CaseSearchCriteria,
   create,
   deleteById,
@@ -37,7 +36,6 @@ import {
 } from './caseDataAccess';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { bindApplyTransformations as bindApplyContactTransformations } from '../contact/contactService';
 import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
 import { HrmAccountId, newErr, newOk, TResult } from '@tech-matters/types';
@@ -71,44 +69,15 @@ type RecursivePartial<T> = {
   [P in keyof T]?: RecursivePartial<T[P]>;
 };
 
-type CaseServiceUpdate = Partial<CaseService> & Pick<CaseService, 'updatedBy'>;
-
-const addCategories = (caseItem: CaseRecord) => {
-  const fstContact = (caseItem.connectedContacts ?? [])[0];
-
-  return { ...caseItem, categories: fstContact?.rawJson?.categories ?? {} };
-};
-
-/**
- * Converts a case passed in from the API to a case record ready to write to the DB
- * @param inputCase
- */
-const caseToCaseRecord = (inputCase: CaseServiceUpdate): CaseRecordUpdate => {
-  const { connectedContacts, ...caseWithoutContacts } = inputCase;
-  return caseWithoutContacts;
-};
-
 export const caseRecordToCase = (record: CaseRecord): CaseService => {
-  const { contactsOwnedByUserCount, ...output } = addCategories(record);
+  const { contactsOwnedByUserCount, ...output } = record;
 
   return {
     ...output,
-    // Separate case sections by type
+    id: record.id.toString(),
     precalculatedPermissions: { userOwnsContact: contactsOwnedByUserCount > 0 },
   } as CaseService;
 };
-
-const mapContactTransformations =
-  ({ can, user }: { can: InitializedCan; user: TwilioUser }) =>
-  (caseRecord: CaseRecord) => {
-    const applyTransformations = bindApplyContactTransformations(can, user);
-    return {
-      ...caseRecord,
-      ...(caseRecord.connectedContacts && {
-        connectedContacts: caseRecord.connectedContacts.map(applyTransformations),
-      }),
-    };
-  };
 
 export const getTimelinesForCases = async (
   accountSid: CaseRecord['accountSid'],
@@ -116,29 +85,29 @@ export const getTimelinesForCases = async (
     user: TwilioUser;
     permissions: RulesFile;
   },
-  cases: CaseRecord[],
-): Promise<{ case: CaseRecord; timeline: TimelineActivity<any>[] }[]> => {
+  cases: CaseService[],
+): Promise<{ case: CaseService; timeline: TimelineActivity<any>[] }[]> => {
   const { timelines } = await getMultipleCaseTimelines(
     accountSid,
     userData,
-    cases.map(c => c.id.toString()),
+    cases.map(c => c.id),
     ['*'],
     true,
     { offset: '0', limit: '5000' },
   );
   return cases.map(c => ({
     case: c,
-    timeline: timelines[c.id.toString()] ?? [],
+    timeline: timelines[c.id] ?? [],
   }));
 };
 
 export const getTimelineForCase = async (
-  accountSid: CaseRecord['accountSid'],
+  accountSid: CaseService['accountSid'],
   userData: {
     user: TwilioUser;
     permissions: RulesFile;
   },
-  cas: CaseRecord,
+  cas: CaseService,
 ): Promise<TimelineActivity<any>[]> => {
   return (await getTimelinesForCases(accountSid, userData, [cas]))[0].timeline;
 };
@@ -160,13 +129,19 @@ const doCaseChangeNotification =
       }
 
       const caseObj =
-        caseRecord ?? (await getById(caseId, accountSid, maxPermissions.user, []));
+        caseRecord ??
+        (await getById(parseInt(caseId), accountSid, maxPermissions.user, []));
 
       if (caseObj) {
-        const timeline = await getTimelineForCase(accountSid, maxPermissions, caseObj);
+        const caseService = caseRecordToCase(caseObj);
+        const timeline = await getTimelineForCase(
+          accountSid,
+          maxPermissions,
+          caseService,
+        );
         await publishCaseChangeNotification({
           accountSid,
-          case: caseRecordToCase(caseObj),
+          case: caseService,
           timeline,
           operation,
         });
@@ -192,7 +167,7 @@ export const createCase = async (
 ): Promise<CaseService> => {
   const nowISO = (testNowISO ?? new Date()).toISOString();
   delete body.id;
-  const record = caseToCaseRecord({
+  const record = {
     twilioWorkerId: workerSid,
     ...body,
     createdBy: workerSid,
@@ -200,12 +175,12 @@ export const createCase = async (
     updatedAt: nowISO,
     updatedBy: null,
     accountSid,
-  });
+  };
   const created = await create(record);
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    createCaseNotify({ accountSid, caseId: created.id });
+    createCaseNotify({ accountSid, caseId: created.id.toString() });
   }
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
@@ -227,7 +202,7 @@ export const updateCaseStatus = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: updated.id });
+    updateCaseNotify({ accountSid, caseId: updated.id.toString() });
   }
 
   return caseRecordToCase(updated);
@@ -241,7 +216,7 @@ export const updateCaseOverview = async (
   workerSid: CaseService['twilioWorkerId'],
   skipSearchIndex = false,
 ): Promise<CaseService> => {
-  const updated = await updateCaseInfo(accountSid, id, overview, workerSid);
+  const updated = await updateCaseInfo(accountSid, parseInt(id), overview, workerSid);
 
   if (!updated) return null;
 
@@ -254,10 +229,9 @@ export const updateCaseOverview = async (
 };
 
 export const getCase = async (
-  id: number,
+  id: string,
   accountSid: HrmAccountId,
   {
-    can,
     user,
     permissions,
   }: {
@@ -267,14 +241,14 @@ export const getCase = async (
   },
 ): Promise<CaseService | undefined> => {
   const caseFromDb = await getById(
-    id,
+    parseInt(id),
     accountSid,
     user,
     permissions.viewContact as TKConditionsSets<'contact'>,
   );
 
   if (caseFromDb) {
-    return caseRecordToCase(mapContactTransformations({ can, user })(caseFromDb));
+    return caseRecordToCase(caseFromDb);
   }
   return;
 };
@@ -310,7 +284,6 @@ const generalizedSearchCases =
     searchParameters: T,
     filterParameters: U,
     {
-      can,
       user,
       permissions,
     }: {
@@ -344,9 +317,7 @@ const generalizedSearchCases =
     );
     return {
       ...dbResult,
-      cases: dbResult.cases
-        .map(mapContactTransformations({ can, user }))
-        .map(r => caseRecordToCase(r)),
+      cases: dbResult.cases.map(r => caseRecordToCase(r)),
     };
   };
 
@@ -465,12 +436,12 @@ export const deleteCaseById = async ({
   caseId,
 }: {
   accountSid: HrmAccountId;
-  caseId: number;
+  caseId: string;
 }) => {
-  const deleted = await deleteById(caseId, accountSid);
+  const deleted = await deleteById(parseInt(caseId), accountSid);
 
   // trigger remove operation but don't await for it
-  deleteCaseNotify({ accountSid, caseId: deleted?.id, caseRecord: deleted });
+  deleteCaseNotify({ accountSid, caseId: deleted?.id?.toString(), caseRecord: deleted });
 
   return deleted;
 };

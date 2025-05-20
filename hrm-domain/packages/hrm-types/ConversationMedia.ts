@@ -17,7 +17,9 @@
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
 
 type ConversationMediaCommons = {
+  // TODO: Fix this, all IDs HRM should be strings outside the data access layer
   id: number;
+  // TODO: Fix this, all IDs HRM should be strings outside the data access layer
   contactId: number;
   accountSid: HrmAccountId;
   createdAt: Date;

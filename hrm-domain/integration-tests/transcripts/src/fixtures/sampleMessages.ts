@@ -35,7 +35,7 @@ export const newCompletedRetrieveTranscriptMessageBody = (
       key: 'transcripts/test-transcript.txt',
     },
     attemptResult: ContactJobAttemptResult.SUCCESS,
-    contactId: contact.id,
+    contactId: parseInt(contact.id),
     jobId,
     jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
     taskId: contact.taskId,

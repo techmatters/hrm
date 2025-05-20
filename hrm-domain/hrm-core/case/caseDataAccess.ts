@@ -26,7 +26,6 @@ import {
 } from './sql/caseSearchSql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/caseGetSql';
-import { Contact } from '../contact/contactDataAccess';
 import { DateFilter, OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
@@ -34,7 +33,6 @@ import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
 import {
   PrecalculatedCasePermissionConditions,
   CaseRecordCommon,
-  CaseService,
 } from '@tech-matters/hrm-types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';
@@ -51,6 +49,7 @@ export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
   'twilioWorkerId',
   'createdBy',
   'createdAt',
+  'label',
 ];
 
 export type NewCaseRecord = CaseRecordCommon;
@@ -59,7 +58,6 @@ export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'upd
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
-  connectedContacts?: Contact[];
   contactsOwnedByUserCount?: number;
 };
 
@@ -136,7 +134,11 @@ export const getById = async (
       contactViewPermissions,
       isSupervisor,
     );
-    const queryValues = { accountSid, caseId, twilioWorkerSid: workerSid };
+    const queryValues = {
+      accountSid,
+      caseId,
+      twilioWorkerSid: workerSid,
+    };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
   });
 };
@@ -209,12 +211,7 @@ const generalizedSearchQueryFunction = <T>(
     });
 
     return {
-      cases: rows.map(r => ({
-        ...r,
-        ...(r.connectedContacts
-          ? { connectedContacts: r.connectedContacts.slice(0, 1) }
-          : {}),
-      })),
+      cases: rows,
       count,
     };
   };
@@ -261,7 +258,7 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
   }),
 );
 
-export const deleteById = async (id: CaseService['id'], accountSid: AccountSID) => {
+export const deleteById = async (id: CaseRecord['id'], accountSid: AccountSID) => {
   const db = await getDbForAccount(accountSid);
   return db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
 };

@@ -114,8 +114,11 @@ describe('/contacts/:contactId/connectToCase route', () => {
     nonExistingContactId = contactToBeDeleted.id;
     nonExistingCaseId = caseToBeDeleted.id;
 
-    await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
-    await caseDb.deleteById(caseToBeDeleted.id, accountSid);
+    await deleteContactById(
+      parseInt(contactToBeDeleted.id),
+      contactToBeDeleted.accountSid,
+    );
+    await caseDb.deleteById(parseInt(caseToBeDeleted.id), accountSid);
   });
 
   afterEach(async () => {
@@ -196,7 +199,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
       const { oldRecord, newRecord } = lastContactAudit;
 
       expect(oldRecord.caseId).toBe(null);
-      expect(newRecord.caseId).toBe(existingCaseId);
+      expect(newRecord.caseId.toString()).toBe(existingCaseId);
     });
 
     test('Idempotence on connect contact to case - generates audit', async () => {
@@ -308,7 +311,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
 
             const contact = await contactDb.getById(accountSid, response.body.id);
 
-            expect(contact.caseId).toBe(existingCaseId);
+            expect(contact.caseId.toString()).toBe(existingCaseId);
           } else {
             expect(response.status).toBe(403);
           }
@@ -342,7 +345,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
       const contact = await contactDb.getById(accountSid, response.body.id);
 
       expect(response.status).toBe(200);
-      expect(response.body.caseId).toBe(null);
+      expect(response.body.caseId).toBe(undefined);
       expect(contact.caseId).toBe(null);
     });
 
@@ -380,7 +383,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
           const response = await request.delete(subRoute(existingContactId)).set(headers);
           if (testCase.expectActionIsPermitted) {
             expect(response.status).toBe(200);
-            expect(response.body.caseId).toBe(null);
+            expect(response.body.caseId).toBe(undefined);
 
             const contact = await contactDb.getById(accountSid, response.body.id);
 

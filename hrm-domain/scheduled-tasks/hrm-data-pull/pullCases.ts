@@ -57,7 +57,7 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
     };
   });
 
-  const casesWithContactIdOnly: (Omit<CaseService, 'connectedContacts' | 'categories'> & {
+  const casesWithContactIdOnly: (CaseService & {
     connectedContacts: string[];
     sections: Record<string, CaseSection[]>;
   })[] = (await caseApi.getTimelinesForCases(accountSid, maxPermissions, cases)).map(

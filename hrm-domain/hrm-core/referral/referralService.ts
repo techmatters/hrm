@@ -13,5 +13,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { createReferralRecord, Referral } from './referralDataAccess';
 
-export { Referral, createReferralRecord as createReferral } from './referralDataAccess';
+export { Referral } from './referralDataAccess';
+
+export const createReferral =
+  (task?) =>
+  async (accountSid: string, referral: Referral): Promise<Referral> => {
+    const referralRecord = await createReferralRecord(task)(accountSid, {
+      ...referral,
+      contactId: parseInt(referral.contactId),
+    });
+    return {
+      ...referralRecord,
+      contactId: referralRecord.contactId.toString(),
+    };
+  };

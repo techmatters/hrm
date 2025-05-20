@@ -40,7 +40,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   user,
 }: {
   hrmAccountId: HrmAccountId;
-  objectId: number;
+  objectId: string;
   targetKind: T;
   actions: string[];
   can: InitializedCan;
@@ -123,7 +123,7 @@ export const isValidFileLocation = async ({
 }: {
   hrmAccountId: HrmAccountId;
   targetKind: TargetKind;
-  objectId: number;
+  objectId: string;
   bucket: string;
   key: string;
 }): Promise<TResult<'InternalServerError', boolean>> => {
@@ -132,7 +132,7 @@ export const isValidFileLocation = async ({
       case 'contact': {
         const conversationMedia = await getConversationMediaByContactId(
           hrmAccountId,
-          objectId,
+          parseInt(objectId),
         );
 
         const isValid = conversationMedia.some(

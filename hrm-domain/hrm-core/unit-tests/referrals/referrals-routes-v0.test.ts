@@ -16,7 +16,7 @@
 
 import { Request, Response } from 'express';
 import referralRoutes from '../../referral/referral-routes-v0';
-import { createReferral } from '../../referral/referral-model';
+import { createReferral } from '../../referral/referralService';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
@@ -30,7 +30,7 @@ jest.mock('../../permissions', () => ({
   SafeRouter: jest.fn(),
 }));
 
-jest.mock('../../referral/referral-model', () => ({
+jest.mock('../../referral/referralService', () => ({
   createReferral: jest.fn(),
 }));
 

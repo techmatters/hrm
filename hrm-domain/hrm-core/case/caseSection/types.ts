@@ -21,6 +21,8 @@ import {
   TimelineActivity,
 } from '@tech-matters/hrm-types';
 
+import { ContactRecord } from '../../contact/contactDataAccess';
+
 export { CaseSectionRecord, CaseSection };
 
 export type CaseSectionUpdate = Omit<
@@ -45,4 +47,10 @@ export const isCaseSectionTimelineActivity = (
 
 export const isContactTimelineActivity = (
   activity: TimelineActivity<any>,
-): activity is ContactTimelineActivity => activity.activityType === 'contact';
+): activity is ContactTimelineActivity =>
+  activity.activityType === 'contact' && typeof activity.activity.id === 'string';
+
+export const isContactRecordTimelineActivity = (
+  activity: TimelineActivity<any>,
+): activity is TimelineActivity<ContactRecord> =>
+  activity.activityType === 'contact' && typeof activity.activity.id === 'number';

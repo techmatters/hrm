@@ -47,7 +47,10 @@ jest.mock('@tech-matters/s3-client', () => {
 });
 
 const getExpectedS3Params = (
-  cas: caseApi.CaseService & { sections: Record<string, CaseSection[]> },
+  cas: caseApi.CaseService & {
+    sections: Record<string, CaseSection[]>;
+    connectedContacts: string[];
+  },
 ) => {
   const date = format(parseISO(cas.updatedAt), 'yyyy/MM/dd');
   return {
@@ -116,9 +119,8 @@ describe('KHP Data Pull - Pull Cases', () => {
 
   test('should call upload to S3 with the correct params', async () => {
     const case1: caseApi.CaseService = {
-      id: 1234,
-      categories: {},
-      connectedContacts: [],
+      id: '1234',
+      label: 'Case 1',
       info: {},
       helpline: 'helpline',
       status: 'open',
@@ -133,9 +135,8 @@ describe('KHP Data Pull - Pull Cases', () => {
     };
 
     const case2: caseApi.CaseService = {
-      id: 2345,
-      categories: {},
-      connectedContacts: [],
+      id: '2345',
+      label: 'Case 2',
       info: {},
       helpline: 'helpline',
       status: 'open',
@@ -163,10 +164,10 @@ describe('KHP Data Pull - Pull Cases', () => {
     await pullCases(startDate, endDate);
 
     expect(putS3ObjectSpy).toHaveBeenCalledWith(
-      getExpectedS3Params({ ...case1, sections: {} }),
+      getExpectedS3Params({ ...case1, sections: {}, connectedContacts: [] }),
     );
     expect(putS3ObjectSpy).toHaveBeenCalledWith(
-      getExpectedS3Params({ ...case2, sections: {} }),
+      getExpectedS3Params({ ...case2, sections: {}, connectedContacts: [] }),
     );
     expect(putS3ObjectSpy).toBeCalledTimes(2);
   });

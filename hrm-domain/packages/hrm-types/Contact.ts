@@ -67,7 +67,7 @@ export type NewContactRecord = {
 };
 
 export type ExistingContactRecord = {
-  id: number;
+  id: string;
   accountSid: HrmAccountId;
   createdAt: string;
   finalizedAt?: string;

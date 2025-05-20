@@ -76,7 +76,7 @@ export default (permissions: Permissions) => {
     'InvalidObjectType' | 'InternalServerError',
     {
       objectType: TargetKind;
-      objectId: number;
+      objectId: string;
     }
   > => {
     if (!objectType || !isTargetKind(objectType)) {
@@ -86,15 +86,7 @@ export default (permissions: Permissions) => {
       });
     }
 
-    const parsedId = parseInt(objectId, 10);
-    if (!objectId || !Number.isInteger(parsedId)) {
-      return newErr({
-        message: 'invalid objectId',
-        error: 'InternalServerError',
-      });
-    }
-
-    return newOk({ data: { objectType, objectId: parsedId } });
+    return newOk({ data: { objectType, objectId } });
   };
 
   permissionsRouter.get('/:action', publicEndpoint, async (req, res, next) => {

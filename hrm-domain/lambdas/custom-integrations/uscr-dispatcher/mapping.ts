@@ -33,7 +33,7 @@ export const toCreateIncident = ({
 
   return {
     contact_id: contact.id.toString(),
-    case_id: caseObj.id,
+    case_id: parseInt(caseObj.id),
     description: [
       ...(callerInformation?.reportingDistrict
         ? [`Reporting District: ${callerInformation.reportingDistrict}`]

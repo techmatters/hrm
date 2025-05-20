@@ -29,7 +29,7 @@ import { OPEN_VIEW_CONTACT_PERMISSIONS } from '../permissions/canPerformActionOn
  */
 export const canPerformCaseAction = (
   generateActions: (caseObj: CaseService, req: Request) => any[],
-  getCaseIdFromRequest: (req: any) => number = req => req.params.id,
+  getCaseIdFromRequest: (req: any) => string = req => req.params.id,
   notFoundIfNotPermitted = false,
 ) =>
   asyncHandler(async (req, res, next) => {
