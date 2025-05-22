@@ -18,7 +18,7 @@ import each from 'jest-each';
 import { addSeconds, parseISO, subDays, subHours, subSeconds } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import {
   accountSid,
   ALWAYS_CAN,
@@ -38,27 +38,15 @@ import {
 import '../case/caseValidation';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import {
-  mockingProxy,
-  mockSsmParameters,
-  mockSuccessfulTwilioAuthentication,
-} from '@tech-matters/testing';
 import { ruleFileActionOverride } from '../permissions-overrides';
-import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csam-report';
-import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
+import * as csamReportApi from '@tech-matters/hrm-core/csam-report/csamReportService';
+import { headers, setRules, useOpenRules } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 
 import { addConversationMediaToContact } from '@tech-matters/hrm-core/contact/contactService';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import supertest from 'supertest';
-import { clearAllTables } from '../dbCleanup';
-import { setupTestQueues } from '../sqs';
-
-const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from '../setupServiceTest';
 
 /**
  *
@@ -73,24 +61,7 @@ const resolveSequentially = async (ps: Promise<unknown>[]) => {
   return ret;
 };
 
-beforeAll(async () => {
-  await clearAllTables();
-  await mockingProxy.start();
-  const mockttp = await mockingProxy.mockttpServer();
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  await mockSsmParameters(mockttp, [
-    { pathPattern: /.*/, valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME },
-  ]);
-});
-
-afterAll(async () => {
-  await mockingProxy.stop();
-  server.close();
-});
-
-afterEach(clearAllTables);
-
-setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
+const { request } = setupServiceTests();
 
 const compareTimeOfContactDesc = (c1, c2) =>
   new Date(c2.timeOfContact).valueOf() - new Date(c1.timeOfContact).valueOf();
@@ -224,6 +195,9 @@ describe('/contacts/search route', () => {
           expect(c2.taskId).toBe('contact2-tasksid-2');
           expect(count).toBe(2);
           expect(contacts.length).toBe(2);
+          expect(parseISO(contacts[0].timeOfContact).getTime()).toBeGreaterThanOrEqual(
+            parseISO(contacts[1].timeOfContact).getTime(),
+          );
         },
       },
       {
@@ -233,7 +207,8 @@ describe('/contacts/search route', () => {
           expect(response.status).toBe(200);
           const { contacts, count } = response.body;
 
-          const [c2, c1] = contacts; // result is sorted DESC
+          const c1 = contacts.find(c => c.id === createdContacts[0].id);
+          const c2 = contacts.find(c => c.id === createdContacts[1].id);
           expect(c1.rawJson).toStrictEqual(contact1.rawJson);
           expect(c2.rawJson).toStrictEqual(contact2.rawJson);
 
@@ -244,6 +219,10 @@ describe('/contacts/search route', () => {
           expect(c1.taskId).toBe('contact1-tasksid-2');
           expect(c2.taskId).toBe('contact2-tasksid-2');
           expect(count).toBe(2);
+          expect(contacts.length).toBe(2);
+          expect(parseISO(contacts[0].timeOfContact).getTime()).toBeGreaterThanOrEqual(
+            parseISO(contacts[1].timeOfContact).getTime(),
+          );
         },
       },
       {

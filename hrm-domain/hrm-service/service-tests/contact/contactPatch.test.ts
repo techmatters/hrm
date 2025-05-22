@@ -25,15 +25,11 @@ import * as mocks from '../mocks';
 import { accountSid, ALWAYS_CAN, contact1, withTaskId, workerSid } from '../mocks';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import each from 'jest-each';
-import { getRequest, getServer, headers, setRules, useOpenRules } from '../server';
+import { headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ruleFileActionOverride } from '../permissions-overrides';
-import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversation-media-data-access';
-import {
-  mockingProxy,
-  mockSsmParameters,
-  mockSuccessfulTwilioAuthentication,
-} from '@tech-matters/testing';
+import { isS3StoredTranscript } from '@tech-matters/hrm-core/conversation-media/conversationMediaDataAccess';
+import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import {
   cleanupCases,
   cleanupContacts,
@@ -41,70 +37,19 @@ import {
   cleanupCsamReports,
   cleanupReferrals,
   deleteContactById,
-  deleteJobsByContactId,
 } from './dbCleanup';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { finalizeContact } from './finalizeContact';
-import { clearAllTables } from '../dbCleanup';
-import sqslite from 'sqslite';
-import { SQS } from 'aws-sdk';
+import { setupServiceTests } from '../setupServiceTest';
 
-const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+const { request } = setupServiceTests();
 const route = `/v0/accounts/${accountSid}/contacts`;
-const sqsService = sqslite({});
-const sqsClient = new SQS({
-  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
-});
-
-let testQueueUrl: URL;
-
-const cleanup = async () => {
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  await clearAllTables();
-};
-
-beforeAll(async () => {
-  process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] = 'mockAuthToken';
-  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
-});
-
-afterAll(async () => {
-  await sqsService.close();
-});
 
 beforeEach(async () => {
-  await mockingProxy.start();
-  await cleanup();
   const mockttp = await mockingProxy.mockttpServer();
   await mockSsmParameters(mockttp, [
-    {
-      pathPattern: /.*\/queue-url-consumer$/,
-      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
-    },
     { pathPattern: /.*\/auth_token$/, valueGenerator: () => 'mockAuthToken' },
   ]);
-
-  const { QueueUrl } = await sqsClient
-    .createQueue({
-      QueueName: SEARCH_INDEX_SQS_QUEUE_NAME,
-    })
-    .promise();
-
-  testQueueUrl = new URL(QueueUrl!);
-});
-
-afterEach(async () => {
-  await cleanup();
-  await sqsClient
-    .deleteQueue({
-      QueueUrl: testQueueUrl.toString(),
-    })
-    .promise();
-  await mockingProxy.stop();
 });
 
 describe('/contacts/:contactId route', () => {
@@ -370,44 +315,44 @@ describe('/contacts/:contactId route', () => {
           );
           createdContact = await finalizeContact(createdContact);
 
-          try {
-            const existingContactId = createdContact.id;
-            const response = await request
-              .patch(subRoute(existingContactId))
-              .set(headers)
-              .send({ rawJson: patch });
+          const existingContactId = createdContact.id;
+          const response = await request
+            .patch(subRoute(existingContactId))
+            .set(headers)
+            .send({ rawJson: patch });
 
-            expect(response.status).toBe(200);
+          expect(response.status).toBe(200);
 
-            expect(response.body).toStrictEqual({
-              ...createdContact,
-              timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
-              createdAt: expect.toParseAsDate(createdContact.createdAt),
-              finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              rawJson: expected,
-              conversationMedia: [],
-              csamReports: [],
-              referrals: [],
-            });
-            // Test the association
-            expect(response.body.csamReports).toHaveLength(0);
-            const savedContact = await contactDb.getById(accountSid, existingContactId);
+          expect(response.body).toStrictEqual({
+            ...createdContact,
+            timeOfContact: expect.toParseAsDate(createdContact.timeOfContact),
+            createdAt: expect.toParseAsDate(createdContact.createdAt),
+            finalizedAt: expect.toParseAsDate(createdContact.finalizedAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            rawJson: expected,
+            conversationMedia: [],
+            csamReports: [],
+            referrals: [],
+          });
+          // Test the association
+          expect(response.body.csamReports).toHaveLength(0);
+          const savedContact = await contactApi.getContactById(
+            accountSid,
+            existingContactId,
+            ALWAYS_CAN,
+          );
 
-            expect(savedContact).toStrictEqual({
-              ...createdContact,
-              createdAt: expect.toParseAsDate(createdContact.createdAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              rawJson: expected,
-              conversationMedia: [],
-              csamReports: [],
-              referrals: [],
-            });
-          } finally {
-            await deleteContactById(createdContact.id, createdContact.accountSid);
-          }
+          expect(savedContact).toStrictEqual({
+            ...createdContact,
+            createdAt: expect.toParseAsDate(createdContact.createdAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            rawJson: expected,
+            conversationMedia: [],
+            csamReports: [],
+            referrals: [],
+          });
         },
       );
     });
@@ -511,39 +456,39 @@ describe('/contacts/:contactId route', () => {
               },
             },
           };
-          try {
-            const existingContactId = createdContact.id;
-            const response = await request
-              .patch(`${subRoute(existingContactId)}?finalize=${finalize}`)
-              .set(headers)
-              .send(patch);
+          const existingContactId = createdContact.id;
+          const response = await request
+            .patch(`${subRoute(existingContactId)}?finalize=${finalize}`)
+            .set(headers)
+            .send(patch);
 
-            expect(response.status).toBe(200);
-            expect(response.body).toStrictEqual({
-              ...expected,
-              timeOfContact: expect.toParseAsDate(expected.timeOfContact),
-              createdAt: expect.toParseAsDate(expected.createdAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              referrals: [],
-              conversationMedia: [],
-            });
-            // Test the association
-            expect(response.body.csamReports).toHaveLength(0);
-            const savedContact = await contactDb.getById(accountSid, existingContactId);
+          expect(response.status).toBe(200);
+          expect(response.body).toStrictEqual({
+            ...expected,
+            timeOfContact: expect.toParseAsDate(expected.timeOfContact),
+            createdAt: expect.toParseAsDate(expected.createdAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            referrals: [],
+            conversationMedia: [],
+          });
+          // Test the association
+          expect(response.body.csamReports).toHaveLength(0);
+          const savedContact = await contactApi.getContactById(
+            accountSid,
+            existingContactId,
+            ALWAYS_CAN,
+          );
 
-            expect(savedContact).toStrictEqual({
-              ...expected,
-              createdAt: expect.toParseAsDate(createdContact.createdAt),
-              updatedAt: expect.toParseAsDate(),
-              updatedBy: workerSid,
-              csamReports: [],
-              referrals: [],
-              conversationMedia: [],
-            });
-          } finally {
-            await deleteContactById(createdContact.id, createdContact.accountSid);
-          }
+          expect(savedContact).toStrictEqual({
+            ...expected,
+            createdAt: expect.toParseAsDate(createdContact.createdAt),
+            updatedAt: expect.toParseAsDate(),
+            updatedBy: workerSid,
+            csamReports: [],
+            referrals: [],
+            conversationMedia: [],
+          });
         },
       );
     });
@@ -557,7 +502,10 @@ describe('/contacts/:contactId route', () => {
         true,
       );
       const nonExistingContactId = contactToBeDeleted.id;
-      await deleteContactById(contactToBeDeleted.id, contactToBeDeleted.accountSid);
+      await deleteContactById(
+        parseInt(contactToBeDeleted.id),
+        contactToBeDeleted.accountSid,
+      );
       const response = await request
         .patch(subRoute(nonExistingContactId))
         .set(headers)
@@ -571,7 +519,7 @@ describe('/contacts/:contactId route', () => {
       expect(response.status).toBe(404);
     });
 
-    test.only("Draft contact edited by a user that didn't create or own the contact - returns 403", async () => {
+    test("Draft contact edited by a user that didn't create or own the contact - returns 403", async () => {
       const createdContact = await contactApi.createContact(
         accountSid,
         'WK another creator',
@@ -715,10 +663,6 @@ describe('/contacts/:contactId route', () => {
           (<contactApi.Contact>res.body).conversationMedia?.some(isS3StoredTranscript),
         ).toBeFalsy();
       }
-
-      await deleteJobsByContactId(createdContact.id, createdContact.accountSid);
-      await deleteContactById(createdContact.id, createdContact.accountSid);
-      useOpenRules();
     });
   });
 });

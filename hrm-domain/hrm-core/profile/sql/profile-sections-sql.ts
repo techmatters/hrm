@@ -18,7 +18,7 @@ import {
   NewProfileSectionRecord,
   NewProfileSectionRecordCommons,
 } from '@tech-matters/hrm-types';
-import { pgp } from '../../connection-pool';
+import { pgp } from '../../dbConnection';
 
 export type { NewProfileSectionRecord };
 

@@ -18,25 +18,65 @@
  * This is the 'business logic' module for Case Section CRUD operations.
  */
 import { randomUUID } from 'crypto';
+import { TimelineActivity, TimelineApiResponse } from '@tech-matters/hrm-types';
 import {
   CaseSection,
   CaseSectionUpdate,
   NewCaseSection,
   CaseSectionRecord,
+  isContactRecordTimelineActivity,
 } from './types';
 import {
   create,
   deleteById,
   getById,
   getTimeline,
-  TimelineResult,
   updateById,
 } from './caseSectionDataAccess';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import { ListConfiguration } from '../caseDataAccess';
-import { HrmAccountId } from '@tech-matters/types';
+import { ErrorResult, HrmAccountId, isErr, newOkFromData } from '@tech-matters/types';
 import { updateCaseNotify } from '../caseService';
+import {
+  DatabaseErrorResult,
+  isDatabaseUniqueConstraintViolationErrorResult,
+  isDatabaseForeignKeyViolationErrorResult,
+} from '../../sql';
+import { SuccessResult } from '@tech-matters/types';
+import { contactRecordToContact } from '../../contact/contactService';
+
+type ResourceAlreadyExists = 'ResourceAlreadyExists';
+type ForeignKeyViolation = 'ForeignKeyViolation';
+type DBErrorResult = ErrorResult<ResourceAlreadyExists | ForeignKeyViolation> & {
+  cause: DatabaseErrorResult;
+  resourceIdentifier: string;
+  resourceType: 'caseSection';
+};
+
+const newDBErrorResult = ({
+  cause,
+  error,
+  resourceIdentifier,
+}: {
+  resourceIdentifier: string;
+  cause: DatabaseErrorResult;
+  error: ResourceAlreadyExists | ForeignKeyViolation;
+}) => {
+  const message = `caseSection resource already exists: ${resourceIdentifier}`;
+  return {
+    _tag: 'Result',
+    status: 'error',
+    error,
+    cause,
+    resourceIdentifier,
+    resourceType: 'caseSection',
+    message,
+    unwrap: () => {
+      throw new Error(message);
+    },
+  } as const;
+};
 
 const sectionRecordToSection = (
   sectionRecord: CaseSectionRecord | undefined,
@@ -55,7 +95,7 @@ export const createCaseSection = async (
   newSection: NewCaseSection,
   workerSid: string,
   skipSearchIndex = false,
-): Promise<CaseSection> => {
+): Promise<DBErrorResult | DatabaseErrorResult | SuccessResult<CaseSection>> => {
   const nowISO = new Date().toISOString();
   const record: CaseSectionRecord = {
     sectionId: randomUUID(),
@@ -67,15 +107,35 @@ export const createCaseSection = async (
     createdAt: nowISO,
     accountSid,
   };
-
-  const created = await create()(record);
+  const createdResult = await create()(record);
+  if (isErr(createdResult)) {
+    if (createdResult.table === 'CaseSections') {
+      const resourceIdentifier = `${caseId}/${sectionType}/${record.sectionId}`;
+      const cause = createdResult;
+      if (isDatabaseUniqueConstraintViolationErrorResult(createdResult)) {
+        return newDBErrorResult({
+          resourceIdentifier,
+          cause,
+          error: 'ResourceAlreadyExists',
+        });
+      }
+      if (isDatabaseForeignKeyViolationErrorResult(createdResult)) {
+        return newDBErrorResult({
+          resourceIdentifier,
+          cause,
+          error: 'ForeignKeyViolation',
+        });
+      }
+    }
+    return createdResult;
+  }
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId });
   }
 
-  return sectionRecordToSection(created);
+  return newOkFromData(sectionRecordToSection(createdResult.unwrap()));
 };
 
 export const replaceCaseSection = async (
@@ -105,7 +165,7 @@ export const replaceCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId });
   }
 
   return sectionRecordToSection(updated);
@@ -131,21 +191,84 @@ export const getCaseTimeline = async (
     user: TwilioUser;
     permissions: RulesFile;
   },
-  caseId: number,
+  caseId: string,
   sectionTypes: string[],
   includeContacts: boolean,
   { limit, offset }: ListConfiguration,
-): Promise<TimelineResult> => {
-  return getTimeline(
+): Promise<TimelineApiResponse> => {
+  const dbResult = await getTimeline(
     accountSid,
     user,
     permissions.viewContact as TKConditionsSets<'contact'>,
-    caseId,
+    [caseId],
     sectionTypes,
     includeContacts,
     parseInt(limit),
     parseInt(offset),
   );
+  return {
+    ...dbResult,
+    activities: dbResult.activities.map(({ caseId: _, ...event }) => {
+      if (isContactRecordTimelineActivity(event)) {
+        return {
+          ...event,
+          activity: contactRecordToContact(event.activity),
+        };
+      } else {
+        return {
+          ...event,
+          activity: sectionRecordToSection(event.activity),
+        };
+      }
+    }),
+  };
+};
+
+type MultipleCaseTimelinesResponse = {
+  timelines: Record<string, TimelineActivity<any>[]>;
+  count: number;
+};
+
+export const getMultipleCaseTimelines = async (
+  accountSid: HrmAccountId,
+  {
+    user,
+    permissions,
+  }: {
+    user: TwilioUser;
+    permissions: RulesFile;
+  },
+  caseIds: string[],
+  sectionTypes: string[],
+  includeContacts: boolean,
+  { limit, offset }: ListConfiguration,
+): Promise<MultipleCaseTimelinesResponse> => {
+  const dbResult = await getTimeline(
+    accountSid,
+    user,
+    permissions.viewContact as TKConditionsSets<'contact'>,
+    caseIds,
+    sectionTypes,
+    includeContacts,
+    parseInt(limit),
+    parseInt(offset),
+  );
+  const timelines: Record<string, TimelineActivity<any>[]> = {};
+  for (const { caseId, ...activityEntry } of dbResult.activities) {
+    timelines[caseId] = timelines[caseId] || [];
+    if (isContactRecordTimelineActivity(activityEntry)) {
+      timelines[caseId].push({
+        ...activityEntry,
+        activity: contactRecordToContact(activityEntry.activity),
+      });
+    } else {
+      timelines[caseId].push(activityEntry);
+    }
+  }
+  return {
+    count: dbResult.count,
+    timelines,
+  };
 };
 
 export const getCaseSectionTypeList = async (
@@ -155,7 +278,7 @@ export const getCaseSectionTypeList = async (
     user: TwilioUser;
     permissions: RulesFile;
   },
-  caseId: number,
+  caseId: string,
   sectionType: string,
 ): Promise<CaseSection[]> =>
   (
@@ -183,7 +306,7 @@ export const deleteCaseSection = async (
 
   if (!skipSearchIndex) {
     // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: parseInt(caseId, 10) });
+    updateCaseNotify({ accountSid, caseId });
   }
 
   return sectionRecordToSection(deleted);

@@ -8,7 +8,7 @@
   "dependencies": {
     "pg-promise": "^10.11.1",
     "global-agent": "^3.0.0",
-    "mockttp": "^3.2.2",
+    "mockttp": "^3.16.0",
     "jest": "^28.1.3",
     "date-fns": "^2.30.0"
   },

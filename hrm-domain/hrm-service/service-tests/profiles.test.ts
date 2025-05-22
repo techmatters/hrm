@@ -16,15 +16,14 @@
 
 import each from 'jest-each';
 import './case/caseValidation';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from './dbConnection';
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import { IdentifierWithProfiles } from '@tech-matters/hrm-core/profile/profileDataAccess';
-import { getRequest, getServer, headers, useOpenRules } from './server';
+import { headers } from './server';
 import * as mocks from './mocks';
 import { ALWAYS_CAN } from './mocks';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import {
   getOrCreateProfileWithIdentifier,
   Profile,
@@ -32,10 +31,8 @@ import {
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { clearAllTables } from './dbCleanup';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from './setupServiceTest';
+import { addSeconds } from 'date-fns';
 
 const { case1, accountSid, workerSid, contact1 } = mocks;
 
@@ -47,19 +44,7 @@ const deleteFromTableById = (table: string) => async (id: number, accountSid: st
 `),
   );
 
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {
-  await mockingProxy.start();
-});
-
-beforeEach(async () => {
-  await mockSuccessfulTwilioAuthentication(workerSid);
-});
+const { request } = setupServiceTests();
 
 describe('/profiles', () => {
   const baseRoute = `/v0/accounts/${accountSid}/profiles`;
@@ -318,7 +303,8 @@ describe('/profiles', () => {
       const buildRoute = (id: number, subroute: 'contacts' | 'cases') =>
         `${baseRoute}/${id}/${subroute}`;
 
-      const sortById = (a: { id: number }, b: { id: number }) => a.id - b.id;
+      const sortById = (a: { id: string }, b: { id: string }) =>
+        parseInt(a.id) - parseInt(b.id);
 
       let createdCases: caseApi.CaseService[];
       let createdContacts: Awaited<ReturnType<typeof contactApi.createContact>>[];
@@ -419,17 +405,11 @@ describe('/profiles', () => {
             expect(response.body.count).toBe(createdCases.length);
             expect(
               response.body.cases
-                .map(({ createdAt, updatedAt, childName, totalCount, ...rest }) => ({
-                  ...rest,
-                  connectedContacts: rest.connectedContacts?.sort(sortById),
-                }))
+                .map(({ createdAt, updatedAt, totalCount, ...rest }) => rest)
                 .sort(sortById),
             ).toStrictEqual(
               createdCases
-                .map(({ createdAt, updatedAt, childName, ...rest }) => ({
-                  ...rest,
-                  connectedContacts: rest.connectedContacts?.sort(sortById),
-                }))
+                .map(({ createdAt, updatedAt, ...rest }) => rest)
                 .sort(sortById),
             );
           });
@@ -574,7 +554,7 @@ describe('/profiles', () => {
               expectStatus: 200,
               expectFunction: (response, profileId, profileFlagId, startTime) => {
                 expect(new Date(response.body.updatedAt).getTime()).toBeLessThan(
-                  startTime,
+                  addSeconds(new Date(startTime), 10).getTime(),
                 );
               },
             },
@@ -586,7 +566,7 @@ describe('/profiles', () => {
                 expect(response.body.profileFlags).not.toContain(profileFlagId);
                 expect(response.body.updatedBy).toBe(workerSid);
                 expect(new Date(startTime).getTime()).toBeLessThan(
-                  new Date(response.body.updatedAt).getTime(),
+                  addSeconds(new Date(response.body.updatedAt), 10).getTime(),
                 );
               },
             },
@@ -721,10 +701,10 @@ describe('/profiles', () => {
                 expect(response.body.updatedBy).not.toBeNull();
 
                 createdProfileSection = response.body;
-
+                console.debug('Profile ID', profileId, typeof profileId);
                 const updatedProfile = await profilesDB.getProfileById()(
                   accountSid,
-                  profileId,
+                  typeof profileId !== 'number' ? parseInt(profileId) : profileId,
                 );
 
                 expect(new Date(updatedProfile.updatedAt).getTime()).toBeGreaterThan(

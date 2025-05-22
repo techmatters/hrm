@@ -24,26 +24,39 @@ export const toCreateIncident = ({
   caseObj: CaseService;
   contact: Contact;
 }): CreateIncidentParams => {
-  const params: CreateIncidentParams = {
-    contact_id: contact.id.toString(),
-    case_id: caseObj.id,
-    description: contact.rawJson?.childInformation?.incidentSummary as string,
-    address: contact.rawJson?.childInformation?.specificLocation as string,
-    caller_name: contact.rawJson?.callerInformation?.friendlyName as string,
-    caller_number: contact.rawJson?.callerInformation?.phone as string,
-    requestor_call_back: Boolean(contact.rawJson?.callerInformation?.callbackRequested),
-    person_demographics: {
-      first_name: contact.rawJson?.childInformation?.firstName as string,
-      last_name: contact.rawJson?.childInformation?.lastName as string,
-      nick_name: contact.rawJson?.childInformation?.nickname as string,
-      age: contact.rawJson?.childInformation?.age as string,
-      gender: contact.rawJson?.childInformation?.gender as string,
-      race: contact.rawJson?.childInformation?.race as string,
-    },
-    category: Object.values(contact.rawJson?.categories || {})[0][0],
-    priority: contact.rawJson?.caseInformation?.priority as string,
-    is_officer_on_standby: contact.rawJson?.callerInformation?.officerStandby as boolean,
-  };
+  const { callerInformation, childInformation, caseInformation, categories } =
+    contact.rawJson || {};
 
-  return params;
+  const category = Object.values(categories || {})
+    .find(c => c.length)
+    ?.shift();
+
+  return {
+    contact_id: contact.id.toString(),
+    case_id: parseInt(caseObj.id),
+    description: [
+      ...(callerInformation?.reportingDistrict
+        ? [`Reporting District: ${callerInformation.reportingDistrict}`]
+        : []),
+      ...(callerInformation?.identifier911
+        ? [`911 Incident #${callerInformation.identifier911}`]
+        : []),
+      childInformation?.incidentSummary,
+    ].join('; ') as string,
+    address: childInformation?.specificLocation as string,
+    caller_name: callerInformation?.friendlyName as string,
+    caller_number: callerInformation?.phone as string,
+    requestor_call_back: Boolean(callerInformation?.callbackRequested),
+    person_demographics: {
+      first_name: childInformation?.firstName as string,
+      last_name: childInformation?.lastName as string,
+      nick_name: childInformation?.nickname as string,
+      age: childInformation?.age as string,
+      gender: childInformation?.gender as string,
+      race: childInformation?.race as string,
+    },
+    category: category!,
+    priority: caseInformation?.priority as string,
+    is_officer_on_standby: callerInformation?.officerStandby as boolean,
+  };
 };

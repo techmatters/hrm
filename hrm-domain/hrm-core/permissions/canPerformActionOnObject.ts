@@ -23,7 +23,7 @@ import { assertExhaustive } from '@tech-matters/types';
 import {
   getConversationMediaByContactId,
   isS3StoredConversationMedia,
-} from '../conversation-media/conversation-media';
+} from '../conversation-media/conversationMedia';
 import { TResult, newErr, newOk, HrmAccountId } from '@tech-matters/types';
 import { RulesFile } from './rulesMap';
 
@@ -40,7 +40,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   user,
 }: {
   hrmAccountId: HrmAccountId;
-  objectId: number;
+  objectId: string;
   targetKind: T;
   actions: string[];
   can: InitializedCan;
@@ -64,9 +64,7 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
       }
       case 'case': {
         const object = await getCaseById(objectId, hrmAccountId, {
-          can,
           user,
-          permissions: OPEN_VIEW_CONTACT_PERMISSIONS,
         });
 
         const canPerform = actions.every(action => can(user, action, object));
@@ -123,7 +121,7 @@ export const isValidFileLocation = async ({
 }: {
   hrmAccountId: HrmAccountId;
   targetKind: TargetKind;
-  objectId: number;
+  objectId: string;
   bucket: string;
   key: string;
 }): Promise<TResult<'InternalServerError', boolean>> => {
@@ -132,7 +130,7 @@ export const isValidFileLocation = async ({
       case 'contact': {
         const conversationMedia = await getConversationMediaByContactId(
           hrmAccountId,
-          objectId,
+          parseInt(objectId),
         );
 
         const isValid = conversationMedia.some(

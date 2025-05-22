@@ -17,11 +17,20 @@
 import { sendSqsMessage } from '@tech-matters/sqs-client';
 import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
 import { IndexMessage } from '@tech-matters/hrm-search-config';
-import { CaseService, Contact } from '@tech-matters/hrm-types';
+import {
+  CaseSection,
+  CaseService,
+  Contact,
+  TimelineActivity,
+} from '@tech-matters/hrm-types';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
 import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
 import { NotificationOperation } from '@tech-matters/hrm-types';
 import { enableSnsHrmSearchIndex } from '../featureFlags';
+import {
+  timelineToLegacySections,
+  timelineToLegacyConnectedContacts,
+} from '../case/caseSection/timelineToLegacyCaseProperties';
 
 type DeleteNotificationPayload = {
   accountSid: HrmAccountId;
@@ -100,7 +109,12 @@ const publishToSns = async ({
       messageGroupId,
       messageAttributes: { operation: payload.operation },
     };
-    console.debug('Publishing HRM entity update:', publishParameters);
+    console.debug(
+      'Publishing HRM entity update:',
+      topicArn,
+      entityType,
+      payload.operation,
+    );
     return await publishSns(publishParameters);
   } catch (err) {
     console.debug('Error trying to publish message to SNS topic', err, payload);
@@ -121,10 +135,15 @@ const publishToSns = async ({
   }
 };
 
+type CaseWithLegacySections = CaseService & {
+  sections: Record<string, CaseSection[]>;
+  connectedContacts: Contact[];
+};
+
 const publishEntityToSearchIndex = async (
   accountSid: HrmAccountId,
   entityType: 'contact' | 'case',
-  entity: Contact | CaseService,
+  entity: Contact | CaseWithLegacySections,
   operation: NotificationOperation,
 ) => {
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
@@ -196,9 +215,11 @@ export const publishCaseChangeNotification = async ({
   accountSid,
   case: caseObj,
   operation,
+  timeline,
 }: {
   accountSid: AccountSID;
   case: CaseService;
+  timeline: TimelineActivity<any>[];
   operation: NotificationOperation;
 }) => {
   console.info(
@@ -210,5 +231,14 @@ export const publishCaseChangeNotification = async ({
       caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
-  return publishEntityToSearchIndex(accountSid, 'case', caseObj, operation);
+  return publishEntityToSearchIndex(
+    accountSid,
+    'case',
+    {
+      ...caseObj,
+      sections: timelineToLegacySections(timeline),
+      connectedContacts: timelineToLegacyConnectedContacts(timeline),
+    },
+    operation,
+  );
 };

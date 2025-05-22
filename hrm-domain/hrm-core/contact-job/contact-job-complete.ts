@@ -47,9 +47,9 @@ import {
   updateConversationMediaSpecificData,
   getConversationMediaById,
   S3ContactMediaType,
-} from '../conversation-media/conversation-media';
+} from '../conversation-media/conversationMedia';
 import { getById } from '../contact/contactDataAccess';
-import { getByContactId } from '../conversation-media/conversation-media-data-access';
+import { getByContactId } from '../conversation-media/conversationMediaDataAccess';
 import { updateConversationMediaData } from '../contact/contactService';
 
 export const processCompletedRetrieveContactTranscript = async (
@@ -67,7 +67,7 @@ export const processCompletedRetrieveContactTranscript = async (
     location: completedJob.attemptPayload,
   };
 
-  await updateConversationMediaData(completedJob.contactId)(
+  await updateConversationMediaData(completedJob.contactId?.toString())(
     completedJob.accountSid,
     completedJob.conversationMediaId,
     storeTypeSpecificData,

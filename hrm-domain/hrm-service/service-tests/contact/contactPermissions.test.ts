@@ -17,10 +17,9 @@
 import formatISO from 'date-fns/formatISO';
 import subMinutes from 'date-fns/subMinutes';
 import { randomBytes } from 'crypto';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/permissions/rulesMap';
-import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
+import { headers, setRules, useOpenRules } from '../server';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as contactService from '@tech-matters/hrm-core/contact/contactService';
 import { TargetKind } from '@tech-matters/hrm-core/permissions/actions';
@@ -31,11 +30,7 @@ import { clearAllTables } from '../dbCleanup';
 import each from 'jest-each';
 import { addMinutes, isAfter, parseISO, subDays, subHours } from 'date-fns';
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
-import { connectContactToCase } from '@tech-matters/hrm-core/contact/contactService';
-
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from '../setupServiceTest';
 
 const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
@@ -112,24 +107,6 @@ const createContact = async (
   );
 };
 
-beforeAll(async () => {
-  await clearAllTables();
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(userTwilioWorkerId);
-});
-
-afterAll(async () => {
-  await Promise.all([mockingProxy.stop(), server.close()]);
-});
-
-beforeEach(async () => {
-  useOpenRules();
-});
-
-afterEach(async () => {
-  await clearAllTables();
-});
-
 const overridePermissions = <T extends TargetKind>(
   key: keyof RulesFile,
   permissions: TKConditionsSets<T>,
@@ -143,6 +120,8 @@ const overridePermissions = <T extends TargetKind>(
 
 const overrideViewContactPermissions = (permissions: TKConditionsSets<'contact'>) =>
   overridePermissions('viewContact', permissions);
+
+const { request } = setupServiceTests(userTwilioWorkerId);
 
 describe('isOwner', () => {
   type TestCase = {
@@ -386,72 +365,5 @@ describe('Time based condition', () => {
         expect(count).toBe(expectedPermittedContactCreationTimes.length);
       },
     );
-  });
-  describe('When returned as part of cases', () => {
-    let sampleCase: CaseService;
-    const caseBaseRoute = `/v0/accounts/${accountSid}/cases`;
-    beforeEach(async () => {
-      sampleCase = await createCase({}, accountSid, userTwilioWorkerId, undefined, true);
-      await Promise.all(
-        Object.values(sampleContacts).map(({ id }) =>
-          connectContactToCase(
-            accountSid,
-            id.toString(),
-            sampleCase.id.toString(),
-            ALWAYS_CAN,
-            true,
-          ),
-        ),
-      );
-    });
-    describe('/cases/:id route - GET', () => {
-      each(testCases).test(
-        '$description',
-        async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
-          const subRoute = id => `${caseBaseRoute}/${id}`;
-          setRules({ viewContact: permissions });
-          const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
-            parseISO(sampleContacts[cct.toISOString()].timeOfContact),
-          );
-          const { status, body } = await request
-            .get(subRoute(sampleCase.id))
-            .set(headers);
-
-          expect(status).toBe(200);
-          const { connectedContacts: contacts, id } = body as CaseService;
-          expect(id).toBe(sampleCase.id);
-          expect(
-            contacts
-              .map(c => parseISO(c.timeOfContact))
-              .sort((a, b) => a.valueOf() - b.valueOf()),
-          ).toEqual(expectedIds);
-        },
-      );
-    });
-    describe('cases/search route - POST', () => {
-      each(testCases).test(
-        '$description',
-        async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
-          setRules({ viewContact: permissions });
-          const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
-            parseISO(sampleContacts[cct.toISOString()].timeOfContact),
-          );
-          const {
-            body: { cases, count },
-            status,
-          } = await request.post(`${caseBaseRoute}/search`).set(headers);
-          expect(status).toBe(200);
-          expect(count).toBe(1);
-          expect(cases.length).toBe(1);
-          const { connectedContacts: contacts, id } = cases[0];
-          expect(id).toBe(sampleCase.id);
-          expect(
-            (contacts ?? [])
-              .map(c => parseISO(c.timeOfContact))
-              .sort((a, b) => a.valueOf() - b.valueOf()),
-          ).toEqual(expectedIds);
-        },
-      );
-    });
   });
 });

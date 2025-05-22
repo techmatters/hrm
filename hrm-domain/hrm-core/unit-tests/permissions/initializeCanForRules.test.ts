@@ -61,7 +61,8 @@ describe('Test that all actions work fine (everyone)', () => {
   const testCases: TestCase[] = Object.values(actionsMaps.case).map(action => ({
     action,
     caseObj: {
-      id: 123,
+      label: 'case label',
+      id: '123',
       status: 'open',
       info: {},
       sections: {},

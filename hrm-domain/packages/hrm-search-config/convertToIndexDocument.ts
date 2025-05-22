@@ -96,7 +96,7 @@ const convertCaseToCaseDocument = ({
     sections,
     info,
   } = caseObj;
-  const mappedSections: CaseDocument['sections'] = Object.entries(sections).flatMap(
+  const mappedSections: CaseDocument['sections'] = Object.entries(sections ?? {}).flatMap(
     ([sectionType, sectionsArray]) =>
       sectionsArray.map(section => ({
         accountSid: accountSid as string,

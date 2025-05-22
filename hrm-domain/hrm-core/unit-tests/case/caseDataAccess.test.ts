@@ -14,12 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { createMockCaseInsert, createMockCaseRecord } from './mock-cases';
+import { createMockCaseInsert, createMockCaseRecord } from './mockCases';
 import * as pgPromise from 'pg-promise';
-import { mockConnection, mockTask } from '../mock-db';
+import { getMockAccountDb, mockConnection, mockTask } from '../mockDb';
 import * as caseDb from '../../case/caseDataAccess';
 import each from 'jest-each';
-import { db } from '../../connection-pool';
 import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
 import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
 import { newTwilioUser, TwilioUser } from '@tech-matters/twilio-worker-auth';
@@ -37,6 +36,7 @@ const caseId = 42;
 
 beforeEach(() => {
   conn = mockConnection();
+  mockTask(conn, accountSid);
 });
 describe('getById', () => {
   test('get existing case returns case record matching id & account', async () => {
@@ -44,17 +44,12 @@ describe('getById', () => {
       id: caseId,
       helpline: 'helpline',
       status: 'open',
-      info: {
-        counsellorNotes: [
-          { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
-        ],
-      },
+      info: {},
       twilioWorkerId: workerSid,
     });
-    mockTask(conn);
     const oneOrNoneSpy = jest.spyOn(conn, 'oneOrNone').mockResolvedValue(caseFromDB);
 
-    const result = await caseDb.getById(caseId, accountSid, user, [['everyone']]);
+    const result = await caseDb.getById(caseId, accountSid, user);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
       expect.stringContaining('Cases'),
@@ -64,13 +59,12 @@ describe('getById', () => {
   });
 
   test('get non existing case returns undefined', async () => {
-    mockTask(conn);
     const oneOrNoneSpy = jest.spyOn(conn, 'oneOrNone').mockResolvedValue(undefined);
 
-    const result = await caseDb.getById(caseId, accountSid, user, [['everyone']]);
+    const result = await caseDb.getById(caseId, accountSid, user);
 
     expect(oneOrNoneSpy).toHaveBeenCalledWith(
-      expect.stringContaining('CSAMReports'),
+      expect.stringContaining('"Cases"'),
       expect.objectContaining({ accountSid, caseId }),
     );
     expect(result).not.toBeDefined();
@@ -79,7 +73,6 @@ describe('getById', () => {
 
 describe('createCase', () => {
   test('creates new record and returns created record in DB, with assigned ID.', async () => {
-    mockTask(conn);
     const caseFromDB = createMockCaseInsert({
       helpline: 'helpline',
       status: 'open',
@@ -101,10 +94,6 @@ describe('createCase', () => {
 
 describe('search', () => {
   const openViewPermissions = rulesMap.open.viewCase as TKConditionsSets<'case'>;
-
-  beforeEach(() => {
-    mockTask(conn);
-  });
   describe('query parameters', () => {
     type TestCase = {
       description: string;
@@ -224,7 +213,6 @@ describe('search', () => {
         const result = await caseDb.search(
           user,
           rulesMap.open.viewCase as TKConditionsSets<'case'>,
-          rulesMap.open.viewCase as TKConditionsSets<'contact'>,
           listConfig,
           accountSid,
           {},
@@ -256,11 +244,7 @@ describe('search', () => {
           id: caseId,
           helpline: 'helpline',
           status: 'open',
-          info: {
-            counsellorNotes: [
-              { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
-            ],
-          },
+          info: {},
           twilioWorkerId: 'WK-twilio-worker-id',
           totalCount: 1337,
         },
@@ -275,11 +259,7 @@ describe('search', () => {
           id: caseId,
           helpline: 'helpline',
           status: 'open',
-          info: {
-            counsellorNotes: [
-              { note: 'Child with covid-19', twilioWorkerId: 'WK-contact-adder' },
-            ],
-          },
+          info: {},
           twilioWorkerId: 'WK-twilio-worker-id',
           connectedContacts: [
             {
@@ -311,7 +291,6 @@ describe('search', () => {
       const result = await caseDb.search(
         user,
         openViewPermissions,
-        [['everyone']],
         listConfig,
         accountSid,
         {},
@@ -329,7 +308,6 @@ describe('search', () => {
       );
       const statementExecuted = getSqlStatement(anySpy);
       expect(statementExecuted).toContain('Contacts');
-      expect(statementExecuted).toContain('CSAMReports');
       expect(result.count).toEqual(1337);
       expect(result.cases).toStrictEqual(expectedResult);
     },
@@ -339,8 +317,9 @@ describe('search', () => {
 describe('delete', () => {
   test('returns deleted value if something at the specified ID exists to delete', async () => {
     const caseFromDB = createMockCaseRecord({});
-    mockTask(conn);
-    const oneOrNoneSpy = jest.spyOn(db, 'oneOrNone').mockResolvedValue(caseFromDB);
+    const oneOrNoneSpy = jest
+      .spyOn(getMockAccountDb(accountSid), 'oneOrNone')
+      .mockResolvedValue(caseFromDB);
 
     const result = await caseDb.deleteById(caseId, accountSid);
 
@@ -351,8 +330,9 @@ describe('delete', () => {
     expect(result).toStrictEqual(caseFromDB);
   });
   test('returns nothing if nothing at the specified ID exists to delete', async () => {
-    mockTask(conn);
-    const oneOrNoneSpy = jest.spyOn(db, 'oneOrNone').mockResolvedValue(undefined);
+    const oneOrNoneSpy = jest
+      .spyOn(getMockAccountDb(accountSid), 'oneOrNone')
+      .mockResolvedValue(undefined);
 
     const result = await caseDb.deleteById(caseId, accountSid);
 

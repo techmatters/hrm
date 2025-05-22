@@ -14,19 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../connection-pool';
+import { getDbForAccount, pgp } from '../dbConnection';
 import { getPaginationElements } from '../search';
 import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
+  selectCaseFilterOnly,
   selectCasesByIds,
   selectCaseSearch,
   selectCaseSearchByProfileId,
 } from './sql/caseSearchSql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/caseGetSql';
-import { Contact } from '../contact/contactDataAccess';
 import { DateFilter, OrderByDirectionType } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
@@ -34,9 +34,7 @@ import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
 import {
   PrecalculatedCasePermissionConditions,
   CaseRecordCommon,
-  CaseService,
 } from '@tech-matters/hrm-types';
-import { CaseSectionRecord } from './caseSection/types';
 import { pick } from 'lodash';
 import { HrmAccountId } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
@@ -52,20 +50,16 @@ export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
   'twilioWorkerId',
   'createdBy',
   'createdAt',
+  'label',
 ];
 
 export type NewCaseRecord = CaseRecordCommon;
 
-export type CaseRecordUpdate = Partial<NewCaseRecord> &
-  Pick<NewCaseRecord, 'updatedBy'> & {
-    caseSections?: CaseSectionRecord[];
-  };
+export type CaseRecordUpdate = Partial<NewCaseRecord> & Pick<NewCaseRecord, 'updatedBy'>;
 
 export type CaseRecord = CaseRecordCommon & {
   id: number;
-  connectedContacts?: Contact[];
   contactsOwnedByUserCount?: number;
-  caseSections?: CaseSectionRecord[];
 };
 
 type CaseWithCount = CaseRecord & { totalCount: number };
@@ -87,24 +81,19 @@ export type CaseSearchCriteria = {
   lastName?: string;
 };
 
-export type CategoryFilter = {
-  category: string;
-  subcategory: string;
-};
-
 export type CaseListFilters = {
-  counsellors?: string[];
   statuses?: string[];
   excludedStatuses?: string[];
+  counsellors?: string[];
+  caseInfoFilters?: { [key: string]: string[] };
   createdAt?: DateFilter;
   updatedAt?: DateFilter;
-  followUpDate?: DateFilter;
-  categories?: CategoryFilter[];
   helplines?: string[];
   includeOrphans?: boolean;
 };
 
 export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRecord> => {
+  const db = await getDbForAccount(caseRecord.accountSid);
   return db.task(async connection => {
     const statement = `${pgp.helpers.insert(
       {
@@ -130,18 +119,16 @@ export const create = async (caseRecord: Partial<NewCaseRecord>): Promise<CaseRe
 export const getById = async (
   caseId: number,
   accountSid: HrmAccountId,
-  { workerSid, isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-  onlyEssentialData?: boolean,
+  { workerSid }: TwilioUser,
 ): Promise<CaseRecord | undefined> => {
+  const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
-    const statement = selectSingleCaseByIdSql(
-      'Cases',
-      contactViewPermissions,
-      isSupervisor,
-      onlyEssentialData,
-    );
-    const queryValues = { accountSid, caseId, twilioWorkerSid: workerSid };
+    const statement = selectSingleCaseByIdSql('Cases');
+    const queryValues = {
+      accountSid,
+      caseId,
+      twilioWorkerSid: workerSid,
+    };
     return connection.oneOrNone<CaseRecord>(statement, queryValues);
   });
 };
@@ -164,12 +151,10 @@ type SearchQueryParamsBuilder<T> = (
 export type SearchQueryFunction<T> = (
   user: TwilioUser,
   viewCasePermissions: TKConditionsSets<'case'>,
-  viewContactPermissions: TKConditionsSets<'contact'>,
   listConfiguration: CaseListConfiguration,
   accountSid: HrmAccountId,
   searchCriteria: T,
   filters?: CaseListFilters,
-  onlyEssentialData?: boolean,
 ) => Promise<{ cases: CaseRecord[]; count: number }>;
 
 const generalizedSearchQueryFunction = <T>(
@@ -179,26 +164,18 @@ const generalizedSearchQueryFunction = <T>(
   return async (
     user,
     casePermissions,
-    contactPermissions,
     listConfiguration,
     accountSid,
     searchCriteria,
     filters,
-    onlyEssentialData,
   ) => {
+    const db = await getDbForAccount(accountSid);
     const { limit, offset, sortBy, sortDirection } =
       getPaginationElements(listConfiguration);
     const orderClause = [{ sortBy, sortDirection }];
 
     const { count, rows } = await db.task(async connection => {
-      const statement = sqlQueryBuilder(
-        user,
-        casePermissions,
-        contactPermissions,
-        filters,
-        orderClause,
-        onlyEssentialData,
-      );
+      const statement = sqlQueryBuilder(user, casePermissions, filters, orderClause);
       const queryValues = sqlQueryParamsBuilder(
         accountSid,
         user,
@@ -207,7 +184,6 @@ const generalizedSearchQueryFunction = <T>(
         limit,
         offset,
       );
-
       const result: CaseWithCount[] = await connection.any<CaseWithCount>(
         statement,
         queryValues,
@@ -216,7 +192,10 @@ const generalizedSearchQueryFunction = <T>(
       return { rows: result, count: totalCount };
     });
 
-    return { cases: rows, count };
+    return {
+      cases: rows,
+      count,
+    };
   };
 };
 
@@ -241,10 +220,24 @@ const searchParametersToQueryParameters: SearchQueryParamsBuilder<CaseSearchCrit
   twilioWorkerSid: user.workerSid,
 });
 
-export const search = generalizedSearchQueryFunction<CaseSearchCriteria>(
-  selectCaseSearch,
-  searchParametersToQueryParameters,
-);
+export const search: SearchQueryFunction<CaseSearchCriteria> = (
+  user,
+  permissions,
+  listConfiguration,
+  accountSid,
+  searchCriteria,
+  filters,
+) =>
+  // searchCriteria is only set in legacy search queries. Once support for this is removed, remove this check and all supporting SQL
+  generalizedSearchQueryFunction<CaseSearchCriteria>(
+    searchCriteria?.contactNumber ||
+      searchCriteria?.phoneNumber ||
+      searchCriteria?.firstName ||
+      searchCriteria?.lastName
+      ? selectCaseSearch
+      : selectCaseFilterOnly,
+    searchParametersToQueryParameters,
+  )(user, permissions, listConfiguration, accountSid, searchCriteria, filters);
 
 export const searchByProfileId = generalizedSearchQueryFunction<{
   profileId: number;
@@ -261,7 +254,8 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
   }),
 );
 
-export const deleteById = async (id: CaseService['id'], accountSid: AccountSID) => {
+export const deleteById = async (id: CaseRecord['id'], accountSid: AccountSID) => {
+  const db = await getDbForAccount(accountSid);
   return db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
 };
 
@@ -270,25 +264,15 @@ export const updateStatus = async (
   status: string,
   updatedBy: TwilioUserIdentifier,
   accountSid: HrmAccountId,
-  { isSupervisor }: TwilioUser,
-  contactViewPermissions: TKConditionsSets<'contact'>,
-) => {
-  const statementValues = {
-    accountSid,
-    twilioWorkerSid: updatedBy,
-    caseId: id,
-  };
+): Promise<CaseRecord> => {
+  const db = await getDbForAccount(accountSid);
   return db.tx(async transaction => {
-    await transaction.none(
+    return transaction.oneOrNone(
       updateByIdSql(
         { status, updatedBy, updatedAt: new Date().toISOString() },
         accountSid,
         id,
       ),
-    );
-    return transaction.oneOrNone(
-      selectSingleCaseByIdSql('Cases', contactViewPermissions, isSupervisor),
-      statementValues,
     );
   });
 };
@@ -299,6 +283,7 @@ export const updateCaseInfo = async (
   infoPatch: CaseRecord['info'],
   updatedBy: string,
 ) => {
+  const db = await getDbForAccount(accountSid);
   return db.tx(async transaction => {
     return transaction.oneOrNone(PATCH_CASE_INFO_BY_ID, {
       infoPatch,
@@ -322,19 +307,17 @@ export const searchByCaseIds = generalizedSearchQueryFunction<{
   };
 });
 
-export const streamCasesForReindexing = ({
+export const streamCasesForReindexing = async ({
   accountSid,
   filters,
   user,
   viewCasePermissions,
-  viewContactPermissions,
   batchSize = 1000,
 }: {
   accountSid: HrmAccountId;
   filters: NonNullable<Pick<CaseListFilters, 'createdAt' | 'updatedAt'>>;
   user: TwilioUser;
   viewCasePermissions: TKConditionsSets<'case'>;
-  viewContactPermissions: TKConditionsSets<'contact'>;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
   const { sortBy, sortDirection } = getPaginationElements({});
@@ -342,13 +325,7 @@ export const streamCasesForReindexing = ({
 
   const qs = new QueryStream(
     pgp.as.format(
-      selectCaseSearch(
-        user,
-        viewCasePermissions,
-        viewContactPermissions,
-        filters,
-        orderByClause,
-      ),
+      selectCaseSearch(user, viewCasePermissions, filters, orderByClause),
       searchParametersToQueryParameters(
         accountSid,
         user,
@@ -364,6 +341,7 @@ export const streamCasesForReindexing = ({
     },
   );
 
+  const db = await getDbForAccount(accountSid);
   // Expose the readable stream to the caller as a promise for further pipelining
   return new Promise(resolve => {
     db.stream(qs, resultStream => {

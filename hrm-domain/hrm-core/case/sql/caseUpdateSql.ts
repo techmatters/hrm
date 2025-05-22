@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { pgp } from '../../connection-pool';
+import { pgp } from '../../dbConnection';
 import { HrmAccountId } from '@tech-matters/types';
 
 const VALID_CASE_UPDATE_FIELDS = ['info', 'status', 'updatedAt', 'updatedBy'];
@@ -47,7 +47,7 @@ export const updateByIdSql = (
         ${pgp.helpers.update(updatedValues, updateCaseColumnSet)} 
         ${statusUpdatedSetSql(updatedValues)}
         ${pgp.as.format(
-          `WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId>`,
+          `WHERE "Cases"."accountSid" = $<accountSid> AND "Cases"."id" = $<caseId> RETURNING *`,
           {
             accountSid,
             caseId,

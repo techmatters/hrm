@@ -16,12 +16,12 @@
 
 import { Request, Response } from 'express';
 import referralRoutes from '../../referral/referral-routes-v0';
-import { createReferral } from '../../referral/referral-model';
+import { createReferral } from '../../referral/referralService';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
   Referral,
-} from '../../referral/referral-data-access';
+} from '../../referral/referralDataAccess';
 import { subHours } from 'date-fns';
 import { SafeRouter } from '../../permissions';
 import { AssertionError } from 'assert';
@@ -30,7 +30,7 @@ jest.mock('../../permissions', () => ({
   SafeRouter: jest.fn(),
 }));
 
-jest.mock('../../referral/referral-model', () => ({
+jest.mock('../../referral/referralService', () => ({
   createReferral: jest.fn(),
 }));
 

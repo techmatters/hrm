@@ -15,7 +15,8 @@
  */
 import '../../permissions';
 import createError from 'http-errors';
-import { SafeRouter } from '../../permissions';
+// We will be applying 'publicEndpoint' to the non public endpoint and specifically NOT to the public endpoints - a less confusing name seems appropriate
+import { SafeRouter, publicEndpoint as openEndpoint } from '../../permissions';
 import {
   createCaseSection,
   deleteCaseSection,
@@ -30,124 +31,150 @@ import {
   canEditCaseSection,
   canViewCaseSection,
 } from './canPerformCaseSectionAction';
+import { isErr } from '@tech-matters/types';
 
-const caseSectionsRouter = SafeRouter({ mergeParams: true });
+const newCaseSectionsRouter = (isPublic: boolean) => {
+  const caseSectionsRouter = SafeRouter({ mergeParams: true });
 
-/**
- * Returns a specific section of a case, i.e. a specific perpetrator or note, via it's unique ID
- *
- * @param {string} req.accountSid - SID of the helpline
- * @param {CaseListConfiguration.sortDirection} req.query.sortDirection - Sort direction
- * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
- * @param {CaseListConfiguration.limit} req.query.limit - Limit
- * @param {CaseListConfiguration.offset} req.query.offset - Offset
- * @param {SearchParameters} req.query.search
- *
- * @returns {CaseSearchReturn} - List of cases
- */
-caseSectionsRouter.get('/:sectionType', canViewCaseSection, async (req, res) => {
-  const {
-    accountSid,
-    params: { caseId, sectionType },
-  } = req;
+  if (isPublic) {
+    // Not exposed on the internal API
 
-  const section = await getCaseSectionTypeList(accountSid, req, caseId, sectionType);
-  res.json(section);
-});
+    /**
+     * Returns a specific section of a case, i.e. a specific perpetrator or note, via it's unique ID
+     *
+     * @param {string} req.accountSid - SID of the helpline
+     * @param {CaseListConfiguration.sortDirection} req.query.sortDirection - Sort direction
+     * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
+     * @param {CaseListConfiguration.limit} req.query.limit - Limit
+     * @param {CaseListConfiguration.offset} req.query.offset - Offset
+     * @param {SearchParameters} req.query.search
+     *
+     * @returns {CaseSearchReturn} - List of cases
+     */
+    caseSectionsRouter.get('/:sectionType', canViewCaseSection, async (req, res) => {
+      const {
+        accountSid,
+        params: { caseId, sectionType },
+      } = req;
 
-/**
- * Returns a specific section of a case, i.e. a specific perpetrator or note, via it's unique ID
- *
- * @param {string} req.accountSid - SID of the helpline
- * @param {CaseListConfiguration.sortDirection} req.query.sortDirection - Sort direction
- * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
- * @param {CaseListConfiguration.limit} req.query.limit - Limit
- * @param {CaseListConfiguration.offset} req.query.offset - Offset
- * @param {SearchParameters} req.query.search
- *
- * @returns {CaseSearchReturn} - List of cases
- */
-caseSectionsRouter.get(
-  '/:sectionType/:sectionId',
-  canViewCaseSection,
-  async (req: Request, res) => {
-    const {
-      hrmAccountId,
-      params: { caseId, sectionType, sectionId },
-    } = req;
+      const section = await getCaseSectionTypeList(accountSid, req, caseId, sectionType);
+      res.json(section);
+    });
 
-    const section = await getCaseSection(hrmAccountId, caseId, sectionType, sectionId);
-    if (!section) {
-      throw createError(404);
-    }
-    res.json(section);
-  },
-);
+    /**
+     * Returns a specific section of a case, i.e. a specific perpetrator or note, via it's unique ID
+     *
+     * @param {string} req.accountSid - SID of the helpline
+     * @param {CaseListConfiguration.sortDirection} req.query.sortDirection - Sort direction
+     * @param {CaseListConfiguration.sortBy} req.query.sortBy - Sort by
+     * @param {CaseListConfiguration.limit} req.query.limit - Limit
+     * @param {CaseListConfiguration.offset} req.query.offset - Offset
+     * @param {SearchParameters} req.query.search
+     *
+     * @returns {CaseSearchReturn} - List of cases
+     */
+    caseSectionsRouter.get(
+      '/:sectionType/:sectionId',
+      canViewCaseSection,
+      async (req: Request, res) => {
+        const {
+          hrmAccountId,
+          params: { caseId, sectionType, sectionId },
+        } = req;
 
-caseSectionsRouter.post('/:sectionType', canAddCaseSection, async (req, res) => {
-  const {
-    hrmAccountId,
-    user,
-    params: { caseId, sectionType },
-  } = req;
-  const createdCase = await createCaseSection(
-    hrmAccountId,
-    caseId,
-    sectionType,
-    req.body,
-    user.workerSid,
-  );
-
-  res.json(createdCase);
-});
-
-caseSectionsRouter.put(
-  '/:sectionType/:sectionId',
-  canEditCaseSection,
-  async (req, res) => {
-    const {
-      hrmAccountId,
-      user,
-      params: { caseId, sectionType, sectionId },
-    } = req;
-    const updatedSection = await replaceCaseSection(
-      hrmAccountId,
-      caseId,
-      sectionType,
-      sectionId,
-      req.body,
-      user.workerSid,
-    );
-    if (!updatedSection) {
-      throw createError(404);
-    }
-    res.json(updatedSection);
-  },
-);
-
-caseSectionsRouter.delete(
-  '/:sectionType/:sectionId',
-  canEditCaseSection,
-  async (req, res) => {
-    const {
-      hrmAccountId,
-      user,
-      params: { caseId, sectionType, sectionId },
-    } = req;
-    const deleted = await deleteCaseSection(
-      hrmAccountId,
-      caseId,
-      sectionType,
-      sectionId,
-      {
-        user,
+        const section = await getCaseSection(
+          hrmAccountId,
+          caseId,
+          sectionType,
+          sectionId,
+        );
+        if (!section) {
+          throw createError(404);
+        }
+        res.json(section);
       },
     );
-    if (!deleted) {
-      throw createError(404);
-    }
-    res.sendStatus(200);
-  },
-);
+  }
 
-export default caseSectionsRouter.expressRouter;
+  caseSectionsRouter.post(
+    '/:sectionType',
+    isPublic ? canAddCaseSection : openEndpoint,
+    async (req, res) => {
+      const {
+        hrmAccountId,
+        user,
+        params: { caseId, sectionType },
+      } = req;
+      const createdCaseResult = await createCaseSection(
+        hrmAccountId,
+        caseId,
+        sectionType,
+        req.body,
+        user.workerSid,
+      );
+
+      if (isErr(createdCaseResult)) {
+        if (createdCaseResult.error === 'ResourceAlreadyExists') {
+          throw createError(409, createdCaseResult);
+        }
+        if (createdCaseResult.error === 'ForeignKeyViolation') {
+          throw createError(404, createdCaseResult);
+        }
+      }
+
+      res.json(createdCaseResult.unwrap());
+    },
+  );
+
+  caseSectionsRouter.put(
+    '/:sectionType/:sectionId',
+    isPublic ? canEditCaseSection : openEndpoint,
+    async (req, res) => {
+      const {
+        hrmAccountId,
+        user,
+        params: { caseId, sectionType, sectionId },
+      } = req;
+      const updatedSection = await replaceCaseSection(
+        hrmAccountId,
+        caseId,
+        sectionType,
+        sectionId,
+        req.body,
+        user.workerSid,
+      );
+      if (!updatedSection) {
+        throw createError(404);
+      }
+      res.json(updatedSection);
+    },
+  );
+
+  caseSectionsRouter.delete(
+    '/:sectionType/:sectionId',
+    isPublic ? canEditCaseSection : openEndpoint,
+    async (req, res) => {
+      const {
+        hrmAccountId,
+        user,
+        params: { caseId, sectionType, sectionId },
+      } = req;
+      const deleted = await deleteCaseSection(
+        hrmAccountId,
+        caseId,
+        sectionType,
+        sectionId,
+        {
+          user,
+        },
+      );
+      if (!deleted) {
+        throw createError(404);
+      }
+      res.sendStatus(200);
+    },
+  );
+  return caseSectionsRouter.expressRouter;
+};
+
+export default newCaseSectionsRouter;

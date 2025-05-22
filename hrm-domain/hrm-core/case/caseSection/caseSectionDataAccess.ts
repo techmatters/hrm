@@ -14,65 +14,54 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { db, pgp } from '../../connection-pool';
-import { CaseSectionRecord, CaseSectionUpdate } from './types';
+import { getDbForAccount, pgp } from '../../dbConnection';
+import { CaseSectionRecord, CaseSectionUpdate, TimelineDbRecords } from './types';
 import { SELECT_CASE_SECTION_BY_ID, selectCaseTimelineSql } from './sql/readSql';
 import { DELETE_CASE_SECTION_BY_ID } from './sql/deleteSql';
 import { UPDATE_CASE_SECTION_BY_ID } from './sql/updateSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
-import { isOk, HrmAccountId } from '@tech-matters/types';
-import { txIfNotInOne } from '../../sql';
+import { HrmAccountId, isOk, newOkFromData, SuccessResult } from '@tech-matters/types';
+import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../../sql';
 import { TOUCH_CASE_SQL } from '../sql/caseUpdateSql';
-import {
-  CaseSectionTimelineActivity,
-  ContactTimelineActivity,
-  TimelineActivity,
-  TimelineResult,
-} from '@tech-matters/hrm-types';
-
-export {
-  TimelineActivity,
-  ContactTimelineActivity,
-  CaseSectionTimelineActivity,
-  TimelineResult,
-};
-
-export const isCaseSectionTimelineActivity = (
-  activity: TimelineActivity<any>,
-): activity is CaseSectionTimelineActivity => activity.activityType === 'case-section';
 
 export const create =
   (task?) =>
-  async (sectionRecord: CaseSectionRecord): Promise<CaseSectionRecord> => {
-    const insertSectionStatement = `${pgp.helpers.insert(
-      sectionRecord,
-      [
-        'caseId',
-        'sectionType',
-        'sectionId',
-        'createdBy',
-        'createdAt',
-        'sectionTypeSpecificData',
-        'accountSid',
-        'eventTimestamp',
-      ],
-      'CaseSections',
-    )} RETURNING *`;
+  async (
+    sectionRecord: CaseSectionRecord,
+  ): Promise<DatabaseErrorResult | SuccessResult<CaseSectionRecord>> => {
+    try {
+      const insertSectionStatement = `${pgp.helpers.insert(
+        sectionRecord,
+        [
+          'caseId',
+          'sectionType',
+          'sectionId',
+          'createdBy',
+          'createdAt',
+          'sectionTypeSpecificData',
+          'accountSid',
+          'eventTimestamp',
+        ],
+        'CaseSections',
+      )} RETURNING *`;
+      const db = await getDbForAccount(sectionRecord.accountSid);
+      return await txIfNotInOne(db, task, async connection => {
+        const [[createdSection]]: CaseSectionRecord[][] =
+          await connection.multi<CaseSectionRecord>(
+            [insertSectionStatement, TOUCH_CASE_SQL].join(';\n'),
+            {
+              accountSid: sectionRecord.accountSid,
+              caseId: sectionRecord.caseId,
+              updatedBy: sectionRecord.createdBy,
+            },
+          );
 
-    return txIfNotInOne(task, async connection => {
-      const [[createdSection]]: CaseSectionRecord[][] =
-        await connection.multi<CaseSectionRecord>(
-          [insertSectionStatement, TOUCH_CASE_SQL].join(';\n'),
-          {
-            accountSid: sectionRecord.accountSid,
-            caseId: sectionRecord.caseId,
-            updatedBy: sectionRecord.createdBy,
-          },
-        );
-
-      return createdSection;
-    });
+        return newOkFromData(createdSection);
+      });
+    } catch (error) {
+      return inferPostgresErrorResult(error);
+    }
   };
 
 export const getById = async (
@@ -81,6 +70,7 @@ export const getById = async (
   sectionType,
   sectionId,
 ): Promise<CaseSectionRecord | undefined> => {
+  const db = await getDbForAccount(accountSid);
   return db.task(async connection => {
     const queryValues = { accountSid, caseId, sectionType, sectionId };
     return connection.oneOrNone(SELECT_CASE_SECTION_BY_ID, queryValues);
@@ -96,7 +86,8 @@ export const deleteById =
     sectionId: CaseSectionRecord['sectionId'],
     updatedBy: TwilioUser['workerSid'],
   ): Promise<CaseSectionRecord | undefined> => {
-    return txIfNotInOne(task, async connection => {
+    const db = await getDbForAccount(accountSid);
+    return txIfNotInOne(db, task, async connection => {
       const [[deletedSection]]: CaseSectionRecord[][] =
         await connection.multi<CaseSectionRecord>(
           [DELETE_CASE_SECTION_BY_ID, TOUCH_CASE_SQL].join(';\n'),
@@ -130,8 +121,8 @@ export const updateById =
       eventTimestamp: null,
       ...updates,
     };
-
-    return txIfNotInOne(task, async connection => {
+    const db = await getDbForAccount(accountSid);
+    return txIfNotInOne(db, task, async connection => {
       const [[updatedSection]]: CaseSectionRecord[][] =
         await connection.multi<CaseSectionRecord>(
           [UPDATE_CASE_SECTION_BY_ID, TOUCH_CASE_SQL].join(';\n'),
@@ -146,23 +137,28 @@ export const getTimeline = async (
   accountSid: HrmAccountId,
   twilioUser: TwilioUser,
   viewContactsPermissions: TKConditionsSets<'contact'>,
-  caseId: number,
+  caseIds: string[],
   sectionTypes: string[],
   includeContacts: boolean,
   limit: number,
   offset: number,
-): Promise<TimelineResult> => {
+): Promise<TimelineDbRecords> => {
+  const db = await getDbForAccount(accountSid);
+  let includeSections: 'all' | 'some' | 'none' = 'none';
+  if (sectionTypes.length) {
+    includeSections = sectionTypes.some(st => st === '*') ? 'all' : 'some';
+  }
   const sqlRes = selectCaseTimelineSql(
     twilioUser,
     viewContactsPermissions,
-    Boolean(sectionTypes.length),
+    includeSections,
     includeContacts,
   );
   if (isOk(sqlRes)) {
     const activitiesWithCounts = await db.manyOrNone(sqlRes.data, {
       limit,
       offset,
-      caseId,
+      caseIds: caseIds.map(parseInt),
       accountSid,
       twilioWorkerSid: twilioUser.workerSid,
       sectionTypes,
@@ -178,7 +174,7 @@ export const getTimeline = async (
     };
   } else {
     console.warn(
-      `Received request for timeline of case ${caseId} but neither contacts or any case sections were requested, returning empty set`,
+      `Received request for timeline of case ${caseIds} but neither contacts or any case sections were requested, returning empty set`,
     );
     return { count: 0, activities: [] };
   }

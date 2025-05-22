@@ -18,7 +18,7 @@ import { CaseService, getCase } from '@tech-matters/hrm-core/case/caseService';
 import {
   NewConversationMedia,
   S3ContactMediaType,
-} from '@tech-matters/hrm-core/conversation-media/conversation-media';
+} from '@tech-matters/hrm-core/conversation-media/conversationMedia';
 import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
@@ -300,25 +300,47 @@ export const populateCaseSections = async (
       await new Promise(resolve => setTimeout(resolve, 10));
     }
   }
-  return getCase(parseInt(caseId), caseAccountSid, ALWAYS_CAN);
+  return getCase(caseId, caseAccountSid, ALWAYS_CAN);
 };
 
-export const case1: Partial<CaseService> = {
+export const case1 = {
   status: 'open',
   helpline: 'helpline',
-  info: {},
+  info: {
+    operatingArea: 'East',
+  },
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
-};
+} as const;
 
 export const case2: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
-  info: {},
+  info: {
+    operatingArea: 'West',
+    followUpDate: '2022-01-15T00:00:00.000Z',
+  },
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
+};
+
+export const case3 = {
+  ...case1,
+  info: {
+    summary: 'something summery',
+    followUpDate: '2005-03-15T00:00:00.000Z',
+    operatingArea: 'North',
+  },
+};
+
+export const casePopulated = {
+  ...case1,
+  info: {
+    summary: 'something summery',
+    followUpDate: '2005-03-15T00:00:00.000Z',
+  },
 };
 
 export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
@@ -438,13 +460,6 @@ export const populatedCaseSections: Record<string, CaseSectionInsert[]> = {
   ],
 };
 
-export const casePopulated = {
-  ...case1,
-  info: {
-    summary: 'something summery',
-    followUpDate: '2005-03-15T00:00:00.000Z',
-  },
-};
 export const conversationMedia: NewConversationMedia[] = [
   {
     storeType: 'S3',

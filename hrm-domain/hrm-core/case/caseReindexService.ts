@@ -15,7 +15,7 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
-import { caseRecordToCase } from './caseService';
+import { caseRecordToCase, getTimelineForCase } from './caseService';
 import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
 import formatISO from 'date-fns/formatISO';
@@ -48,8 +48,6 @@ export const reindexCasesStream = async (
     filters,
     user: maxPermissions.user,
     viewCasePermissions: maxPermissions.permissions.viewCase as TKConditionsSets<'case'>,
-    viewContactPermissions: maxPermissions.permissions
-      .viewContact as TKConditionsSets<'contact'>,
     batchSize: highWaterMark,
   });
 
@@ -63,6 +61,7 @@ export const reindexCasesStream = async (
         try {
           const { MessageId } = await publishCaseChangeNotification({
             accountSid,
+            timeline: await getTimelineForCase(accountSid, maxPermissions, caseObj),
             case: caseObj,
             operation: 'reindex',
           });

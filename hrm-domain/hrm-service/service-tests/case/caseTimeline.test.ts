@@ -14,12 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getRequest, getServer, headers, useOpenRules } from '../server';
-import {
-  mockingProxy,
-  mockSsmParameters,
-  mockSuccessfulTwilioAuthentication,
-} from '@tech-matters/testing';
+import { headers } from '../server';
 import {
   accountSid,
   ALWAYS_CAN,
@@ -29,10 +24,12 @@ import {
   workerSid,
 } from '../mocks';
 import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
-import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
+import {
+  isCaseSectionTimelineActivity,
+  NewCaseSection,
+} from '@tech-matters/hrm-core/case/caseSection/types';
 import each from 'jest-each';
 import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
-import { clearAllTables } from '../dbCleanup';
 import { addDays, addHours, parseISO } from 'date-fns';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import {
@@ -41,38 +38,10 @@ import {
   createContact,
   searchContacts,
 } from '@tech-matters/hrm-core/contact/contactService';
-import {
-  isCaseSectionTimelineActivity,
-  TimelineActivity,
-} from '@tech-matters/hrm-core/case/caseSection/caseSectionDataAccess';
-import { setupTestQueues } from '../sqs';
+import { TimelineActivity } from '@tech-matters/hrm-types';
+import { setupServiceTests } from '../setupServiceTest';
 
-const SEARCH_INDEX_SQS_QUEUE_NAME = 'mock-search-index-queue';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
-
-beforeAll(async () => {
-  await clearAllTables();
-  await mockingProxy.start(false);
-  await mockSuccessfulTwilioAuthentication(workerSid);
-  const mockttp = await mockingProxy.mockttpServer();
-  await mockSsmParameters(mockttp, [
-    {
-      pathPattern: /.*\/queue-url-consumer$/,
-      valueGenerator: () => SEARCH_INDEX_SQS_QUEUE_NAME,
-    },
-  ]);
-});
-
-afterAll(async () => {
-  await mockingProxy.stop();
-});
-
-afterEach(async () => {
-  await clearAllTables();
-});
+const { request } = setupServiceTests(workerSid);
 
 const BASELINE_DATE = new Date(2000, 0, 1);
 
@@ -186,8 +155,6 @@ beforeEach(async () => {
       };
     });
 });
-
-setupTestQueues([SEARCH_INDEX_SQS_QUEUE_NAME]);
 
 const getRoutePath = (
   caseId: string | number,
@@ -318,11 +285,10 @@ describe('GET /cases/:caseId/timeline', () => {
         .filter(ev => !isCaseSectionTimelineActivity(ev))
         .map(ev => ev.activity);
       expect(count).toBe(expectedTotalCount);
-      activityContacts.forEach(ec =>
-        expect(ec).toStrictEqual(
-          expectedContacts.find(expected => expected.id === ec.id),
-        ),
-      );
+      activityContacts.forEach(ec => {
+        const expectedContact = expectedContacts.find(expected => expected.id === ec.id);
+        expect(ec).toStrictEqual(expectedContact);
+      });
     },
   );
 });

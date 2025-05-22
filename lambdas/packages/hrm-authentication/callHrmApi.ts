@@ -38,10 +38,11 @@ const callHrmApi =
   }: CallHrmApiParameters): Promise<TResult<CallHrmApiError, T>> => {
     try {
       const params = new URLSearchParams(requestData).toString();
-      const fullUrl = params
-        ? `${baseUrl}/${urlPath}?${params}`
-        : `${baseUrl}/${urlPath}`;
-
+      const fullUrl = params ? `${baseUrl}${urlPath}?${params}` : `${baseUrl}${urlPath}`;
+      console.info(`Calling HRM via callHrmApi: ${method} ${fullUrl}`);
+      if (body) {
+        console.debug('Body:', body);
+      }
       const response = await fetch(fullUrl, {
         method,
         headers: {

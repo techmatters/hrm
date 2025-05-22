@@ -22,9 +22,9 @@ let mockServer: Mockttp;
 
 export async function mockttpServer() {
   if (!mockServer) {
-    console.log('CREATING ENDPOINT SERVER');
+    //console.log('CREATING ENDPOINT SERVER');
     const https = await generateCACertificate();
-    // Just wave through them self signed certs... :-/
+    // Just wave through them self-signed certs... :-/
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
     mockServer = getLocal({ https });
   }
@@ -37,22 +37,21 @@ export async function start(allowPassThrough = false): Promise<void> {
     await server.stop();
   } catch (e) {
     // Ignore error
-    console.warn('Error stopping mockttp server', e);
   }
   await server.start();
-  console.log('STARTED ENDPOINT SERVER');
+  // console.log('STARTED ENDPOINT SERVER');
   if (allowPassThrough) {
     await server.forUnmatchedRequest().thenPassThrough();
-    console.debug('ALLOWING PASS THROUGH');
+    // console.debug('ALLOWING PASS THROUGH');
   } else {
     await server.forUnmatchedRequest().thenCallback(req => {
       console.log('UNHANDLED MOCKTTP REQUEST', req);
       return {
-        status: 500,
+        statusCode: 500,
         body: 'Not implemented',
       };
     });
-    console.debug('BLOCKING PASS THROUGH');
+    // console.debug('BLOCKING PASS THROUGH');
   }
   const global = createGlobalProxyAgent();
   // Filter local requests out from proxy to prevent loops.
@@ -62,7 +61,7 @@ export async function start(allowPassThrough = false): Promise<void> {
 
 export async function stop(): Promise<void> {
   const server = await mockttpServer();
-  console.debug('STOPPING ENDPOINT SERVER');
+  // console.debug('STOPPING ENDPOINT SERVER');
   await server.stop();
-  console.log('STOPPED ENDPOINT SERVER');
+  // console.log('STOPPED ENDPOINT SERVER');
 }

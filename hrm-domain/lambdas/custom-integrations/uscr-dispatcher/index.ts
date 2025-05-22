@@ -14,36 +14,39 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { ALBEvent, ALBResult } from 'aws-lambda';
-import { isErr } from '@tech-matters/types';
+import { isErr, newErr, newOk } from '@tech-matters/types';
 import { validateEnvironment, validateHeaders, validatePayload } from './validation';
 import { authenticateRequest } from './authentication';
 import * as hrmService from './hrm-service';
 import * as beaconService from './beacon-service';
 import * as mapping from './mapping';
+import {
+  AlbHandlerEvent,
+  AlbHandlerResult,
+  handleAlbEvent,
+} from '@tech-matters/alb-handler';
 
-export const handler = async (event: ALBEvent): Promise<ALBResult> => {
+export const postHandler = async (event: AlbHandlerEvent) => {
   try {
-    console.log(JSON.stringify(event));
     const envResult = validateEnvironment();
     if (isErr(envResult)) {
-      const message = `${envResult.error} ${envResult.message}`;
+      const message = `${JSON.stringify(envResult.error)} ${envResult.message}`;
       console.error(message);
-      return { statusCode: 500, body: message };
+      return newErr({ error: 'InternalServerError', message });
     }
 
     const payloadResult = validatePayload(JSON.parse(event.body || '{}'));
     if (isErr(payloadResult)) {
-      const message = `${payloadResult.error} ${payloadResult.message}`;
+      const message = `${JSON.stringify(payloadResult.error)} ${payloadResult.message}`;
       console.warn(message);
-      return { statusCode: 400, body: message };
+      return newErr({ error: 'InvalidRequestError', message });
     }
 
     const headersResult = validateHeaders(event.headers);
     if (isErr(headersResult)) {
-      const message = `${headersResult.error} ${headersResult.message}`;
+      const message = `${JSON.stringify(headersResult.error)} ${headersResult.message}`;
       console.warn(message);
-      return { statusCode: 400 };
+      return newErr({ error: 'InvalidRequestError', message });
     }
 
     const authResult = await authenticateRequest({
@@ -52,9 +55,9 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       environment: envResult.data.environment,
     });
     if (isErr(authResult)) {
-      const message = authResult.error + authResult.message;
+      const message = JSON.stringify(authResult.error) + authResult.message;
       console.warn(message);
-      return { statusCode: 401 };
+      return newErr({ error: 'AuthError', message });
     }
 
     // Get (or create) case associated with the contact so we can track the incident being reported
@@ -63,12 +66,12 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       casePayload: payloadResult.data.casePayload,
       contactId: payloadResult.data.contactId,
       baseUrl: envResult.data.baseUrl,
-      token: authResult.data.token,
+      staticKey: authResult.data.staticKey,
     });
     if (isErr(createCaseResult)) {
-      const message = createCaseResult.error + createCaseResult.message;
+      const message = JSON.stringify(createCaseResult.error) + createCaseResult.message;
       console.error(message);
-      return { statusCode: 500 };
+      return newErr({ error: 'InternalServerError', message });
     }
 
     const { contact, caseObj, sections } = createCaseResult.data;
@@ -76,23 +79,26 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
     // Case already contains a corresponding case entry section, we asume the incident has been created but something went wrong updating HRM. Poller will eventually bring consitency to this case
     if (hrmService.wasPendingIncidentCreated(sections.sections)) {
       console.info('case already has associated incident');
-      return {
-        statusCode: 200,
-      };
+      return newOk({ data: {} });
     }
+
+    const incidentParams = mapping.toCreateIncident({
+      caseObj: caseObj,
+      contact,
+    });
+
+    console.info(`Creating incident with the following data:`, incidentParams);
 
     // Case does not contains a corresponding case entry section, we assume the incident was never reported (this can only happen if Beacon responded with an error)
     const createIncidentResult = await beaconService.createIncident({
       environment: envResult.data.environment,
-      incidentParams: mapping.toCreateIncident({
-        caseObj: caseObj,
-        contact,
-      }),
+      incidentParams,
     });
     if (isErr(createIncidentResult)) {
-      const message = createIncidentResult.error + createIncidentResult.message;
+      const message =
+        JSON.stringify(createIncidentResult.error) + createIncidentResult.message;
       console.error(message);
-      return { statusCode: 500 };
+      return newErr({ error: 'InternalServerError', message });
     }
 
     console.debug(JSON.stringify(createIncidentResult));
@@ -104,23 +110,38 @@ export const handler = async (event: ALBEvent): Promise<ALBResult> => {
       caseId: caseObj.id,
       attemptSection: sections.currentAttempt.caseSection,
       baseUrl: envResult.data.baseUrl,
-      token: authResult.data.token,
+      staticKey: authResult.data.staticKey,
     });
     if (isErr(updateSectionResult)) {
-      // TODO: delete the case section corresponding to the empty incident
-      const message = updateSectionResult.error + updateSectionResult.message;
+      const message =
+        JSON.stringify(updateSectionResult.error) + updateSectionResult.message;
       console.error(message);
-      return { statusCode: 500 };
+      return newErr({ error: 'InternalServerError', message });
     }
 
     console.info(
       `new incident reported, incident id ${createIncidentResult.data.pending_incident.id}, case id ${caseObj.id}`,
     );
-    return {
-      statusCode: 200,
-    };
+    return newOk({ data: {} });
   } catch (err) {
-    console.error(err);
-    return { statusCode: 500 };
+    const message = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error(message);
+    return newErr({ error: 'InternalServerError', message });
   }
+};
+
+const methodHandlers = {
+  POST: postHandler,
+};
+
+export const handler = async (event: AlbHandlerEvent): Promise<AlbHandlerResult> => {
+  return handleAlbEvent({
+    event,
+    methodHandlers,
+    mapError: {
+      InvalidRequestError: 400,
+      AuthError: 401,
+      InternalServerError: 500,
+    },
+  });
 };

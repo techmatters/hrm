@@ -18,7 +18,7 @@ import { IRouter, Router } from 'express';
 
 import cases from './case/caseRoutesV0';
 import contacts from './contact/contactRoutesV0';
-import csamReports from './csam-report/csam-report-routes-v0';
+import csamReports from './csam-report/csamReportRoutesV0';
 import postSurveys from './post-survey/post-survey-routes-v0';
 import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
@@ -26,16 +26,21 @@ import profiles from './profile/profileRoutesV0';
 import adminProfiles from './profile/adminProfileRoutesV0';
 import adminContacts from './contact/adminContactRoutesV0';
 import adminCases from './case/adminCaseRoutesV0';
-import internalContacts from './contact/internalContactRoutesV0';
 import { Permissions } from './permissions';
 import internalProfiles from './profile/internalProfileRoutesV0';
+
+// Need to create these first - the route handlers don't activate if they are instantiated just in time
+const publicCases = cases(true);
+const internalCases = cases(false);
+const publicContacts = contacts(true);
+const internalContacts = contacts(false);
 
 export const HRM_ROUTES: {
   path: string;
   routerFactory: (rules: Permissions) => Router;
 }[] = [
-  { path: '/contacts', routerFactory: () => contacts },
-  { path: '/cases', routerFactory: () => cases },
+  { path: '/contacts', routerFactory: () => publicContacts },
+  { path: '/cases', routerFactory: () => publicCases },
   { path: '/postSurveys', routerFactory: () => postSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
   { path: '/profiles', routerFactory: () => profiles },
@@ -72,6 +77,7 @@ export const INTERNAL_ROUTES: {
 }[] = [
   { path: '/contacts', routerFactory: () => internalContacts },
   { path: '/profiles', routerFactory: () => internalProfiles },
+  { path: '/cases', routerFactory: () => internalCases },
 ];
 
 export const internalApiV0 = () => {

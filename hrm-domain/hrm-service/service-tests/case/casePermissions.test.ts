@@ -19,10 +19,10 @@
 import each from 'jest-each';
 
 import { CaseService, createCase } from '@tech-matters/hrm-core/case/caseService';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import { mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 
 import * as mocks from '../mocks';
-import { headers, getRequest, getServer, setRules, useOpenRules } from '../server';
+import { headers, setRules } from '../server';
 import { ALWAYS_CAN } from '../mocks';
 import { TKConditionsSets } from '@tech-matters/hrm-core/permissions/rulesMap';
 import {
@@ -30,30 +30,13 @@ import {
   createContact,
 } from '@tech-matters/hrm-core/contact/contactService';
 import { randomUUID } from 'crypto';
-import { clearAllTables } from '../dbCleanup';
 import { addMinutes, isAfter, subDays, subHours } from 'date-fns';
 import { WorkerSID } from '@tech-matters/types';
-
-useOpenRules();
-const server = getServer();
-const request = getRequest(server);
+import { setupServiceTests } from '../setupServiceTest';
 
 const { accountSid, workerSid } = mocks;
+const { request } = setupServiceTests(workerSid);
 const otherWorkerSid = 'WK-wa-wa-west';
-
-afterAll(done => {
-  mockingProxy.stop().finally(() => {
-    server.close(done);
-  });
-});
-
-beforeAll(async () => {
-  await mockingProxy.start();
-});
-
-beforeEach(async () => {
-  await mockSuccessfulTwilioAuthentication(workerSid);
-});
 
 const route = `/v0/accounts/${accountSid}/cases`;
 
@@ -75,7 +58,6 @@ describe('isCaseContactOwner condition', () => {
   };
   let sampleCases: CaseService[];
   beforeEach(async () => {
-    useOpenRules();
     sampleCases = [];
     for (const user of [workerSid, otherWorkerSid] as WorkerSID[]) {
       const newCases = await Promise.all(
@@ -127,10 +109,6 @@ describe('isCaseContactOwner condition', () => {
       sampleCases.push(...newCases);
     }
   });
-
-  afterEach(clearAllTables);
-
-  test('stub', () => {});
 
   type TestCase = {
     permissions: TKConditionsSets<'case'>;
@@ -278,7 +256,6 @@ describe('Time based condition', () => {
   const BASELINE_DATE_FOR_VALIDATION = addMinutes(BASELINE_DATE, 10);
 
   beforeEach(async () => {
-    useOpenRules();
     sampleCases = [];
     for (const [idx, createdAt] of Object.entries(caseCreatedTimes)) {
       const newCase = await createCase(
@@ -297,7 +274,6 @@ describe('Time based condition', () => {
 
   afterEach(async () => {
     jest.useRealTimers();
-    await clearAllTables();
   });
 
   type TestCase = {

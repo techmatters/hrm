@@ -49,6 +49,7 @@ import {
   search,
   searchByProfileId,
   searchByIds,
+  ContactRecord,
 } from './contactDataAccess';
 
 import { type PaginationQuery, getPaginationElements } from '../search';
@@ -57,10 +58,9 @@ import type { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { createReferral } from '../referral/referral-model';
+import { createReferral } from '../referral/referralService';
 import { createContactJob } from '../contact-job/contact-job';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
-import { db } from '../connection-pool';
 import {
   type ConversationMedia,
   type NewConversationMedia,
@@ -68,12 +68,12 @@ import {
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
   updateConversationMediaSpecificData,
-} from '../conversation-media/conversation-media';
+} from '../conversation-media/conversationMedia';
 import {
   type Profile,
   getOrCreateProfileWithIdentifier,
 } from '../profile/profileService';
-import { deleteContactReferrals } from '../referral/referral-data-access';
+import { deleteContactReferrals } from '../referral/referralDataAccess';
 import {
   DatabaseErrorResult,
   isDatabaseUniqueConstraintViolationErrorResult,
@@ -87,6 +87,7 @@ import {
   generateContactPermissionsFilters,
 } from './contactSearchIndex';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
+import { getDbForAccount } from '../dbConnection';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -124,23 +125,35 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
   },
 ];
 
+export const contactRecordToContact = (record: ContactRecord): Contact => {
+  const { id, caseId, ...rest } = record;
+  return {
+    ...rest,
+    id: record.id.toString(),
+    ...(record.caseId ? { caseId: record.caseId.toString() } : {}),
+  };
+};
+
 export const bindApplyTransformations =
   (can: InitializedCan, user: TwilioUser) =>
-  (contact: Contact): Contact =>
-    permissionsBasedTransformations.reduce(
+  (contact: Contact): Contact => {
+    return permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
         !can(user, action, contact) ? transformation(transformed) : transformed,
       contact,
     );
+  };
 
 export const getContactById = async (
   accountSid: HrmAccountId,
-  contactId: number,
+  contactId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
-  const contact = await getById(accountSid, contactId);
+  const contact = await getById(accountSid, parseInt(contactId));
 
-  return contact ? bindApplyTransformations(can, user)(contact) : undefined;
+  return contact
+    ? bindApplyTransformations(can, user)(contactRecordToContact(contact))
+    : undefined;
 };
 
 export const getContactByTaskId = async (
@@ -150,7 +163,9 @@ export const getContactByTaskId = async (
 ) => {
   const contact = await getByTaskSid(accountSid, taskId);
 
-  return contact ? bindApplyTransformations(can, user)(contact) : undefined;
+  return contact
+    ? bindApplyTransformations(can, user)(contactRecordToContact(contact))
+    : undefined;
 };
 
 const initProfile = async (
@@ -193,10 +208,14 @@ const doContactChangeNotification =
         return;
       }
 
-      const contact = await getById(accountSid, contactId);
+      const contact = await getById(accountSid, parseInt(contactId));
 
       if (contact) {
-        await publishContactChangeNotification({ accountSid, contact, operation });
+        await publishContactChangeNotification({
+          accountSid,
+          contact: contactRecordToContact(contact),
+          operation,
+        });
       }
     } catch (err) {
       console.error(
@@ -227,6 +246,7 @@ export const createContact = async (
   skipSearchIndex = false,
 ): Promise<Contact> => {
   let result: Result<CreateError, Contact>;
+  const db = await getDbForAccount(accountSid);
   for (let retries = 1; retries < 4; retries++) {
     result = await ensureRejection<CreateError, Contact>(db.tx)(async conn => {
       const res = await initProfile(conn, accountSid, newContact);
@@ -241,7 +261,7 @@ export const createContact = async (
       if (!definitionVersion) {
         return newErr({
           error: 'InvalidParameterError',
-          message: 'creteContact error: missing definition version parameter',
+          message: 'createContact error: missing definition version parameter',
         });
       }
 
@@ -278,7 +298,7 @@ export const createContact = async (
 
       const applyTransformations = bindApplyTransformations(can, user);
 
-      return newOkFromData(applyTransformations(contact));
+      return newOkFromData(applyTransformations(contactRecordToContact(contact)));
     });
     if (isOk(result)) {
       // trigger index operation but don't await for it
@@ -295,7 +315,7 @@ export const createContact = async (
         result.constraint === 'Identifiers_identifier_accountSid')
     ) {
       if (retries === 1) {
-        console.log(
+        console.info(
           `Retrying createContact due to '${result.constraint}' data constraint conflict - it should use the existing resource next attempt (retry #${retries})`,
         );
       } else {
@@ -320,7 +340,7 @@ export const patchContact = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> =>
-  db.tx(async conn => {
+  (await getDbForAccount(accountSid)).tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
     if (referrals) {
@@ -340,16 +360,17 @@ export const patchContact = async (
 
     const { profileId, identifierId } = res.data;
 
-    const updated = await patch(conn)(accountSid, contactId, finalize, {
+    const updatedRecord = await patch(conn)(accountSid, contactId, finalize, {
       updatedBy,
       ...restOfPatch,
       ...rawJson,
       profileId,
       identifierId,
     });
-    if (!updated) {
+    if (!updatedRecord) {
       throw new Error(`Contact not found with id ${contactId}`);
     }
+    const updated = contactRecordToContact(updatedRecord);
 
     const applyTransformations = bindApplyTransformations(can, user);
 
@@ -358,9 +379,9 @@ export const patchContact = async (
     if (!skipSearchIndex) {
       if (isRemovedOfflineContact(updated)) {
         // If the task is an offline contact task and the call type is not set, this is a 'reset' contact, effectively deleted, so we should remove it from the index
-        deleteContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+        deleteContactInSearchIndex({ accountSid, contactId });
       } else {
-        updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+        updateContactInSearchIndex({ accountSid, contactId });
       }
     }
 
@@ -376,24 +397,25 @@ export const connectContactToCase = async (
 ): Promise<Contact> => {
   if (caseId === null) {
     // trigger remove operation, awaiting for it, since we'll lost the information of which is the "old case" otherwise
-    await deleteContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+    await deleteContactInSearchIndex({ accountSid, contactId });
   }
 
-  const updated: Contact | undefined = await connectToCase()(
+  const updatedRecord: ContactRecord | undefined = await connectToCase()(
     accountSid,
     contactId,
     caseId,
     user.workerSid,
   );
-  if (!updated) {
+  if (!updatedRecord) {
     throw new Error(`Contact not found with id ${contactId}`);
   }
+  const updated = contactRecordToContact(updatedRecord);
 
   const applyTransformations = bindApplyTransformations(can, user);
 
   // trigger index operation but don't await for it
   if (!skipSearchIndex && !isRemovedOfflineContact(updated)) {
-    updateContactInSearchIndex({ accountSid, contactId: parseInt(contactId, 10) });
+    updateContactInSearchIndex({ accountSid, contactId });
   }
 
   return applyTransformations(updated);
@@ -401,22 +423,23 @@ export const connectContactToCase = async (
 
 export const addConversationMediaToContact = async (
   accountSid: HrmAccountId,
-  contactIdString: string,
+  contactId: string,
   conversationMediaPayload: NewConversationMedia[],
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> => {
-  const contactId = parseInt(contactIdString);
-  const contact = await getById(accountSid, contactId);
-  if (!contact) {
+  const db = await getDbForAccount(accountSid);
+  const contactRecord = await getById(accountSid, parseInt(contactId));
+  if (!contactRecord) {
     throw new Error(`Target contact not found (id ${contactId})`);
   }
+  const contact = contactRecordToContact(contactRecord);
   return db.tx(async conn => {
     const createdConversationMedia: ConversationMedia[] = [];
     if (conversationMediaPayload && conversationMediaPayload.length) {
       for (const cm of conversationMediaPayload) {
         const conversationMedia = await createConversationMedia(conn)(accountSid, {
-          contactId,
+          contactId: parseInt(contactId),
           ...cm,
         });
 
@@ -429,7 +452,7 @@ export const addConversationMediaToContact = async (
     if (pendingTranscript) {
       await createContactJob(conn)({
         jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-        resource: contact,
+        resource: contactRecord,
         additionalPayload: { conversationMediaId: pendingTranscript.id },
       });
     }
@@ -443,7 +466,7 @@ export const addConversationMediaToContact = async (
     if (!skipSearchIndex) {
       updateContactInSearchIndex({
         accountSid,
-        contactId: parseInt(contactIdString, 10),
+        contactId,
       });
     }
 
@@ -481,7 +504,9 @@ const generalizedSearchContacts =
       user,
       permissions.viewContact as TKConditionsSets<'contact'>,
     );
-    const contacts = unprocessedResults.rows.map(applyTransformations);
+    const contacts = unprocessedResults.rows.map(cr =>
+      applyTransformations(contactRecordToContact(cr)),
+    );
 
     return {
       count: unprocessedResults.count,

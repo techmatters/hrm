@@ -15,16 +15,13 @@
  */
 
 import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
-import { CaseSectionRecord } from './CaseSection';
-import { Contact } from './Contact';
-
-type CaseSection = Omit<CaseSectionRecord, 'accountSid' | 'sectionType' | 'caseId'>;
 
 export type PrecalculatedCasePermissionConditions = {
   isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
 };
 
 export type CaseRecordCommon = {
+  label: string;
   info: any;
   helpline: string;
   status: string;
@@ -46,59 +43,9 @@ export type CaseInfoSection = {
   updatedBy?: string;
 } & Record<string, any>;
 
-const getSectionSpecificDataFromNotesOrReferrals = (
-  caseSection: CaseInfoSection,
-): Record<string, any> => {
-  const {
-    id,
-    twilioWorkerId,
-    createdAt,
-    updatedBy,
-    updatedAt,
-    accountSid,
-    ...sectionSpecificData
-  } = caseSection;
-  return sectionSpecificData;
-};
-
-export const WELL_KNOWN_CASE_SECTION_NAMES = {
-  households: {
-    getSectionSpecificData: (s: any) => s.household,
-    sectionTypeName: 'household',
-  },
-  perpetrators: {
-    getSectionSpecificData: (s: any) => s.perpetrator,
-    sectionTypeName: 'perpetrator',
-  },
-  incidents: {
-    getSectionSpecificData: (s: any) => s.incident,
-    sectionTypeName: 'incident',
-  },
-  counsellorNotes: {
-    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
-    sectionTypeName: 'note',
-  },
-  referrals: {
-    getSectionSpecificData: getSectionSpecificDataFromNotesOrReferrals,
-    sectionTypeName: 'referral',
-  },
-  documents: {
-    getSectionSpecificData: (s: any) => s.document,
-    sectionTypeName: 'document',
-  },
-} as const;
-
 type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
 
-type CaseSectionsMap = {
-  [sectionType: string]: CaseSection[];
-};
-
 export type CaseService = CaseRecordCommon & {
-  id: number;
-  childName?: string;
-  categories: Record<string, string[]>;
+  id: string;
   precalculatedPermissions?: PrecalculatedPermissions;
-  connectedContacts?: Contact[];
-  sections: CaseSectionsMap;
 };

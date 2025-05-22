@@ -31,7 +31,7 @@ import {
   insertProfileSql,
 } from '@tech-matters/hrm-core/profile/sql/profile-insert-sql';
 import { ContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
-import { pgp } from '@tech-matters/hrm-core/connection-pool';
+import { pgp } from '@tech-matters/hrm-core/dbConnection';
 import { ContactJobType } from '@tech-matters/types/ContactJob';
 import { retryable } from './retryable';
 
@@ -97,7 +97,7 @@ export const createDueRetrieveTranscriptJob = async (
   const job: Omit<ContactJob, 'id' | 'resource'> = {
     requested: new Date().toISOString(),
     jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
-    contactId: contact.id,
+    contactId: parseInt(contact.id),
     accountSid: ACCOUNT_SID,
     additionalPayload: {
       conversationMediaId,

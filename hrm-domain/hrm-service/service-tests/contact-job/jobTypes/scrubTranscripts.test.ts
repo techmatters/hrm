@@ -15,15 +15,10 @@
  */
 
 import { setInterval } from 'timers';
-import { getServer, useOpenRules } from '../../server';
-import {
-  mockingProxy,
-  mockSsmParameters,
-  mockSuccessfulTwilioAuthentication,
-} from '@tech-matters/testing';
+import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../../mocks';
 import { clearAllTables } from '../../dbCleanup';
-import { setupTestQueues } from '../../sqs';
+import { getById } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import {
   S3ContactMediaType,
@@ -42,18 +37,20 @@ import {
   pullDueContactJobs,
 } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { receiveSqsMessage } from '@tech-matters/sqs-client';
-import { db } from '@tech-matters/hrm-core/connection-pool';
+import { db } from '../../dbConnection';
+import { setupServiceTests } from '../../setupServiceTest';
 
 const CONTACT_JOB_COMPLETE_SQS_QUEUE = 'mock-completed-contact-jobs';
 const PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE = 'mock-pending-scrub-transcript-jobs';
 const SEARCH_INDEX_QUEUE = 'mock-search-index';
 
-useOpenRules();
-const server = getServer();
+const { sqsClient } = setupServiceTests(workerSid, [
+  CONTACT_JOB_COMPLETE_SQS_QUEUE,
+  PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE,
+  SEARCH_INDEX_QUEUE,
+]);
 
 beforeAll(async () => {
-  await mockingProxy.start();
-  await mockSuccessfulTwilioAuthentication(workerSid);
   const mockttp = await mockingProxy.mockttpServer();
 
   await mockSsmParameters(mockttp, [
@@ -71,13 +68,6 @@ beforeAll(async () => {
   await clearAllTables();
 });
 
-afterAll(async () => {
-  await mockingProxy.stop();
-  server.close();
-});
-
-afterEach(clearAllTables);
-
 jest.mock('timers', () => {
   return {
     setInterval: jest.fn(),
@@ -85,12 +75,6 @@ jest.mock('timers', () => {
 });
 
 const mockSetInterval = setInterval as jest.MockedFunction<typeof setInterval>;
-
-const { sqsClient } = setupTestQueues([
-  CONTACT_JOB_COMPLETE_SQS_QUEUE,
-  PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE,
-  SEARCH_INDEX_QUEUE,
-]);
 
 const verifyConversationMedia = (
   contact: contactApi.Contact,
@@ -111,7 +95,8 @@ const verifyConversationMedia = (
   expect(unscrubbedTranscriptMedia.storeTypeSpecificData.location.key).toBe(expectedKey);
 };
 
-let testContactId: number;
+let testContactId: string;
+let testContactIdAsNumber: number;
 let singleProcessContactJobsRun: () => Promise<void>;
 
 beforeEach(async () => {
@@ -123,9 +108,11 @@ beforeEach(async () => {
     true,
   );
   testContactId = testContact.id;
+  testContactIdAsNumber = parseInt(testContact.id);
+
   await contactApi.addConversationMediaToContact(
     accountSid,
-    testContact.id.toString(),
+    testContactId,
     [
       {
         storeType: 'S3',
@@ -168,7 +155,7 @@ describe('Scrub job complete', () => {
 
   test('Receive a completed scrub transcript job for contact with no existing scrubbed transcripts - creates a scrubbed transcript media item', async () => {
     await createContactJob()({
-      resource: await contactApi.getContactById(accountSid, testContactId, ALWAYS_CAN),
+      resource: await getById(accountSid, testContactIdAsNumber),
       jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
       additionalPayload: {
         originalLocation: {
@@ -190,7 +177,7 @@ describe('Scrub job complete', () => {
       originalLocation: { bucket: 'mock-bucket', key: 'mock-transcript-path' },
       taskId: 'TKx',
       twilioWorkerId: workerSid,
-      contactId: testContactId,
+      contactId: testContactIdAsNumber,
       accountSid,
       attemptNumber: 0,
       attemptPayload: {
@@ -252,7 +239,7 @@ describe('Scrub job complete', () => {
     );
 
     await createContactJob()({
-      resource: await contactApi.getContactById(accountSid, testContactId, ALWAYS_CAN),
+      resource: await getById(accountSid, testContactIdAsNumber),
       jobType: ContactJobType.SCRUB_CONTACT_TRANSCRIPT,
       additionalPayload: {
         originalLocation: {
@@ -274,7 +261,7 @@ describe('Scrub job complete', () => {
       originalLocation: { bucket: 'mock-bucket', key: 'mock-transcript-path' },
       taskId: 'TKx',
       twilioWorkerId: workerSid,
-      contactId: testContactId,
+      contactId: testContactIdAsNumber,
       accountSid,
       attemptNumber: 0,
       attemptPayload: {
@@ -342,7 +329,7 @@ describe('Retrieve transcript job complete', () => {
     );
 
     await createContactJob()({
-      resource: await contactApi.getContactById(accountSid, testContactId, ALWAYS_CAN),
+      resource: await getById(accountSid, testContactIdAsNumber),
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       additionalPayload: {
         originalLocation: {
@@ -362,7 +349,7 @@ describe('Retrieve transcript job complete', () => {
       jobType: ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
       taskId: 'TKx',
       twilioWorkerId: workerSid,
-      contactId: testContactId,
+      contactId: testContactIdAsNumber,
       accountSid,
       attemptNumber: 0,
       serviceSid: 'string',
@@ -407,7 +394,7 @@ describe('Retrieve transcript job complete', () => {
     expect(messages).toHaveLength(1);
     const pendingScrubMessage = JSON.parse(messages[0].Body);
     console.log('pendingScrubMessage', pendingScrubMessage);
-    expect(pendingScrubMessage.contactId).toBe(testContactId);
+    expect(pendingScrubMessage.contactId).toBe(parseInt(testContactId));
     expect(pendingScrubMessage.jobType).toBe(ContactJobType.SCRUB_CONTACT_TRANSCRIPT);
     expect(pendingScrubMessage.originalLocation).toStrictEqual({
       bucket: 'mock-bucket',

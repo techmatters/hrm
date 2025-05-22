@@ -14,10 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Referral } from '../referral-data-access';
-import { pgp } from '../../connection-pool';
+import { Referral } from '../referralDataAccess';
+import { pgp } from '../../dbConnection';
 
-export const insertReferralSql = (referral: Referral & { accountSid: string }) => `
+export type ReferralRecord = Omit<Referral, 'contactId'> & { contactId: number };
+
+export const insertReferralSql = (referral: ReferralRecord & { accountSid: string }) => `
 ${pgp.helpers.insert(
   referral,
   ['contactId', 'accountSid', 'referredAt', 'resourceId', 'resourceName'],

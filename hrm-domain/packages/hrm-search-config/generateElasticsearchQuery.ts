@@ -29,6 +29,7 @@ import { assertExhaustive } from '@tech-matters/types';
 const BOOST_FACTORS = {
   id: 10,
   transcript: 1,
+  number: 2,
   contact: 2,
   case: 3,
 };
@@ -274,6 +275,49 @@ const generateTranscriptQueriesFromFilters = ({
   }));
 };
 
+const generateContactNumberQueries = ({
+  searchParameters,
+  buildParams = { parentPath: '' },
+  queryWrapper = p => p,
+}: {
+  searchParameters: SearchParametersContact;
+  buildParams?: { parentPath: string };
+  queryWrapper?: (
+    p: DocumentTypeQueryParams[DocumentType],
+  ) => DocumentTypeQueryParams[DocumentType];
+}): QueryDslQueryContainer[] => {
+  const terms = searchParameters.searchTerm.split(' ');
+
+  const numericTerms = (searchParameters.searchTerm.match(/[\d\s\-]{8,}/g) || []) // find sequences of 8 consecutive numbers, maybe separed by spaces or dashes
+    .map(t => t && t.trim());
+
+  // filter duplicates
+  const numberTerms = Array.from(
+    new Set([
+      ...terms,
+      ...numericTerms.flatMap(t => {
+        const sanitized = t.replaceAll(/[\s\-]/g, ''); // remove spaces or dashes if any
+        return [t, `+${t}`, sanitized, `+${sanitized}`]; // use original format and sanitized
+      }),
+    ]),
+  );
+
+  return [
+    generateQueryFromSearchTerms({
+      documentType: DocumentType.Contact,
+      fields: [
+        {
+          field: 'number',
+          boost: BOOST_FACTORS.number * BOOST_FACTORS.contact,
+        },
+      ],
+      searchTerm: numberTerms.join(' OR '),
+      parentPath: buildParams.parentPath,
+      queryWrapper,
+    }),
+  ];
+};
+
 const generateContactsQueriesFromFilters = ({
   searchParameters,
   buildParams = { parentPath: '' },
@@ -303,6 +347,12 @@ const generateContactsQueriesFromFilters = ({
     queryWrapper,
   });
 
+  const numberQueries = generateContactNumberQueries({
+    searchParameters,
+    buildParams,
+    queryWrapper,
+  });
+
   const queries = [
     generateQueryFromSearchTerms({
       documentType: DocumentType.Contact,
@@ -320,6 +370,7 @@ const generateContactsQueriesFromFilters = ({
       parentPath: buildParams.parentPath,
       queryWrapper,
     }),
+    ...numberQueries,
   ];
 
   const contactQueries = permissionFilters.contactFilters.map(contactFilter => ({
