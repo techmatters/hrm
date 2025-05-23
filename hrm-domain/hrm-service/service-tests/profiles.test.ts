@@ -427,70 +427,87 @@ describe('/profiles', () => {
           defaultFlags = await profilesDB.getProfileFlagsForAccount(accountSid);
         });
 
+        type TestParams = {
+          description: string;
+          expectStatus: number;
+          profileId?: number;
+          profileFlagId?: number;
+          customHeaders?: Record<string, string>;
+          validUntil?: string;
+          beforeFunction?: (profileId: number, profileFlagId: number) => Promise<void>;
+          expectFunction?: (
+            response: any,
+            profileId: number,
+            profileFlagId: number,
+            startTime: number,
+          ) => Promise<void>;
+        };
+
+        const testCases: TestParams[] = [
+          {
+            description: 'auth is missing',
+            expectStatus: 401,
+            customHeaders: {},
+          },
+          {
+            description: 'profile does not exists',
+            profileId: 0,
+            expectStatus: 404,
+          },
+          {
+            description: 'flag does not exists',
+            profileFlagId: 0,
+            expectStatus: 400,
+          },
+          {
+            description: 'profile and flag exist',
+            expectStatus: 200,
+            expectFunction: async (response, profileId, profileFlagId, startTime) => {
+              expect(response.body.id).toBe(profileId);
+              expect(
+                response.body.profileFlags.some(pf => pf.id === profileFlagId),
+              ).toBeTruthy();
+              expect(response.body.updateBy).toBe(
+                response.body.profileFlags.find(pf => pf.id === profileFlagId)?.updatedBy,
+              );
+              expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                startTime,
+              );
+            },
+          },
+          {
+            beforeFunction: async (profileId, profileFlagId) => {
+              await request.post(buildRoute(profileId, profileFlagId)).set(headers);
+            },
+            description: 'association already exists',
+            expectStatus: 409,
+          },
+          {
+            description: 'a valid "validUntil" date is sent',
+            expectStatus: 200,
+            expectFunction: async (response, profileId, profileFlagId, startTime) => {
+              expect(response.body.id).toBe(profileId);
+              expect(
+                response.body.profileFlags.some(pf => pf.id === profileFlagId),
+              ).toBeTruthy();
+              expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
+                startTime,
+              );
+            },
+          },
+          {
+            description: 'an invalid "validUntil" date is sent',
+            expectStatus: 400,
+            validUntil: 'not a date',
+          },
+          {
+            description: 'a future "validUntil" date is sent',
+            expectStatus: 400,
+            validUntil: '2020-01-05',
+          },
+        ];
         describe('POST', () => {
-          each([
-            {
-              description: 'auth is missing',
-              expectStatus: 401,
-              customHeaders: {},
-            },
-            {
-              description: 'profile does not exists',
-              profileId: 0,
-              expectStatus: 404,
-            },
-            {
-              description: 'flag does not exists',
-              profileFlagId: 0,
-              expectStatus: 400,
-            },
-            {
-              description: 'profile and flag exist',
-              expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId, startTime) => {
-                expect(response.body.id).toBe(profileId);
-                expect(
-                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
-                ).toBeTruthy();
-                expect(response.body.updateBy).toBe(
-                  response.body.profileFlags.find(pf => pf.id === profileFlagId)
-                    ?.updatedBy,
-                );
-                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
-                  startTime,
-                );
-              },
-            },
-            {
-              beforeFunction: (profileId, profileFlagId) =>
-                request.post(buildRoute(profileId, profileFlagId)).set(headers),
-              description: 'association already exists',
-              expectStatus: 409,
-            },
-            {
-              description: 'a valid "validUntil" date is sent',
-              expectStatus: 200,
-              expectFunction: (response, profileId, profileFlagId, startTime) => {
-                expect(response.body.id).toBe(profileId);
-                expect(
-                  response.body.profileFlags.some(pf => pf.id === profileFlagId),
-                ).toBeTruthy();
-                expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
-                  startTime,
-                );
-              },
-            },
-            {
-              description: 'an invalid "validUntil" date is sent',
-              expectStatus: 400,
-              validUntil: 'not a date',
-            },
-            {
-              description: 'a future "validUntil" date is sent',
-              expectStatus: 400,
-              validUntil: '2020-01-05',
-            },
-          ]).test(
+          each(testCases).test(
             'when $description, returns $expectStatus',
             async ({
               beforeFunction,
@@ -500,7 +517,7 @@ describe('/profiles', () => {
               expectStatus,
               customHeaders,
               expectFunction,
-            }) => {
+            }: TestParams) => {
               const startTime = Date.now();
 
               if (beforeFunction) {
@@ -513,7 +530,7 @@ describe('/profiles', () => {
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId, startTime);
+                await expectFunction(response, profileId, profileFlagId, startTime);
               }
             },
           );
@@ -691,7 +708,12 @@ describe('/profiles', () => {
               description: 'profile and section exist',
               expectStatus: 200,
               payload: { content: 'a note' },
-              expectFunction: async (response, profileId, payload, startTime) => {
+              expectFunction: async (
+                response,
+                profileId,
+                payload,
+                startTime,
+              ): Promise<void> => {
                 expect(response.body.profileId).toBe(profileId);
                 expect(response.body.content).toBe(payload.content);
                 expect(response.body.updatedAt).not.toBe(response.body.createdAt);
