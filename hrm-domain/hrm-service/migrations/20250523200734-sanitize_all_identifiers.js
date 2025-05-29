@@ -26,7 +26,7 @@ module.exports = {
       -- for sip, convert 'sip:+123456789@twilio.dcthosted.net' into '+123456789'
       UPDATE "Contacts" SET "number" = regexp_replace(number, '^sip:([^@]+)@.*$', '\\1') WHERE "channel" = 'voice' AND "number" LIKE 'sip:%';
       -- remove hyphens and spaces
-      UPDATE "Contacts" SET "number" = regexp_replace(number, '[-\\s]', '', 'g') WHERE "channel" = 'voice';
+      UPDATE "Contacts" SET "number" = regexp_replace(number, '[- ]', '', 'g') WHERE "channel" = 'voice';
     `,
         { transaction },
       );
@@ -36,7 +36,7 @@ module.exports = {
         `
       -- Sanitize sms contacts
       -- remove hyphens and spaces
-      UPDATE "Contacts" SET "number" = regexp_replace(number, '[-\\s]', '', 'g') WHERE "channel" = 'sms';
+      UPDATE "Contacts" SET "number" = regexp_replace(number, '[- ]', '', 'g') WHERE "channel" = 'sms';
     `,
         { transaction },
       );
@@ -48,7 +48,7 @@ module.exports = {
       -- remove 'whatsapp:' prefix
       UPDATE "Contacts" SET "number" = replace("number", 'whatsapp:', '') WHERE "channel" = 'whatsapp' AND "number" LIKE 'whatsapp:%';
       -- remove hyphens and spaces
-      UPDATE "Contacts" SET "number" = regexp_replace(number, '[-\\s]', '', 'g') WHERE "channel" = 'whatsapp';
+      UPDATE "Contacts" SET "number" = regexp_replace(number, '[- ]', '', 'g') WHERE "channel" = 'whatsapp';
     `,
         { transaction },
       );
@@ -60,7 +60,7 @@ module.exports = {
       -- remove 'modica:' prefix
       UPDATE "Contacts" SET "number" = replace("number", 'modica:', '') WHERE "channel" = 'modica' AND "number" LIKE 'modica:%';
       -- remove hyphens and spaces
-      UPDATE "Contacts" SET "number" = regexp_replace(number, '[-\\s]', '', 'g') WHERE "channel" = 'modica';
+      UPDATE "Contacts" SET "number" = regexp_replace(number, '[- ]', '', 'g') WHERE "channel" = 'modica';
     `,
         { transaction },
       );
