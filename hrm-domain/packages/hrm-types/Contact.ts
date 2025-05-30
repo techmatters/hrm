@@ -41,6 +41,7 @@ export type ContactRawJson = {
       'childInformation' | 'callerInformation' | 'caseInformation'
     >]?: string[];
   };
+  hangUpBy?: string;
   referrals?: Referral[];
 };
 
