@@ -47,6 +47,8 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
   user: TwilioUser;
 }): Promise<TResult<'InvalidObjectType' | 'InternalServerError', boolean>> => {
   try {
+    console.log('>>>>> canPerformActionsOnObject');
+
     if (!isValidSetOfActionsForTarget(targetKind, actions)) {
       return newErr({
         message: 'invalid actions for objectType',
@@ -66,6 +68,8 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
         const object = await getCaseById(objectId, hrmAccountId, {
           user,
         });
+
+        console.log('>>>>> case object', object);
 
         const canPerform = actions.every(action => can(user, action, object));
 
