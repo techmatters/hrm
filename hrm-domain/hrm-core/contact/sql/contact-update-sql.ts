@@ -29,7 +29,7 @@ SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
   || (CASE WHEN $<callType> IS NOT NULL THEN jsonb_build_object('callType', $<callType>) ELSE '{}'::JSONB END)
   || (CASE WHEN $<definitionVersion> IS NOT NULL THEN jsonb_build_object('definitionVersion', $<definitionVersion>) ELSE '{}'::JSONB END)
   || (CASE WHEN $<llmSupportedEntries> IS NOT NULL THEN jsonb_build_object('llmSupportedEntries', $<llmSupportedEntries>::JSONB) ELSE '{}'::JSONB END)
-  || (CASE WHEN $<hangUpBy> IS NOT NULL THEN jsonb_build_object('hangUpBy', $<hangUpBy>::JSONB) ELSE '{}'::JSONB END),
+  || (CASE WHEN $<hangUpBy> IS NOT NULL THEN jsonb_build_object('hangUpBy', $<hangUpBy>) ELSE '{}'::JSONB END),
   "updatedBy" = $<updatedBy>,
   "queueName" =   COALESCE($<queueName>, "queueName"),
   "twilioWorkerId" =   COALESCE($<twilioWorkerId>, "twilioWorkerId"),
