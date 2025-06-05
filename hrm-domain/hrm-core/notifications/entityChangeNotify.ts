@@ -13,10 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import { sendSqsMessage } from '@tech-matters/sqs-client';
+import { ProfileWithRelationships } from '@tech-matters/hrm-types';
 import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
-import { IndexMessage } from '@tech-matters/hrm-search-config';
 import {
   CaseSection,
   CaseService,
@@ -26,7 +24,6 @@ import {
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
 import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
 import { NotificationOperation } from '@tech-matters/hrm-types';
-import { enableSnsHrmSearchIndex } from '../featureFlags';
 import {
   timelineToLegacySections,
   timelineToLegacyConnectedContacts,
@@ -61,43 +58,17 @@ type NotificationPayload =
   | UpsertCaseNotificationPayload
   | UpsertContactNotificationPayload;
 
-const PENDING_INDEX_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
-  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-}/sqs/jobs/hrm-search-index/queue-url-consumer`;
-
 const getSnsSsmPath = dataType =>
   `/${process.env.NODE_ENV}/${
     process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
   }/hrm/${dataType}/notifications-sns-topic-arn`;
-
-const publishToSearchIndex = async ({
-  message,
-  messageGroupId,
-}: {
-  message: IndexMessage;
-  messageGroupId: string;
-}) => {
-  try {
-    const queueUrl = await getSsmParameter(PENDING_INDEX_QUEUE_SSM_PATH);
-    return await sendSqsMessage({
-      queueUrl,
-      message: JSON.stringify(message),
-      messageGroupId,
-    });
-  } catch (err) {
-    console.error(
-      `Error trying to send message to SQS queue store in SSM parameter ${PENDING_INDEX_QUEUE_SSM_PATH}`,
-      err,
-    );
-  }
-};
 
 const publishToSns = async ({
   entityType,
   payload,
   messageGroupId,
 }: {
-  entityType: 'contact' | 'case';
+  entityType: 'contact' | 'case' | 'profile';
   payload: NotificationPayload;
   messageGroupId: string;
 }) => {
@@ -140,10 +111,10 @@ type CaseWithLegacySections = CaseService & {
   connectedContacts: Contact[];
 };
 
-const publishEntityToSearchIndex = async (
+export const publishEntityChangeNotification = async (
   accountSid: HrmAccountId,
-  entityType: 'contact' | 'case',
-  entity: Contact | CaseWithLegacySections,
+  entityType: 'contact' | 'case' | 'profile',
+  entity: Contact | CaseWithLegacySections | ProfileWithRelationships,
   operation: NotificationOperation,
 ) => {
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
@@ -152,16 +123,6 @@ const publishEntityToSearchIndex = async (
     publishResponse = await publishToSns({
       entityType,
       payload: { accountSid, id: entity.id.toString(), operation },
-      messageGroupId,
-    });
-  } else if (operation === 'republish') {
-    publishResponse = await publishToSns({
-      entityType,
-      payload: {
-        accountSid,
-        contact: entity as Contact,
-        operation: 'republish',
-      } as NotificationPayload,
       messageGroupId,
     });
   } else {
@@ -175,19 +136,7 @@ const publishEntityToSearchIndex = async (
       messageGroupId,
     });
   }
-  if (enableSnsHrmSearchIndex) {
-    return publishResponse;
-  }
-
-  return publishToSearchIndex({
-    message: {
-      accountSid,
-      entityType,
-      [entityType]: entity,
-      operation,
-    } as IndexMessage,
-    messageGroupId: `${accountSid}-${entityType}-${entity.id}`,
-  });
+  return publishResponse;
 };
 
 export const publishContactChangeNotification = async ({
@@ -208,7 +157,7 @@ export const publishContactChangeNotification = async ({
       contact.updatedAt ?? contact.createdAt
     }/${operation})`,
   );
-  return publishEntityToSearchIndex(accountSid, 'contact', contact, operation);
+  return publishEntityChangeNotification(accountSid, 'contact', contact, operation);
 };
 
 export const publishCaseChangeNotification = async ({
@@ -231,7 +180,7 @@ export const publishCaseChangeNotification = async ({
       caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
-  return publishEntityToSearchIndex(
+  return publishEntityChangeNotification(
     accountSid,
     'case',
     {

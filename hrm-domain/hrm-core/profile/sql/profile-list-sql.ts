@@ -55,11 +55,14 @@ const selectProfilesUnorderedSql = (whereClause: string) => `
 `;
 
 const listProfilesPaginatedSql = (whereClause: string, orderByClause: string) => `
-  ${getProfilesSqlBase(`
+  ${getProfilesSqlBase(
+    `
     ${selectProfilesUnorderedSql(whereClause)}
     ${orderByClause}
     OFFSET $<offset>
-    LIMIT $<limit>`)}
+    LIMIT $<limit>`,
+    false,
+  )}
   ${orderByClause};
 `;
 
