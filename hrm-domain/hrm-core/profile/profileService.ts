@@ -36,6 +36,8 @@ import type { NewIdentifierRecord, NewProfileRecord } from './sql/profile-insert
 import type { ITask } from 'pg-promise';
 import type { HrmAccountId } from '@tech-matters/types';
 import { getDbForAccount } from '../dbConnection';
+import { notifyCreateProfile, notifyUpdateProfile } from './profileEntityBroadcast';
+import { getProfileById } from './profileDataAccess';
 
 export {
   Identifier,
@@ -84,9 +86,19 @@ export const createIdentifierAndProfile =
         );
 
         // trigger an update on profiles to keep track of who associated
-        await profileDB.updateProfileById(t)(accountSid, {
+        const updatedProfile = await profileDB.updateProfileById(t)(accountSid, {
           id: newProfile.id,
           updatedBy: user.workerSid,
+        });
+        notifyCreateProfile({
+          accountSid,
+          profile: {
+            ...updatedProfile,
+            identifiers: [idWithProfiles],
+            profileFlags: [],
+            profileSections: [],
+            hasContacts: false,
+          },
         });
 
         return newOk({ data: idWithProfiles });
@@ -174,7 +186,6 @@ export const createProfileWithIdentifierOrError = async (
         error: 'IdentifierExistsError',
       });
     }
-
     return newOk({ data: result.data.identifier });
   }
   return result;
@@ -241,6 +252,7 @@ export const associateProfileToProfileFlag = async (
     }
 
     const profile = result.data;
+    notifyUpdateProfile({ accountSid, profile });
 
     return newOk({ data: profile });
   });
@@ -265,7 +277,7 @@ export const disassociateProfileFromProfileFlag = async (
       profileFlagId,
       { user },
     );
-
+    notifyUpdateProfile({ accountSid, profile });
     return profile;
   });
 };
@@ -298,6 +310,7 @@ export const createProfileFlag = async (
   return newOk({ data: pf });
 };
 
+// TODO: If we start using this, we either need to add code to automatically broadcast entity updates for all affected profiles, or the code using it has to handle the broadcasts itself
 export const updateProfileFlagById = async (
   accountSid: HrmAccountId,
   flagId: profileDB.ProfileFlag['id'],
@@ -326,30 +339,32 @@ export const updateProfileFlagById = async (
 
   return newOk({ data: profileFlag });
 };
-
+// TODO: If we start using this, we either need to add code to automatically broadcast entity updates for all associated profiles, or the code using it has to handle the broadcasts itself
 export const deleteProfileFlagById = async (
   flagId: profileDB.ProfileFlag['id'],
   accountSid: HrmAccountId,
 ): Promise<profileDB.ProfileFlag> => profileDB.deleteProfileFlagById(flagId, accountSid);
 
-// While this is just a wrapper around profileDB.createProfileSection, we'll need more code to handle permissions soon
 export const createProfileSection = async (
   accountSid: HrmAccountId,
   payload: NewProfileSectionRecord,
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
   const { content, profileId, sectionType } = payload;
-  return profileDB.createProfileSection()(accountSid, {
+  const section = profileDB.createProfileSection()(accountSid, {
     content,
     profileId,
     sectionType,
     createdBy: user.workerSid,
   });
+  getProfileById()(accountSid, profileId).then(profile =>
+    notifyUpdateProfile({ accountSid, profile }),
+  );
+  return section;
 };
 
-// While this is just a wrapper around profileDB.updateProfileSectionById, we'll need more code to handle permissions soon
 export const updateProfileSectionById = async (
-  accountSid: string,
+  accountSid: HrmAccountId,
   payload: {
     profileId: profileDB.Profile['id'];
     sectionId: profileDB.ProfileSection['id'];
@@ -357,10 +372,14 @@ export const updateProfileSectionById = async (
   },
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
-  return profileDB.updateProfileSectionById()(accountSid, {
+  const section = profileDB.updateProfileSectionById()(accountSid, {
     ...payload,
     updatedBy: user.workerSid,
   });
+  getProfileById()(accountSid, payload.profileId).then(profile =>
+    notifyUpdateProfile({ accountSid, profile }),
+  );
+  return section;
 };
 
 // While this is just a wrapper around profileDB.getProfileSectionById, we'll need more code to handle permissions soon
