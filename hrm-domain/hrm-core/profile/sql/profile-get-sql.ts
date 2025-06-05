@@ -58,7 +58,7 @@ export const getProfilesSqlBase = (
     SELECT pps."profileId", JSONB_AGG(JSONB_BUILD_OBJECT(
       'id', pps.id,
       'sectionType', pps."sectionType"
-        ${includeSectionContent ? '\n, \'content\', pps."sectionType"' : ''}
+        ${includeSectionContent ? '\n, \'content\', pps."content"' : ''}
     )) AS "profileSections"
     FROM TargetProfiles profile
 	  LEFT JOIN "ProfileSections" pps ON pps."profileId" = profile.id AND pps."accountSid" = profile."accountSid"
