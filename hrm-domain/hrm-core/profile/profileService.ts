@@ -357,7 +357,7 @@ export const createProfileSection = async (
     sectionType,
     createdBy: user.workerSid,
   });
-  getProfileById()(accountSid, profileId).then(profile =>
+  getProfileById()(accountSid, profileId, true).then(profile =>
     notifyUpdateProfile({ accountSid, profile }),
   );
   return section;
@@ -376,7 +376,7 @@ export const updateProfileSectionById = async (
     ...payload,
     updatedBy: user.workerSid,
   });
-  getProfileById()(accountSid, payload.profileId).then(profile =>
+  getProfileById()(accountSid, payload.profileId, true).then(profile =>
     notifyUpdateProfile({ accountSid, profile }),
   );
   return section;

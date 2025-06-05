@@ -16,20 +16,9 @@
 
 import { ProfileWithRelationships } from '@tech-matters/hrm-types';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
-import { HrmAccountId } from '@tech-matters/types/dist/HrmAccountId';
 import { publishEntityChangeNotification } from '../notifications/entityChangeNotify';
 
 type NotificationOperation = 'create' | 'update';
-
-export const publishProfileChangeNotification = async ({
-  accountSid,
-  profile,
-  operation,
-}: {
-  accountSid: HrmAccountId;
-  profile: ProfileWithRelationships;
-  operation: NotificationOperation;
-}) => publishEntityChangeNotification(accountSid, 'profile', profile, operation);
 
 const doProfileChangeNotification =
   (operation: NotificationOperation) =>
@@ -46,11 +35,7 @@ const doProfileChangeNotification =
       }
 
       if (profile) {
-        await publishProfileChangeNotification({
-          accountSid,
-          profile,
-          operation,
-        });
+        await publishEntityChangeNotification(accountSid, 'profile', profile, operation);
       }
     } catch (err) {
       console.error(
