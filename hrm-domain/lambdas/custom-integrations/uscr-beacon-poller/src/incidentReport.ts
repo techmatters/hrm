@@ -25,6 +25,7 @@ import { Responder, responderToCaseSection } from './responder';
 
 export type IncidentReport = {
   id: number;
+  number: number;
   class: string;
   priority: string;
   case_id: string | null;
@@ -57,6 +58,7 @@ export type IncidentReport = {
 
 export const incidentReportToCaseSection = ({
   id,
+  number,
   case_id,
   updated_at,
   created_at,
@@ -83,6 +85,7 @@ export const incidentReportToCaseSection = ({
       sectionId: id.toString(),
       sectionTypeSpecificData: {
         beaconIncidentId: id.toString(),
+        incidentNumber: number?.toString(),
         incidentCreationTimestamp: created_at,
         incidentType: category,
         latitude,

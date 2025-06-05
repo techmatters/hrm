@@ -119,6 +119,7 @@ const generateIncidentReports = (
           ? { case_id: caseIds[indexInCurrentIteration] }
           : {}),
         id: iteration,
+        number: numberToGenerate - iteration,
         contact_id: `contact-for-case-${caseIds[indexInCurrentIteration]}`,
         description: `Incident report #${iteration}, for case ${caseIds[indexInCurrentIteration]}`,
         address: `Address for incident report #${iteration}`,
