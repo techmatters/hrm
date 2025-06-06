@@ -92,6 +92,35 @@ describe('KHP Data Pull - Pull Cases', () => {
 
   test('should call searchCases with the correct params', async () => {
     const searchCasesResponse = Promise.resolve({
+      count: 1,
+      cases: [{ id: '1' }],
+    });
+
+    const searchCasesSpy = jest
+      .spyOn(caseApi, 'searchCases')
+      .mockReturnValue(searchCasesResponse);
+
+    const getTimelinesForCasesSpy = jest
+      .spyOn(caseApi, 'getTimelinesForCases')
+      .mockResolvedValue([]);
+
+    await pullCases(startDate, endDate);
+
+    expect(searchCasesSpy).toHaveBeenCalledWith(
+      accountSid,
+      defaultLimitAndOffset,
+      {},
+      filterParams,
+      maxPermissions,
+    );
+
+    expect(getTimelinesForCasesSpy).toHaveBeenCalledWith(accountSid, maxPermissions, [
+      { id: '1' },
+    ]);
+  });
+
+  test('should not call searchCases with the correct params', async () => {
+    const searchCasesResponse = Promise.resolve({
       count: 0,
       cases: [],
     });
@@ -114,9 +143,8 @@ describe('KHP Data Pull - Pull Cases', () => {
       maxPermissions,
     );
 
-    expect(getTimelinesForCasesSpy).toHaveBeenCalledWith(accountSid, maxPermissions, []);
+    expect(getTimelinesForCasesSpy).not.toHaveBeenCalled();
   });
-
   test('should call upload to S3 with the correct params', async () => {
     const case1: caseApi.CaseService = {
       id: '1234',
