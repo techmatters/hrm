@@ -158,7 +158,7 @@ export const getTimeline = async (
     const activitiesWithCounts = await db.manyOrNone(sqlRes.data, {
       limit,
       offset,
-      caseIds: caseIds.map(parseInt),
+      caseIds: caseIds.map(id => parseInt(id)),
       accountSid,
       twilioWorkerSid: twilioUser.workerSid,
       sectionTypes,
