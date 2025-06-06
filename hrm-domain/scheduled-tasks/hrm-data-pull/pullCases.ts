@@ -56,23 +56,26 @@ export const pullCases = async (startDate: Date, endDate: Date) => {
       count: caseResult.count,
     };
   });
-
   const casesWithContactIdOnly: (CaseService & {
     connectedContacts: string[];
     sections: Record<string, CaseSection[]>;
-  })[] = (await caseApi.getTimelinesForCases(accountSid, maxPermissions, cases)).map(
-    ({ case: c, timeline }) => {
-      const sections: Record<string, CaseSection[]> = timelineToLegacySections(timeline);
-      const connectedContacts: string[] = timelineToLegacyConnectedContacts(timeline).map(
-        contact => contact.id.toString(),
-      );
-      return {
-        ...c,
-        sections,
-        connectedContacts,
-      };
-    },
-  );
+  })[] =
+    cases.length > 0
+      ? (await caseApi.getTimelinesForCases(accountSid, maxPermissions, cases)).map(
+          ({ case: c, timeline }) => {
+            const sections: Record<string, CaseSection[]> =
+              timelineToLegacySections(timeline);
+            const connectedContacts: string[] = timelineToLegacyConnectedContacts(
+              timeline,
+            ).map(contact => contact.id.toString());
+            return {
+              ...c,
+              sections,
+              connectedContacts,
+            };
+          },
+        )
+      : [];
 
   const uploadPromises = casesWithContactIdOnly.map(cas => {
     /*
