@@ -3,9 +3,11 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
-    { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sqs-client" },
-    { "path": "packages/types" }
+    { "path": "packages/s3-client" },
+    { "path": "packages/types" },
+    { "path": "hrm-domain/packages/hrm-types" },
+    { "path": "hrm-domain/lambdas/json-export" }
   ]
 }
