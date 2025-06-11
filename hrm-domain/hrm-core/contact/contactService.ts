@@ -225,9 +225,9 @@ const doContactChangeNotification =
     }
   };
 
-const createContactInSearchIndex = doContactChangeNotification('create');
-const updateContactInSearchIndex = doContactChangeNotification('update');
-const deleteContactInSearchIndex = doContactChangeNotification('delete');
+const notifyContactCreate = doContactChangeNotification('create');
+const notifyContactUpdate = doContactChangeNotification('update');
+const notifyContactDelete = doContactChangeNotification('delete');
 
 type InvalidParameterError = ErrorResult<'InvalidParameterError'>;
 type CreateError = DatabaseErrorResult | InvalidParameterError;
@@ -303,7 +303,7 @@ export const createContact = async (
     if (isOk(result)) {
       // trigger index operation but don't await for it
       if (!skipSearchIndex) {
-        createContactInSearchIndex({ accountSid, contactId: result.data.id });
+        notifyContactCreate({ accountSid, contactId: result.data.id });
       }
       return result.data;
     }
@@ -379,9 +379,9 @@ export const patchContact = async (
     if (!skipSearchIndex) {
       if (isRemovedOfflineContact(updated)) {
         // If the task is an offline contact task and the call type is not set, this is a 'reset' contact, effectively deleted, so we should remove it from the index
-        deleteContactInSearchIndex({ accountSid, contactId });
+        notifyContactDelete({ accountSid, contactId });
       } else {
-        updateContactInSearchIndex({ accountSid, contactId });
+        notifyContactUpdate({ accountSid, contactId });
       }
     }
 
@@ -397,7 +397,7 @@ export const connectContactToCase = async (
 ): Promise<Contact> => {
   if (caseId === null) {
     // trigger remove operation, awaiting for it, since we'll lost the information of which is the "old case" otherwise
-    await deleteContactInSearchIndex({ accountSid, contactId });
+    await notifyContactDelete({ accountSid, contactId });
   }
 
   const updatedRecord: ContactRecord | undefined = await connectToCase()(
@@ -415,7 +415,7 @@ export const connectContactToCase = async (
 
   // trigger index operation but don't await for it
   if (!skipSearchIndex && !isRemovedOfflineContact(updated)) {
-    updateContactInSearchIndex({ accountSid, contactId });
+    notifyContactUpdate({ accountSid, contactId });
   }
 
   return applyTransformations(updated);
@@ -464,7 +464,7 @@ export const addConversationMediaToContact = async (
 
     // trigger index operation but don't await for it
     if (!skipSearchIndex) {
-      updateContactInSearchIndex({
+      notifyContactUpdate({
         accountSid,
         contactId,
       });
@@ -653,7 +653,7 @@ export const updateConversationMediaData =
 
     // trigger index operation but don't await for it
     if (!skipSearchIndex) {
-      updateContactInSearchIndex({ accountSid, contactId });
+      notifyContactUpdate({ accountSid, contactId });
     }
 
     return result;

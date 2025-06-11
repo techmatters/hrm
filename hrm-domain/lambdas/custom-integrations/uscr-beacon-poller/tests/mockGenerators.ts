@@ -21,6 +21,7 @@ import {
 } from '../src/caseReport/apiPayload';
 
 const EMPTY_INCIDENT_REPORT: IncidentReport = {
+  number: 0,
   priority: '',
   address: '',
   caller_name: '',

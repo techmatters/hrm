@@ -213,10 +213,17 @@ export const associateProfileToIdentifier =
 
 export const getProfileById =
   (task?) =>
-  async (accountSid: string, profileId: number): Promise<ProfileWithRelationships> => {
+  async (
+    accountSid: string,
+    profileId: number,
+    includeSectionContents?: boolean,
+  ): Promise<ProfileWithRelationships> => {
     const db = await getDbForAccount(accountSid);
     return txIfNotInOne<ProfileWithRelationships>(db, task, async t => {
-      return t.oneOrNone(profileGetSql.getProfileByIdSql, { accountSid, profileId });
+      return t.oneOrNone(profileGetSql.getProfileByIdSql(includeSectionContents), {
+        accountSid,
+        profileId,
+      });
     });
   };
 
