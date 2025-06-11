@@ -68,6 +68,7 @@ describe('incidentReportToCaseSection', () => {
         created_at: '1969',
         case_id: '1234',
         id: 5678,
+        number: 8765,
         category_id: 22,
         category: 'Planetary Evacuation',
         latitude: -4.2,
@@ -108,6 +109,7 @@ describe('incidentReportToCaseSection', () => {
       sectionId: '5678',
       sectionTypeSpecificData: {
         beaconIncidentId: '5678',
+        incidentNumber: '8765',
         incidentCreationTimestamp: '1969',
         incidentType: 'Planetary Evacuation',
         latitude: -4.2,
@@ -181,6 +183,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         created_at: '1969',
         case_id: '1234',
         id: 5678,
+        number: 8765,
         category_id: 22,
         category: 'Planetary Evacuation',
         latitude: -4.2,
@@ -233,6 +236,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
       sectionId: '5678',
       sectionTypeSpecificData: {
         beaconIncidentId: '5678',
+        incidentNumber: '8765',
         incidentCreationTimestamp: '1969',
         incidentType: 'Planetary Evacuation',
         latitude: -4.2,
@@ -297,6 +301,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
         created_at: '1969',
         case_id: '1234',
         id: 5678,
+        number: 8765,
         priority: 'Existential Threat',
         class: 'Earth',
         category_id: 22,
@@ -323,6 +328,7 @@ describe('addIncidentReportSectionsToAseloCase', () => {
       sectionId: '5678',
       sectionTypeSpecificData: {
         beaconIncidentId: '5678',
+        incidentNumber: '8765',
         incidentCreationTimestamp: '1969',
         incidentType: 'Planetary Evacuation',
         latitude: -4.2,
