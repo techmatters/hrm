@@ -68,9 +68,7 @@ export const getNormalisedNotificationPayload = (
   if (isCaseNotification(notification)) {
     return {
       entityType: 'case',
-      timestamp: parseISO(
-        notification.case.updatedAt ?? notification.case.createdAt,
-      ),
+      timestamp: parseISO(notification.case.updatedAt ?? notification.case.createdAt),
       payload: notification.case,
     };
   }
