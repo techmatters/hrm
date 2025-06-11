@@ -22,7 +22,10 @@ const WHERE_IDENTIFIER_CLAUSE = `
   )
 `;
 
-export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
+export const getProfilesSqlBase = (
+  selectTargetProfilesQuery: string,
+  includeSectionContent: boolean,
+) => `
   WITH TargetProfiles AS (
     ${selectTargetProfilesQuery}
   ),
@@ -55,6 +58,7 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
     SELECT pps."profileId", JSONB_AGG(JSONB_BUILD_OBJECT(
       'id', pps.id,
       'sectionType', pps."sectionType"
+        ${includeSectionContent ? '\n, \'content\', pps."content"' : ''}
     )) AS "profileSections"
     FROM TargetProfiles profile
 	  LEFT JOIN "ProfileSections" pps ON pps."profileId" = profile.id AND pps."accountSid" = profile."accountSid"
@@ -76,10 +80,14 @@ export const getProfilesSqlBase = (selectTargetProfilesQuery: string) => `
   LEFT JOIN LATERAL (SELECT COUNT(*) > 0 as "hasContacts", "profileId", "accountSid" FROM "Contacts" c WHERE profiles.id = c."profileId" AND profiles."accountSid" = c."accountSid" GROUP BY "profileId", "accountSid") hrc ON true
 `;
 
-export const getProfileByIdSql = getProfilesSqlBase(`
+export const getProfileByIdSql = (includeSectionContent: boolean) =>
+  getProfilesSqlBase(
+    `
   SELECT * FROM "Profiles" profiles
   WHERE profiles."accountSid" = $<accountSid> AND profiles."id" = $<profileId>
-`);
+`,
+    includeSectionContent,
+  );
 
 export const getIdentifierSql = `
   SELECT * FROM "Identifiers" ids
