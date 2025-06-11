@@ -8,6 +8,6 @@
     { "path": "packages/s3-client" },
     { "path": "packages/types" },
     { "path": "hrm-domain/packages/hrm-types" },
-    { "path": "hrm-domain/lambdas/json-export" }
+    { "path": "hrm-domain/lambdas/export-json-writer" }
   ]
 }
