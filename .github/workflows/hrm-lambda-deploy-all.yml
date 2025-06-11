@@ -55,7 +55,7 @@ jobs:
           - hrm-domain/lambdas/files-urls
           - hrm-domain/lambdas/contact-retrieve-transcript
           - hrm-domain/lambdas/search-index-consumer
-          - hrm-domain/lambdas/entity-json-export
+          - hrm-domain/lambdas/json-export
           - lambdas/job-complete
           - resources-domain/lambdas/import-consumer
           - resources-domain/lambdas/import-producer

@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/hrm-entity-json-export",
+  "name": "@tech-matters/hrm-json-export",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -20,6 +20,6 @@
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "docker:build": "docker build -t hrm-entity-json-export --build-arg lambda_name=json-export --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../"
+    "docker:build": "docker build -t hrm-json-export --build-arg lambda_name=json-export --build-arg lambda_dir=hrm-domain/lambdas -f ../../../lambdas/Dockerfile ../../../"
   }
 }
