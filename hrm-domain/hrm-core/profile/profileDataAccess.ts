@@ -131,7 +131,7 @@ export const createIdentifier =
     identifier: NewIdentifierRecord & Pick<RecordCommons, 'createdBy'>,
   ): Promise<Identifier> => {
     const db = await getDbForAccount(accountSid);
-    const now = new Date();
+    const now = new Date().toISOString();
 
     const statement = insertIdentifierSql({
       ...identifier,
@@ -151,7 +151,7 @@ export const createProfile =
     profile: NewProfileRecord & Pick<RecordCommons, 'createdBy'>,
   ): Promise<Profile> => {
     const db = await getDbForAccount(accountSid);
-    const now = new Date();
+    const now = new Date().toISOString();
 
     const statement = insertProfileSql({
       ...profile,
@@ -172,7 +172,7 @@ export const updateProfileById =
   ): Promise<Profile> => {
     const db = await getDbForAccount(accountSid);
     const { id, name, updatedBy } = payload;
-    const now = new Date();
+    const now = new Date().toISOString();
     return txIfNotInOne<Profile>(db, task, async t => {
       return t.oneOrNone(
         updateProfileByIdSql({ name: name, updatedAt: now, updatedBy }),
@@ -275,7 +275,7 @@ export const associateProfileToProfileFlag =
       ProfileWithRelationships
     >
   > => {
-    const now = new Date();
+    const now = new Date().toISOString();
     return ensureRejection<
       | DatabaseErrorResult
       | ErrorResult<
@@ -366,8 +366,7 @@ export const disassociateProfileFromProfileFlag =
         });
       }
 
-      const profile = await getProfileById(t)(accountSid, profileId);
-      return profile;
+      return getProfileById(t)(accountSid, profileId);
     });
 
 export const getProfileFlagsForAccount = async (
@@ -385,7 +384,7 @@ export const updateProfileFlagById = async (
 ): Promise<ProfileFlag> => {
   const db = await getDbForAccount(accountSid);
   const { id, name, updatedBy } = payload;
-  const now = new Date();
+  const now = new Date().toISOString();
   return db.task<ProfileFlag>(async t => {
     return t.oneOrNone(updateProfileFlagByIdSql({ name, updatedAt: now, updatedBy }), {
       profileId: id,
@@ -422,7 +421,7 @@ export const createProfileFlag = async (
   payload: NewProfileFlagRecord & { createdBy: ProfileFlag['createdBy'] },
 ): Promise<ProfileFlag> => {
   const db = await getDbForAccount(accountSid);
-  const now = new Date();
+  const now = new Date().toISOString();
   const statement = insertProfileFlagSql({
     name: payload.name,
     createdAt: now,
@@ -442,7 +441,7 @@ export const createProfileSection =
     payload: NewProfileSectionRecord & { createdBy: ProfileSection['createdBy'] },
   ): Promise<ProfileSection> => {
     const db = await getDbForAccount(accountSid);
-    const now = new Date();
+    const now = new Date().toISOString();
     const statement = insertProfileSectionSql({
       ...payload,
       createdAt: now,

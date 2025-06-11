@@ -39,7 +39,7 @@ type CreateResultRecord = Contact & { isNewRecord: boolean };
 
 export const createContact = async (newContact: NewContactRecord): Promise<Contact> =>
   db.tx(async (conn: ITask<{ contact: Contact; isNewRecord: boolean }>) => {
-    const now = new Date();
+    const now = new Date().toISOString();
 
     const identifier = await conn.one(() =>
       insertIdentifierSql({

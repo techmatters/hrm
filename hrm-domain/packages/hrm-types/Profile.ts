@@ -18,8 +18,8 @@ import { HrmAccountId, TwilioUserIdentifier } from '@tech-matters/types';
 
 export type NewRecordCommons = {
   accountSid: HrmAccountId;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   createdBy: TwilioUserIdentifier;
   updatedBy: TwilioUserIdentifier;
 };
@@ -40,8 +40,8 @@ export type NewProfileToIdentifierRecord = {
 export type RecordCommons = {
   id: number;
   accountSid: HrmAccountId;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   createdBy: TwilioUserIdentifier;
   updatedBy?: TwilioUserIdentifier;
 };
@@ -52,8 +52,8 @@ export type IdentifierWithProfiles = Identifier & { profiles: Profile[] };
 
 export type NewProfileFlagRecordCommons = {
   accountSid: HrmAccountId;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   createdBy: TwilioUserIdentifier;
   updatedBy: TwilioUserIdentifier;
 };
@@ -75,8 +75,8 @@ export type NewProfileSectionRecordCommons = {
   accountSid: string;
   createdBy: string;
   updatedBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type NewProfileSectionRecord = {
