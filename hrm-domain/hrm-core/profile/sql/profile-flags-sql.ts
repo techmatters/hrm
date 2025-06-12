@@ -40,7 +40,7 @@ export const updateProfileFlagByIdSql = (
   const { updatedAt, updatedBy, name } = profileFlag;
   const profileFlagWithTimestamp = {
     name,
-    updatedAt: updatedAt.toISOString(),
+    updatedAt,
     updatedBy,
   };
 

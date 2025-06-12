@@ -21,10 +21,10 @@ import { putS3Object } from '@tech-matters/s3-client';
 import { ContactJobProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import {
-  AccountSID,
   CompletedRetrieveContactTranscript,
   ContactJobAttemptResult,
   ContactJobType,
+  getTwilioAccountSidFromHrmAccountId,
   PublishRetrieveContactTranscript,
 } from '@tech-matters/types';
 import { exportTranscript } from './exportTranscript';
@@ -62,7 +62,12 @@ const processRetrieveTranscriptRecord = async (
 
   // This hack to get accountSid from hrmAccountId works for now, but will break if we start using different naming
   // We should either start recording the accountSid separately on the contact, or stop accessing Twilio APIs directly from the HRM domain
-  const accountSid = hrmAccountId.split('-')[0] as AccountSID;
+  const accountSid = getTwilioAccountSidFromHrmAccountId(hrmAccountId);
+  if (!accountSid) {
+    throw new Error(
+      `Account sid not found, HRM account ID value passed: ${hrmAccountId}`,
+    );
+  }
   const authToken = await getSsmParameter(`/${hrmEnv}/twilio/${accountSid}/auth_token`);
   const docsBucketName = await getSsmParameter(
     `/${hrmEnv}/s3/${accountSid}/docs_bucket_name`,
@@ -139,16 +144,35 @@ export const processRecordWithoutException = async (
   }
 };
 
-export const handler = async (event: SQSEvent): Promise<any> => {
+const respondWithError = (event: SQSEvent, err: Error) => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
+  // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
+  // which should be the same as the completed queue right now.
+  console.error(new ContactJobProcessorError('Failed to init processor'), err);
 
+  // We fail all messages here and rely on SQS retry/DLQ because we hit
+  // a fatal error before we could process any of the messages. The error
+  // handler, whether loop based in hrm-services or lambda based here, will
+  // need to be able to handle these messages that will end up in the completed
+  // queue without a completionPayload.
+  response.batchItemFailures = event.Records.map(record => {
+    return {
+      itemIdentifier: record.messageId,
+    };
+  });
+};
+
+export const handler = async (event: SQSEvent): Promise<any> => {
   try {
     if (!completedQueueUrl) {
-      throw new Error('Missing completed_sqs_queue_url ENV Variable');
+      return respondWithError(
+        event,
+        new Error('Missing completed_sqs_queue_url ENV Variable'),
+      );
     }
 
     if (!hrmEnv) {
-      throw new Error('Missing NODE_ENV ENV Variable');
+      return respondWithError(event, new Error('Missing NODE_ENV ENV Variable'));
     }
 
     const promises = event.Records.map(async sqsRecord =>
@@ -157,21 +181,8 @@ export const handler = async (event: SQSEvent): Promise<any> => {
 
     await Promise.all(promises);
   } catch (err) {
-    // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
-    // which should be the same as the completed queue right now.
-    console.error(new ContactJobProcessorError('Failed to init processor'), err);
-
-    // We fail all messages here and rely on SQS retry/DLQ because we hit
-    // a fatal error before we could process any of the messages. The error
-    // handler, whether loop based in hrm-services or lambda based here, will
-    // need to be able to handle these messages that will end up in the completed
-    // queue without a completionPayload.
-    response.batchItemFailures = event.Records.map(record => {
-      return {
-        itemIdentifier: record.messageId,
-      };
-    });
+    return respondWithError(event, err as Error);
   }
 
-  return response;
+  return { batchItemFailures: [] };
 };

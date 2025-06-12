@@ -24,7 +24,11 @@ import {
 } from './twilioUser';
 import { unauthorized } from '@tech-matters/http';
 import type { Request, Response, NextFunction } from 'express';
-import { AccountSID, isErr, WorkerSID } from '@tech-matters/types';
+import {
+  getTwilioAccountSidFromHrmAccountId,
+  isErr,
+  WorkerSID,
+} from '@tech-matters/types';
 import { twilioTokenValidator } from './twilioTokenValidator';
 
 export type AuthSecretsLookup = {
@@ -56,11 +60,6 @@ const canAccessResourceWithStaticKey = (path: string, method: string): boolean =
   if (/\/profiles\/identifier\/[^/]+\/flags$/.test(path) && method === 'GET') return true;
 
   return false;
-};
-
-const extractAccountSid = (request: Request): AccountSID => {
-  const [twilioAccountSid] = request.hrmAccountId?.split('-') ?? [];
-  return twilioAccountSid as AccountSID;
 };
 
 const authenticateWithStaticKey =
@@ -100,7 +99,7 @@ export const getAuthorizationMiddleware =
     }
 
     const { authorization } = req.headers;
-    const accountSid = extractAccountSid(req);
+    const accountSid = getTwilioAccountSidFromHrmAccountId(req.hrmAccountId);
     if (!accountSid) return unauthorized(res);
 
     if (authorization.startsWith('Bearer')) {
@@ -146,7 +145,7 @@ export const getAuthorizationMiddleware =
 export const staticKeyAuthorizationMiddleware =
   (staticKeyLookup: AuthSecretsLookup['staticKeyLookup']) =>
   async (req: Request, res: Response, next: NextFunction) => {
-    const accountSid = extractAccountSid(req);
+    const accountSid = getTwilioAccountSidFromHrmAccountId(req.hrmAccountId);
     if (!accountSid) {
       throw new Error(
         'staticKeyAuthorizationMiddleware invoked with invalid request, req.accountSid missing',
@@ -170,12 +169,14 @@ export const adminAuthorizationMiddleware =
   (staticKeyLookup: AuthSecretsLookup['staticKeyLookup']) =>
   (keySuffix: string) =>
   async (req: Request, res: Response, next: NextFunction) => {
+    const twilioAccountSid = getTwilioAccountSidFromHrmAccountId(req.hrmAccountId);
     if (
-      await authenticateWithStaticKey(staticKeyLookup)(
+      twilioAccountSid &&
+      (await authenticateWithStaticKey(staticKeyLookup)(
         req,
         keySuffix,
-        newGlobalSystemUser(extractAccountSid(req)),
-      )
+        newGlobalSystemUser(twilioAccountSid),
+      ))
     )
       return next();
     return unauthorized(res);
