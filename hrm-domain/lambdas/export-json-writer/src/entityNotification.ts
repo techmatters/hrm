@@ -26,7 +26,7 @@ type ContactNotification = EntityNotificationHeaders & {
   contact: Contact;
 };
 type CaseNotification = EntityNotificationHeaders & {
-  case: CaseService;
+  case: CaseService & { connectedContacts: Contact[] };
 };
 type ProfileNotification = EntityNotificationHeaders & {
   profile: ProfileWithRelationships;
@@ -39,7 +39,7 @@ const isContactNotification = (
   notification: EntityNotification,
 ): notification is ContactNotification =>
   Boolean((notification as ContactNotification).contact);
-const isCaseNotification = (
+export const isCaseNotification = (
   notification: EntityNotification,
 ): notification is CaseNotification => Boolean((notification as CaseNotification).case);
 const isProfileNotification = (

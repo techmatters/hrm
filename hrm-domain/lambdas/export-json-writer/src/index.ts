@@ -20,6 +20,7 @@ import { putS3Object } from '@tech-matters/s3-client';
 import {
   EntityNotification,
   getNormalisedNotificationPayload,
+  isCaseNotification,
 } from './entityNotification';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { getTwilioAccountSidFromHrmAccountId } from '@tech-matters/types/dist/HrmAccountId';
@@ -48,10 +49,19 @@ const processRecord = async (record: SQSRecord) => {
     'yyyy/MM/dd',
   )}/${entityType}s/${payload.id}.json`;
 
+  let outputObject: any = payload;
+
+  // Only provide ids of connected contacts in case objects
+  if (isCaseNotification(notification)) {
+    outputObject = {
+      ...notification.case,
+      connectedContacts: notification.case.connectedContacts.map(c => c.id),
+    };
+  }
   await putS3Object({
     key,
     bucket,
-    body: JSON.stringify(payload),
+    body: JSON.stringify(outputObject),
   });
 
   console.info(
