@@ -22,12 +22,15 @@ import {
   getNormalisedNotificationPayload,
 } from './entityNotification';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getTwilioAccountSidFromHrmAccountId } from '@tech-matters/types/dist/HrmAccountId';
 
 const processRecord = async (record: SQSRecord) => {
   const notification: EntityNotification = JSON.parse(record.body);
   console.debug('Processing message:', record.messageId);
   const bucket = await getSsmParameter(
-    `/${process.env.NODE_ENV!}/s3/${notification.accountSid}/docs_bucket_name`,
+    `/${process.env.NODE_ENV!}/s3/${getTwilioAccountSidFromHrmAccountId(
+      notification.accountSid,
+    )}/docs_bucket_name`,
   );
   const { payload, timestamp, entityType } =
     getNormalisedNotificationPayload(notification);
