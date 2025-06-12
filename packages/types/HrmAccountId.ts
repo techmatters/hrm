@@ -26,3 +26,8 @@ import { AccountSID } from './twilio';
  * This is fine for hiding away unwanted test data but would need addressing if it were to be extended to other use cases
  */
 export type HrmAccountId = AccountSID | `${AccountSID}-${string}`;
+
+export const getTwilioAccountSidFromHrmAccountId = (
+  accountId: HrmAccountId | undefined,
+): AccountSID | undefined =>
+  accountId ? (accountId.split('-')[0] as AccountSID) : accountId;

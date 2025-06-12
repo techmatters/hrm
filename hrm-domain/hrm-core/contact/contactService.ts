@@ -25,10 +25,10 @@ import {
   ensureRejection,
   isOk,
   WorkerSID,
-  AccountSID,
   HrmAccountId,
   TwilioUserIdentifier,
   ErrorResult,
+  getTwilioAccountSidFromHrmAccountId,
 } from '@tech-matters/types';
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
@@ -176,7 +176,7 @@ const initProfile = async (
   Result<DatabaseErrorResult, { profileId?: number; identifierId?: number }>
 > => {
   if (!contact.number) return newOk({ data: {} });
-  const [accountSid] = hrmAccountId.split('-') as [AccountSID];
+  const accountSid = getTwilioAccountSidFromHrmAccountId(hrmAccountId);
 
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
     hrmAccountId,
