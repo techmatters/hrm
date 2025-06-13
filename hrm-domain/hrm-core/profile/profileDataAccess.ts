@@ -311,7 +311,7 @@ export const associateProfileToProfileFlag =
             profileId,
           });
 
-          const profile = await getProfileById(t)(accountSid, profileId);
+          const profile = await getProfileById(t)(accountSid, profileId, true);
           return newOkFromData(profile);
         } catch (e) {
           console.error(e);
@@ -373,7 +373,7 @@ export const disassociateProfileFromProfileFlag =
         });
       }
 
-      return getProfileById(t)(accountSid, profileId);
+      return getProfileById(t)(accountSid, profileId, true);
     });
 
 export const getProfileFlagsForAccount = async (

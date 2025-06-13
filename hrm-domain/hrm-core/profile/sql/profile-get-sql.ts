@@ -24,7 +24,7 @@ const WHERE_IDENTIFIER_CLAUSE = `
 
 export const getProfilesSqlBase = (
   selectTargetProfilesQuery: string,
-  includeSectionContent: boolean,
+  includeFullRelations: boolean,
 ) => `
   WITH TargetProfiles AS (
     ${selectTargetProfilesQuery}
@@ -47,19 +47,31 @@ export const getProfilesSqlBase = (
 
   RelatedProfileFlags AS (
     SELECT
-        ppf."profileId",
-        JSONB_AGG(JSONB_BUILD_OBJECT('id', ppf."profileFlagId", 'validUntil', ppf."validUntil")) AS "profileFlags"
+        ppfpf."profileId",
+        ${
+          includeFullRelations
+            ? `JSONB_AGG(TO_JSONB(ppfpf))`
+            : `JSONB_AGG(JSONB_BUILD_OBJECT('id', ppfpf."profileFlagId", 'validUntil', ppfpf."validUntil"))`
+        } AS "profileFlags"
     FROM TargetProfiles profile
-	  LEFT JOIN "ProfilesToProfileFlags" ppf ON ppf."profileId" = profile.id AND ppf."accountSid" = profile."accountSid"
-    GROUP BY ppf."profileId"
+	  LEFT JOIN LATERAL (
+        SELECT ppf."validUntil", ppf."profileId", ppf."profileFlagId", pf.* FROM "ProfilesToProfileFlags" ppf LEFT JOIN "ProfileFlags" pf ON ppf."profileFlagId" = pf."id" WHERE ppf."profileId" = profile.id AND ppf."accountSid" = profile."accountSid"
+      ) ppfpf ON 1=1
+    GROUP BY ppfpf."profileId"
   ),
 
   RelatedProfileSections AS (
-    SELECT pps."profileId", JSONB_AGG(JSONB_BUILD_OBJECT(
+        
+    SELECT pps."profileId",
+     ${
+       includeFullRelations
+         ? `JSONB_AGG(TO_JSONB(pps))`
+         : `JSONB_AGG(JSONB_BUILD_OBJECT(
       'id', pps.id,
       'sectionType', pps."sectionType"
-        ${includeSectionContent ? '\n, \'content\', pps."content"' : ''}
-    )) AS "profileSections"
+      ))`
+     }
+          AS "profileSections"
     FROM TargetProfiles profile
 	  LEFT JOIN "ProfileSections" pps ON pps."profileId" = profile.id AND pps."accountSid" = profile."accountSid"
     GROUP BY pps."profileId"
