@@ -13,77 +13,48 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { ProfileWithRelationships } from '@tech-matters/hrm-types';
 import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
 import {
-  CaseSection,
   CaseService,
   Contact,
   TimelineActivity,
+  ProfileWithRelationships,
+  NotificationOperation,
+  EntityNotificationPayload,
+  EntityType,
+  EntityByEntityType,
 } from '@tech-matters/hrm-types';
-import { AccountSID, HrmAccountId } from '@tech-matters/types';
+import { AccountSID, assertExhaustive, HrmAccountId } from '@tech-matters/types';
 import { publishSns, PublishSnsParams } from '@tech-matters/sns-client';
-import { NotificationOperation } from '@tech-matters/hrm-types';
 import {
   timelineToLegacySections,
   timelineToLegacyConnectedContacts,
 } from '../case/caseSection/timelineToLegacyCaseProperties';
-
-type DeleteNotificationPayload = {
-  accountSid: HrmAccountId;
-  operation: Extract<NotificationOperation, 'delete'>;
-  id: string;
-};
-
-type UpsertCaseNotificationPayload = {
-  accountSid: HrmAccountId;
-  operation: Extract<
-    NotificationOperation,
-    'update' | 'create' | 'reindex' | 'republish'
-  >;
-  case: CaseService;
-};
-
-type UpsertContactNotificationPayload = {
-  accountSid: HrmAccountId;
-  operation: Extract<
-    NotificationOperation,
-    'update' | 'create' | 'reindex' | 'republish'
-  >;
-  contact: Contact;
-};
-
-type NotificationPayload =
-  | DeleteNotificationPayload
-  | UpsertCaseNotificationPayload
-  | UpsertContactNotificationPayload;
 
 const getSnsSsmPath = dataType =>
   `/${process.env.NODE_ENV}/${
     process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
   }/hrm/${dataType}/notifications-sns-topic-arn`;
 
-const publishToSns = async ({
-  entityType,
+const publishToSns = async <ET extends EntityType>({
   payload,
   messageGroupId,
 }: {
-  entityType: 'contact' | 'case' | 'profile';
-  payload: NotificationPayload;
+  payload: EntityNotificationPayload[ET];
   messageGroupId: string;
 }) => {
   try {
-    const topicArn = await getSsmParameter(getSnsSsmPath(entityType));
+    const topicArn = await getSsmParameter(getSnsSsmPath(payload.entityType));
     const publishParameters: PublishSnsParams = {
       topicArn,
-      message: JSON.stringify({ ...payload, entityType }),
+      message: JSON.stringify(payload),
       messageGroupId,
       messageAttributes: { operation: payload.operation },
     };
     console.debug(
       'Publishing HRM entity update:',
       topicArn,
-      entityType,
+      payload.entityType,
       payload.operation,
     );
     return await publishSns(publishParameters);
@@ -92,47 +63,88 @@ const publishToSns = async ({
     if (err instanceof SsmParameterNotFound) {
       console.debug(
         `No SNS topic stored in SSM parameter ${getSnsSsmPath(
-          entityType,
+          payload.entityType,
         )}. Skipping publish.`,
       );
       return;
     }
     console.error(
       `Error trying to publish message to SNS topic stored in SSM parameter ${getSnsSsmPath(
-        entityType,
+        payload.entityType,
       )}`,
       err,
     );
   }
 };
 
-type CaseWithLegacySections = CaseService & {
-  sections: Record<string, CaseSection[]>;
-  connectedContacts: Contact[];
+const getPayload = <ET extends EntityType>({
+  accountSid,
+  entity,
+  entityType,
+  operation,
+}: {
+  accountSid: HrmAccountId;
+  entityType: ET;
+  entity: EntityByEntityType[ET];
+  operation: Exclude<NotificationOperation, 'delete'>;
+}) => {
+  switch (entityType) {
+    case EntityType.Contact: {
+      return {
+        accountSid,
+        entityType,
+        operation,
+        contact: entity,
+      } as EntityNotificationPayload[EntityType.Contact]; // typecast to conform TS, only valid parameters are accepted anyways
+    }
+    case EntityType.Case: {
+      return {
+        accountSid,
+        entityType,
+        operation,
+        case: entity,
+      } as EntityNotificationPayload[EntityType.Case]; // typecast to conform TS, only valid parameters are accepted anyways
+    }
+    case EntityType.Profile: {
+      return {
+        accountSid,
+        entityType,
+        operation,
+        profile: entity,
+      } as EntityNotificationPayload[EntityType.Profile]; // typecast to conform TS, only valid parameters are accepted anyways
+    }
+    default: {
+      return assertExhaustive(entityType);
+    }
+  }
 };
 
-export const publishEntityChangeNotification = async (
-  accountSid: HrmAccountId,
-  entityType: 'contact' | 'case' | 'profile',
-  entity: Contact | CaseWithLegacySections | ProfileWithRelationships,
-  operation: NotificationOperation,
-) => {
-  const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
+const publishEntityChangeNotification = async <ET extends EntityType>({
+  accountSid,
+  entity,
+  entityType,
+  operation,
+}: {
+  accountSid: HrmAccountId;
+  entityType: ET;
+  entity: EntityByEntityType[ET];
+  operation: NotificationOperation;
+}) => {
+  const messageGroupId = `${accountSid}-${entityType}-${entity.id.toString()}`;
   let publishResponse: { MessageId?: string };
   if (operation === 'delete') {
     publishResponse = await publishToSns({
-      entityType,
-      payload: { accountSid, id: entity.id.toString(), operation },
+      payload: { accountSid, entityType, id: entity.id.toString(), operation },
       messageGroupId,
     });
   } else {
     publishResponse = await publishToSns({
-      entityType,
-      payload: {
+      payload: getPayload({
         accountSid,
-        [entityType]: entity,
+        entity,
+        entityType,
         operation,
-      } as NotificationPayload,
+      }),
       messageGroupId,
     });
   }
@@ -149,7 +161,7 @@ export const publishContactChangeNotification = async ({
   operation: NotificationOperation;
 }) => {
   console.info(
-    `[generalised-search-contacts]: Indexing Started. Account SID: ${accountSid}, Contact ID: ${
+    `[publish-contact-change-notification]: Publish Started. Account SID: ${accountSid}, Contact ID: ${
       contact.id
     }, Updated / Created At: ${
       contact.updatedAt ?? contact.createdAt
@@ -157,7 +169,12 @@ export const publishContactChangeNotification = async ({
       contact.updatedAt ?? contact.createdAt
     }/${operation})`,
   );
-  return publishEntityChangeNotification(accountSid, 'contact', contact, operation);
+  return publishEntityChangeNotification({
+    entityType: EntityType.Contact,
+    accountSid,
+    entity: contact,
+    operation,
+  });
 };
 
 export const publishCaseChangeNotification = async ({
@@ -172,7 +189,7 @@ export const publishCaseChangeNotification = async ({
   operation: NotificationOperation;
 }) => {
   console.info(
-    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
+    `[publish-case-change-notification]: Publish Request Started. Account SID: ${accountSid}, Case ID: ${
       caseObj.id
     }, Updated / Created At: ${
       caseObj.updatedAt ?? caseObj.createdAt
@@ -180,14 +197,40 @@ export const publishCaseChangeNotification = async ({
       caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
-  return publishEntityChangeNotification(
+  return publishEntityChangeNotification({
     accountSid,
-    'case',
-    {
+    entityType: EntityType.Case,
+    entity: {
       ...caseObj,
       sections: timelineToLegacySections(timeline),
       connectedContacts: timelineToLegacyConnectedContacts(timeline),
     },
     operation,
+  });
+};
+
+export const publishProfileChangeNotification = async ({
+  accountSid,
+  profile,
+  operation,
+}: {
+  accountSid: HrmAccountId;
+  profile: ProfileWithRelationships;
+  operation: NotificationOperation;
+}) => {
+  console.info(
+    `[publish-profile-change-notification]: Publish Started. Account SID: ${accountSid}, Contact ID: ${
+      profile.id
+    }, Updated / Created At: ${
+      profile.updatedAt ?? profile.createdAt
+    }. Operation: ${operation}. (key: ${accountSid}/${profile.id}/${
+      profile.updatedAt ?? profile.createdAt
+    }/${operation})`,
   );
+  return publishEntityChangeNotification({
+    accountSid,
+    entityType: EntityType.Profile,
+    entity: profile,
+    operation,
+  });
 };
