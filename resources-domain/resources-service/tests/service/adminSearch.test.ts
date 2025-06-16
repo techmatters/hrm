@@ -58,10 +58,6 @@ beforeAll(async () => {
       valueGenerator: () => testQueueUrl.toString(),
     },
   ]);
-
-  ACCOUNT_SIDS.forEach(accountSid => {
-    process.env[`STATIC_KEY_${accountSid}`] = 'BBC';
-  });
 });
 
 afterAll(async () =>
@@ -69,6 +65,10 @@ afterAll(async () =>
 );
 
 beforeEach(async () => {
+  ACCOUNT_SIDS.forEach(accountSid => {
+    process.env[`STATIC_KEY_${accountSid}`] = 'BBC';
+  });
+
   const { QueueUrl } = await sqsClient
     .createQueue({
       QueueName: `test-hrm-resources-search-index-pending`,

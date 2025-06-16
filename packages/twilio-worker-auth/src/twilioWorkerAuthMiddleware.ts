@@ -169,14 +169,12 @@ export const adminAuthorizationMiddleware =
   (staticKeyLookup: AuthSecretsLookup['staticKeyLookup']) =>
   (keySuffix: string) =>
   async (req: Request, res: Response, next: NextFunction) => {
-    const twilioAccountSid = getTwilioAccountSidFromHrmAccountId(req.hrmAccountId);
     if (
-      twilioAccountSid &&
-      (await authenticateWithStaticKey(staticKeyLookup)(
+      await authenticateWithStaticKey(staticKeyLookup)(
         req,
         keySuffix,
-        newGlobalSystemUser(twilioAccountSid),
-      ))
+        newGlobalSystemUser(getTwilioAccountSidFromHrmAccountId(req.hrmAccountId)),
+      )
     )
       return next();
     return unauthorized(res);
