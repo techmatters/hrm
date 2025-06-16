@@ -29,18 +29,11 @@ const updateColumnSet = new pgp.helpers.ColumnSet(
 
 export const updateProfileByIdSql = (
   profile: Partial<NewProfileRecord> & Pick<NewRecordCommons, 'updatedAt' | 'updatedBy'>,
-) => {
-  const profileWithTimestamp = {
-    ...profile,
-    updatedAt: profile.updatedAt.toISOString(),
-  };
-
-  return `
-    ${pgp.helpers.update(profileWithTimestamp, updateColumnSet)}
+) => `
+    ${pgp.helpers.update(profile, updateColumnSet)}
     WHERE "accountSid" = $<accountSid> AND "id" = $<profileId>
     RETURNING *
   `;
-};
 
 export const TOUCH_PROFILE_SQL = `
   UPDATE "Profiles" 

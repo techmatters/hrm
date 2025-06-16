@@ -40,6 +40,8 @@ jobs:
         lambda_path:
           - hrm-domain/lambdas/files-urls
           - hrm-domain/lambdas/contact-retrieve-transcript
+          - hrm-domain/lambdas/search-index-consumer
+          - hrm-domain/lambdas/export-json-writer
           - lambdas/job-complete
           - resources-domain/lambdas/import-consumer
           - resources-domain/lambdas/import-producer

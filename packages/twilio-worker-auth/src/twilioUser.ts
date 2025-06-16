@@ -45,9 +45,11 @@ export const newAccountSystemUser = (accountSid: AccountSID): Readonly<TwilioUse
     isSystemUser: true,
   });
 
-export const newGlobalSystemUser = (accountSid: AccountSID): Readonly<TwilioUser> =>
+export const newGlobalSystemUser = (
+  accountSid: AccountSID | undefined,
+): Readonly<TwilioUser> =>
   Object.freeze({
-    accountSid,
+    accountSid: accountSid as AccountSID,
     workerSid: `system`,
     roles: [],
     isSupervisor: false,
