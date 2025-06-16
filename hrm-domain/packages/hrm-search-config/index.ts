@@ -36,11 +36,8 @@ export {
 } from './hrmIndexDocumentMappings';
 export {
   IndexMessage,
-  DeleteMessage,
   IndexCaseMessage,
-  DeleteCaseMessage,
   IndexContactMessage,
-  DeleteContactMessage,
   IndexPayload,
 } from './payload';
 

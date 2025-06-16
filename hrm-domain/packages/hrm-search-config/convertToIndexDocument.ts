@@ -20,9 +20,18 @@ import {
   isHrmContactsIndex,
   isHrmCasesIndex,
 } from './hrmIndexDocumentMappings';
-import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
-import { IndexPayload, IndexPayloadCase, IndexPayloadContact } from './payload';
-import { dataCallTypes } from '@tech-matters/hrm-types';
+import {
+  CreateIndexConvertedDocument,
+  CreateIndexConvertedDocumentError,
+} from '@tech-matters/elasticsearch-client';
+import {
+  IndexPayload,
+  IndexPayloadCase,
+  IndexPayloadContact,
+  SupportedNotificationOperation,
+} from './payload';
+import { dataCallTypes, EntityType } from '@tech-matters/hrm-types';
+import { ErrorResult, newErr, newOk, Result } from '@tech-matters/types';
 
 const filterUndefined = <T extends CaseDocument | ContactDocument>(doc: T): T =>
   Object.entries(doc).reduce((accum, [key, value]) => {
@@ -36,7 +45,9 @@ const filterUndefined = <T extends CaseDocument | ContactDocument>(doc: T): T =>
 export const convertContactToContactDocument = ({
   contact,
   transcript,
-}: IndexPayloadContact): CreateIndexConvertedDocument<ContactDocument> => {
+}: IndexPayloadContact & {
+  operation: Exclude<SupportedNotificationOperation, 'delete'>;
+}): CreateIndexConvertedDocument<ContactDocument> => {
   const {
     accountSid,
     id,
@@ -79,7 +90,9 @@ export const convertContactToContactDocument = ({
 
 const convertCaseToCaseDocument = ({
   case: caseObj,
-}: IndexPayloadCase): CreateIndexConvertedDocument<CaseDocument> => {
+}: IndexPayloadCase & {
+  operation: Exclude<SupportedNotificationOperation, 'delete'>;
+}): CreateIndexConvertedDocument<CaseDocument> => {
   const {
     accountSid,
     id,
@@ -136,8 +149,12 @@ const convertCaseToCaseDocument = ({
   return filterUndefined(caseDocument);
 };
 
-const convertToContactIndexDocument = (payload: IndexPayload) => {
-  if (payload.entityType === 'contact') {
+const convertToContactIndexDocument = (
+  payload: IndexPayload & {
+    operation: Exclude<SupportedNotificationOperation, 'delete'>;
+  },
+) => {
+  if (payload.entityType === EntityType.Contact) {
     return convertContactToContactDocument(payload);
   }
 
@@ -146,8 +163,12 @@ const convertToContactIndexDocument = (payload: IndexPayload) => {
   );
 };
 
-const convertToCaseIndexDocument = (payload: IndexPayload) => {
-  if (payload.entityType === 'case') {
+const convertToCaseIndexDocument = (
+  payload: IndexPayload & {
+    operation: Exclude<SupportedNotificationOperation, 'delete'>;
+  },
+) => {
+  if (payload.entityType === EntityType.Case) {
     return convertCaseToCaseDocument(payload);
   }
 
@@ -159,14 +180,33 @@ const convertToCaseIndexDocument = (payload: IndexPayload) => {
 export const convertToIndexDocument = (
   payload: IndexPayload,
   indexName: string,
-): CreateIndexConvertedDocument<ContactDocument | CaseDocument> => {
+): Result<
+  ErrorResult<CreateIndexConvertedDocumentError>,
+  CreateIndexConvertedDocument<ContactDocument | CaseDocument>
+> => {
+  if (payload.operation === 'delete') {
+    return newErr({
+      error: 'CreateIndexConvertedDocumentError',
+      message: `invalid operation can't be converted to document`,
+      extraProperties: {
+        payload,
+      },
+    });
+  }
+
   if (isHrmContactsIndex(indexName)) {
-    return convertToContactIndexDocument(payload);
+    return newOk({ data: convertToContactIndexDocument(payload) });
   }
 
   if (isHrmCasesIndex(indexName)) {
-    return convertToCaseIndexDocument(payload);
+    return newOk({ data: convertToCaseIndexDocument(payload) });
   }
 
-  throw new Error(`convertToIndexDocument not implemented for index ${indexName}`);
+  return newErr({
+    error: 'CreateIndexConvertedDocumentError',
+    message: `convertToIndexDocument not implemented for index ${indexName}`,
+    extraProperties: {
+      payload,
+    },
+  });
 };

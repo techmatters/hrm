@@ -52,7 +52,7 @@ const handleIndexPayload =
             accountSid,
             indexType,
             messageId,
-            result: newOkFromData(result),
+            result,
           };
         }
         case 'updateDocument': {

@@ -15,10 +15,11 @@
  */
 import type { SQSBatchResponse, SQSEvent } from 'aws-lambda';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
-import { isErr } from '@tech-matters/types';
+import { assertExhaustive, isErr } from '@tech-matters/types';
 import { groupMessagesByAccountSid } from './messages';
 import { messagesToPayloadsByAccountSid } from './messagesToPayloads';
 import { indexDocumentsByAccount } from './payloadToIndex';
+import { EntityType } from '@tech-matters/hrm-types';
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   console.debug('Received event:', JSON.stringify(event, null, 2));
@@ -57,7 +58,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
         return;
       }
       switch (message.entityType) {
-        case 'case': {
+        case EntityType.Case: {
           if (message.operation === 'delete') {
             console.info(
               `[generalised-search-cases]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Case ID: ${message.id}. Operation: ${message.operation}. (key: ${accountSid}/${message.id}/${message.operation})`,
@@ -76,7 +77,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
           );
           return;
         }
-        case 'contact': {
+        case EntityType.Contact: {
           if (message.operation === 'delete') {
             console.info(
               `[generalised-search-contacts]: Indexing Request Acknowledged By ES. Account SID: ${accountSid}, Contact ID: ${message.id}. Operation: ${message.operation}. (key: ${accountSid}/${message.id}/${message.operation})`,
@@ -94,6 +95,9 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
             }/${message.operation})`,
           );
           return;
+        }
+        default: {
+          return assertExhaustive(message);
         }
       }
     });

@@ -16,6 +16,7 @@
 import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 import createIndex from './createIndex';
+import { ErrorResult, isErr, newErr, newOk, Result } from '@tech-matters/types';
 
 export type IndexDocumentExtraParams<T> = {
   id: string;
@@ -24,7 +25,11 @@ export type IndexDocumentExtraParams<T> = {
 };
 
 export type IndexDocumentParams<T> = PassThroughConfig<T> & IndexDocumentExtraParams<T>;
-export type IndexDocumentResponse = IndexResponse;
+type IndexDocumentError = 'IndexDocumentError' | 'CreateIndexConvertedDocumentError';
+export type IndexDocumentResponse = Result<
+  ErrorResult<IndexDocumentError>,
+  IndexResponse
+>;
 
 export const indexDocument = async <T>({
   client,
@@ -34,19 +39,32 @@ export const indexDocument = async <T>({
   indexConfig,
   autocreate = false,
 }: IndexDocumentParams<T>): Promise<IndexDocumentResponse> => {
-  if (autocreate) {
-    // const exists = await client.indices.exists({ index });
-    // NOTE: above check is already performed in createIndex
-    await createIndex({ client, index, indexConfig });
+  try {
+    if (autocreate) {
+      // const exists = await client.indices.exists({ index });
+      // NOTE: above check is already performed in createIndex
+      await createIndex({ client, index, indexConfig });
+    }
+
+    const convertedDocumentResult = indexConfig.convertToIndexDocument(document, index);
+
+    if (isErr(convertedDocumentResult)) {
+      return convertedDocumentResult;
+    }
+
+    const response = await client.index({
+      index,
+      id,
+      document: convertedDocumentResult.data,
+    });
+
+    return newOk({ data: response });
+  } catch (err) {
+    return newErr({
+      error: 'IndexDocumentError',
+      message: err instanceof Error ? err.message : String(err),
+    });
   }
-
-  const convertedDocument = indexConfig.convertToIndexDocument(document, index);
-
-  return client.index({
-    index,
-    id,
-    document: convertedDocument,
-  });
 };
 
 export default indexDocument;

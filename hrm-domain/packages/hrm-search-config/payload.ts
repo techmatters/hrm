@@ -15,51 +15,25 @@
  */
 
 import type {
-  CaseSection,
-  CaseService,
-  Contact,
   NotificationOperation,
+  EntityType,
+  EntityNotificationPayload,
 } from '@tech-matters/hrm-types';
-import { AccountSID } from '@tech-matters/types';
 
-type SupportedNotificationOperation = Extract<
+export type SupportedNotificationOperation = Extract<
   NotificationOperation,
-  'update' | 'create' | 'reindex'
+  'update' | 'create' | 'delete' | 'reindex'
 >;
-export type DeleteContactMessage = {
-  entityType: 'contact';
-  operation: 'delete';
-  id: string;
-};
 
-export type IndexContactMessage = {
-  entityType: 'contact';
+export type IndexContactMessage = EntityNotificationPayload[EntityType.Contact] & {
   operation: SupportedNotificationOperation;
-  contact: Pick<Contact, 'id'> & Partial<Contact>;
 };
 
-export type DeleteCaseMessage = {
-  entityType: 'case';
-  operation: 'delete';
-  id: string;
-};
-
-export type IndexCaseMessage = {
-  entityType: 'case';
+export type IndexCaseMessage = EntityNotificationPayload[EntityType.Case] & {
   operation: SupportedNotificationOperation;
-  case: Pick<CaseService, 'id'> &
-    Partial<CaseService> & { sections?: Record<string, CaseSection[]> };
 };
 
-export type IndexMessage = { accountSid: AccountSID } & (
-  | IndexContactMessage
-  | IndexCaseMessage
-);
-
-export type DeleteMessage = { accountSid: AccountSID } & (
-  | DeleteContactMessage
-  | DeleteCaseMessage
-);
+export type IndexMessage = IndexContactMessage | IndexCaseMessage;
 
 export type IndexPayloadContact = IndexContactMessage & {
   transcript: string | null;
@@ -67,4 +41,11 @@ export type IndexPayloadContact = IndexContactMessage & {
 
 export type IndexPayloadCase = IndexCaseMessage;
 
-export type IndexPayload = IndexPayloadContact | IndexPayloadCase;
+export type IndexPayload =
+  | (IndexContactMessage & {
+      entityType: EntityType.Contact;
+      transcript: string | null;
+    })
+  | (IndexCaseMessage & {
+      entityType: EntityType.Case;
+    });

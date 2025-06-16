@@ -16,6 +16,7 @@
 import { UpdateResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 import createIndex from './createIndex';
+import { ErrorResult, isErr, newErr, newOk, Result } from '@tech-matters/types';
 
 type UpdateParams<T> = { id: string; document: T; autocreate?: boolean };
 
@@ -24,7 +25,11 @@ export type UpdateDocumentExtraParams<T> = UpdateParams<T> & {
 };
 
 export type UpdateDocumentParams<T> = PassThroughConfig<T> & UpdateDocumentExtraParams<T>;
-export type UpdateDocumentResponse = UpdateResponse;
+type UpdateDocumentError = 'UpdateDocumentError' | 'CreateIndexConvertedDocumentError';
+export type UpdateDocumentResponse = Result<
+  ErrorResult<UpdateDocumentError>,
+  UpdateResponse
+>;
 
 export const updateDocument = async <T>({
   client,
@@ -35,20 +40,33 @@ export const updateDocument = async <T>({
   docAsUpsert = false,
   autocreate = false,
 }: UpdateDocumentParams<T>): Promise<UpdateDocumentResponse> => {
-  if (docAsUpsert && autocreate) {
-    // const exists = await client.indices.exists({ index });
-    // NOTE: above check is already performed in createIndex
-    await createIndex({ client, index, indexConfig });
+  try {
+    if (docAsUpsert && autocreate) {
+      // const exists = await client.indices.exists({ index });
+      // NOTE: above check is already performed in createIndex
+      await createIndex({ client, index, indexConfig });
+    }
+
+    const convertedDocumentResult = indexConfig.convertToIndexDocument(document, index);
+
+    if (isErr(convertedDocumentResult)) {
+      return convertedDocumentResult;
+    }
+
+    const response = await client.update({
+      index,
+      id,
+      doc: convertedDocumentResult.data,
+      doc_as_upsert: docAsUpsert,
+    });
+
+    return newOk({ data: response });
+  } catch (err) {
+    return newErr({
+      error: 'UpdateDocumentError',
+      message: err instanceof Error ? err.message : String(err),
+    });
   }
-
-  const documentUpdate = indexConfig.convertToIndexDocument(document, index);
-
-  return client.update({
-    index,
-    id,
-    doc: documentUpdate,
-    doc_as_upsert: docAsUpsert,
-  });
 };
 
 export type UpdateScriptExtraParams<T> = UpdateParams<T> & { scriptedUpsert?: boolean };
@@ -63,26 +81,40 @@ export const updateScript = async <T>({
   scriptedUpsert = false,
   autocreate = false,
 }: UpdateScriptParams<T>): Promise<UpdateDocumentResponse> => {
-  if (!indexConfig.convertToScriptUpdate) {
-    throw new Error(`updateScript error: convertToScriptDocument not provided`);
+  try {
+    if (!indexConfig.convertToScriptUpdate) {
+      return newErr({
+        error: 'UpdateDocumentError',
+        message: `updateScript error: convertToScriptDocument not provided`,
+      });
+    }
+
+    if (scriptedUpsert && autocreate) {
+      // const exists = await client.indices.exists({ index });
+      // NOTE: above check is already performed in createIndex
+      await createIndex({ client, index, indexConfig });
+    }
+
+    const convertScriptResult = indexConfig.convertToScriptUpdate(document, index);
+    if (isErr(convertScriptResult)) {
+      return convertScriptResult;
+    }
+
+    const { documentUpdate, scriptUpdate } = convertScriptResult.data;
+
+    const response = await client.update({
+      index,
+      id,
+      script: scriptUpdate,
+      upsert: documentUpdate,
+      scripted_upsert: scriptedUpsert,
+    });
+
+    return newOk({ data: response });
+  } catch (err) {
+    return newErr({
+      error: 'UpdateDocumentError',
+      message: err instanceof Error ? err.message : String(err),
+    });
   }
-
-  if (scriptedUpsert && autocreate) {
-    // const exists = await client.indices.exists({ index });
-    // NOTE: above check is already performed in createIndex
-    await createIndex({ client, index, indexConfig });
-  }
-
-  const { documentUpdate, scriptUpdate } = indexConfig.convertToScriptUpdate(
-    document,
-    index,
-  );
-
-  return client.update({
-    index,
-    id,
-    script: scriptUpdate,
-    upsert: documentUpdate,
-    scripted_upsert: scriptedUpsert,
-  });
 };

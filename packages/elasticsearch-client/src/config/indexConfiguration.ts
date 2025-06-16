@@ -16,18 +16,27 @@
 
 import type { IndicesCreateRequest, Script } from '@elastic/elasticsearch/lib/api/types';
 import { CreateIndexConvertedDocument } from './index';
+import { ErrorResult, Result } from '@tech-matters/types';
+
+export type CreateIndexConvertedDocumentError = 'CreateIndexConvertedDocumentError';
 
 export type IndexConfiguration<T = any, TDoc = unknown> = {
   getCreateIndexParams: (indexName: string) => IndicesCreateRequest;
   convertToIndexDocument: (
     sourceEntity: T,
     indexName: string,
-  ) => CreateIndexConvertedDocument<TDoc>;
+  ) => Result<
+    ErrorResult<CreateIndexConvertedDocumentError>,
+    CreateIndexConvertedDocument<TDoc>
+  >;
   convertToScriptUpdate?: (
     sourceEntity: T,
     indexName: string,
-  ) => {
-    documentUpdate: CreateIndexConvertedDocument<TDoc>;
-    scriptUpdate: Script;
-  };
+  ) => Result<
+    ErrorResult<CreateIndexConvertedDocumentError>,
+    {
+      documentUpdate: CreateIndexConvertedDocument<TDoc>;
+      scriptUpdate: Script;
+    }
+  >;
 };
