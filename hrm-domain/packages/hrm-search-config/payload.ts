@@ -35,17 +35,17 @@ export type IndexCaseMessage = EntityNotificationPayload[EntityType.Case] & {
 
 export type IndexMessage = IndexContactMessage | IndexCaseMessage;
 
-export type IndexPayloadContact = IndexContactMessage & {
-  transcript: string | null;
-};
+export type IndexPayloadContact =
+  | (IndexContactMessage & {
+      entityType: EntityType.Contact;
+      operation: Exclude<SupportedNotificationOperation, 'delete'>;
+      transcript: string | null;
+    })
+  | (IndexContactMessage & {
+      entityType: EntityType.Contact;
+      operation: Extract<SupportedNotificationOperation, 'delete'>;
+    });
 
 export type IndexPayloadCase = IndexCaseMessage;
 
-export type IndexPayload =
-  | (IndexContactMessage & {
-      entityType: EntityType.Contact;
-      transcript: string | null;
-    })
-  | (IndexCaseMessage & {
-      entityType: EntityType.Case;
-    });
+export type IndexPayload = IndexPayloadContact | IndexPayloadCase;
