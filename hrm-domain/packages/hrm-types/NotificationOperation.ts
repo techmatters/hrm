@@ -20,7 +20,8 @@ export const manuallyTriggeredNotificationOperations = [
   'reexport',
 ] as const;
 
-export type ManuallyTriggeredNotificationOperation = typeof manuallyTriggeredNotificationOperations[number];
+export type ManuallyTriggeredNotificationOperation =
+  (typeof manuallyTriggeredNotificationOperations)[number];
 
 export type NotificationOperation =
   | 'update'
