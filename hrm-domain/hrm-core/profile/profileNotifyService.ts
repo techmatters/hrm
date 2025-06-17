@@ -20,18 +20,15 @@ import {
   manuallyTriggeredNotificationOperations,
 } from '@tech-matters/hrm-types';
 
-import { caseRecordToCase, getTimelineForCase } from './caseService';
 import { publishProfileChangeNotification } from '../notifications/entityChangeNotify';
-import { maxPermissions } from '../permissions';
 import formatISO from 'date-fns/formatISO';
-import { CaseRecord, streamCasesForRenotifying } from './caseDataAccess';
-import { TKConditionsSets } from '../permissions/rulesMap';
 import { Transform } from 'stream';
+import { streamProfileForRenotifying } from './profileDataAccess';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
-export const renotifyCasesStream = async (
+export const renotifyProfilesStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
@@ -41,51 +38,37 @@ export const renotifyCasesStream = async (
     throw new Error(`Invalid operation: ${operation}`);
   }
   const filters = {
-    createdAt: {
-      from: formatISO(new Date(dateFrom)),
-      to: formatISO(new Date(dateTo)),
-    },
-    updatedAt: {
-      from: formatISO(new Date(dateFrom)),
-      to: formatISO(new Date(dateTo)),
-    },
+    dateFrom: formatISO(new Date(dateFrom)),
+    dateTo: formatISO(new Date(dateTo)),
   };
 
-  console.debug(`Querying DB for cases to ${operation}`, filters);
-  const casesStream: NodeJS.ReadableStream = await streamCasesForRenotifying({
+  console.debug(`Querying DB for profiles to ${operation}`, filters);
+  const profilesStream: NodeJS.ReadableStream = await streamProfileForRenotifying({
     accountSid,
     filters,
-    user: maxPermissions.user,
-    viewCasePermissions: maxPermissions.permissions.viewCase as TKConditionsSets<'case'>,
     batchSize: highWaterMark,
   });
 
-  console.debug(`Piping cases to queue for ${operation}ing`, filters);
-  return casesStream.pipe(
+  console.debug(`Piping profiles to queue for ${operation}ing`, filters);
+  return profilesStream.pipe(
     new Transform({
       objectMode: true,
       highWaterMark,
-      async transform(caseRecord: CaseRecord, _, callback) {
-        const caseObj = caseRecordToCase(caseRecord);
+      async transform(profileRecord: any, _, callback) {
         try {
-          const { MessageId } = await publishProfileChangeNotification({
-            accountSid,
-            timeline: await getTimelineForCase(accountSid, maxPermissions, caseObj),
-            case: caseObj,
-            operation,
-          });
+          const { MessageId } = await publishProfileChangeNotification(profileRecord);
 
           this.push(
-            `${new Date().toISOString()}, ${accountSid}, case id: ${
-              caseObj.id
+            `${new Date().toISOString()}, ${accountSid}, profile id: ${
+              profileRecord.id
             } Success, MessageId ${MessageId}
               \n`,
           );
         } catch (err) {
           this.push(
-            `${new Date().toISOString()}, ${accountSid}, case id: ${caseObj.id} Error: ${
-              err.message?.replace('"', '""') || String(err)
-            }\n`,
+            `${new Date().toISOString()}, ${accountSid}, case id: ${
+              profileRecord.id
+            } Error: ${err.message?.replace('"', '""') || String(err)}\n`,
           );
         }
         callback();

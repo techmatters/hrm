@@ -14,11 +14,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import {
+  ManuallyTriggeredNotificationOperation,
+  manuallyTriggeredNotificationOperations,
+} from '@tech-matters/hrm-types';
 import type { Request, Response, NextFunction } from 'express';
 import { isErr, isOk, mapHTTPError } from '@tech-matters/types';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profileService';
 import createError from 'http-errors';
+import { renotifyProfilesStream } from './profileNotifyService';
 
 const adminProfilesRouter = SafeRouter();
 
@@ -126,6 +131,34 @@ adminProfilesRouter.delete(
     );
 
     res.json(result);
+  },
+);
+// admin POST endpoint to renotify cases. req body has accountSid, dateFrom, dateTo
+adminProfilesRouter.post(
+  '/:notifyOperation',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const notifyOperation = req.params
+      .broadcastType as ManuallyTriggeredNotificationOperation;
+    if (!manuallyTriggeredNotificationOperations.includes(notifyOperation)) {
+      throw createError(404);
+    }
+    console.log(`.......${notifyOperation}ing profiles......`, req, res);
+    const { hrmAccountId } = req;
+    const { dateFrom, dateTo } = req.body;
+
+    const resultStream = await renotifyProfilesStream(
+      hrmAccountId,
+      dateFrom,
+      dateTo,
+      notifyOperation,
+    );
+
+    resultStream.on('error', err => {
+      next(err);
+    });
+    res.status(200).setHeader('Content-Type', 'text/plain');
+    resultStream.pipe(res);
   },
 );
 

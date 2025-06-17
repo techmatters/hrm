@@ -160,7 +160,7 @@ export const publishContactChangeNotification = async ({
   return publishEntityChangeNotification(accountSid, 'contact', contact, operation);
 };
 
-export const publishCaseChangeNotification = async ({
+export const publishProfileChangeNotification = async ({
   accountSid,
   case: caseObj,
   operation,

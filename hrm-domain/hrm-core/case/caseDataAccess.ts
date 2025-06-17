@@ -307,7 +307,7 @@ export const searchByCaseIds = generalizedSearchQueryFunction<{
   };
 });
 
-export const streamCasesForReindexing = async ({
+export const streamCasesForRenotifying = async ({
   accountSid,
   filters,
   user,

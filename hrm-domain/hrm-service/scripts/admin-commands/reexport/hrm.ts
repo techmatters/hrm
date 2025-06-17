@@ -16,6 +16,7 @@
 
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
+import type { HrmAccountId } from '@tech-matters/types';
 
 export const command = 'hrm';
 export const describe =
@@ -36,7 +37,7 @@ export const builder = {
   },
   pr: {
     alias: 'profiles',
-    describe: 'reexport cases',
+    describe: 'reexport profiles',
     type: 'boolean',
     default: false,
   },
@@ -72,6 +73,34 @@ export const builder = {
   },
 };
 
+const requestReexport = async (
+  entityType: 'contacts' | 'cases' | 'profiles',
+  internalResourcesUrl: URL,
+  accountSid: HrmAccountId,
+  authKey: string,
+  dateFrom: string,
+  dateTo: string,
+) => {
+  const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reexport');
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${authKey}`,
+    },
+    body: JSON.stringify({ dateFrom, dateTo }),
+  });
+
+  if (!response.ok) {
+    console.error(
+      `Failed to submit request for reexporting contacts: ${response.statusText}`,
+    );
+  } else {
+    console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
+    console.log(await response.text());
+  }
+};
+
 export const handler = async ({
   region,
   environment,
@@ -80,7 +109,10 @@ export const handler = async ({
   dateTo,
   contacts,
   cases,
+  profiles,
 }) => {
+  // If no entity types are set, assume we want to renotify them all
+  const allEntities = !contacts && !profiles && !cases;
   try {
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
@@ -95,31 +127,39 @@ export const handler = async ({
       assumeRoleParams,
     });
 
-    if (contacts) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reexport');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${authKey}`,
-        },
-        body: JSON.stringify({ dateFrom, dateTo }),
-      });
+    if (contacts || allEntities) {
+      await requestReexport(
+        'contacts',
+        internalResourcesUrl,
+        accountSid,
+        authKey,
+        dateFrom,
+        dateTo,
+      );
+    }
 
-      if (!response.ok) {
-        console.error(
-          `Failed to submit request for reexporting contacts: ${response.statusText}`,
-        );
-      } else {
-        console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
-        console.log(await response.text());
-      }
+    if (cases || allEntities) {
+      await requestReexport(
+        'cases',
+        internalResourcesUrl,
+        accountSid,
+        authKey,
+        dateFrom,
+        dateTo,
+      );
+    }
+
+    if (profiles || allEntities) {
+      await requestReexport(
+        'cases',
+        internalResourcesUrl,
+        accountSid,
+        authKey,
+        dateFrom,
+        dateTo,
+      );
     }
   } catch (err) {
     console.error(err);
-  }
-
-  if (cases) {
-    console.log('Republishing cases is not yet implemented');
   }
 };

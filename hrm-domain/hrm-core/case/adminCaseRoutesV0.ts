@@ -26,7 +26,7 @@ import createError from 'http-errors';
 
 const adminCasesRouter = SafeRouter();
 
-// admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
+// admin POST endpoint to renotify cases. req body has accountSid, dateFrom, dateTo
 adminCasesRouter.post(
   '/:notifyOperation',
   publicEndpoint,

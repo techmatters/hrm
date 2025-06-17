@@ -28,7 +28,7 @@ import { RulesFile } from '../../permissions/rulesMap';
 import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 
 const publishCaseChangeNotificationSpy = jest
-  .spyOn(entityChangeNotify, 'publishCaseChangeNotification')
+  .spyOn(entityChangeNotify, 'publishProfileChangeNotification')
   .mockImplementation(() => Promise.resolve('Ok') as any);
 
 jest.mock('../../case/caseDataAccess');

@@ -47,7 +47,7 @@ import {
   HRM_CASES_INDEX_TYPE,
   hrmSearchConfiguration,
 } from '@tech-matters/hrm-search-config';
-import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
+import { publishProfileChangeNotification } from '../notifications/entityChangeNotify';
 import { enablePublishHrmSearchIndex } from '../featureFlags';
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
@@ -138,7 +138,7 @@ const doCaseChangeNotification =
           maxPermissions,
           caseService,
         );
-        await publishCaseChangeNotification({
+        await publishProfileChangeNotification({
           accountSid,
           case: caseService,
           timeline,
