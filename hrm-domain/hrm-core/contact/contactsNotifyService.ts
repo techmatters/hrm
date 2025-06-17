@@ -15,6 +15,11 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
+import {
+  ManuallyTriggeredNotificationOperation,
+  manuallyTriggeredNotificationOperations,
+} from '@tech-matters/hrm-types';
+
 import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
 import { Transform } from 'stream';
@@ -28,11 +33,11 @@ export const processContactsStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
-  operation: 'reindex' | 'republish',
+  operation: ManuallyTriggeredNotificationOperation,
 ): Promise<Transform> => {
-  if (operation !== 'reindex' && operation !== 'republish')
+  if (manuallyTriggeredNotificationOperations.includes(operation)) {
     throw new Error(`Invalid operation: ${operation}`);
-
+  }
   const searchParameters = {
     dateFrom,
     dateTo,

@@ -15,6 +15,11 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
+import {
+  ManuallyTriggeredNotificationOperation,
+  manuallyTriggeredNotificationOperations,
+} from '@tech-matters/hrm-types';
+
 import { caseRecordToCase, getTimelineForCase } from './caseService';
 import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
@@ -26,11 +31,15 @@ import { Transform } from 'stream';
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
-export const reindexCasesStream = async (
+export const renotifyCasesStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
+  operation: ManuallyTriggeredNotificationOperation,
 ): Promise<Transform> => {
+  if (manuallyTriggeredNotificationOperations.includes(operation)) {
+    throw new Error(`Invalid operation: ${operation}`);
+  }
   const filters = {
     createdAt: {
       from: formatISO(new Date(dateFrom)),
@@ -42,7 +51,7 @@ export const reindexCasesStream = async (
     },
   };
 
-  console.debug('Querying DB for cases to index', filters);
+  console.debug(`Querying DB for cases to ${operation}`, filters);
   const casesStream: NodeJS.ReadableStream = await streamCasesForReindexing({
     accountSid,
     filters,
@@ -51,7 +60,7 @@ export const reindexCasesStream = async (
     batchSize: highWaterMark,
   });
 
-  console.debug('Piping cases to queue for reindexing', filters);
+  console.debug(`Piping cases to queue for ${operation}ing`, filters);
   return casesStream.pipe(
     new Transform({
       objectMode: true,
@@ -63,7 +72,7 @@ export const reindexCasesStream = async (
             accountSid,
             timeline: await getTimelineForCase(accountSid, maxPermissions, caseObj),
             case: caseObj,
-            operation: 'reindex',
+            operation,
           });
 
           this.push(
