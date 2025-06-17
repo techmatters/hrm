@@ -18,15 +18,15 @@ import format from 'date-fns/format';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import { putS3Object } from '@tech-matters/s3-client';
 import {
-  EntityNotification,
   getNormalisedNotificationPayload,
-  isCaseNotification,
+  SupportedNotification,
 } from './entityNotification';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { getTwilioAccountSidFromHrmAccountId } from '@tech-matters/types/dist/HrmAccountId';
+import { EntityType } from '@tech-matters/hrm-types';
 
 const processRecord = async (record: SQSRecord) => {
-  const notification: EntityNotification = JSON.parse(record.body);
+  const notification: SupportedNotification = JSON.parse(record.body);
   console.debug('Processing message:', record.messageId);
   const bucket = await getSsmParameter(
     `/${process.env.NODE_ENV!}/s3/${getTwilioAccountSidFromHrmAccountId(
@@ -52,7 +52,7 @@ const processRecord = async (record: SQSRecord) => {
   let outputObject: any = payload;
 
   // Only provide ids of connected contacts in case objects
-  if (isCaseNotification(notification)) {
+  if (notification.entityType === EntityType.Case) {
     outputObject = {
       ...notification.case,
       connectedContacts: notification.case.connectedContacts.map(c => c.id),

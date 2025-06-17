@@ -14,76 +14,82 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import parseISO from 'date-fns/parseISO';
-import { HrmAccountId } from '@tech-matters/types';
 
-import { Contact, CaseService, ProfileWithRelationships } from '@tech-matters/hrm-types';
+import {
+  Contact,
+  CaseService,
+  ProfileWithRelationships,
+  NotificationOperation,
+  EntityNotificationPayload,
+  EntityType,
+} from '@tech-matters/hrm-types';
 
-type EntityNotificationHeaders = {
-  accountSid: HrmAccountId;
-  operation: 'update' | 'create' | 'reexport';
-};
-type ContactNotification = EntityNotificationHeaders & {
-  contact: Contact;
-};
-type CaseNotification = EntityNotificationHeaders & {
-  case: CaseService & { connectedContacts: Contact[] };
-};
-type ProfileNotification = EntityNotificationHeaders & {
-  profile: ProfileWithRelationships;
-};
-export type EntityNotification =
-  | ContactNotification
-  | CaseNotification
-  | ProfileNotification;
-const isContactNotification = (
-  notification: EntityNotification,
-): notification is ContactNotification =>
-  Boolean((notification as ContactNotification).contact);
-export const isCaseNotification = (
-  notification: EntityNotification,
-): notification is CaseNotification => Boolean((notification as CaseNotification).case);
-const isProfileNotification = (
-  notification: EntityNotification,
-): notification is ProfileNotification =>
-  Boolean((notification as ProfileNotification).profile);
+type SupportedNotificationOperation = Extract<
+  NotificationOperation,
+  'update' | 'create' | 'reindex'
+>;
 
-type NormalisedNotificationPayload = {
-  payload: Contact | ProfileWithRelationships | CaseService | null;
-  timestamp: Date;
-  entityType: 'contact' | 'case' | 'profile' | 'invalid';
+export type SupportedNotification = EntityNotificationPayload[EntityType] & {
+  operation: SupportedNotificationOperation;
 };
+
+type NormalisedNotificationPayload =
+  | {
+      payload: Contact;
+      timestamp: Date;
+      entityType: EntityType.Contact;
+    }
+  | {
+      payload: CaseService;
+      timestamp: Date;
+      entityType: EntityType.Case;
+    }
+  | {
+      payload: ProfileWithRelationships;
+      timestamp: Date;
+      entityType: EntityType.Profile;
+    }
+  | {
+      payload: null;
+      timestamp: Date;
+      entityType: 'invalid';
+    };
 
 export const getNormalisedNotificationPayload = (
-  notification: EntityNotification,
+  notification: SupportedNotification,
 ): NormalisedNotificationPayload => {
-  if (isContactNotification(notification)) {
-    return {
-      entityType: 'contact',
-      timestamp: parseISO(
-        notification.contact.updatedAt ?? notification.contact.createdAt,
-      ),
-      payload: notification.contact,
-    };
+  switch (notification.entityType) {
+    case EntityType.Contact: {
+      return {
+        entityType: EntityType.Contact,
+        timestamp: parseISO(
+          notification.contact.updatedAt ?? notification.contact.createdAt,
+        ),
+        payload: notification.contact,
+      };
+    }
+    case EntityType.Case: {
+      return {
+        entityType: EntityType.Case,
+        timestamp: parseISO(notification.case.updatedAt ?? notification.case.createdAt),
+        payload: notification.case,
+      };
+    }
+    case EntityType.Profile: {
+      return {
+        entityType: EntityType.Profile,
+        timestamp: parseISO(
+          notification.profile.updatedAt ?? notification.profile.createdAt,
+        ),
+        payload: notification.profile,
+      };
+    }
+    default: {
+      return {
+        timestamp: new Date(NaN),
+        entityType: 'invalid',
+        payload: null,
+      };
+    }
   }
-  if (isCaseNotification(notification)) {
-    return {
-      entityType: 'case',
-      timestamp: parseISO(notification.case.updatedAt ?? notification.case.createdAt),
-      payload: notification.case,
-    };
-  }
-  if (isProfileNotification(notification)) {
-    return {
-      entityType: 'profile',
-      timestamp: parseISO(
-        notification.profile.updatedAt ?? notification.profile.createdAt,
-      ),
-      payload: notification.profile,
-    };
-  }
-  return {
-    timestamp: new Date(NaN),
-    entityType: 'invalid',
-    payload: null,
-  };
 };
