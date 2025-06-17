@@ -15,7 +15,7 @@
  */
 
 import format from 'date-fns/format';
-import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
+import type { SQSEvent, SQSRecord } from 'aws-lambda';
 import { putS3Object } from '@tech-matters/s3-client';
 import {
   getNormalisedNotificationPayload,
@@ -70,27 +70,27 @@ const processRecord = async (record: SQSRecord) => {
 };
 
 export const handler = async (event: SQSEvent): Promise<any> => {
-  const response: SQSBatchResponse = { batchItemFailures: [] };
-
   try {
     const promises = event.Records.map(async sqsRecord => processRecord(sqsRecord));
 
-    await Promise.all(promises);
+    const rejectedResults = (await Promise.allSettled(promises)).filter(
+      r => r.status === 'rejected',
+    );
 
-    return response;
+    return {
+      batchItemFailures: rejectedResults.map((_, idx) => event.Records[idx].messageId),
+    };
   } catch (err) {
     console.error('Failed to process sqs messages', event, err);
 
-    // We fail all messages here and rely on SQS retry/DLQ because we hit
-    // a fatal error before we could process any of the messages. Once we
-    // start using this lambda, we'll need to be sure the internal retry
-    // logic is robust enough to handle transient errors.
-    response.batchItemFailures = event.Records.map(record => {
+    // We fail all messages here because we hit
+    // a fatal error before we could process any of the messages.
+    const batchItemFailures = event.Records.map(record => {
       return {
         itemIdentifier: record.messageId,
       };
     });
 
-    return response;
+    return { batchItemFailures };
   }
 };
