@@ -107,7 +107,7 @@ const caseIndexingInputData = async (
 type IndexingInputData = ContactIndexingInputData | CaseIndexingInputData;
 const indexingInputDataMapper = async (
   m: MessageWithMeta,
-): Promise<IndexingInputData> => {
+): Promise<IndexingInputData | undefined> => {
   const { message, messageId } = m;
   if (message.operation === 'delete') {
     switch (message.entityType) {
@@ -128,6 +128,13 @@ const indexingInputDataMapper = async (
       return caseIndexingInputData({ message, messageId });
     }
   }
+
+  console.info(
+    `Unsupported entity type: ${
+      (message as any).entityType
+    } for message: ${messageId}, op: ${(message as any).operation}, ignoring`,
+  );
+  return undefined;
 };
 
 const generatePayloadFromContact = (
@@ -249,7 +256,10 @@ const messagesToPayloadsByIndex = async (
 ): Promise<PayloadsByIndex> => {
   const indexingInputData = await Promise.all(messages.map(indexingInputDataMapper));
 
-  return indexingInputData.reduce(messagesToPayloadReducer, {});
+  return (indexingInputData.filter(Boolean) as IndexingInputData[]).reduce(
+    messagesToPayloadReducer,
+    {},
+  );
 };
 
 export const messagesToPayloadsByAccountSid = async (

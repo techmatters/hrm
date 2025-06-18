@@ -18,6 +18,7 @@
 import yargs from 'yargs';
 
 const main = () => {
+  console.info('Admin CLI');
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   yargs
     .commandDir('admin-commands', {

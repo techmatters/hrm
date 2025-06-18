@@ -78,7 +78,7 @@ const publishToSns = async ({
       topicArn,
       message: JSON.stringify({ ...payload, entityType }),
       messageGroupId,
-      messageAttributes: { operation: payload.operation },
+      messageAttributes: { operation: payload.operation, entityType },
     };
     console.debug(
       'Publishing HRM entity update:',

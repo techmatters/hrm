@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const command = 'republish <command>';
+export const command = 'reexport <command>';
 export const desc = 'admin endpoints for reexporting contacts';
 
 export const builder = function (yargs) {

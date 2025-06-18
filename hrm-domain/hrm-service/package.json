@@ -36,7 +36,8 @@
     "lint": "eslint --ext js,ts .",
     "lint:fix": "npm run lint -- --fix",
     "ssm:local": "run-s ssm:local:*",
-    "ssm:local:env": "docker run --rm -v ~/.aws:/home/aws/.aws -e AWS_DEFAULT_REGION -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY interrobangc/awscli2 ssm get-parameter --name \"/local/hrm/hrm-service/.env\" --with-decryption --query \"Parameter.Value\" --output text > ./dist/.env"
+    "ssm:local:env": "docker run --rm -v ~/.aws:/home/aws/.aws -e AWS_DEFAULT_REGION -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY interrobangc/awscli2 ssm get-parameter --name \"/local/hrm/hrm-service/.env\" --with-decryption --query \"Parameter.Value\" --output text > ./dist/.env",
+    "admin-cli": "tsx scripts/admin-cli.ts"
   },
   "repository": {
     "type": "git",

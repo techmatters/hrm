@@ -20,7 +20,7 @@ import type { HrmAccountId } from '@tech-matters/types';
 
 export const command = 'hrm';
 export const describe =
-  'Reexport contacts, cases and profiles to the configured exports S3 bucket for the specified account';
+  'Reexport contacts, cases and profiles to the configured exports S3 bucket for the specified account.';
 
 export const builder = {
   co: {
@@ -62,13 +62,11 @@ export const builder = {
   f: {
     alias: 'dateFrom',
     describe: 'start date (e.g. 2024-01-01)',
-    demandOption: true,
     type: 'string',
   },
   t: {
     alias: 'dateTo',
     describe: 'end date (e.g. 2024-12-31)',
-    demandOption: true,
     type: 'string',
   },
 };
@@ -81,7 +79,8 @@ const requestReexport = async (
   dateFrom: string,
   dateTo: string,
 ) => {
-  const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reexport');
+  const url = getAdminV0URL(internalResourcesUrl, accountSid, `/${entityType}/reexport`);
+  console.info(`Submitting request to ${url}`);
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -93,11 +92,11 @@ const requestReexport = async (
 
   if (!response.ok) {
     console.error(
-      `Failed to submit request for reexporting contacts: ${response.statusText}`,
+      `Failed to submit request for reexporting ${entityType}: ${response.statusText}`,
     );
   } else {
-    console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
-    console.log(await response.text());
+    console.info(`Republishing ${entityType} from ${dateFrom} to ${dateTo}...`);
+    console.info(await response.text());
   }
 };
 
@@ -112,7 +111,11 @@ export const handler = async ({
   profiles,
 }) => {
   // If no entity types are set, assume we want to renotify them all
+  console.info('Reexporting entities');
   const allEntities = !contacts && !profiles && !cases;
+  if (allEntities) {
+    console.info('No entity type specified so re-exporting all');
+  }
   try {
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
@@ -151,7 +154,7 @@ export const handler = async ({
 
     if (profiles || allEntities) {
       await requestReexport(
-        'cases',
+        'profiles',
         internalResourcesUrl,
         accountSid,
         authKey,
