@@ -34,7 +34,7 @@ export const renotifyProfilesStream = async (
   dateTo: string,
   operation: ManuallyTriggeredNotificationOperation,
 ): Promise<Transform> => {
-  if (manuallyTriggeredNotificationOperations.includes(operation)) {
+  if (!manuallyTriggeredNotificationOperations.includes(operation)) {
     throw new Error(`Invalid operation: ${operation}`);
   }
   const filters = {
