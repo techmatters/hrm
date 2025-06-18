@@ -76,6 +76,7 @@ export const handler = async ({
   cases,
 }) => {
   try {
+    const allEntities = !contacts && !cases;
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
       RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
@@ -88,8 +89,7 @@ export const handler = async ({
       staticKeyPattern,
       assumeRoleParams,
     });
-
-    if (contacts) {
+    if (contacts || allEntities) {
       const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/republish');
       const response = await fetch(url, {
         method: 'POST',

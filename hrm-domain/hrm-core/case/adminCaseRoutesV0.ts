@@ -32,7 +32,7 @@ adminCasesRouter.post(
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const notifyOperation = req.params
-      .broadcastType as ManuallyTriggeredNotificationOperation;
+      .notifyOperation as ManuallyTriggeredNotificationOperation;
     if (!manuallyTriggeredNotificationOperations.includes(notifyOperation)) {
       throw createError(404);
     }

@@ -15,7 +15,8 @@
  */
 
 // TODO: needs to be converted to aws-sdk-v3
-import { ECS, EC2, S3, STS } from 'aws-sdk';
+import { ECS, EC2, STS } from 'aws-sdk';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 /**
  * Returns the private IP address of the first task defined under the cluster - serviceName service discovery registry
@@ -86,51 +87,11 @@ const findTaskPrivateIp = async ({
   return privateIpAddress;
 };
 
-const getHrmEnvVar = async ({
-  region,
-  environment,
-  staticKeyPattern,
-  credentials,
-}: {
-  region: string;
-  environment: string;
-  staticKeyPattern: RegExp;
-  credentials: {
-    accessKeyId: string;
-    secretAccessKey: string;
-    sessionToken: string;
-  };
-}) => {
-  const s3 = new S3({
-    credentials,
-    region,
-  });
-
-  const { Body } = await s3
-    .getObject({
-      Bucket: `tl-hrm-vars-${environment}${region === 'us-east-1' ? '' : `-${region}`}`,
-      Key: `${environment}.env`,
-    })
-    .promise();
-  if (!Body) {
-    throw new Error('Failed to load environment variables file from S3');
-  }
-
-  const authKey = Body.toString().match(staticKeyPattern)?.groups?.key;
-  if (!authKey) {
-    throw new Error(
-      `Found the HRM .env file but failed to find the auth key under a ${staticKeyPattern} entry`,
-    );
-  }
-
-  return authKey;
-};
 
 export const getHRMInternalEndpointAccess = async ({
   region,
   environment,
   assumeRoleParams,
-  staticKeyPattern,
 }: {
   region: string;
   environment: string;
@@ -158,12 +119,9 @@ export const getHRMInternalEndpointAccess = async ({
   internalResourcesUrl!.hostname = privateIpAddress;
   internalResourcesUrl!.port = '8081';
 
-  const authKey = await getHrmEnvVar({
-    region,
-    environment,
-    staticKeyPattern,
-    credentials,
-  });
+  const authKey = await getSsmParameter(
+    `/${environment}/hrm/service/${region}/static_key_admin_hrm`,
+  );
 
   return {
     internalResourcesUrl,

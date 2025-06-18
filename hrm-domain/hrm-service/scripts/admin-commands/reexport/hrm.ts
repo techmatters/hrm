@@ -94,6 +94,7 @@ const requestReexport = async (
     console.error(
       `Failed to submit request for reexporting ${entityType}: ${response.statusText}`,
     );
+    console.info(await response.text());
   } else {
     console.info(`Republishing ${entityType} from ${dateFrom} to ${dateTo}...`);
     console.info(await response.text());
