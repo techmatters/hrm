@@ -16,12 +16,10 @@
 import parseISO from 'date-fns/parseISO';
 
 import {
-  Contact,
-  CaseService,
-  ProfileWithRelationships,
   NotificationOperation,
   EntityNotificationPayload,
   EntityType,
+  EntityByEntityType,
 } from '@tech-matters/hrm-types';
 
 type SupportedNotificationOperation = Extract<
@@ -35,17 +33,17 @@ export type SupportedNotification = EntityNotificationPayload[EntityType] & {
 
 type NormalisedNotificationPayload =
   | {
-      payload: Contact;
+      payload: EntityByEntityType[EntityType.Contact];
       timestamp: Date;
       entityType: EntityType.Contact;
     }
   | {
-      payload: CaseService;
+      payload: EntityByEntityType[EntityType.Case];
       timestamp: Date;
       entityType: EntityType.Case;
     }
   | {
-      payload: ProfileWithRelationships;
+      payload: EntityByEntityType[EntityType.Profile];
       timestamp: Date;
       entityType: EntityType.Profile;
     }
