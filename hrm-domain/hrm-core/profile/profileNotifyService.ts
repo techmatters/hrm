@@ -64,14 +64,14 @@ export const renotifyProfilesStream = async (
 
           this.push(
             `${new Date().toISOString()}, ${accountSid}, profile id: ${
-              profileRecord.id
+              profile.id
             } Success, MessageId ${MessageId}
               \n`,
           );
         } catch (err) {
           this.push(
             `${new Date().toISOString()}, ${accountSid}, profile id: ${
-              profileRecord.id
+              profile.id
             } Error: ${err.message?.replace('"', '""') || String(err)}\n`,
           );
         }

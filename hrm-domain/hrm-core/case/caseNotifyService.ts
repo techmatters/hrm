@@ -21,12 +21,12 @@ import {
 } from '@tech-matters/hrm-types';
 
 import { caseRecordToCase, getTimelineForCase } from './caseService';
-import { publishProfileChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
 import formatISO from 'date-fns/formatISO';
 import { CaseRecord, streamCasesForRenotifying } from './caseDataAccess';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { Transform } from 'stream';
+import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
@@ -70,10 +70,10 @@ export const renotifyCasesStream = async (
       async transform(caseRecord: CaseRecord, _, callback) {
         const caseObj = caseRecordToCase(caseRecord);
         try {
-          const { MessageId } = await publishProfileChangeNotification({
+          const { MessageId } = await publishCaseChangeNotification({
             accountSid,
             timeline: await getTimelineForCase(accountSid, maxPermissions, caseObj),
-            case: caseObj,
+            caseObj,
             operation,
           });
 

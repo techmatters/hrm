@@ -160,24 +160,24 @@ export const publishContactChangeNotification = async ({
   return publishEntityChangeNotification(accountSid, 'contact', contact, operation);
 };
 
-export const publishProfileChangeNotification = async ({
+export const publishCaseChangeNotification = async ({
   accountSid,
-  profile,
+  caseObj,
   operation,
   timeline,
 }: {
   accountSid: AccountSID;
-  profile: ProfileWithRelationships;
+  caseObj: CaseService;
   timeline: TimelineActivity<any>[];
   operation: NotificationOperation;
 }) => {
   console.info(
     `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Profile ID: ${
-      profile.id
+      caseObj.id
     }, Updated / Created At: ${
-      profile.updatedAt ?? caseObj.createdAt
-    }. Operation: ${operation}. (key: ${accountSid}/${profile.id}/${
-      profile.updatedAt ?? caseObj.createdAt
+      caseObj.updatedAt ?? caseObj.createdAt
+    }. Operation: ${operation}. (key: ${accountSid}/${caseObj.id}/${
+      caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
   return publishEntityChangeNotification(
@@ -190,4 +190,25 @@ export const publishProfileChangeNotification = async ({
     },
     operation,
   );
+};
+
+export const publishProfileChangeNotification = async ({
+  accountSid,
+  profile,
+  operation,
+}: {
+  accountSid: AccountSID;
+  profile: any;
+  operation: NotificationOperation;
+}) => {
+  console.info(
+    `[entity-notify-profiles]: Indexing Request Started. Account SID: ${accountSid}, Profile ID: ${
+      profile.id
+    }, Updated / Created At: ${
+      profile.updatedAt ?? profile.createdAt
+    }. Operation: ${operation}. (key: ${accountSid}/${profile.id}/${
+      profile.updatedAt ?? profile.createdAt
+    }/${operation})`,
+  );
+  return publishEntityChangeNotification(accountSid, 'profile', profile, operation);
 };
