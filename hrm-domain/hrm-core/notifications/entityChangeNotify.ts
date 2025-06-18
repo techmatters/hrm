@@ -86,35 +86,49 @@ const getPayload = <ET extends EntityType>({
   accountSid: HrmAccountId;
   entityType: ET;
   entity: EntityByEntityType[ET];
-  operation: Exclude<NotificationOperation, 'delete'>;
-}) => {
-  switch (entityType) {
-    case EntityType.Contact: {
-      return {
-        accountSid,
-        entityType,
-        operation,
-        contact: entity,
-      } as EntityNotificationPayload[EntityType.Contact]; // typecast to conform TS, only valid parameters are accepted anyways
+  operation: NotificationOperation;
+}): EntityNotificationPayload[EntityType] => {
+  switch (operation) {
+    case 'delete': {
+      return { accountSid, entityType, id: entity.id.toString(), operation };
     }
-    case EntityType.Case: {
-      return {
-        accountSid,
-        entityType,
-        operation,
-        case: entity,
-      } as EntityNotificationPayload[EntityType.Case]; // typecast to conform TS, only valid parameters are accepted anyways
-    }
-    case EntityType.Profile: {
-      return {
-        accountSid,
-        entityType,
-        operation,
-        profile: entity,
-      } as EntityNotificationPayload[EntityType.Profile]; // typecast to conform TS, only valid parameters are accepted anyways
+    case 'create':
+    case 'update':
+    case 'reindex':
+    case 'republish':
+    case 'reexport': {
+      switch (entityType) {
+        case EntityType.Contact: {
+          return {
+            accountSid,
+            entityType,
+            operation,
+            contact: entity,
+          } as EntityNotificationPayload[EntityType.Contact]; // typecast to conform TS, only valid parameters are accepted anyways
+        }
+        case EntityType.Case: {
+          return {
+            accountSid,
+            entityType,
+            operation,
+            case: entity,
+          } as EntityNotificationPayload[EntityType.Case]; // typecast to conform TS, only valid parameters are accepted anyways
+        }
+        case EntityType.Profile: {
+          return {
+            accountSid,
+            entityType,
+            operation,
+            profile: entity,
+          } as EntityNotificationPayload[EntityType.Profile]; // typecast to conform TS, only valid parameters are accepted anyways
+        }
+        default: {
+          return assertExhaustive(entityType);
+        }
+      }
     }
     default: {
-      return assertExhaustive(entityType);
+      return assertExhaustive(operation);
     }
   }
 };
@@ -131,23 +145,11 @@ const publishEntityChangeNotification = async <ET extends EntityType>({
   operation: NotificationOperation;
 }) => {
   const messageGroupId = `${accountSid}-${entityType}-${entity.id.toString()}`;
-  let publishResponse: { MessageId?: string };
-  if (operation === 'delete') {
-    publishResponse = await publishToSns({
-      payload: { accountSid, entityType, id: entity.id.toString(), operation },
-      messageGroupId,
-    });
-  } else {
-    publishResponse = await publishToSns({
-      payload: getPayload({
-        accountSid,
-        entity,
-        entityType,
-        operation,
-      }),
-      messageGroupId,
-    });
-  }
+  const publishResponse = await publishToSns({
+    payload: getPayload({ accountSid, entity, entityType, operation }),
+    messageGroupId,
+  });
+
   return publishResponse;
 };
 
