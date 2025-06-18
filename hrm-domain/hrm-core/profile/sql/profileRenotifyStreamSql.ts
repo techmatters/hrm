@@ -19,7 +19,7 @@ import { getProfilesSqlBase } from './profile-get-sql';
 const RENOTIFY_PROFILE_SELECT_CLAUSE = `SELECT *
                                         FROM "Profiles" profiles
                                         WHERE profiles."accountSid" = $<accountSid>
-                                            AND COALESCE(profiles."updatedAt", profiles."createdAt") BETWEEN COALESCE($<dateFrom>, '-infinity') AND COALESCE($<dateTo>, 'infinity')`;
+                                            AND COALESCE(profiles."updatedAt", profiles."createdAt") BETWEEN COALESCE($<dateFrom>::TIMESTAMP WITH TIME ZONE, '-infinity') AND COALESCE($<dateTo>::TIMESTAMP WITH TIME ZONE, 'infinity')`;
 
 export const getProfilesToRenotifySql = () =>
   `${getProfilesSqlBase(RENOTIFY_PROFILE_SELECT_CLAUSE, true)}
