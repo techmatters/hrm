@@ -60,7 +60,7 @@ export const executeBulk = async <T>({
       } else {
         return [
           { index: { _index: index, _id: documentItem.id } },
-          indexConfig.convertToIndexDocument(documentItem.document, index),
+          indexConfig.convertToIndexDocument(documentItem.document, index).unwrap(), // unwrap will force an error aborting the entire bulk, maybe we should handle more gracefully
         ];
       }
     },

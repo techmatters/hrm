@@ -14,17 +14,28 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { Script } from '@elastic/elasticsearch/lib/api/types';
-import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
-import { DeleteContactMessage, IndexPayload, IndexPayloadContact } from './payload';
+import {
+  CreateIndexConvertedDocument,
+  CreateIndexConvertedDocumentError,
+} from '@tech-matters/elasticsearch-client';
+import { IndexPayload, IndexPayloadContact } from './payload';
 import {
   CaseDocument,
   ContactDocument,
   HRM_CASES_INDEX_TYPE,
 } from './hrmIndexDocumentMappings';
 import { convertContactToContactDocument } from './convertToIndexDocument';
+import {
+  assertExhaustive,
+  ErrorResult,
+  newErr,
+  newOk,
+  Result,
+} from '@tech-matters/types';
+import { EntityType } from '@tech-matters/hrm-types';
 
 const convertContactToCaseScriptUpdate = (
-  payload: IndexPayloadContact | DeleteContactMessage,
+  payload: IndexPayloadContact,
 ): {
   documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
   scriptUpdate: Script;
@@ -75,34 +86,53 @@ const convertContactToCaseScriptUpdate = (
 
       return { documentUpdate: {}, scriptUpdate };
     }
+    default: {
+      return assertExhaustive(payload);
+    }
   }
 };
 
 const convertToCaseScriptUpdate = (
   payload: IndexPayload,
-): {
-  documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
-  scriptUpdate: Script;
-} => {
-  if (payload.entityType === 'contact') {
-    return convertContactToCaseScriptUpdate(payload);
+): Result<
+  ErrorResult<CreateIndexConvertedDocumentError>,
+  {
+    documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
+    scriptUpdate: Script;
+  }
+> => {
+  if (payload.entityType === EntityType.Contact) {
+    return newOk({ data: convertContactToCaseScriptUpdate(payload) });
   }
 
-  throw new Error(
-    `convertToCaseScriptDocument not implemented for type ${payload.entityType} and operation ${payload.operation}`,
-  );
+  return newErr({
+    error: 'CreateIndexConvertedDocumentError',
+    message: `convertToCaseScriptDocument not implemented for type ${payload.entityType} and operation ${payload.operation}`,
+    extraProperties: {
+      payload,
+    },
+  });
 };
 
 export const convertToScriptUpdate = (
   payload: IndexPayload,
   indexName: string,
-): {
-  documentUpdate: CreateIndexConvertedDocument<ContactDocument | CaseDocument>;
-  scriptUpdate: Script;
-} => {
+): Result<
+  ErrorResult<CreateIndexConvertedDocumentError>,
+  {
+    documentUpdate: CreateIndexConvertedDocument<ContactDocument | CaseDocument>;
+    scriptUpdate: Script;
+  }
+> => {
   if (indexName.endsWith(HRM_CASES_INDEX_TYPE)) {
     return convertToCaseScriptUpdate(payload);
   }
 
-  throw new Error(`convertToScriptDocument not implemented for index ${indexName}`);
+  return newErr({
+    error: 'CreateIndexConvertedDocumentError',
+    message: `convertToScriptDocument not implemented for index ${indexName}`,
+    extraProperties: {
+      payload,
+    },
+  });
 };

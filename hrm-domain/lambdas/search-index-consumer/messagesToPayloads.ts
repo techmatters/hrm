@@ -19,13 +19,16 @@ import {
   HRM_CONTACTS_INDEX_TYPE,
   type IndexPayload,
   type IndexContactMessage,
-  type DeleteContactMessage,
   type IndexCaseMessage,
-  type DeleteCaseMessage,
 } from '@tech-matters/hrm-search-config';
-import { type HrmAccountId } from '@tech-matters/types';
-import { ExportTranscriptDocument, isS3StoredTranscript } from '@tech-matters/hrm-types';
+import { assertExhaustive, type HrmAccountId } from '@tech-matters/types';
+import {
+  EntityType,
+  ExportTranscriptDocument,
+  isS3StoredTranscript,
+} from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
+import { SupportedNotificationOperation } from '@tech-matters/hrm-search-config/payload';
 
 /**
  * A payload is single object that should be indexed in a particular index. A single message might represent multiple payloads.
@@ -54,15 +57,18 @@ export type PayloadsByAccountSid = Record<HrmAccountId, PayloadsByIndex>;
 /**
  * ContactIndexingInputData type represents an "index contact" message, plus contact specific data that might be collected from other places other than the HRM DB (e.g. transcripts fetched from S3)
  */
-type ContactIndexingInputData = MessageWithMeta & {
-  message: IndexContactMessage | DeleteContactMessage;
-} & {
-  transcript: string | null;
-};
+type ContactIndexingInputData = MessageWithMeta &
+  ({
+    message: IndexContactMessage;
+  } & {
+    transcript: string | null;
+  });
 
 const contactIndexingInputData = async (
   m: MessageWithMeta & {
-    message: IndexContactMessage;
+    message: IndexContactMessage & {
+      operation: Exclude<SupportedNotificationOperation, 'delete'>;
+    };
   },
 ): Promise<ContactIndexingInputData> => {
   let transcript: string | null = null;
@@ -95,7 +101,7 @@ const contactIndexingInputData = async (
  * CaseIndexingInputData type represents an "index case" message, plus case specific data that might be collected from other places other than the HRM DB (no instances of such data right now, defining the type for completeness)
  */
 type CaseIndexingInputData = MessageWithMeta & {
-  message: IndexCaseMessage | DeleteCaseMessage;
+  message: IndexCaseMessage;
 };
 
 const caseIndexingInputData = async (
@@ -111,21 +117,27 @@ const indexingInputDataMapper = async (
   const { message, messageId } = m;
   if (message.operation === 'delete') {
     switch (message.entityType) {
-      case 'contact': {
-        return { message, messageId } as ContactIndexingInputData;
+      case EntityType.Contact: {
+        return { message, messageId, transcript: null };
       }
-      case 'case': {
-        return { message, messageId } as CaseIndexingInputData;
+      case EntityType.Case: {
+        return { message, messageId };
+      }
+      default: {
+        return assertExhaustive(message);
       }
     }
   }
 
   switch (message.entityType) {
-    case 'contact': {
+    case EntityType.Contact: {
       return contactIndexingInputData({ message, messageId });
     }
-    case 'case': {
+    case EntityType.Case: {
       return caseIndexingInputData({ message, messageId });
+    }
+    default: {
+      return assertExhaustive(message);
     }
   }
 };
@@ -179,6 +191,9 @@ const generatePayloadFromContact = (
           },
         ],
       };
+    }
+    default: {
+      return assertExhaustive(m.message);
     }
   }
 };
@@ -234,12 +249,15 @@ const messagesToPayloadReducer = (
   const { message, messageId } = currM;
 
   switch (message.entityType) {
-    case 'contact': {
+    case EntityType.Contact: {
       const { transcript } = currM as ContactIndexingInputData;
       return generatePayloadFromContact(accum, { message, messageId, transcript });
     }
-    case 'case': {
+    case EntityType.Case: {
       return generatePayloadFromCase(accum, { message, messageId });
+    }
+    default: {
+      return assertExhaustive(message);
     }
   }
 };

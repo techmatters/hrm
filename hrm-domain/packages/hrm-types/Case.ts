@@ -15,6 +15,8 @@
  */
 
 import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
+import { Contact } from './Contact';
+import { CaseSection } from './CaseSection';
 
 export type PrecalculatedCasePermissionConditions = {
   isCaseContactOwner: boolean; // Does the requesting user own any of the contacts currently connected to the case?
@@ -48,4 +50,9 @@ type PrecalculatedPermissions = Record<'userOwnsContact', boolean>;
 export type CaseService = CaseRecordCommon & {
   id: string;
   precalculatedPermissions?: PrecalculatedPermissions;
+};
+
+export type CaseWithLegacySections = CaseService & {
+  sections: Record<string, CaseSection[]>;
+  connectedContacts: Contact[];
 };

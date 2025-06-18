@@ -15,23 +15,37 @@
  */
 import { DeleteResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
+import { ErrorResult, newErr, newOk, Result } from '@tech-matters/types';
 
 export type DeleteDocumentExtraParams = {
   id: string;
 };
 
 export type DeleteDocumentParams<T> = PassThroughConfig<T> & DeleteDocumentExtraParams;
-export type DeleteDocumentResponse = DeleteResponse;
+type DeleteDocumentError = 'DeleteDocumentError';
+export type DeleteDocumentResponse = Result<
+  ErrorResult<DeleteDocumentError>,
+  DeleteResponse
+>;
 
 export const deleteDocument = async <T>({
   client,
   id,
   index,
 }: DeleteDocumentParams<T>): Promise<DeleteDocumentResponse> => {
-  return client.delete({
-    index,
-    id,
-  });
+  try {
+    const response = await client.delete({
+      index,
+      id,
+    });
+
+    return newOk({ data: response });
+  } catch (err) {
+    return newErr({
+      error: 'DeleteDocumentError',
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
 };
 
 export default deleteDocument;

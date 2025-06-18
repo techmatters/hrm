@@ -53,12 +53,12 @@ describe('convertIndexDocument', () => {
       ],
     };
 
-    const document = resourceIndexConfiguration.convertToIndexDocument(
+    const documentResult = resourceIndexConfiguration.convertToIndexDocument(
       resource,
       RESOURCE_INDEX_TYPE,
     );
 
-    expect(document).toEqual({
+    expect(documentResult.unwrap()).toEqual({
       id: '1234',
       name: ['Resource'],
       high_boost_global: 'This is the description taxonomy1 free',

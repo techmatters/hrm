@@ -14,8 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
-import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
+import {
+  ErrorResult,
+  FlatResource,
+  newOkFromData,
+  ReferrableResourceAttribute,
+  Result,
+} from '@tech-matters/types';
+import {
+  CreateIndexConvertedDocument,
+  CreateIndexConvertedDocumentError,
+} from '@tech-matters/elasticsearch-client';
 import {
   isHighBoostGlobalField,
   isLowBoostGlobalField,
@@ -26,9 +35,12 @@ import {
 
 export const convertIndexDocument = (
   resource: FlatResource,
-): CreateIndexConvertedDocument<{
-  [key: string]: string | string[] | number | boolean;
-}> => {
+): Result<
+  ErrorResult<CreateIndexConvertedDocumentError>,
+  CreateIndexConvertedDocument<{
+    [key: string]: string | string[] | number | boolean;
+  }>
+> => {
   const { mappingFields } = resourceIndexDocumentMappings;
   const mappedFields: { [key: string]: string | string[] | number | boolean } = {};
   const highBoostGlobal: string[] = [];
@@ -127,11 +139,11 @@ export const convertIndexDocument = (
   pushValueToMappedField({ field: 'id', mapping: mappingFields.id }, id);
   pushValueToMappedField({ field: 'name', mapping: mappingFields.name }, name);
 
-  return {
+  return newOkFromData({
     id,
     name,
     high_boost_global: highBoostGlobal.join(' '),
     low_boost_global: lowBoostGlobal.join(' '),
     ...mappedFields,
-  };
+  });
 };
