@@ -31,10 +31,10 @@ import {
   timelineToLegacyConnectedContacts,
 } from '../case/caseSection/timelineToLegacyCaseProperties';
 
-const getSnsSsmPath = dataType =>
+const getSnsSsmPath = (entityType: EntityType) =>
   `/${process.env.NODE_ENV}/${
     process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-  }/hrm/${dataType}/notifications-sns-topic-arn`;
+  }/hrm/${entityType}/notifications-sns-topic-arn`;
 
 const publishToSns = async <ET extends EntityType>({
   payload,
