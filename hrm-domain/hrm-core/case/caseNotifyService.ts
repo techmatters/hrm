@@ -40,14 +40,16 @@ export const renotifyCasesStream = async (
   if (!manuallyTriggeredNotificationOperations.includes(operation)) {
     throw new Error(`Invalid operation: ${operation}`);
   }
+  const from = dateFrom ? formatISO(new Date(dateFrom)) : '-infinity';
+  const to = dateTo ? formatISO(new Date(dateTo)) : 'infinity';
   const filters = {
     createdAt: {
-      from: formatISO(new Date(dateFrom)),
-      to: formatISO(new Date(dateTo)),
+      from,
+      to,
     },
     updatedAt: {
-      from: formatISO(new Date(dateFrom)),
-      to: formatISO(new Date(dateTo)),
+      from,
+      to,
     },
   };
 
