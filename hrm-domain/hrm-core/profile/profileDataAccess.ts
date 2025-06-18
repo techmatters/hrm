@@ -529,16 +529,15 @@ export const streamProfileForRenotifying = async ({
   filters: { dateTo: string; dateFrom: string };
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
-  const qs = new QueryStream(
-    pgp.as.format(getProfilesToRenotifySql(), { accountSid, dateTo, dateFrom }),
-    [],
-    {
-      batchSize,
-    },
-  );
-
+  const sql = pgp.as.format(getProfilesToRenotifySql(), { accountSid, dateTo, dateFrom });
+  console.debug(sql);
+  const qs = new QueryStream(sql, [], {
+    batchSize,
+  });
+  console.debug('qs:', qs);
   const db = await getDbForAccount(accountSid);
   // Expose the readable stream to the caller as a promise for further pipelining
+  console.debug('db:', db);
   return new Promise(resolve => {
     db.stream(qs, resultStream => {
       resolve(resultStream);

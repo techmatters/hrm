@@ -162,22 +162,22 @@ export const publishContactChangeNotification = async ({
 
 export const publishProfileChangeNotification = async ({
   accountSid,
-  case: caseObj,
+  profile,
   operation,
   timeline,
 }: {
   accountSid: AccountSID;
-  case: CaseService;
+  profile: ProfileWithRelationships;
   timeline: TimelineActivity<any>[];
   operation: NotificationOperation;
 }) => {
   console.info(
-    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
-      caseObj.id
+    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Profile ID: ${
+      profile.id
     }, Updated / Created At: ${
-      caseObj.updatedAt ?? caseObj.createdAt
-    }. Operation: ${operation}. (key: ${accountSid}/${caseObj.id}/${
-      caseObj.updatedAt ?? caseObj.createdAt
+      profile.updatedAt ?? caseObj.createdAt
+    }. Operation: ${operation}. (key: ${accountSid}/${profile.id}/${
+      profile.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
   return publishEntityChangeNotification(

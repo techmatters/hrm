@@ -54,9 +54,13 @@ export const renotifyProfilesStream = async (
     new Transform({
       objectMode: true,
       highWaterMark,
-      async transform(profileRecord: any, _, callback) {
+      async transform(profile: any, _, callback) {
         try {
-          const { MessageId } = await publishProfileChangeNotification(profileRecord);
+          const { MessageId } = await publishProfileChangeNotification({
+            accountSid,
+            operation,
+            profile,
+          });
 
           this.push(
             `${new Date().toISOString()}, ${accountSid}, profile id: ${
@@ -66,7 +70,7 @@ export const renotifyProfilesStream = async (
           );
         } catch (err) {
           this.push(
-            `${new Date().toISOString()}, ${accountSid}, case id: ${
+            `${new Date().toISOString()}, ${accountSid}, profile id: ${
               profileRecord.id
             } Error: ${err.message?.replace('"', '""') || String(err)}\n`,
           );
