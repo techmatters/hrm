@@ -15,7 +15,6 @@
  */
 
 import { ProfileWithRelationships } from '@tech-matters/hrm-types';
-import { enablePublishHrmSearchIndex } from '../featureFlags';
 import { publishEntityChangeNotification } from '../notifications/entityChangeNotify';
 
 type NotificationOperation = 'create' | 'update';
@@ -30,10 +29,6 @@ const doProfileChangeNotification =
     profile: ProfileWithRelationships;
   }) => {
     try {
-      if (!enablePublishHrmSearchIndex) {
-        return;
-      }
-
       if (profile) {
         await publishEntityChangeNotification(accountSid, 'profile', profile, operation);
       }

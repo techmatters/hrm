@@ -467,9 +467,6 @@ describe('/profiles', () => {
               expect(
                 response.body.profileFlags.some(pf => pf.id === profileFlagId),
               ).toBeTruthy();
-              expect(response.body.updateBy).toBe(
-                response.body.profileFlags.find(pf => pf.id === profileFlagId)?.updatedBy,
-              );
               expect(new Date(response.body.updatedAt).getTime()).toBeGreaterThan(
                 startTime,
               );

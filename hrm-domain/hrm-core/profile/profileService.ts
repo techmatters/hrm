@@ -351,15 +351,16 @@ export const createProfileSection = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
   const { content, profileId, sectionType } = payload;
-  const section = profileDB.createProfileSection()(accountSid, {
+  const section = await profileDB.createProfileSection()(accountSid, {
     content,
     profileId,
     sectionType,
     createdBy: user.workerSid,
   });
-  getProfileById()(accountSid, profileId, true).then(profile =>
-    notifyUpdateProfile({ accountSid, profile }),
-  );
+  getProfileById()(accountSid, profileId, true).then(profile => {
+    console.log('Broadcasting profile', JSON.stringify(profile, null, 2));
+    notifyUpdateProfile({ accountSid, profile });
+  });
   return section;
 };
 
@@ -372,13 +373,15 @@ export const updateProfileSectionById = async (
   },
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileSection> => {
-  const section = profileDB.updateProfileSectionById()(accountSid, {
+  const section = await profileDB.updateProfileSectionById()(accountSid, {
     ...payload,
     updatedBy: user.workerSid,
   });
-  getProfileById()(accountSid, payload.profileId, true).then(profile =>
-    notifyUpdateProfile({ accountSid, profile }),
-  );
+
+  getProfileById()(accountSid, payload.profileId, true).then(profile => {
+    console.log('Broadcasting profile', JSON.stringify(profile, null, 2));
+    notifyUpdateProfile({ accountSid, profile });
+  });
   return section;
 };
 
