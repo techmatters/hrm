@@ -377,11 +377,17 @@ export const updateProfileSectionById = async (
     ...payload,
     updatedBy: user.workerSid,
   });
-
-  getProfileById()(accountSid, payload.profileId, true).then(profile => {
-    console.log('Broadcasting profile', JSON.stringify(profile, null, 2));
-    notifyUpdateProfile({ accountSid, profile });
-  });
+  if (section) {
+    const profile = await getProfileById()(accountSid, payload.profileId, true);
+    if (profile) {
+      console.debug('Broadcasting profile', JSON.stringify(profile, null, 2));
+      await notifyUpdateProfile({ accountSid, profile });
+    } else {
+      console.error(
+        `Profile ${payload.profileId} (${accountSid}) not found to broadcast despite successfully updating ${payload.sectionId} on it.`,
+      );
+    }
+  }
   return section;
 };
 
