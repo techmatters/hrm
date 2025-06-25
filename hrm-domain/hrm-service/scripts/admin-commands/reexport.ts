@@ -14,22 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import yargs from 'yargs';
+export const command = 'reexport <command>';
+export const desc = 'admin endpoints for reexporting contacts';
 
-const main = () => {
-  console.info('Admin CLI');
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  yargs
-    .commandDir('admin-commands', {
-      exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
-      extensions: ['ts'],
-    })
-    .scriptName('admin-cli')
-    .demandCommand(1, 'Please provide a valid command')
-    .version(false)
-    .wrap(120)
-    .help().argv;
+export const builder = function (yargs) {
+  return yargs.commandDir('reexport', {
+    exclude: /^(index|_)/,
+    extensions: ['ts'],
+  });
 };
-
-main();

@@ -16,21 +16,28 @@
 
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
+import type { HrmAccountId } from '@tech-matters/types';
 
 export const command = 'hrm';
 export const describe =
-  'Republish contacts (TBD cases) to the data lake based on date range';
+  'Reexport contacts, cases and profiles to the configured exports S3 bucket for the specified account.';
 
 export const builder = {
   co: {
     alias: 'contacts',
-    describe: 'republish contacts',
+    describe: 'reexport contacts',
     type: 'boolean',
     default: false,
   },
   ca: {
     alias: 'cases',
-    describe: 'republish cases',
+    describe: 'reexport cases',
+    type: 'boolean',
+    default: false,
+  },
+  pr: {
+    alias: 'profiles',
+    describe: 'reexport profiles',
     type: 'boolean',
     default: false,
   },
@@ -55,15 +62,43 @@ export const builder = {
   f: {
     alias: 'dateFrom',
     describe: 'start date (e.g. 2024-01-01)',
-    demandOption: true,
     type: 'string',
   },
   t: {
     alias: 'dateTo',
     describe: 'end date (e.g. 2024-12-31)',
-    demandOption: true,
     type: 'string',
   },
+};
+
+const requestReexport = async (
+  entityType: 'contacts' | 'cases' | 'profiles',
+  internalResourcesUrl: URL,
+  accountSid: HrmAccountId,
+  authKey: string,
+  dateFrom: string,
+  dateTo: string,
+) => {
+  const url = getAdminV0URL(internalResourcesUrl, accountSid, `/${entityType}/reexport`);
+  console.info(`Submitting request to ${url}`);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Basic ${authKey}`,
+    },
+    body: JSON.stringify({ dateFrom, dateTo }),
+  });
+
+  if (!response.ok) {
+    console.error(
+      `Failed to submit request for reexporting ${entityType}: ${response.statusText}`,
+    );
+    console.info(await response.text());
+  } else {
+    console.info(`Republishing ${entityType} from ${dateFrom} to ${dateTo}...`);
+    console.info(await response.text());
+  }
 };
 
 export const handler = async ({
@@ -74,9 +109,15 @@ export const handler = async ({
   dateTo,
   contacts,
   cases,
+  profiles,
 }) => {
+  // If no entity types are set, assume we want to renotify them all
+  console.info('Reexporting entities');
+  const allEntities = !contacts && !profiles && !cases;
+  if (allEntities) {
+    console.info('No entity type specified so re-exporting all');
+  }
   try {
-    const allEntities = !contacts && !cases;
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
       RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
@@ -89,31 +130,40 @@ export const handler = async ({
       staticKeyPattern,
       assumeRoleParams,
     });
-    if (contacts || allEntities) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/republish');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${authKey}`,
-        },
-        body: JSON.stringify({ dateFrom, dateTo }),
-      });
 
-      if (!response.ok) {
-        console.error(
-          `Failed to submit request for republishing contacts: ${response.statusText}`,
-        );
-      } else {
-        console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
-        console.log(await response.text());
-      }
+    if (contacts || allEntities) {
+      await requestReexport(
+        'contacts',
+        internalResourcesUrl,
+        accountSid,
+        authKey,
+        dateFrom,
+        dateTo,
+      );
+    }
+
+    if (cases || allEntities) {
+      await requestReexport(
+        'cases',
+        internalResourcesUrl,
+        accountSid,
+        authKey,
+        dateFrom,
+        dateTo,
+      );
+    }
+
+    if (profiles || allEntities) {
+      await requestReexport(
+        'profiles',
+        internalResourcesUrl,
+        accountSid,
+        authKey,
+        dateFrom,
+        dateTo,
+      );
     }
   } catch (err) {
     console.error(err);
-  }
-
-  if (cases) {
-    console.log('Republishing cases is not yet implemented');
   }
 };

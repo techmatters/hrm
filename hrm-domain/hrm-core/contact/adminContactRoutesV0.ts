@@ -15,17 +15,27 @@
  */
 
 import type { Request, Response, NextFunction } from 'express';
+import {
+  ManuallyTriggeredNotificationOperation,
+  manuallyTriggeredNotificationOperations,
+} from '@tech-matters/hrm-types';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
+import createError from 'http-errors';
 
 const adminContactsRouter = SafeRouter();
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(
-  '/reindex',
+  '/:notifyOperation',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
-    console.log('.......reindexing contacts......', req, res);
+    const notifyOperation = req.params
+      .notifyOperation as ManuallyTriggeredNotificationOperation;
+    if (!manuallyTriggeredNotificationOperations.includes(notifyOperation)) {
+      throw createError(404);
+    }
+    console.log(`.......${notifyOperation}ing contacts......`, req, res);
 
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;
@@ -34,29 +44,7 @@ adminContactsRouter.post(
       hrmAccountId,
       dateFrom,
       dateTo,
-      'reindex',
-    );
-    resultStream.on('error', err => {
-      next(err);
-    });
-    res.status(200).setHeader('Content-Type', 'text/plain');
-    resultStream.pipe(res);
-  },
-);
-
-adminContactsRouter.post(
-  '/republish',
-  publicEndpoint,
-  async (req: Request, res: Response, next: NextFunction) => {
-    console.log('.......republishing contacts......', req, res);
-    const { hrmAccountId } = req;
-    const { dateFrom, dateTo } = req.body;
-
-    const resultStream = await processContactsStream(
-      hrmAccountId,
-      dateFrom,
-      dateTo,
-      'republish',
+      notifyOperation,
     );
     resultStream.on('error', err => {
       next(err);

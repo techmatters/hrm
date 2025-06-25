@@ -14,22 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import yargs from 'yargs';
+import { getProfilesSqlBase } from './profile-get-sql';
 
-const main = () => {
-  console.info('Admin CLI');
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  yargs
-    .commandDir('admin-commands', {
-      exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
-      extensions: ['ts'],
-    })
-    .scriptName('admin-cli')
-    .demandCommand(1, 'Please provide a valid command')
-    .version(false)
-    .wrap(120)
-    .help().argv;
-};
+const RENOTIFY_PROFILE_SELECT_CLAUSE = `SELECT *
+                                        FROM "Profiles" profiles
+                                        WHERE profiles."accountSid" = $<accountSid>
+                                            AND COALESCE(profiles."updatedAt", profiles."createdAt") BETWEEN COALESCE($<dateFrom>::TIMESTAMP WITH TIME ZONE, '-infinity') AND COALESCE($<dateTo>::TIMESTAMP WITH TIME ZONE, 'infinity')`;
 
-main();
+export const getProfilesToRenotifySql = () =>
+  `${getProfilesSqlBase(RENOTIFY_PROFILE_SELECT_CLAUSE, true)}
+  ORDER BY COALESCE(profiles."updatedAt", profiles."createdAt")`;

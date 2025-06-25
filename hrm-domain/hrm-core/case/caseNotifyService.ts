@@ -15,35 +15,46 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
+import {
+  ManuallyTriggeredNotificationOperation,
+  manuallyTriggeredNotificationOperations,
+} from '@tech-matters/hrm-types';
+
 import { caseRecordToCase, getTimelineForCase } from './caseService';
-import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 import { maxPermissions } from '../permissions';
 import formatISO from 'date-fns/formatISO';
-import { CaseRecord, streamCasesForReindexing } from './caseDataAccess';
+import { CaseRecord, streamCasesForRenotifying } from './caseDataAccess';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { Transform } from 'stream';
+import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
-export const reindexCasesStream = async (
+export const renotifyCasesStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
+  operation: ManuallyTriggeredNotificationOperation,
 ): Promise<Transform> => {
+  if (!manuallyTriggeredNotificationOperations.includes(operation)) {
+    throw new Error(`Invalid operation: ${operation}`);
+  }
+  const from = dateFrom ? formatISO(new Date(dateFrom)) : '-infinity';
+  const to = dateTo ? formatISO(new Date(dateTo)) : 'infinity';
   const filters = {
     createdAt: {
-      from: formatISO(new Date(dateFrom)),
-      to: formatISO(new Date(dateTo)),
+      from,
+      to,
     },
     updatedAt: {
-      from: formatISO(new Date(dateFrom)),
-      to: formatISO(new Date(dateTo)),
+      from,
+      to,
     },
   };
 
-  console.debug('Querying DB for cases to index', filters);
-  const casesStream: NodeJS.ReadableStream = await streamCasesForReindexing({
+  console.debug(`Querying DB for cases to ${operation}`, filters);
+  const casesStream: NodeJS.ReadableStream = await streamCasesForRenotifying({
     accountSid,
     filters,
     user: maxPermissions.user,
@@ -51,7 +62,7 @@ export const reindexCasesStream = async (
     batchSize: highWaterMark,
   });
 
-  console.debug('Piping cases to queue for reindexing', filters);
+  console.debug(`Piping cases to queue for ${operation}ing`, filters);
   return casesStream.pipe(
     new Transform({
       objectMode: true,
@@ -62,8 +73,8 @@ export const reindexCasesStream = async (
           const { MessageId } = await publishCaseChangeNotification({
             accountSid,
             timeline: await getTimelineForCase(accountSid, maxPermissions, caseObj),
-            case: caseObj,
-            operation: 'reindex',
+            caseObj,
+            operation,
           });
 
           this.push(

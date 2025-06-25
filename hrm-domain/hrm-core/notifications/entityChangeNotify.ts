@@ -78,7 +78,7 @@ const publishToSns = async ({
       topicArn,
       message: JSON.stringify({ ...payload, entityType }),
       messageGroupId,
-      messageAttributes: { operation: payload.operation },
+      messageAttributes: { operation: payload.operation, entityType },
     };
     console.debug(
       'Publishing HRM entity update:',
@@ -162,17 +162,17 @@ export const publishContactChangeNotification = async ({
 
 export const publishCaseChangeNotification = async ({
   accountSid,
-  case: caseObj,
+  caseObj,
   operation,
   timeline,
 }: {
   accountSid: AccountSID;
-  case: CaseService;
+  caseObj: CaseService;
   timeline: TimelineActivity<any>[];
   operation: NotificationOperation;
 }) => {
   console.info(
-    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
+    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Profile ID: ${
       caseObj.id
     }, Updated / Created At: ${
       caseObj.updatedAt ?? caseObj.createdAt
@@ -190,4 +190,25 @@ export const publishCaseChangeNotification = async ({
     },
     operation,
   );
+};
+
+export const publishProfileChangeNotification = async ({
+  accountSid,
+  profile,
+  operation,
+}: {
+  accountSid: AccountSID;
+  profile: any;
+  operation: NotificationOperation;
+}) => {
+  console.info(
+    `[entity-notify-profiles]: Indexing Request Started. Account SID: ${accountSid}, Profile ID: ${
+      profile.id
+    }, Updated / Created At: ${
+      profile.updatedAt ?? profile.createdAt
+    }. Operation: ${operation}. (key: ${accountSid}/${profile.id}/${
+      profile.updatedAt ?? profile.createdAt
+    }/${operation})`,
+  );
+  return publishEntityChangeNotification(accountSid, 'profile', profile, operation);
 };

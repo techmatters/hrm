@@ -140,7 +140,7 @@ const doCaseChangeNotification =
         );
         await publishCaseChangeNotification({
           accountSid,
-          case: caseService,
+          caseObj: caseService,
           timeline,
           operation,
         });

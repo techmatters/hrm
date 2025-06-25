@@ -14,9 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+export const manuallyTriggeredNotificationOperations = [
+  'reindex',
+  'republish',
+  'reexport',
+] as const;
+
+export type ManuallyTriggeredNotificationOperation =
+  (typeof manuallyTriggeredNotificationOperations)[number];
+
 export type NotificationOperation =
   | 'update'
   | 'create'
   | 'delete'
-  | 'reindex'
-  | 'republish';
+  | ManuallyTriggeredNotificationOperation;

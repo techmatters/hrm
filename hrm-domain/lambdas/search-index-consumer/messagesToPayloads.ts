@@ -249,7 +249,10 @@ const messagesToPayloadsByIndex = async (
 ): Promise<PayloadsByIndex> => {
   const indexingInputData = await Promise.all(messages.map(indexingInputDataMapper));
 
-  return indexingInputData.reduce(messagesToPayloadReducer, {});
+  return (indexingInputData.filter(Boolean) as IndexingInputData[]).reduce(
+    messagesToPayloadReducer,
+    {},
+  );
 };
 
 export const messagesToPayloadsByAccountSid = async (

@@ -14,21 +14,38 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import {
+  ManuallyTriggeredNotificationOperation,
+  manuallyTriggeredNotificationOperations,
+} from '@tech-matters/hrm-types';
+
 import type { Request, Response, NextFunction } from 'express';
 import { publicEndpoint, SafeRouter } from '../permissions';
-import { reindexCasesStream } from './caseReindexService';
+import { renotifyCasesStream } from './caseNotifyService';
+import createError from 'http-errors';
 
 const adminCasesRouter = SafeRouter();
 
-// admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
+// admin POST endpoint to renotify cases. req body has accountSid, dateFrom, dateTo
 adminCasesRouter.post(
-  '/reindex',
+  '/:notifyOperation',
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
+    const notifyOperation = req.params
+      .notifyOperation as ManuallyTriggeredNotificationOperation;
+    if (!manuallyTriggeredNotificationOperations.includes(notifyOperation)) {
+      throw createError(404);
+    }
+    console.log(`.......${notifyOperation}ing cases......`, req, res);
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;
 
-    const resultStream = await reindexCasesStream(hrmAccountId, dateFrom, dateTo);
+    const resultStream = await renotifyCasesStream(
+      hrmAccountId,
+      dateFrom,
+      dateTo,
+      notifyOperation,
+    );
 
     resultStream.on('error', err => {
       next(err);

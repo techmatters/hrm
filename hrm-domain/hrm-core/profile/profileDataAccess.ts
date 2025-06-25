@@ -70,7 +70,9 @@ import type {
   ProfileFlag,
   ProfileSection,
 } from '@tech-matters/hrm-types';
-import { getDbForAccount } from '../dbConnection';
+import { getDbForAccount, pgp } from '../dbConnection';
+import QueryStream from 'pg-query-stream';
+import { getProfilesToRenotifySql } from './sql/profileRenotifyStreamSql';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -517,3 +519,28 @@ export const getProfileSectionById = async (
   (await getDbForAccount(accountSid)).task<ProfileSection>(async t =>
     t.oneOrNone(getProfileSectionByIdSql, { accountSid, profileId, sectionId }),
   );
+
+export const streamProfileForRenotifying = async ({
+  accountSid,
+  filters: { dateTo, dateFrom },
+  batchSize,
+}: {
+  accountSid: HrmAccountId;
+  filters: { dateTo: string; dateFrom: string };
+  batchSize?: number;
+}): Promise<NodeJS.ReadableStream> => {
+  const sql = pgp.as.format(getProfilesToRenotifySql(), { accountSid, dateTo, dateFrom });
+  console.debug(sql);
+  const qs = new QueryStream(sql, [], {
+    batchSize,
+  });
+  console.debug('qs:', qs);
+  const db = await getDbForAccount(accountSid);
+  // Expose the readable stream to the caller as a promise for further pipelining
+  console.debug('db:', db);
+  return new Promise(resolve => {
+    db.stream(qs, resultStream => {
+      resolve(resultStream);
+    });
+  });
+};

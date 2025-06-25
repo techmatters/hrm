@@ -20,16 +20,15 @@ import {
   manuallyTriggeredNotificationOperations,
 } from '@tech-matters/hrm-types';
 
-import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
-import { maxPermissions } from '../permissions';
+import { publishProfileChangeNotification } from '../notifications/entityChangeNotify';
+import formatISO from 'date-fns/formatISO';
 import { Transform } from 'stream';
-import { streamContactsAfterNotified } from './contactDataAccess';
-import { TKConditionsSets } from '../permissions/rulesMap';
+import { streamProfileForRenotifying } from './profileDataAccess';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
-export const processContactsStream = async (
+export const renotifyProfilesStream = async (
   accountSid: HrmAccountId,
   dateFrom: string,
   dateTo: string,
@@ -38,46 +37,41 @@ export const processContactsStream = async (
   if (!manuallyTriggeredNotificationOperations.includes(operation)) {
     throw new Error(`Invalid operation: ${operation}`);
   }
-  const searchParameters = {
-    dateFrom,
-    dateTo,
-    onlyDataContacts: false,
-    shouldIncludeUpdatedAt: true,
+  const filters = {
+    dateFrom: formatISO(new Date(dateFrom)),
+    dateTo: formatISO(new Date(dateTo)),
   };
 
-  console.debug(`Querying DB for contacts to ${operation}`, searchParameters);
-  const contactsStream: NodeJS.ReadableStream = await streamContactsAfterNotified({
+  console.debug(`Querying DB for profiles to ${operation}`, filters);
+  const profilesStream: NodeJS.ReadableStream = await streamProfileForRenotifying({
     accountSid,
-    searchParameters,
-    user: maxPermissions.user,
-    viewPermissions: maxPermissions.permissions
-      .viewContact as TKConditionsSets<'contact'>,
+    filters,
     batchSize: highWaterMark,
   });
 
-  console.debug(`Piping contacts to queue for ${operation}ing`, searchParameters);
-  return contactsStream.pipe(
+  console.debug(`Piping profiles to queue for ${operation}ing`, filters);
+  return profilesStream.pipe(
     new Transform({
       objectMode: true,
       highWaterMark,
-      async transform(contact, _, callback) {
+      async transform(profile: any, _, callback) {
         try {
-          const { MessageId } = await publishContactChangeNotification({
+          const { MessageId } = await publishProfileChangeNotification({
             accountSid,
-            contact,
             operation,
+            profile,
           });
 
           this.push(
-            `${new Date().toISOString()}, ${accountSid}, contact id: ${
-              contact.id
+            `${new Date().toISOString()}, ${accountSid}, profile id: ${
+              profile.id
             } Success, MessageId ${MessageId}
               \n`,
           );
         } catch (err) {
           this.push(
-            `${new Date().toISOString()}, ${accountSid}, contact id: ${
-              contact.id
+            `${new Date().toISOString()}, ${accountSid}, profile id: ${
+              profile.id
             } Error: ${err.message?.replace('"', '""') || String(err)}\n`,
           );
         }
