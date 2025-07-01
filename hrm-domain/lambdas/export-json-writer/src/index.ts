@@ -65,7 +65,7 @@ const processRecord = async (record: SQSRecord) => {
   });
 
   console.info(
-    `Recorded contact update notification, accountSid: ${payload.accountSid}, ${entityType} ID: ${payload.id}, operation: ${notification.operation}`,
+    `Recorded contact update notification, accountSid: ${payload.accountSid}, ${entityType} ID: ${payload.id}, operation: ${notification.operation}, s3 location: ${bucket}/${key}`,
   );
 };
 

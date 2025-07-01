@@ -23,19 +23,19 @@ export const describe =
   'Reexport contacts, cases and profiles to the configured exports S3 bucket for the specified account.';
 
 export const builder = {
-  co: {
+  c: {
     alias: 'contacts',
     describe: 'reexport contacts',
     type: 'boolean',
     default: false,
   },
-  ca: {
+  s: {
     alias: 'cases',
     describe: 'reexport cases',
     type: 'boolean',
     default: false,
   },
-  pr: {
+  p: {
     alias: 'profiles',
     describe: 'reexport profiles',
     type: 'boolean',
