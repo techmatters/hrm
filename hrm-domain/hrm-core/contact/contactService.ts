@@ -340,7 +340,9 @@ export const patchContact = async (
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> => {
-  const patched = (await getDbForAccount(accountSid)).tx(async conn => {
+  const patched = await (
+    await getDbForAccount(accountSid)
+  ).tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
     if (referrals) {

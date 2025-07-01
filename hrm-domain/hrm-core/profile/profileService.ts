@@ -286,7 +286,7 @@ export const disassociateProfileFromProfileFlag = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileWithRelationships> => {
   const db = await getDbForAccount(accountSid);
-  const profile = db.task(async t =>
+  const profile = await db.task(async t =>
     profileDB.disassociateProfileFromProfileFlag(t)(
       accountSid,
       profileId,

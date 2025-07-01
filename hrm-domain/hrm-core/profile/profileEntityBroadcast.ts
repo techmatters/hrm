@@ -27,7 +27,7 @@ const doProfileChangeNotification =
     profileOrId,
   }: {
     accountSid: ProfileWithRelationships['accountSid'];
-    profileOrId: Profile | Profile['id'];
+    profileOrId: ProfileWithRelationships | ProfileWithRelationships['id'];
   }) => {
     try {
       const profile =
@@ -44,7 +44,9 @@ const doProfileChangeNotification =
       }
     } catch (err) {
       console.error(
-        `Error trying to broadcast profile: accountSid ${accountSid} profile ${profile.id}`,
+        `Error trying to broadcast profile: accountSid ${accountSid} profile ${
+          typeof profileOrId === 'object' ? profileOrId.id : profileOrId
+        }`,
         err,
       );
     }

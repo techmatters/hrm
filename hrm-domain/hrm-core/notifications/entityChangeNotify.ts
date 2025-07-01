@@ -114,9 +114,11 @@ type CaseWithLegacySections = CaseService & {
 export const publishEntityChangeNotification = async (
   accountSid: HrmAccountId,
   entityType: 'contact' | 'case' | 'profile',
-  { totalCount, ...entity }: Contact | CaseWithLegacySections | ProfileWithRelationships,
+  entity: Contact | CaseWithLegacySections | ProfileWithRelationships,
   operation: NotificationOperation,
 ) => {
+  // eslint-disable-next-line @typescript-eslint/dot-notation
+  delete entity['totalCount'];
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
   let publishResponse: { MessageId?: string };
   if (operation === 'delete') {
