@@ -37,7 +37,6 @@ import type { ITask } from 'pg-promise';
 import type { HrmAccountId } from '@tech-matters/types';
 import { getDbForAccount } from '../dbConnection';
 import { notifyCreateProfile, notifyUpdateProfile } from './profileEntityBroadcast';
-import { getProfileById } from './profileDataAccess';
 
 export {
   Identifier,
@@ -227,7 +226,7 @@ export const associateProfileToProfileFlag = async (
     });
   }
   const db = await getDbForAccount(accountSid);
-  return db.task(async t => {
+  const finalResult = await db.task(async t => {
     const result = await profileDB.associateProfileToProfileFlag(t)(
       accountSid,
       profileId,
@@ -250,12 +249,12 @@ export const associateProfileToProfileFlag = async (
       result.unwrap(); // Q for SJH: This bubbles the error. Is this intentional?
       return;
     }
-
-    const profile = result.data;
-    notifyUpdateProfile({ accountSid, profile });
-
     return newOk({ data: profile });
   });
+  if (isOk(finalResult)) {
+    await notifyUpdateProfile({ accountSid, profileOrId: finalResult.data });
+  }
+  return finalResult;
 };
 
 export const disassociateProfileFromProfileFlag = async (
@@ -270,16 +269,16 @@ export const disassociateProfileFromProfileFlag = async (
   { user }: { user: TwilioUser },
 ): Promise<profileDB.ProfileWithRelationships> => {
   const db = await getDbForAccount(accountSid);
-  return db.task(async t => {
-    const profile = await profileDB.disassociateProfileFromProfileFlag(t)(
+  const profile = db.task(async t =>
+    profileDB.disassociateProfileFromProfileFlag(t)(
       accountSid,
       profileId,
       profileFlagId,
       { user },
-    );
-    notifyUpdateProfile({ accountSid, profile });
-    return profile;
-  });
+    ),
+  );
+  await notifyUpdateProfile({ accountSid, profileOrId: profile });
+  return profile;
 };
 
 export const getProfileFlags = profileDB.getProfileFlagsForAccount;
@@ -357,10 +356,7 @@ export const createProfileSection = async (
     sectionType,
     createdBy: user.workerSid,
   });
-  getProfileById()(accountSid, profileId, true).then(profile => {
-    console.log('Broadcasting profile', JSON.stringify(profile, null, 2));
-    notifyUpdateProfile({ accountSid, profile });
-  });
+  await notifyUpdateProfile({ accountSid, profileOrId: payload.profileId });
   return section;
 };
 
@@ -378,15 +374,7 @@ export const updateProfileSectionById = async (
     updatedBy: user.workerSid,
   });
   if (section) {
-    const profile = await getProfileById()(accountSid, payload.profileId, true);
-    if (profile) {
-      console.debug('Broadcasting profile', JSON.stringify(profile, null, 2));
-      await notifyUpdateProfile({ accountSid, profile });
-    } else {
-      console.error(
-        `Profile ${payload.profileId} (${accountSid}) not found to broadcast despite successfully updating ${payload.sectionId} on it.`,
-      );
-    }
+    await notifyUpdateProfile({ accountSid, profileOrId: payload.profileId });
   }
   return section;
 };
