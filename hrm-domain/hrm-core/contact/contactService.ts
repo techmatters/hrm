@@ -541,7 +541,7 @@ export const getContactsByProfileId = async (
       ctx,
     );
 
-    return newOk({ data: contacts });
+    return newOkFromData(contacts);
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
