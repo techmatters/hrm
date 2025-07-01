@@ -114,7 +114,7 @@ type CaseWithLegacySections = CaseService & {
 export const publishEntityChangeNotification = async (
   accountSid: HrmAccountId,
   entityType: 'contact' | 'case' | 'profile',
-  entity: Contact | CaseWithLegacySections | ProfileWithRelationships,
+  { totalCount, ...entity }: Contact | CaseWithLegacySections | ProfileWithRelationships,
   operation: NotificationOperation,
 ) => {
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
@@ -172,7 +172,7 @@ export const publishCaseChangeNotification = async ({
   operation: NotificationOperation;
 }) => {
   console.info(
-    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Profile ID: ${
+    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
       caseObj.id
     }, Updated / Created At: ${
       caseObj.updatedAt ?? caseObj.createdAt

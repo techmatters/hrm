@@ -16,6 +16,7 @@
 
 import { ProfileWithRelationships } from '@tech-matters/hrm-types';
 import { publishEntityChangeNotification } from '../notifications/entityChangeNotify';
+import { getProfileById } from './profileDataAccess';
 
 type NotificationOperation = 'create' | 'update';
 
@@ -23,14 +24,23 @@ const doProfileChangeNotification =
   (operation: NotificationOperation) =>
   async ({
     accountSid,
-    profile,
+    profileOrId,
   }: {
     accountSid: ProfileWithRelationships['accountSid'];
-    profile: ProfileWithRelationships;
+    profileOrId: Profile | Profile['id'];
   }) => {
     try {
+      const profile =
+        typeof profileOrId === 'object'
+          ? profileOrId
+          : await getProfileById()(accountSid, profileOrId, true);
       if (profile) {
+        console.debug('Broadcasting profile', JSON.stringify(profile, null, 2));
         await publishEntityChangeNotification(accountSid, 'profile', profile, operation);
+      } else {
+        console.error(
+          `Profile ${profileOrId} (${accountSid}) not found to broadcast despite successfully updating data on it.`,
+        );
       }
     } catch (err) {
       console.error(

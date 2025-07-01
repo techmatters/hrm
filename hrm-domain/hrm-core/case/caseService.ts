@@ -178,8 +178,7 @@ export const createCase = async (
   const created = await create(record);
 
   if (!skipSearchIndex) {
-    // trigger index operation but don't await for it
-    createCaseNotify({ accountSid, caseId: created.id.toString() });
+    await createCaseNotify({ accountSid, caseId: created.id.toString() });
   }
 
   // A new case is always initialized with empty connected contacts. No need to apply mapContactTransformations here
@@ -200,8 +199,7 @@ export const updateCaseStatus = async (
   if (!updated) return null;
 
   if (!skipSearchIndex) {
-    // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: updated.id.toString() });
+    await updateCaseNotify({ accountSid, caseId: updated.id.toString() });
   }
 
   return caseRecordToCase(updated);
@@ -220,8 +218,7 @@ export const updateCaseOverview = async (
   if (!updated) return null;
 
   if (!skipSearchIndex) {
-    // trigger index operation but don't await for it
-    updateCaseNotify({ accountSid, caseId: updated.id });
+    await updateCaseNotify({ accountSid, caseId: updated.id });
   }
 
   return caseRecordToCase(updated);
@@ -429,8 +426,11 @@ export const deleteCaseById = async ({
 }) => {
   const deleted = await deleteById(parseInt(caseId), accountSid);
 
-  // trigger remove operation but don't await for it
-  deleteCaseNotify({ accountSid, caseId: deleted?.id?.toString(), caseRecord: deleted });
+  await deleteCaseNotify({
+    accountSid,
+    caseId: deleted?.id?.toString(),
+    caseRecord: deleted,
+  });
 
   return deleted;
 };
