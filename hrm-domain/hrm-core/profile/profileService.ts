@@ -266,7 +266,7 @@ export const associateProfileToProfileFlag = async (
       result.unwrap(); // Q for SJH: This bubbles the error. Is this intentional?
       return;
     }
-    return newOkFromData(result);
+    return newOkFromData(result.data);
   });
   if (isOk(finalResult)) {
     await notifyUpdateProfile({ accountSid, profileOrId: finalResult.data });

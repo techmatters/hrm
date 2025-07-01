@@ -23,7 +23,7 @@ import {
   listContactsPermissionWhereClause,
 } from './contactPermissionSql';
 
-const selectSearchContactBaseQuery = (whereClause: string, includeTotal = false) => `
+const selectSearchContactBaseQuery = (whereClause: string, includeTotal = true) => `
   SELECT 
   ${includeTotal ? `(count(*) OVER())::INTEGER AS "totalCount",` : ''}
   contacts.*, reports."csamReports", "joinedReferrals"."referrals", media."conversationMedia"
