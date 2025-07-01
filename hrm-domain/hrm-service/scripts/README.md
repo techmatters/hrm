@@ -45,3 +45,8 @@ Each command might have sub-commands. For example, if you want to run "list avai
 Each command might have required parameters, which will be promted to you in case you miss them. However, is adviced to use `--help` before actually running commands.  
 For example, to list client profiles for development in us-east-1 region, you can run  
 `npm run admin-cli profile flags list -- -r=us-east-1 -e=development -a=<development account sid>`
+
+Commands with type [boolean] in the help info can be set to true be adding the parameter without a value
+
+So `-s` is a boolean parameter for the reexport tool. If not specified it is assumed false, here is an example of it being set true:
+`npm run admin-cli reexport hrm -- -a ACxx -e development -r us-east-1 -f 2000-01-01 -t 2030-01-01 -s`
