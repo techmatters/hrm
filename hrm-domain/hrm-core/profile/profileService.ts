@@ -66,45 +66,57 @@ export const createIdentifierAndProfile =
   ): Promise<Result<DatabaseErrorResult, profileDB.IdentifierWithProfiles>> => {
     const { identifier, profile } = payload;
     const db = await getDbForAccount(accountSid);
+    type QueryResult = {
+      idWithProfiles: profileDB.IdentifierWithProfiles;
+      updatedProfile: profileDB.Profile;
+    };
+    const queryResult = await txIfNotInOne<Result<DatabaseErrorResult, QueryResult>>(
+      db,
+      task,
+      async t => {
+        try {
+          const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
+            identifier: identifier.identifier,
+            createdBy: user.workerSid,
+          });
+          const newProfile = await profileDB.createProfile(t)(accountSid, {
+            name: profile.name || null,
+            createdBy: user.workerSid,
+          });
 
-    return txIfNotInOne(db, task, async t => {
-      try {
-        const newIdentifier = await profileDB.createIdentifier(t)(accountSid, {
-          identifier: identifier.identifier,
-          createdBy: user.workerSid,
-        });
-        const newProfile = await profileDB.createProfile(t)(accountSid, {
-          name: profile.name || null,
-          createdBy: user.workerSid,
-        });
+          const idWithProfiles = await profileDB.associateProfileToIdentifier(t)(
+            accountSid,
+            newProfile.id,
+            newIdentifier.id,
+          );
 
-        const idWithProfiles = await profileDB.associateProfileToIdentifier(t)(
-          accountSid,
-          newProfile.id,
-          newIdentifier.id,
-        );
+          // trigger an update on profiles to keep track of who associated
+          const updatedProfile = await profileDB.updateProfileById(t)(accountSid, {
+            id: newProfile.id,
+            updatedBy: user.workerSid,
+          });
 
-        // trigger an update on profiles to keep track of who associated
-        const updatedProfile = await profileDB.updateProfileById(t)(accountSid, {
-          id: newProfile.id,
-          updatedBy: user.workerSid,
-        });
-        notifyCreateProfile({
-          accountSid,
-          profile: {
-            ...updatedProfile,
-            identifiers: [idWithProfiles],
-            profileFlags: [],
-            profileSections: [],
-            hasContacts: false,
-          },
-        });
-
-        return newOk({ data: idWithProfiles });
-      } catch (err) {
-        return inferPostgresErrorResult(err);
-      }
-    });
+          return newOk({ data: { idWithProfiles, updatedProfile } });
+        } catch (err) {
+          return inferPostgresErrorResult(err);
+        }
+      },
+    );
+    if (isOk(queryResult)) {
+      const { updatedProfile, idWithProfiles } = queryResult.data;
+      await notifyCreateProfile({
+        accountSid,
+        profileOrId: {
+          ...updatedProfile,
+          identifiers: [idWithProfiles],
+          profileFlags: [],
+          profileSections: [],
+          hasContacts: false,
+        },
+      });
+      return newOkFromData(idWithProfiles);
+    }
+    return queryResult;
   };
 
 export const getOrCreateProfileWithIdentifier =
@@ -226,7 +238,12 @@ export const associateProfileToProfileFlag = async (
     });
   }
   const db = await getDbForAccount(accountSid);
-  const finalResult = await db.task(async t => {
+  const finalResult = await db.task<
+    TResult<
+      'InvalidParameterError' | 'ProfileAlreadyFlaggedError',
+      profileDB.ProfileWithRelationships
+    >
+  >(async t => {
     const result = await profileDB.associateProfileToProfileFlag(t)(
       accountSid,
       profileId,
@@ -249,7 +266,7 @@ export const associateProfileToProfileFlag = async (
       result.unwrap(); // Q for SJH: This bubbles the error. Is this intentional?
       return;
     }
-    return newOk({ data: profile });
+    return newOkFromData(result);
   });
   if (isOk(finalResult)) {
     await notifyUpdateProfile({ accountSid, profileOrId: finalResult.data });
