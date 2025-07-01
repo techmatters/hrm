@@ -21,10 +21,8 @@ import {
 } from '@tech-matters/hrm-types';
 
 import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
-import { maxPermissions } from '../permissions';
 import { Transform } from 'stream';
 import { streamContactsAfterNotified } from './contactDataAccess';
-import { TKConditionsSets } from '../permissions/rulesMap';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
@@ -41,17 +39,12 @@ export const processContactsStream = async (
   const searchParameters = {
     dateFrom,
     dateTo,
-    onlyDataContacts: false,
-    shouldIncludeUpdatedAt: true,
   };
 
   console.debug(`Querying DB for contacts to ${operation}`, searchParameters);
   const contactsStream: NodeJS.ReadableStream = await streamContactsAfterNotified({
     accountSid,
     searchParameters,
-    user: maxPermissions.user,
-    viewPermissions: maxPermissions.permissions
-      .viewContact as TKConditionsSets<'contact'>,
     batchSize: highWaterMark,
   });
 

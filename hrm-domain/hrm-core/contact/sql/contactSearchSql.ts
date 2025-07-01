@@ -23,9 +23,9 @@ import {
   listContactsPermissionWhereClause,
 } from './contactPermissionSql';
 
-const selectSearchContactBaseQuery = (whereClause: string) => `
+const selectSearchContactBaseQuery = (whereClause: string, includeTotal = false) => `
   SELECT 
-  (count(*) OVER())::INTEGER AS "totalCount",
+  ${includeTotal ? `(count(*) OVER())::INTEGER AS "totalCount",` : ''}
   contacts.*, reports."csamReports", "joinedReferrals"."referrals", media."conversationMedia"
   FROM "Contacts" "contacts"
   LEFT JOIN LATERAL (
@@ -48,8 +48,10 @@ const selectSearchContactBaseQuery = (whereClause: string) => `
 export const selectContactSearch = (
   viewPermissions: TKConditionsSets<'contact'>,
   userIsSupervisor: boolean,
+  includeTotal: boolean = true,
 ) =>
-  selectSearchContactBaseQuery(`
+  selectSearchContactBaseQuery(
+    `
         WHERE contacts."accountSid" = $<accountSid>
         AND ${listContactsPermissionWhereClause(
           viewPermissions as ContactListCondition[][],
@@ -122,7 +124,9 @@ export const selectContactSearch = (
           -- This will filter empty draft offline contacts that hang around after an offline contact is cancelled because we never delete contacts
           "taskId" LIKE 'offline-contact-task-%' AND COALESCE("rawJson"->>'callType', '')='' AND "finalizedAt" IS NULL
         )
-`);
+`,
+    includeTotal,
+  );
 
 export const selectContactsByProfileId = (
   viewPermissions: TKConditionsSets<'contact'>,
@@ -152,3 +156,43 @@ export const getContactsByIds = (
         AND contacts."id" = ANY($<contactIds>::INTEGER[])
       `);
 };
+
+export const SELECT_CONTACTS_TO_RENOTIFY = `
+  SELECT
+    "contacts"."id"::text AS "id",
+    "contacts"."createdAt", 
+    "contacts"."updatedAt", 
+    "contacts"."rawJson", 
+    "contacts"."queueName", 
+    "contacts"."twilioWorkerId", 
+    "contacts"."helpline", 
+    "contacts"."number", 
+    "contacts"."channel", 
+    "contacts"."conversationDuration", 
+    (CASE WHEN "contacts"."caseId" IS NOT NULL THEN "contacts"."caseId"::text ELSE NULL END) AS "caseId", 
+    "contacts"."accountSid", 
+    "contacts"."timeOfContact", 
+    "contacts"."taskId", 
+    "contacts"."createdBy",
+    "contacts"."channelSid",
+    "contacts"."serviceSid",
+    "contacts"."updatedBy",
+    "contacts"."finalizedAt",
+    "contacts"."profileId",
+    "contacts"."identifierId", 
+    "contacts"."definitionVersion",
+    reports."csamReports", 
+    "joinedReferrals"."referrals", 
+    media."conversationMedia"
+  FROM "Contacts" "contacts"
+  LEFT JOIN LATERAL (
+    ${selectCoalesceCsamReportsByContactId('contacts')}
+  ) "reports" ON true
+  LEFT JOIN LATERAL (
+    ${selectCoalesceReferralsByContactId('contacts')}
+  ) "joinedReferrals" ON true
+  LEFT JOIN LATERAL (
+    ${selectCoalesceConversationMediasByContactId('contacts')}
+  ) "media" ON true
+  WHERE contacts."accountSid" = $<accountSid> AND "contacts"."updatedBy" BETWEEN $<dateFrom> AND $dateTo
+  `;

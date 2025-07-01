@@ -20,6 +20,7 @@ import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
   OrderByColumnType,
   SearchQueryBuilder,
+  SELECT_CASES_TO_RENOTIFY,
   selectCaseFilterOnly,
   selectCasesByIds,
   selectCaseSearch,
@@ -309,32 +310,19 @@ export const searchByCaseIds = generalizedSearchQueryFunction<{
 
 export const streamCasesForRenotifying = async ({
   accountSid,
-  filters,
-  user,
-  viewCasePermissions,
+  filters: { from: dateFrom, to: dateTo },
   batchSize = 1000,
 }: {
   accountSid: HrmAccountId;
-  filters: NonNullable<Pick<CaseListFilters, 'createdAt' | 'updatedAt'>>;
-  user: TwilioUser;
-  viewCasePermissions: TKConditionsSets<'case'>;
+  filters: { from: string; to: string };
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
-  const { sortBy, sortDirection } = getPaginationElements({});
-  const orderByClause = [{ sortBy, sortDirection }];
-
   const qs = new QueryStream(
-    pgp.as.format(
-      selectCaseSearch(user, viewCasePermissions, filters, orderByClause),
-      searchParametersToQueryParameters(
-        accountSid,
-        user,
-        {},
-        filters,
-        Number.MAX_SAFE_INTEGER, // limit
-        0, // offset
-      ),
-    ),
+    pgp.as.format(SELECT_CASES_TO_RENOTIFY, {
+      accountSid,
+      dateFrom,
+      dateTo,
+    }),
     [],
     {
       batchSize,

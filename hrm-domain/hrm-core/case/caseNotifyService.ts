@@ -24,7 +24,6 @@ import { caseRecordToCase, getTimelineForCase } from './caseService';
 import { maxPermissions } from '../permissions';
 import formatISO from 'date-fns/formatISO';
 import { CaseRecord, streamCasesForRenotifying } from './caseDataAccess';
-import { TKConditionsSets } from '../permissions/rulesMap';
 import { Transform } from 'stream';
 import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
 
@@ -42,27 +41,15 @@ export const renotifyCasesStream = async (
   }
   const from = dateFrom ? formatISO(new Date(dateFrom)) : '-infinity';
   const to = dateTo ? formatISO(new Date(dateTo)) : 'infinity';
-  const filters = {
-    createdAt: {
-      from,
-      to,
-    },
-    updatedAt: {
-      from,
-      to,
-    },
-  };
 
-  console.debug(`Querying DB for cases to ${operation}`, filters);
+  console.debug(`Querying DB for cases to ${operation}`, from, to);
   const casesStream: NodeJS.ReadableStream = await streamCasesForRenotifying({
     accountSid,
-    filters,
-    user: maxPermissions.user,
-    viewCasePermissions: maxPermissions.permissions.viewCase as TKConditionsSets<'case'>,
+    filters: { from, to },
     batchSize: highWaterMark,
   });
 
-  console.debug(`Piping cases to queue for ${operation}ing`, filters);
+  console.debug(`Piping cases to queue for ${operation}ing`, from, to);
   return casesStream.pipe(
     new Transform({
       objectMode: true,

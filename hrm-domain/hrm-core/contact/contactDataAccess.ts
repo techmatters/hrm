@@ -19,6 +19,7 @@ import {
   selectContactSearch,
   selectContactsByProfileId,
   getContactsByIds,
+  SELECT_CONTACTS_TO_RENOTIFY,
 } from './sql/contactSearchSql';
 import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
 import { parseISO } from 'date-fns';
@@ -362,32 +363,20 @@ export const searchByIds: SearchQueryFunction<
 export const streamContactsAfterNotified = ({
   accountSid,
   searchParameters,
-  user,
-  viewPermissions,
   batchSize = 1000,
 }: {
   accountSid: HrmAccountId;
   searchParameters: NonNullable<
-    Pick<SearchParametersForQueryParameters, 'dateFrom' | 'dateTo'> & {
-      onlyDataContacts: boolean;
-      shouldIncludeUpdatedAt: boolean;
-    }
+    Pick<SearchParametersForQueryParameters, 'dateFrom' | 'dateTo'>
   >;
-  user: TwilioUser;
-  viewPermissions: TKConditionsSets<'contact'>;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
   const qs = new QueryStream(
-    pgp.as.format(
-      selectContactSearch(viewPermissions, user.isSupervisor),
-      searchParametersToQueryParameters(
-        accountSid,
-        user,
-        searchParameters,
-        Number.MAX_SAFE_INTEGER, // limit
-        0, // offset
-      ),
-    ),
+    pgp.as.format(SELECT_CONTACTS_TO_RENOTIFY, {
+      accountSid,
+      dateFrom: parseISO(searchParameters.dateFrom).toISOString(),
+      dateTo: parseISO(searchParameters.dateTo).toISOString(),
+    }),
     [],
     {
       batchSize,
