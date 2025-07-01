@@ -22,13 +22,13 @@ export const describe =
   'Republish contacts (TBD cases) to the data lake based on date range';
 
 export const builder = {
-  co: {
+  c: {
     alias: 'contacts',
     describe: 'republish contacts',
     type: 'boolean',
     default: false,
   },
-  ca: {
+  s: {
     alias: 'cases',
     describe: 'republish cases',
     type: 'boolean',

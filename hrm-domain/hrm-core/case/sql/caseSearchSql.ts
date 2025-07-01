@@ -296,3 +296,23 @@ export const selectCaseSearchByProfileId = selectSearchCaseBaseQuery(
 export const selectCasesByIds = selectSearchCaseBaseQuery(
   `cases."accountSid" = $<accountSid> AND cases."id" = ANY($<caseIds>::INTEGER[])`,
 );
+
+export const SELECT_CASES_TO_RENOTIFY = `
+  SELECT DISTINCT ON (cases."accountSid", cases.id)
+      "cases"."id"::text as "id",
+      "cases"."createdAt",
+      "cases"."updatedAt",
+      "cases".status,
+      "cases".helpline,
+      "cases"."info",
+      "cases"."twilioWorkerId",
+      "cases"."accountSid",
+      "cases"."createdBy",
+      "cases"."updatedBy",
+      "cases"."statusUpdatedAt",
+      "cases"."statusUpdatedBy",
+      "cases"."previousStatus",
+      "cases".label
+  FROM "Cases" "cases"
+  WHERE "cases"."accountSid" = $<accountSid> AND "cases"."updatedAt" BETWEEN $<dateFrom> AND $<dateTo>
+`;

@@ -303,7 +303,7 @@ export const createContact = async (
     if (isOk(result)) {
       // trigger index operation but don't await for it
       if (!skipSearchIndex) {
-        notifyContactCreate({ accountSid, contactId: result.data.id });
+        await notifyContactCreate({ accountSid, contactId: result.data.id });
       }
       return result.data;
     }
@@ -339,8 +339,10 @@ export const patchContact = async (
   { referrals, rawJson, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
-): Promise<Contact> =>
-  (await getDbForAccount(accountSid)).tx(async conn => {
+): Promise<Contact> => {
+  const patched = await (
+    await getDbForAccount(accountSid)
+  ).tx(async conn => {
     // if referrals are present, delete all existing and create new ones, otherwise leave them untouched
     // Explicitly specifying an empty array will delete all existing referrals
     if (referrals) {
@@ -376,18 +378,19 @@ export const patchContact = async (
 
     // trigger index operation but don't await for it
 
-    if (!skipSearchIndex) {
-      if (isRemovedOfflineContact(updated)) {
-        // If the task is an offline contact task and the call type is not set, this is a 'reset' contact, effectively deleted, so we should remove it from the index
-        notifyContactDelete({ accountSid, contactId });
-      } else {
-        notifyContactUpdate({ accountSid, contactId });
-      }
-    }
-
     return applyTransformations(updated);
   });
+  if (!skipSearchIndex) {
+    if (isRemovedOfflineContact(patched)) {
+      // If the task is an offline contact task and the call type is not set, this is a 'reset' contact, effectively deleted, so we should remove it from the index
+      await notifyContactDelete({ accountSid, contactId });
+    } else {
+      await notifyContactUpdate({ accountSid, contactId });
+    }
+  }
 
+  return patched;
+};
 export const connectContactToCase = async (
   accountSid: HrmAccountId,
   contactId: string,
@@ -415,7 +418,7 @@ export const connectContactToCase = async (
 
   // trigger index operation but don't await for it
   if (!skipSearchIndex && !isRemovedOfflineContact(updated)) {
-    notifyContactUpdate({ accountSid, contactId });
+    await notifyContactUpdate({ accountSid, contactId });
   }
 
   return applyTransformations(updated);
@@ -464,7 +467,7 @@ export const addConversationMediaToContact = async (
 
     // trigger index operation but don't await for it
     if (!skipSearchIndex) {
-      notifyContactUpdate({
+      await notifyContactUpdate({
         accountSid,
         contactId,
       });
@@ -538,7 +541,7 @@ export const getContactsByProfileId = async (
       ctx,
     );
 
-    return newOk({ data: contacts });
+    return newOkFromData(contacts);
   } catch (err) {
     return newErr({
       message: err instanceof Error ? err.message : String(err),
@@ -653,7 +656,7 @@ export const updateConversationMediaData =
 
     // trigger index operation but don't await for it
     if (!skipSearchIndex) {
-      notifyContactUpdate({ accountSid, contactId });
+      await notifyContactUpdate({ accountSid, contactId });
     }
 
     return result;

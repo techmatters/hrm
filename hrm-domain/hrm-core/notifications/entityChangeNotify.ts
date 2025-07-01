@@ -117,6 +117,8 @@ export const publishEntityChangeNotification = async (
   entity: Contact | CaseWithLegacySections | ProfileWithRelationships,
   operation: NotificationOperation,
 ) => {
+  // eslint-disable-next-line @typescript-eslint/dot-notation
+  delete entity['totalCount'];
   const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
   let publishResponse: { MessageId?: string };
   if (operation === 'delete') {
@@ -172,7 +174,7 @@ export const publishCaseChangeNotification = async ({
   operation: NotificationOperation;
 }) => {
   console.info(
-    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Profile ID: ${
+    `[generalised-search-cases]: Indexing Request Started. Account SID: ${accountSid}, Case ID: ${
       caseObj.id
     }, Updated / Created At: ${
       caseObj.updatedAt ?? caseObj.createdAt
