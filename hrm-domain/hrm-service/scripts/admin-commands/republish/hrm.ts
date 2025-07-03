@@ -14,8 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
+import { renotify } from '../renotify';
 
 export const command = 'hrm';
 export const describe =
@@ -47,10 +46,10 @@ export const builder = {
     type: 'string',
   },
   a: {
-    alias: 'accountSid',
-    describe: 'account SID',
+    alias: 'accountsSids',
+    describe: 'list of account SIDs',
     demandOption: true,
-    type: 'string',
+    type: 'array',
   },
   f: {
     alias: 'dateFrom',
@@ -69,51 +68,30 @@ export const builder = {
 export const handler = async ({
   region,
   environment,
-  accountSid,
+  accountsSids,
   dateFrom,
   dateTo,
   contacts,
   cases,
 }) => {
+  console.info('Republishing entities');
+  const allEntities = !contacts && !cases;
+  if (allEntities) {
+    console.info('No entity type specified so re-publishing all');
+  }
   try {
-    const allEntities = !contacts && !cases;
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
-    const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
-      region,
+    await renotify({
+      accountsSids,
+      dateFrom,
+      dateTo,
       environment,
-      staticKeyPattern,
-      assumeRoleParams,
+      operation: 'republish',
+      cases: false, // not implemented
+      contacts: contacts || allEntities,
+      profiles: false, // not implemented
+      region,
     });
-    if (contacts || allEntities) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/republish');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${authKey}`,
-        },
-        body: JSON.stringify({ dateFrom, dateTo }),
-      });
-
-      if (!response.ok) {
-        console.error(
-          `Failed to submit request for republishing contacts: ${response.statusText}`,
-        );
-      } else {
-        console.log(`Republishing contacts from ${dateFrom} to ${dateTo}...`);
-        console.log(await response.text());
-      }
-    }
   } catch (err) {
     console.error(err);
-  }
-
-  if (cases) {
-    console.log('Republishing cases is not yet implemented');
   }
 };

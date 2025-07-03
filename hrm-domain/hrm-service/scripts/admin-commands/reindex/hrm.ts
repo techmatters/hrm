@@ -14,8 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
+import { renotify } from '../renotify';
 
 export const command = 'hrm';
 export const describe = 'Reindex contacts and cases based on date range';
@@ -74,70 +73,23 @@ export const handler = async ({
   contacts,
   cases,
 }) => {
+  console.info('Reindexing entities');
+  const allEntities = !contacts && !cases;
+  if (allEntities) {
+    console.info('No entity type specified so re-indexing all');
+  }
   try {
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
-    const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
-      region,
+    await renotify({
+      accountsSids,
+      dateFrom,
+      dateTo,
       environment,
-      staticKeyPattern,
-      assumeRoleParams,
+      operation: 'reindex',
+      cases: cases || allEntities,
+      contacts: contacts || allEntities,
+      profiles: false, // not implemented
+      region,
     });
-
-    if (!contacts && !cases) {
-      console.log(
-        'Please specify contacts and/or cases option to reindex in your command',
-      );
-      return;
-    }
-
-    for (const accountSid of accountsSids) {
-      if (contacts) {
-        const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${authKey}`,
-          },
-          body: JSON.stringify({ dateFrom, dateTo }),
-        });
-
-        if (!response.ok) {
-          console.error(
-            `Failed to submit request for reindexing contacts: ${response.statusText}`,
-          );
-        } else {
-          console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
-          console.log(await response.text());
-        }
-      }
-
-      if (cases) {
-        const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindex');
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${authKey}`,
-          },
-          body: JSON.stringify({ dateFrom, dateTo }),
-        });
-
-        if (!response.ok) {
-          console.error(
-            `Failed to submit request for reindexing cases: ${response.statusText}`,
-          );
-        } else {
-          console.log(`Reindexing cases from ${dateFrom} to ${dateTo}...`);
-          console.log(await response.text());
-        }
-      }
-    }
   } catch (err) {
     console.error(err);
   }
