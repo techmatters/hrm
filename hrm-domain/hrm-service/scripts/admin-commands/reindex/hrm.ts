@@ -46,10 +46,10 @@ export const builder = {
     type: 'string',
   },
   a: {
-    alias: 'accountSid',
-    describe: 'account SID',
+    alias: 'accountsSids',
+    describe: 'list of account SIDs',
     demandOption: true,
-    type: 'string',
+    type: 'array',
   },
   f: {
     alias: 'dateFrom',
@@ -68,13 +68,14 @@ export const builder = {
 export const handler = async ({
   region,
   environment,
-  accountSid,
+  accountsSids,
   dateFrom,
   dateTo,
   contacts,
   cases,
 }) => {
   try {
+    console.log('>>>>>>>>> accounts: ', accountSid);
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
       RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
@@ -95,45 +96,47 @@ export const handler = async ({
       return;
     }
 
-    if (contacts) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${authKey}`,
-        },
-        body: JSON.stringify({ dateFrom, dateTo }),
-      });
+    for (const accountSid of accountsSids) {
+      if (contacts) {
+        const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts/reindex');
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${authKey}`,
+          },
+          body: JSON.stringify({ dateFrom, dateTo }),
+        });
 
-      if (!response.ok) {
-        console.error(
-          `Failed to submit request for reindexing contacts: ${response.statusText}`,
-        );
-      } else {
-        console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
-        console.log(await response.text());
+        if (!response.ok) {
+          console.error(
+            `Failed to submit request for reindexing contacts: ${response.statusText}`,
+          );
+        } else {
+          console.log(`Reindexing contacts from ${dateFrom} to ${dateTo}...`);
+          console.log(await response.text());
+        }
       }
-    }
 
-    if (cases) {
-      const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindex');
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${authKey}`,
-        },
-        body: JSON.stringify({ dateFrom, dateTo }),
-      });
+      if (cases) {
+        const url = getAdminV0URL(internalResourcesUrl, accountSid, '/cases/reindex');
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${authKey}`,
+          },
+          body: JSON.stringify({ dateFrom, dateTo }),
+        });
 
-      if (!response.ok) {
-        console.error(
-          `Failed to submit request for reindexing cases: ${response.statusText}`,
-        );
-      } else {
-        console.log(`Reindexing cases from ${dateFrom} to ${dateTo}...`);
-        console.log(await response.text());
+        if (!response.ok) {
+          console.error(
+            `Failed to submit request for reindexing cases: ${response.statusText}`,
+          );
+        } else {
+          console.log(`Reindexing cases from ${dateFrom} to ${dateTo}...`);
+          console.log(await response.text());
+        }
       }
     }
   } catch (err) {
