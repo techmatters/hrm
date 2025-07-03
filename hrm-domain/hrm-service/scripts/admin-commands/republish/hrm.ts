@@ -46,8 +46,8 @@ export const builder = {
     type: 'string',
   },
   a: {
-    alias: 'accountsSids',
-    describe: 'list of account SIDs',
+    alias: 'accounts',
+    describe: 'list of accounts short codes (e.g. -a=AS ZA)',
     demandOption: true,
     type: 'array',
   },
@@ -68,7 +68,7 @@ export const builder = {
 export const handler = async ({
   region,
   environment,
-  accountsSids,
+  accounts,
   dateFrom,
   dateTo,
   contacts,
@@ -81,7 +81,7 @@ export const handler = async ({
   }
   try {
     await renotify({
-      accountsSids,
+      accounts,
       dateFrom,
       dateTo,
       environment,

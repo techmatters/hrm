@@ -14,10 +14,22 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getAdminV0URL, staticKeyPattern } from '../hrmInternalConfig';
 import type { HrmAccountId } from '@tech-matters/types';
 import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-types';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
+import { getAdminV0URL, staticKeyPattern } from '../hrmInternalConfig';
+import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
+
+const getAccountSid = ({
+  environment,
+  shortCode,
+}: {
+  environment: string;
+  shortCode: string;
+}) => {
+  return getSsmParameter(`/${environment}/twilio/${shortCode.toUpperCase()}/account_sid`);
+};
 
 const requestRenotify = async ({
   accountSid,
@@ -69,7 +81,7 @@ const requestRenotify = async ({
 export const renotify = async ({
   region,
   environment,
-  accountsSids,
+  accounts,
   dateFrom,
   dateTo,
   contacts,
@@ -79,7 +91,7 @@ export const renotify = async ({
 }: {
   region: string;
   environment: string;
-  accountsSids: HrmAccountId[];
+  accounts: string[];
   dateFrom: string;
   dateTo: string;
   contacts: boolean;
@@ -88,6 +100,7 @@ export const renotify = async ({
   operation: ManuallyTriggeredNotificationOperation;
 }) => {
   try {
+    console.log('envRegionMap', envRegionMap);
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
       RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
@@ -101,7 +114,12 @@ export const renotify = async ({
       assumeRoleParams,
     });
 
-    for (const accountSid of accountsSids) {
+    for (const account of accounts) {
+      const accountSid = (await getAccountSid({
+        environment,
+        shortCode: account,
+      })) as HrmAccountId;
+
       console.log(`Processing ${operation} request for account ${accountSid}`);
       if (contacts) {
         await requestRenotify({
