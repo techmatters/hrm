@@ -19,7 +19,7 @@ import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-t
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL, staticKeyPattern } from '../hrmInternalConfig';
-import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
+// import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
 
 const getAccountSid = ({
   environment,
@@ -100,7 +100,8 @@ export const renotify = async ({
   operation: ManuallyTriggeredNotificationOperation;
 }) => {
   try {
-    console.log('envRegionMap', envRegionMap);
+    // TODO: access all regions (once eu-west-1 is accessible via management vpn)
+    // console.log('envRegionMap', envRegionMap);
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
       RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
