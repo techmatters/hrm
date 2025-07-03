@@ -75,7 +75,6 @@ export const handler = async ({
   cases,
 }) => {
   try {
-    console.log('>>>>>>>>> accounts: ', accountSid);
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
       RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
