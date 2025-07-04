@@ -14,9 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getAdminV0URL, staticKeyPattern } from '../../hrmInternalConfig';
-import type { HrmAccountId } from '@tech-matters/types';
+import { renotify } from '../renotify';
 
 export const command = 'hrm';
 export const describe =
@@ -54,10 +52,10 @@ export const builder = {
     type: 'string',
   },
   a: {
-    alias: 'accountSid',
-    describe: 'account SID',
+    alias: 'accounts',
+    describe: 'list of accounts short codes (e.g. -a=AS ZA)',
     demandOption: true,
-    type: 'string',
+    type: 'array',
   },
   f: {
     alias: 'dateFrom',
@@ -71,40 +69,10 @@ export const builder = {
   },
 };
 
-const requestReexport = async (
-  entityType: 'contacts' | 'cases' | 'profiles',
-  internalResourcesUrl: URL,
-  accountSid: HrmAccountId,
-  authKey: string,
-  dateFrom: string,
-  dateTo: string,
-) => {
-  const url = getAdminV0URL(internalResourcesUrl, accountSid, `/${entityType}/reexport`);
-  console.info(`Submitting request to ${url}`);
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Basic ${authKey}`,
-    },
-    body: JSON.stringify({ dateFrom, dateTo }),
-  });
-
-  if (!response.ok) {
-    console.error(
-      `Failed to submit request for reexporting ${entityType}: ${response.statusText}`,
-    );
-    console.info(await response.text());
-  } else {
-    console.info(`Republishing ${entityType} from ${dateFrom} to ${dateTo}...`);
-    console.info(await response.text());
-  }
-};
-
 export const handler = async ({
   region,
   environment,
-  accountSid,
+  accounts,
   dateFrom,
   dateTo,
   contacts,
@@ -118,51 +86,17 @@ export const handler = async ({
     console.info('No entity type specified so re-exporting all');
   }
   try {
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
-    const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
-      region,
+    await renotify({
+      accounts,
+      dateFrom,
+      dateTo,
       environment,
-      staticKeyPattern,
-      assumeRoleParams,
+      operation: 'reexport',
+      cases: cases || allEntities,
+      contacts: contacts || allEntities,
+      profiles: profiles || allEntities,
+      region,
     });
-
-    if (contacts || allEntities) {
-      await requestReexport(
-        'contacts',
-        internalResourcesUrl,
-        accountSid,
-        authKey,
-        dateFrom,
-        dateTo,
-      );
-    }
-
-    if (cases || allEntities) {
-      await requestReexport(
-        'cases',
-        internalResourcesUrl,
-        accountSid,
-        authKey,
-        dateFrom,
-        dateTo,
-      );
-    }
-
-    if (profiles || allEntities) {
-      await requestReexport(
-        'profiles',
-        internalResourcesUrl,
-        accountSid,
-        authKey,
-        dateFrom,
-        dateTo,
-      );
-    }
   } catch (err) {
     console.error(err);
   }

@@ -36,6 +36,7 @@ const convertToEndpoint = (endpointUrl: string) => {
 
 const getSsmConfig = () => {
   const ssmConfig: SSMClientConfig = {};
+  ssmConfig.region = 'us-east-1';
 
   if (process.env.SSM_ENDPOINT) {
     ssmConfig.region = 'us-east-1';
