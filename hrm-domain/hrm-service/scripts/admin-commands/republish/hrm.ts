@@ -86,7 +86,7 @@ export const handler = async ({
       dateTo,
       environment,
       operation: 'republish',
-      cases: false, // not implemented
+      cases: cases || allEntities,
       contacts: contacts || allEntities,
       profiles: false, // not implemented
       region,
