@@ -28,6 +28,11 @@ import { getTwilioAccountSidFromHrmAccountId } from '@tech-matters/types';
 const processRecord = async (record: SQSRecord) => {
   const notification: EntityNotification = JSON.parse(record.body);
   console.debug('Processing message:', record.messageId);
+  const bucket = await getSsmParameter(
+    `/${process.env.NODE_ENV!}/s3/${getTwilioAccountSidFromHrmAccountId(
+      notification.accountSid,
+    )}/docs_bucket_name`,
+  );
   const { payload, timestamp, entityType } =
     getNormalisedNotificationPayload(notification);
   if (payload === null) {
@@ -61,11 +66,6 @@ const processRecord = async (record: SQSRecord) => {
       connectedContacts: notification.case.connectedContacts.map(c => c.id),
     };
   }
-  const bucket = await getSsmParameter(
-    `/${process.env.NODE_ENV!}/s3/${getTwilioAccountSidFromHrmAccountId(
-      notification.accountSid,
-    )}/docs_bucket_name`,
-  );
   await putS3Object({
     key,
     bucket,
