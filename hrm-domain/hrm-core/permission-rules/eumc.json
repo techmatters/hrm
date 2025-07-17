@@ -12,6 +12,7 @@
   "editContact": [["isSupervisor"], ["isOwner"]],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["everyone"]],
+  "viewRecording": [],
   "addContactToCase": [["isSupervisor"], ["isOwner"]],
   "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
   
@@ -22,6 +23,7 @@
   "createProfileSection": [["isSupervisor"]],
   "editProfileSection": [["isSupervisor"]],
   
+  "viewPostSurvey": [["isSupervisor"]],
 
   "viewIdentifiers": [["everyone"]]
 }
