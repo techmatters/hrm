@@ -24,6 +24,7 @@ const caRules = require('../permission-rules/ca.json');
 const clRules = require('../permission-rules/cl.json');
 const coRules = require('../permission-rules/co.json');
 const etRules = require('../permission-rules/et.json');
+const eumcRules = require('../permission-rules/eumc.json');
 const huRules = require('../permission-rules/hu.json');
 const inRules = require('../permission-rules/in.json');
 const jmRules = require('../permission-rules/jm.json');
@@ -276,6 +277,7 @@ const rulesMapDef = {
   demo: demoRules,
   dev: devRules,
   e2e: e2eRules,
+  eumc: eumcRules,
 } as const;
 
 /**
