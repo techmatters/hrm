@@ -40,6 +40,7 @@ process.env.PERMISSIONS_ACclosed = 'closed';
 process.env.PERMISSIONS_ACdemo = 'demo';
 process.env.PERMISSIONS_ACdev = 'dev';
 process.env.PERMISSIONS_ACe2e = 'e2e';
+process.env.PERMISSIONS_eumc = 'eumc';
 process.env.PERMISSIONS_notConfigured = '';
 process.env.PERMISSIONS_notExistsInRulesMap = 'notExistsInRulesMap';
 process.env.STATIC_KEY_ACCOUNT_SID = 'BBC';
