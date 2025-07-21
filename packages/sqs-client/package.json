@@ -9,12 +9,12 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@tech-matters/s3-client": "1.0.0",
     "@aws-sdk/client-sqs": "^3.391.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
     "typescript": "^5.7.3",
-    "@tech-matters/s3-client": "1.0.0",
     "uuid": "^11.1.0"
   }
 }
