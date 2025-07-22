@@ -165,6 +165,12 @@ export const createCase = async (
   skipSearchIndex = false,
 ): Promise<CaseService> => {
   const nowISO = (testNowISO ?? new Date()).toISOString();
+  const definitionVersion = body.definitionVersion || body.info.definitionVersion;
+
+  if (!definitionVersion) {
+    throw new Error('createContact error: missing definition version parameter');
+  }
+
   delete body.id;
   const record = {
     twilioWorkerId: workerSid,
@@ -174,6 +180,7 @@ export const createCase = async (
     updatedAt: nowISO,
     updatedBy: null,
     accountSid,
+    definitionVersion,
   };
   const created = await create(record);
 
