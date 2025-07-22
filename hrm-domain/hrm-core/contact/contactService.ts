@@ -172,6 +172,7 @@ const initProfile = async (
   conn,
   hrmAccountId: HrmAccountId,
   contact: Pick<Contact, 'number'>,
+  definitionVersion: string,
 ): Promise<
   Result<DatabaseErrorResult, { profileId?: number; identifierId?: number }>
 > => {
@@ -180,7 +181,10 @@ const initProfile = async (
 
   const profileResult = await getOrCreateProfileWithIdentifier(conn)(
     hrmAccountId,
-    { identifier: { identifier: contact.number }, profile: { name: null } },
+    {
+      identifier: { identifier: contact.number },
+      profile: { name: null, definitionVersion },
+    },
     { user: newGlobalSystemUser(accountSid) }, // system user since makes more sense to keep the new "profile created by system"
   );
 
@@ -249,14 +253,14 @@ export const createContact = async (
   const db = await getDbForAccount(accountSid);
   for (let retries = 1; retries < 4; retries++) {
     result = await ensureRejection<CreateError, Contact>(db.tx)(async conn => {
-      const res = await initProfile(conn, accountSid, newContact);
+      const definitionVersion =
+        newContact.definitionVersion || newContact.rawJson.definitionVersion;
+
+      const res = await initProfile(conn, accountSid, newContact, definitionVersion);
       if (isErr(res)) {
         return res;
       }
       const { profileId, identifierId } = res.data;
-
-      const definitionVersion =
-        newContact.definitionVersion || newContact.rawJson.definitionVersion;
 
       if (!definitionVersion) {
         return newErr({
@@ -355,7 +359,10 @@ export const patchContact = async (
         });
       }
     }
-    const res = await initProfile(conn, accountSid, restOfPatch);
+
+    const definitionVersion = restOfPatch.definitionVersion || rawJson.definitionVersion;
+
+    const res = await initProfile(conn, accountSid, restOfPatch, definitionVersion);
     if (isErr(res)) {
       throw res.rawError;
     }
