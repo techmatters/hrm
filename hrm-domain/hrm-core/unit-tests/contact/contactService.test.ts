@@ -71,6 +71,7 @@ const getIdentifierWithProfilesSpy = jest
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         name: 'name',
+        definitionVersion: 'as-v1',
         contactsCount: 0,
         casesCount: 0,
         createdBy: 'WK-createdBy',
