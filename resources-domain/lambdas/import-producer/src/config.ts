@@ -61,7 +61,7 @@ const getConfig = async () => {
       `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
     ),
     debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
-    debugGetSsmParameter(`/${deploymentEnvironment}/s3/${accountSid}/docs_bucket`),
+    debugGetSsmParameter(`/${deploymentEnvironment}/s3/${accountSid}/docs_bucket_name`),
   ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),
