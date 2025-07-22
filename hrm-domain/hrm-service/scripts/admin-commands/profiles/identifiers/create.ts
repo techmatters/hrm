@@ -51,9 +51,22 @@ export const builder = {
     demandOption: false,
     type: 'string',
   },
+  d: {
+    alias: 'definitionVersion',
+    describe: 'definition version identifier to use for the profile',
+    demandOption: true,
+    type: 'string',
+  },
 };
 
-export const handler = async ({ region, environment, accountSid, identifier, name }) => {
+export const handler = async ({
+  region,
+  environment,
+  accountSid,
+  identifier,
+  name,
+  definitionVersion,
+}) => {
   try {
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
@@ -76,7 +89,7 @@ export const handler = async ({ region, environment, accountSid, identifier, nam
         'Content-Type': 'application/json',
         Authorization: `Basic ${authKey}`,
       },
-      body: JSON.stringify({ identifier, name }),
+      body: JSON.stringify({ identifier, name, definitionVersion }),
     });
 
     if (!response.ok) {
