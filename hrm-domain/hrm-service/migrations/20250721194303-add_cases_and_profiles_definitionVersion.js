@@ -46,6 +46,21 @@ module.exports = {
       WHERE id = ocpp."profileId";
     `);
     console.log('"definitionVersion" column populated in table "Profiles"');
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE public."Contacts" ALTER COLUMN "definitionVersion" SET NOT NULL;    
+    `);
+    console.log('"definitionVersion" column for "Contacts" table set to not null');
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE public."Cases" ALTER COLUMN "definitionVersion" SET NOT NULL;    
+    `);
+    console.log('"definitionVersion" column for "Cases" table set to not null');
+
+    await queryInterface.sequelize.query(`
+      ALTER TABLE public."Profiles" ALTER COLUMN "definitionVersion" SET NOT NULL;    
+    `);
+    console.log('"definitionVersion" column for "Profiles" table set to not null');
   },
   down: async queryInterface => {
     await queryInterface.sequelize.query(`
