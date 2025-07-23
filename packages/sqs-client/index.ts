@@ -182,7 +182,7 @@ export const newSqsClient = ({
   >(
     originalMessageParams: T,
     queueUrl: string,
-  ): T => {
+  ): Promise<T> => {
     if (!largeMessageS3BaseLocation) {
       console.debug(
         'largeMessageS3BaseLocation not set, not checking if message payload needs storing externally',
