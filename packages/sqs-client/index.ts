@@ -94,6 +94,9 @@ export const retrieveMessageContent = async (
   messageId?: string,
 ): Promise<string> => {
   const externalContentMessageStart = `${S3_MESSAGE_CONTENT_LOCATION_KEY}=s3://`;
+  console.debug(`Comparing start of message to redirect content
+${externalContentMessageStart}
+${messagePayload.substring(0, externalContentMessageStart.length)}`);
   if (messagePayload?.startsWith(externalContentMessageStart)) {
     const slashAfterBucketIndex = messagePayload?.indexOf(
       '/',
