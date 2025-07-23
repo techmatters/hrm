@@ -188,13 +188,18 @@ export const newSqsClient = ({
     }
     const { message } = originalMessageParams;
     const { bucket, key } = largeMessageS3BaseLocation;
-    if (new TextEncoder().encode(message).length > MAX_MESSAGE_PAYLOAD_BYTES) {
+    const payloadBytes = new TextEncoder().encode(message).byteLength;
+    if (payloadBytes > MAX_MESSAGE_PAYLOAD_BYTES) {
       const now = new Date();
       const externalContentKey = `${key}/${encodeURIComponent(
         queueUrl,
       )}/${now.getFullYear()}-${
         now.getMonth() + 1
       }-${now.getDate()}-${now.getHours()}_${now.getMinutes()}_${now.getSeconds()}_${now.getMilliseconds()}-${randomUUID()}`;
+
+      console.debug(
+        `Message content for ${queueUrl} is ${payloadBytes} more than the ${MAX_MESSAGE_PAYLOAD_BYTES} SQS maximum, storing in s3://${bucket}/${externalContentKey}`,
+      );
       await putS3Object({
         bucket,
         key: externalContentKey,
@@ -206,7 +211,7 @@ export const newSqsClient = ({
       };
     }
     console.debug(
-      `Message content for ${queueUrl} less than ${MAX_MESSAGE_PAYLOAD_BYTES}, sending inline`,
+      `Message content for ${queueUrl} is ${payloadBytes} less than the ${MAX_MESSAGE_PAYLOAD_BYTES} SQS maximum, sending inline`,
     );
     return originalMessageParams;
   };
