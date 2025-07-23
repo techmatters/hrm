@@ -37,7 +37,13 @@ const { request: publicRequest, internalRequest } = setupServiceTests(workerSid)
 let targetCase: CaseService;
 
 beforeEach(async () => {
-  targetCase = await createCase({}, accountSid, workerSid, undefined, true);
+  targetCase = await createCase(
+    { definitionVersion: 'as-v1' },
+    accountSid,
+    workerSid,
+    undefined,
+    true,
+  );
 });
 
 const getRoutePath = (caseId: string | number, sectionType: string, sectionId?: string) =>
