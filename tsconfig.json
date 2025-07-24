@@ -24,6 +24,7 @@
     { "path": "resources-domain/resources-service/tsconfig.scripts.json" },
     { "path": "resources-domain/lambdas/import-consumer" },
     { "path": "resources-domain/lambdas/sched-importer" },
+    { "path": "resources-domain/lambdas/s3-importer" },
     { "path": "resources-domain/lambdas/search-index" },
     { "path": "hrm-domain/lambdas/custom-integrations/uscr-dispatcher" },
     { "path": "hrm-domain/lambdas/custom-integrations/uscr-beacon-poller" },
