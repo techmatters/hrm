@@ -40,6 +40,7 @@ const flushPromises = async () => {
   await new Promise(process.nextTick);
   await new Promise(process.nextTick);
   await new Promise(process.nextTick);
+  await new Promise(process.nextTick);
 };
 
 const publishContactChangeNotificationSpy = jest
@@ -87,6 +88,7 @@ const mockContactRecord: contactDb.ContactRecord = {
   conversationMedia: [],
   rawJson: {} as any,
   createdAt: baselineDate.toISOString(),
+  definitionVersion: 'as-v1',
 };
 
 const mockContact: contactDb.Contact = {
@@ -344,7 +346,7 @@ describe('patchContact', () => {
   test('Passes callerInformation, childInformation, caseInformation & categories to data layer as separate properties', async () => {
     const patchSpy = jest.fn();
     jest.spyOn(contactDb, 'patch').mockReturnValue(patchSpy);
-    jest.spyOn(contactDb, 'getById').mockResolvedValueOnce(mockContactRecord);
+    jest.spyOn(contactDb, 'getById').mockResolvedValue(mockContactRecord);
     patchSpy.mockResolvedValue(mockContactRecord);
     const result = await patchContact(
       accountSid,
