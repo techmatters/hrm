@@ -1,0 +1,27 @@
+{
+  "name": "@tech-matters/resources-s3-importer",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/sqs-client": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "date-fns": "^2.30.0",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@tech-matters/types": "^1.0.0",
+    "@tsconfig/node22": "^22.0.0",
+    "@types/aws-lambda": "^8.10.108",
+    "@types/lodash": "^4.14.194",
+    "jest-each": "^29.5.0",
+    "typescript": "^5.7.3"
+  },
+  "scripts": {
+    "docker:build": "docker build -t resources-s3-importer --build-arg lambda_name=s3-importer --build-arg lambda_dir=resources-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",
+    "test:unit": "jest tests/unit",
+    "test": "jest"
+  }
+}
