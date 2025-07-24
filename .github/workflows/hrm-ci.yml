@@ -44,7 +44,7 @@ jobs:
           - hrm-domain/lambdas/export-json-writer
           - lambdas/job-complete
           - resources-domain/lambdas/import-consumer
-          - resources-domain/lambdas/scheduled-importer
+          - resources-domain/lambdas/sched-importer
           - resources-domain/lambdas/search-index
           - hrm-domain/lambdas/custom-integrations/uscr-dispatcher
           - hrm-domain/lambdas/custom-integrations/uscr-beacon-poller
