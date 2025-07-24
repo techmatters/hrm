@@ -82,6 +82,7 @@ export const createIdentifierAndProfile =
           const newProfile = await profileDB.createProfile(t)(accountSid, {
             name: profile.name || null,
             createdBy: user.workerSid,
+            definitionVersion: profile.definitionVersion,
           });
 
           const idWithProfiles = await profileDB.associateProfileToIdentifier(t)(

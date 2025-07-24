@@ -303,7 +303,7 @@ export const populateCaseSections = async (
   return getCase(caseId, caseAccountSid, ALWAYS_CAN);
 };
 
-export const case1 = {
+export const case1: Partial<CaseService> = {
   status: 'open',
   helpline: 'helpline',
   info: {
@@ -312,6 +312,7 @@ export const case1 = {
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
+  definitionVersion: 'as-v1',
 } as const;
 
 export const case2: Partial<CaseService> = {
@@ -324,6 +325,7 @@ export const case2: Partial<CaseService> = {
   twilioWorkerId: 'WK-worker-sid',
   createdBy: 'WK-worker-sid',
   accountSid,
+  definitionVersion: 'as-v1',
 };
 
 export const case3 = {

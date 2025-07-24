@@ -34,6 +34,7 @@ export type CaseRecordCommon = {
   statusUpdatedAt?: string;
   statusUpdatedBy?: string;
   previousStatus?: string;
+  definitionVersion: string;
 };
 
 export type CaseInfoSection = {

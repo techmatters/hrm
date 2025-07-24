@@ -78,7 +78,7 @@ const rawJson: ContactRawJson = {
     phone2: '',
     relationshipToChild: '',
   },
-  definitionVersion: 'br-v1',
+  definitionVersion: 'as-v1',
 };
 
 const createContact = async (twilioWorkerId: WorkerSID): Promise<contactDb.Contact> => {
@@ -113,6 +113,7 @@ const createCase = async (twilioWorkerId: WorkerSID) => {
     status: 'open',
     helpline: 'helpline',
     info: { summary: 'something summery' },
+    definitionVersion: 'as-v1',
   });
 };
 
