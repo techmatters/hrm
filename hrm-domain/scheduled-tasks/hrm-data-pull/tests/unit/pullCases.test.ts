@@ -160,6 +160,7 @@ describe('KHP Data Pull - Pull Cases', () => {
       updatedAt: addDays(startDate, 1).toISOString(),
       statusUpdatedAt: null,
       statusUpdatedBy: null,
+      definitionVersion: 'as-v1',
     };
 
     const case2: caseApi.CaseService = {
@@ -176,6 +177,7 @@ describe('KHP Data Pull - Pull Cases', () => {
       updatedAt: addDays(startDate, 2).toISOString(),
       statusUpdatedAt: null,
       statusUpdatedBy: null,
+      definitionVersion: 'as-v1',
     };
 
     const searchCasesResponse = {
