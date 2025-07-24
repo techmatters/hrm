@@ -14,27 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import parseISO from 'date-fns/parseISO';
 import { handler } from '../../src';
 import each from 'jest-each';
 import { S3Event } from 'aws-lambda';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
-const testNow = parseISO('2025-01-01T00:00:00.000Z');
-
 type HandlerTestCase = {
   description: string;
 };
-
-beforeAll(() => {
-  jest.useFakeTimers('modern');
-  jest.setSystemTime(testNow);
-});
-
-afterAll(() => {
-  jest.useRealTimers();
-});
 
 const testCases: HandlerTestCase[] = [
   {
