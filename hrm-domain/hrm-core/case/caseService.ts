@@ -168,7 +168,7 @@ export const createCase = async (
   const definitionVersion = body.definitionVersion || body.info.definitionVersion;
 
   if (!definitionVersion) {
-    throw new Error('createContact error: missing definition version parameter');
+    throw new Error('createCase error: missing definition version parameter');
   }
 
   delete body.id;
