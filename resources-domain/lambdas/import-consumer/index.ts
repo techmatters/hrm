@@ -18,6 +18,7 @@ import { ResourceImportProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type { ImportRequestBody, HrmAccountId } from '@tech-matters/types';
+import { retrieveMessageContent } from '@tech-matters/sqs-client';
 
 const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;
 const hrmEnv = process.env.NODE_ENV;
@@ -76,7 +77,8 @@ type ProcessedResult =
 const upsertRecordWithoutException = async (
   sqsRecord: SQSRecord,
 ): Promise<ProcessedResult> => {
-  const { accountSid, ...body } = JSON.parse(sqsRecord.body);
+  const jsonBody = await retrieveMessageContent(sqsRecord.body, sqsRecord.messageId);
+  const { accountSid, ...body } = JSON.parse(jsonBody);
 
   try {
     await upsertRecord(accountSid, body);
@@ -98,16 +100,33 @@ const upsertRecordWithoutException = async (
   }
 };
 
+const newFailWholeBatchResponse = (event: SQSEvent, err: Error): SQSBatchResponse => {
+  console.error('Failed to init processor', err);
+
+  return {
+    batchItemFailures: event.Records.map(record => ({
+      itemIdentifier: record.messageId,
+    })),
+  };
+};
+
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const batchItemFailuresSet: Set<string> = new Set();
-
   try {
     if (!internalResourcesBaseUrl) {
-      throw new Error('Missing internal_resources_base_url ENV Variable');
+      return newFailWholeBatchResponse(
+        event,
+        new ResourceImportProcessorError(
+          'Missing internal_resources_base_url ENV Variable',
+        ),
+      );
     }
 
     if (!hrmEnv) {
-      throw new Error('Missing NODE_ENV ENV Variable');
+      return newFailWholeBatchResponse(
+        event,
+        new ResourceImportProcessorError('Missing NODE_ENV ENV Variable'),
+      );
     }
 
     // This assumes messages are posted in the correct order by the producer
@@ -128,12 +147,6 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   } catch (err) {
     // SSM failures and other major setup exceptions will cause a failure of all messages sending them to DLQ
     // which should be the same as the completed queue right now.
-    console.error(new ResourceImportProcessorError('Failed to init processor'), err);
-
-    return {
-      batchItemFailures: event.Records.map(record => ({
-        itemIdentifier: record.messageId,
-      })),
-    };
+    return newFailWholeBatchResponse(event, err as Error);
   }
 };

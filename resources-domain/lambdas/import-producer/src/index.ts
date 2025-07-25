@@ -30,6 +30,7 @@ import {
 import getConfig from './config';
 import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
+import { newSqsClient, SqsClient } from '@tech-matters/sqs-client';
 
 export type HttpError<T = any> = {
   status: number;
@@ -166,7 +167,7 @@ const pullUpdates =
   };
 
 const sendUpdates =
-  (accountSid: AccountSID, importResourcesSqsQueueUrl: URL) =>
+  (accountSid: AccountSID, sqs: SqsClient, importResourcesSqsQueueUrl: URL) =>
   async (resources: KhpApiResource[], importBatch: ImportBatch): Promise<void> => {
     let { remaining } = importBatch;
     for (const khpResource of resources) {
@@ -177,7 +178,10 @@ const sendUpdates =
           importedResources: [transformKhpResourceToApiResource(accountSid, khpResource)],
           accountSid,
         };
-        await publishToImportConsumer(importResourcesSqsQueueUrl)(transformedResource);
+        await publishToImportConsumer(
+          sqs,
+          importResourcesSqsQueueUrl,
+        )(transformedResource);
       } catch (error) {
         console.error(
           `Unable to transform & send resource ${JSON.stringify(khpResource)}:`,
@@ -212,6 +216,7 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
     maxBatchSize,
     maxRequests,
     maxApiSize,
+    largeMessagesS3Bucket,
   } = await getConfig();
   const configuredPull = pullUpdates(
     importApiBaseUrl,
@@ -219,7 +224,13 @@ export const handler = async (event: ScheduledEvent): Promise<void> => {
     importApiAuthHeader,
     maxApiSize,
   );
-  const configuredSend = sendUpdates(accountSid, importResourcesSqsQueueUrl);
+  const sqs = newSqsClient({
+    largeMessageS3BaseLocation: {
+      bucket: largeMessagesS3Bucket,
+      key: 'sqsLargeMessageContent',
+    },
+  });
+  const configuredSend = sendUpdates(accountSid, sqs, importResourcesSqsQueueUrl);
 
   // Wait until the target queue is empty, otherwise the progress tracking on the DB will not account for the unprocessed messages and process the same resources again
   await waitForEmptyQueue(importResourcesSqsQueueUrl);
