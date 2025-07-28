@@ -19,6 +19,12 @@
 module.exports = {
   up: async queryInterface => {
     await queryInterface.sequelize.query(`
+      UPDATE "Contacts" SET "definitionVersion" = 'as-v1' WHERE "definitionVersion" = 'demo-v1';
+      UPDATE "Contacts" SET "definitionVersion" = 'zm-v1' WHERE "definitionVersion" = 'v1';
+    `);
+    console.log('"definitionVersion" column sanitized in table "Contacts"');
+
+    await queryInterface.sequelize.query(`
       ALTER TABLE "Cases" ADD COLUMN IF NOT EXISTS "definitionVersion" TEXT;
     `);
     console.log('"definitionVersion" column added to table "Cases"');
@@ -27,6 +33,12 @@ module.exports = {
       UPDATE "Cases" SET "definitionVersion" = "info"->>'definitionVersion';
     `);
     console.log('"definitionVersion" column populated in table "Cases"');
+
+    await queryInterface.sequelize.query(`
+      UPDATE "Cases" SET "definitionVersion" = 'as-v1' WHERE "definitionVersion" = 'demo-v1';
+      UPDATE "Cases" SET "definitionVersion" = 'zm-v1' WHERE "definitionVersion" = 'v1';
+    `);
+    console.log('"definitionVersion" column sanitized in table "Cases"');
 
     await queryInterface.sequelize.query(`
       ALTER TABLE "Profiles" ADD COLUMN IF NOT EXISTS "definitionVersion" TEXT;
