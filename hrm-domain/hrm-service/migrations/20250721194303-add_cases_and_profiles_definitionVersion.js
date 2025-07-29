@@ -30,7 +30,16 @@ module.exports = {
     console.log('"definitionVersion" column added to table "Cases"');
 
     await queryInterface.sequelize.query(`
-      UPDATE "Cases" SET "definitionVersion" = "info"->>'definitionVersion';
+      WITH oldest_contact_per_case AS (SELECT DISTINCT ON (c."caseId")
+          c."caseId",
+          c."definitionVersion"
+        FROM "Contacts" c
+        ORDER BY c."caseId", c."createdAt" ASC
+      )
+      UPDATE "Cases"
+      SET "definitionVersion" = COALESCE("info"->>'definitionVersion', ocpc."definitionVersion")
+      FROM oldest_contact_per_case ocpc
+      WHERE id = ocpc."caseId";
     `);
     console.log('"definitionVersion" column populated in table "Cases"');
 
@@ -46,16 +55,31 @@ module.exports = {
     console.log('"definitionVersion" column added to table "Profiles"');
 
     await queryInterface.sequelize.query(`
-      WITH oldest_contact_per_profile AS (SELECT DISTINCT ON (c."profileId")
+      WITH
+      -- Oldest contact per profile
+      oldest_contact_per_profile AS (
+        SELECT DISTINCT ON (c."profileId")
           c."profileId",
           c."definitionVersion"
         FROM "Contacts" c
         ORDER BY c."profileId", c."createdAt" ASC
+      ),
+
+      -- Latest contact per account (for orphan fallback)
+      latest_contact_per_account AS (
+        SELECT DISTINCT ON (c."accountSid")
+          c."accountSid",
+          c."definitionVersion"
+        FROM "Contacts" c
+        ORDER BY c."accountSid", c."createdAt" DESC
       )
+
       UPDATE "Profiles"
-      SET "definitionVersion" = ocpp."definitionVersion"
-      FROM oldest_contact_per_profile ocpp
-      WHERE id = ocpp."profileId";
+      SET "definitionVersion" = COALESCE(ocpp."definitionVersion", lcpa."definitionVersion")
+      FROM "Profiles" p
+      LEFT JOIN oldest_contact_per_profile ocpp ON p.id = ocpp."profileId"
+      LEFT JOIN latest_contact_per_account lcpa ON p."accountSid" = lcpa."accountSid"
+      WHERE "Profiles".id = p.id;
     `);
     console.log('"definitionVersion" column populated in table "Profiles"');
 
