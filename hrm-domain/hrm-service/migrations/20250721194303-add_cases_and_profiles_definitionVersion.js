@@ -50,7 +50,7 @@ module.exports = {
       UPDATE "Cases"
       SET "definitionVersion" = COALESCE(c."info"->>'definitionVersion', COALESCE(ocpc."definitionVersion", lcpa."definitionVersion"))
       FROM "Cases" c
-      LEFT JOIN oldest_contact_per_c ocpc c.id = ocpc."caseId"
+      LEFT JOIN oldest_contact_per_case ocpc ON c.id = ocpc."caseId"
       LEFT JOIN latest_contact_per_account lcpa ON c."accountSid" = lcpa."accountSid"
       WHERE "Cases".id = c.id;
     `);
