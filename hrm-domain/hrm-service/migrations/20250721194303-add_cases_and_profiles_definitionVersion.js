@@ -30,16 +30,29 @@ module.exports = {
     console.log('"definitionVersion" column added to table "Cases"');
 
     await queryInterface.sequelize.query(`
+      -- Oldest contact per case
       WITH oldest_contact_per_case AS (SELECT DISTINCT ON (c."caseId")
           c."caseId",
           c."definitionVersion"
         FROM "Contacts" c
         ORDER BY c."caseId", c."createdAt" ASC
+      ),
+
+      -- Latest contact per account (for orphan fallback)
+      latest_contact_per_account AS (
+        SELECT DISTINCT ON (c."accountSid")
+          c."accountSid",
+          c."definitionVersion"
+        FROM "Contacts" c
+        ORDER BY c."accountSid", c."createdAt" DESC
       )
+
       UPDATE "Cases"
-      SET "definitionVersion" = COALESCE("info"->>'definitionVersion', ocpc."definitionVersion")
-      FROM oldest_contact_per_case ocpc
-      WHERE id = ocpc."caseId";
+      SET "definitionVersion" = COALESCE(c."info"->>'definitionVersion', COALESCE(ocpc."definitionVersion", lcpa."definitionVersion"))
+      FROM "Cases" c
+      LEFT JOIN oldest_contact_per_c ocpc c.id = ocpc."caseId"
+      LEFT JOIN latest_contact_per_account lcpa ON c."accountSid" = lcpa."accountSid"
+      WHERE "Cases".id = c.id;
     `);
     console.log('"definitionVersion" column populated in table "Cases"');
 
