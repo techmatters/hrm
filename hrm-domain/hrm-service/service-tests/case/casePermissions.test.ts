@@ -62,7 +62,13 @@ describe('isCaseContactOwner condition', () => {
     for (const user of [workerSid, otherWorkerSid] as WorkerSID[]) {
       const newCases = await Promise.all(
         caseDescriptions[user].map(desc =>
-          createCase({ info: { summary: desc } }, accountSid, user, undefined, true),
+          createCase(
+            { definitionVersion: 'as-v1', info: { summary: desc } },
+            accountSid,
+            user,
+            undefined,
+            true,
+          ),
         ),
       );
       const [, caseWithOtherContact, caseWithOwnedContact] = newCases;
@@ -260,6 +266,7 @@ describe('Time based condition', () => {
     for (const [idx, createdAt] of Object.entries(caseCreatedTimes)) {
       const newCase = await createCase(
         {
+          definitionVersion: 'as-v1',
           info: { summary: 'case' },
           status: parseInt(idx) % 2 === 1 ? 'open' : 'closed',
         },

@@ -312,7 +312,8 @@ export const SELECT_CASES_TO_RENOTIFY = `
       "cases"."statusUpdatedAt",
       "cases"."statusUpdatedBy",
       "cases"."previousStatus",
-      "cases".label
+      "cases".label,
+      "cases"."definitionVersion"
   FROM "Cases" "cases"
   WHERE "cases"."accountSid" = $<accountSid> AND "cases"."updatedAt" BETWEEN $<dateFrom> AND $<dateTo>
 `;

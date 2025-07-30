@@ -25,6 +25,7 @@ export const createMockCaseRecord = (partial: Partial<CaseRecord>): CaseRecord =
     <CaseRecord>{
       label: 'case1 label',
       id: 1,
+      definitionVersion: 'as-v1',
       helpline: 'helpline',
       status: 'open',
       info: {},

@@ -77,6 +77,7 @@ describe('Test that all actions work fine (everyone)', () => {
       precalculatedPermissions: {
         userOwnsContact: false,
       },
+      definitionVersion: 'as-v1',
     },
     user: notCreator,
   }));

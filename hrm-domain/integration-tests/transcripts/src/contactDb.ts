@@ -55,6 +55,7 @@ export const createContact = async (newContact: NewContactRecord): Promise<Conta
     const profile = await conn.one(() =>
       insertProfileSql({
         name: 'integration-test-profile',
+        definitionVersion: 'as-v1',
         createdBy: 'WK-integration-test-counselor',
         createdAt: now,
         updatedAt: now,

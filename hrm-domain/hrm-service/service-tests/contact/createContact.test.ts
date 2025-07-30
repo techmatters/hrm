@@ -261,7 +261,7 @@ each([
       accountSid,
       {
         identifier: { identifier: contact.number },
-        profile: { name: null },
+        profile: { name: null, definitionVersion: 'as-v1' },
       },
       { user: newTwilioUser(accountSid, workerSid, []) },
     );
