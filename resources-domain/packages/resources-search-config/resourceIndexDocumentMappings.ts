@@ -136,6 +136,8 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     },
     isActive: {
       type: 'boolean',
+      indexValueGenerator: attribute =>
+        attribute.value !== undefined ? Boolean(attribute.value) : true,
     },
     name: {
       type: 'text',
