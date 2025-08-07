@@ -134,6 +134,9 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     id: {
       type: 'keyword',
     },
+    isActive: {
+      type: 'boolean',
+    },
     name: {
       type: 'text',
       hasLanguageFields: true,
