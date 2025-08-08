@@ -253,6 +253,7 @@ export const createContact = async (
   const db = await getDbForAccount(accountSid);
   for (let retries = 1; retries < 4; retries++) {
     result = await ensureRejection<CreateError, Contact>(db.tx)(async conn => {
+      // TODO: this is compatibility code, remove rawJson.definitionVersion default once all clients use top level definition version
       const definitionVersion =
         newContact.definitionVersion || newContact.rawJson.definitionVersion;
 

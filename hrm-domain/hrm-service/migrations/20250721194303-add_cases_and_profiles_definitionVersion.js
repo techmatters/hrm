@@ -113,6 +113,13 @@ module.exports = {
   },
   down: async queryInterface => {
     await queryInterface.sequelize.query(`
+      ALTER TABLE public."Contacts" ALTER COLUMN "definitionVersion" DROP NOT NULL;
+    `);
+    console.log(
+      '"definitionVersion" column for "Contacts" table dropeed not null constraint',
+    );
+
+    await queryInterface.sequelize.query(`
       ALTER TABLE public."Profiles" 
       DROP COLUMN IF EXISTS "definitionVersion";
     `);

@@ -165,6 +165,7 @@ export const createCase = async (
   skipSearchIndex = false,
 ): Promise<CaseService> => {
   const nowISO = (testNowISO ?? new Date()).toISOString();
+  // TODO: this is compatibility code, remove info.definitionVersion default once all clients use top level definition version
   const definitionVersion = body.definitionVersion || body.info.definitionVersion;
 
   if (!definitionVersion) {
