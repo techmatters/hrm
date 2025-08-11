@@ -4,7 +4,9 @@
   "files": [],
   "references": [
     { "path": "packages/job-errors" },
+    { "path": "packages/s3-client" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/sqs-client" },
     { "path": "resources-domain/lambdas/import-consumer" }
   ]
 }
