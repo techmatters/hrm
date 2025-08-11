@@ -82,6 +82,7 @@ const generateCases = (numberToGenerate: number): Promise<string[]> => {
             method: 'POST',
             body: JSON.stringify({
               info: { summary: 'something' },
+              definitionVersion: 'as-v1',
             }),
             headers: HRM_REQUEST_HEADERS,
           },

@@ -35,6 +35,7 @@ import { setupServiceTests } from './setupServiceTest';
 import { addSeconds } from 'date-fns';
 
 const { case1, accountSid, workerSid, contact1 } = mocks;
+const definitionVersion = 'as-v1';
 
 // eslint-disable-next-line @typescript-eslint/no-shadow
 const deleteFromTableById = (table: string) => async (id: number, accountSid: string) =>
@@ -60,7 +61,11 @@ describe('/profiles', () => {
       createdProfiles = [];
       for (const name of profilesNames) {
         createdProfiles.push(
-          await profilesDB.createProfile()(accountSid, { name, createdBy: workerSid }),
+          await profilesDB.createProfile()(accountSid, {
+            name,
+            definitionVersion,
+            createdBy: workerSid,
+          }),
         );
       }
       defaultFlags = await profilesDB.getProfileFlagsForAccount(accountSid);
@@ -215,7 +220,10 @@ describe('/profiles', () => {
             db.task(async t =>
               getOrCreateProfileWithIdentifier(t)(
                 acc,
-                { identifier: { identifier }, profile: { name: null } },
+                {
+                  identifier: { identifier },
+                  profile: { name: null, definitionVersion },
+                },
                 { user: newTwilioUser(accountSid, workerSid, []) },
               ),
             ),
@@ -253,7 +261,7 @@ describe('/profiles', () => {
       createdProfile = await db.task(async t => {
         const result = await getOrCreateProfileWithIdentifier(t)(
           accountSid,
-          { identifier: { identifier }, profile: { name: null } },
+          { identifier: { identifier }, profile: { name: null, definitionVersion } },
           { user: newTwilioUser(accountSid, workerSid, []) },
         );
         return result.unwrap().identifier;

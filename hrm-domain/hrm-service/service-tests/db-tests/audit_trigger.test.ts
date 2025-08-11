@@ -35,6 +35,7 @@ import type {
 const workerSid = 'WK-worker-sid';
 const anotherWorkerSid = 'WK-another-worker-sid';
 const testAccountSid = 'test-account-sid';
+const definitionVersion = 'as-v1';
 
 describe('Cases_audit_trigger', () => {
   let createdCase: CaseRecord;
@@ -71,8 +72,8 @@ describe('Cases_audit_trigger', () => {
   test('INSERT audit', async () => {
     createdCase = await db.task(t =>
       t.one(`
-        INSERT INTO "Cases" ("info", helpline, status, "twilioWorkerId", "createdBy", "accountSid", "createdAt", "updatedAt", "updatedBy")
-        VALUES ('{}'::jsonb, '', 'open', '${workerSid}', '${workerSid}', '${testAccountSid}', current_timestamp, current_timestamp, NULL)
+        INSERT INTO "Cases" ("info", helpline, status, "twilioWorkerId", "createdBy", "accountSid", "createdAt", "updatedAt", "updatedBy", "definitionVersion")
+        VALUES ('{}'::jsonb, '', 'open', '${workerSid}', '${workerSid}', '${testAccountSid}', current_timestamp, current_timestamp, NULL, '${definitionVersion}')
         RETURNING *;
       `),
     );
@@ -193,8 +194,8 @@ describe('CaseSections_audit_trigger', () => {
   beforeAll(async () => {
     createdCase = await db.task(t =>
       t.one(`
-        INSERT INTO "Cases" ("info", helpline, status, "twilioWorkerId", "createdBy", "accountSid", "createdAt", "updatedAt", "updatedBy")
-        VALUES ('{}'::jsonb, '', 'open', '${workerSid}', '${workerSid}', '${testAccountSid}', current_timestamp, current_timestamp, NULL)
+        INSERT INTO "Cases" ("info", helpline, status, "twilioWorkerId", "createdBy", "accountSid", "createdAt", "updatedAt", "updatedBy", "definitionVersion")
+        VALUES ('{}'::jsonb, '', 'open', '${workerSid}', '${workerSid}', '${testAccountSid}', current_timestamp, current_timestamp, NULL, '${definitionVersion}')
         RETURNING *;
       `),
     );
@@ -382,8 +383,8 @@ describe('Contacts_audit_trigger', () => {
   test('INSERT audit', async () => {
     createdContact = await db.task(t =>
       t.one(`
-        INSERT INTO "Contacts" ("rawJson", "helpline", "accountSid", "createdBy", "createdAt", "updatedAt", "updatedBy")
-        VALUES ('{}'::jsonb, '', '${testAccountSid}', '${workerSid}', current_timestamp, current_timestamp, NULL)
+        INSERT INTO "Contacts" ("rawJson", "helpline", "accountSid", "createdBy", "createdAt", "updatedAt", "updatedBy", "definitionVersion")
+        VALUES ('{}'::jsonb, '', '${testAccountSid}', '${workerSid}', current_timestamp, current_timestamp, NULL, '${definitionVersion}')
         RETURNING *;
       `),
     );
@@ -517,8 +518,8 @@ describe('Profiles_audit_trigger', () => {
   test('INSERT audit', async () => {
     createdProfile = await db.task(t =>
       t.one(`
-        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy")
-        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null)
+        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy", "definitionVersion")
+        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null, '${definitionVersion}')
         RETURNING *;
       `),
     );
@@ -637,8 +638,8 @@ describe('ProfilesToIdentifiers_audit_trigger', () => {
   beforeAll(async () => {
     createdProfile = await db.task(t =>
       t.one(`
-        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy")
-        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null)
+        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy", "definitionVersion")
+        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null, '${definitionVersion}')
         RETURNING *;
       `),
     );
@@ -809,8 +810,8 @@ describe('ProfilesToProfileFlags_audit_trigger', () => {
   beforeAll(async () => {
     createdProfile = await db.task(t =>
       t.one(`
-        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy")
-        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null)
+        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy", "definitionVersion")
+        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null, '${definitionVersion}')
         RETURNING *;
       `),
     );
@@ -1124,8 +1125,8 @@ describe('ProfileSections_audit_trigger', () => {
   beforeAll(async () => {
     createdProfile = await db.task(t =>
       t.one(`
-        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy")
-        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null)
+        INSERT INTO "Profiles" ("name", "accountSid", "createdAt", "updatedAt", "createdBy", "updatedBy", "definitionVersion")
+        VALUES ('test', '${testAccountSid}', current_timestamp, current_timestamp, '${workerSid}', null, '${definitionVersion}')
         RETURNING *;
       `),
     );

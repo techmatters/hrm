@@ -52,6 +52,7 @@ export const VALID_CASE_CREATE_FIELDS: (keyof CaseRecordCommon)[] = [
   'createdBy',
   'createdAt',
   'label',
+  'definitionVersion',
 ];
 
 export type NewCaseRecord = CaseRecordCommon;
