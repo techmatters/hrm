@@ -14,17 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getQueueAttributes, sendSqsMessage } from '@tech-matters/sqs-client';
+import { getQueueAttributes, SqsClient } from '@tech-matters/sqs-client';
 
 import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
 
 export const publishToImportConsumer =
-  (importResourcesSqsQueueUrl: URL) => async (params: ResourceMessage) => {
+  (sqsClient: SqsClient, importResourcesSqsQueueUrl: URL) =>
+  async (params: ResourceMessage) => {
     //TODO: more robust error handling/messaging
     try {
       const queueUrl = importResourcesSqsQueueUrl.toString();
 
-      return await sendSqsMessage({
+      return await sqsClient.sendSqsMessage({
         message: JSON.stringify(params),
         queueUrl,
         messageGroupId: `${params.accountSid}/${

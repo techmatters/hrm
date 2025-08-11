@@ -4,6 +4,7 @@
   "files": [],
   "references": [
     { "path": "packages/types" },
+    { "path": "packages/s3-client" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sqs-client" },
     { "path": "resources-domain/lambdas/s3-importer" }
