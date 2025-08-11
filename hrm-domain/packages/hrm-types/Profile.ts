@@ -26,6 +26,7 @@ export type NewRecordCommons = {
 
 export type NewProfileRecord = {
   name: string | null;
+  definitionVersion: string;
 };
 
 export type NewIdentifierRecord = {

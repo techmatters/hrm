@@ -48,8 +48,16 @@ const BASELINE_DATE = new Date(2000, 0, 1);
 let sampleCase: CaseService;
 let expectedContacts: Contact[];
 
+const definitionVersion = 'as-v1';
+
 beforeEach(async () => {
-  sampleCase = await createCase({}, accountSid, workerSid, undefined, true);
+  sampleCase = await createCase(
+    { definitionVersion },
+    accountSid,
+    workerSid,
+    undefined,
+    true,
+  );
   const sampleSections: Record<string, NewCaseSection[]> = {
     sectionType1: [
       {

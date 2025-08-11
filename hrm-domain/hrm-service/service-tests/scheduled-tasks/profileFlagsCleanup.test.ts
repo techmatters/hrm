@@ -33,6 +33,7 @@ beforeEach(async () => {
     profileDB.createProfile()(accountSid, {
       name: 'TEST_PROFILE',
       createdBy: workerSid,
+      definitionVersion: 'as-v1',
     }),
     await profileDB.createProfileFlag(accountSid, {
       name: 'TEST_PROFILE_FLAG',

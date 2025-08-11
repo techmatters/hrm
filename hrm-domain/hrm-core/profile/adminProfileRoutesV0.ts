@@ -32,11 +32,11 @@ adminProfilesRouter.post(
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     const { hrmAccountId, user } = req;
-    const { identifier, name } = req.body;
+    const { identifier, name, definitionVersion } = req.body;
 
     const result = await profileController.createProfileWithIdentifierOrError(
       hrmAccountId,
-      { identifier: { identifier }, profile: { name } },
+      { identifier: { identifier }, profile: { name, definitionVersion } },
       { user },
     );
 
