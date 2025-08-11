@@ -43,20 +43,26 @@ const getConfig = async () => {
     `/${deploymentEnvironment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`,
   )) as AccountSID;
 
-  const [importApiBaseUrl, importApiKey, importApiAuthHeader, internalResourcesApiKey] =
-    await Promise.all([
-      debugGetSsmParameter(
-        `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`,
-        true,
-      ),
-      debugGetSsmParameter(
-        `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
-      ),
-      debugGetSsmParameter(
-        `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
-      ),
-      debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
-    ]);
+  const [
+    importApiBaseUrl,
+    importApiKey,
+    importApiAuthHeader,
+    internalResourcesApiKey,
+    docsBucket,
+  ] = await Promise.all([
+    debugGetSsmParameter(
+      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`,
+      true,
+    ),
+    debugGetSsmParameter(
+      `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
+    ),
+    debugGetSsmParameter(
+      `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
+    ),
+    debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
+    debugGetSsmParameter(`/${deploymentEnvironment}/s3/${accountSid}/docs_bucket_name`),
+  ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),
     internalResourcesBaseUrl: new URL(process.env.internal_resources_base_url ?? ''),
@@ -68,6 +74,7 @@ const getConfig = async () => {
     maxBatchSize: Number(process.env.RESOURCE_IMPORT_MAX_BATCH_SIZE ?? 20000),
     maxApiSize: Number(process.env.RESOURCE_IMPORT_MAX_API_SIZE ?? 200),
     maxRequests: Number(process.env.RESOURCE_IMPORT_MAX_REQUESTS ?? 200),
+    largeMessagesS3Bucket: docsBucket,
   } as const;
 };
 

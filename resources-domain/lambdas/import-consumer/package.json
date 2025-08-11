@@ -8,6 +8,8 @@
   "dependencies": {
     "@tech-matters/job-errors": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/sqs-client": "^1.0.0",
+    "@tech-matters/s3-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {

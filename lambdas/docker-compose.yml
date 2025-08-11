@@ -47,8 +47,8 @@ services:
     env_file:
       - ../.env.localstack
 
-  resources-import-producer:
-    image: resources-import-producer
+  resources-scheduled-importer:
+    image: resources-scheduled-importer
     ports:
       - '9004:8080'
     environment:

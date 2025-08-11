@@ -63,6 +63,7 @@ const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
   importApiKey: 'MOCK_EXTERNAL_API_KEY',
   importResourcesSqsQueueUrl: new URL('https://queue-url'),
   importApiBaseUrl: new URL('https://external-url'),
+  largeMessagesS3Bucket: 'an.s3.bucket',
   maxBatchSize: 6,
   maxApiSize: 3,
   maxRequests: 4,
@@ -402,7 +403,7 @@ const testCases: HandlerTestCase[] = [
   },
 ];
 
-describe('resources-import-producer handler', () => {
+describe('resources-scheduled-importer handler', () => {
   each(testCases).test(
     '$description',
     async ({
