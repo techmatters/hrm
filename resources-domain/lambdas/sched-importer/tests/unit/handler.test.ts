@@ -403,7 +403,7 @@ const testCases: HandlerTestCase[] = [
   },
 ];
 
-describe('resources-import-producer handler', () => {
+describe('resources-scheduled-importer handler', () => {
   each(testCases).test(
     '$description',
     async ({

@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/resources-import-producer",
+  "name": "@tech-matters/resources-scheduled-importer",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
@@ -20,7 +20,7 @@
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "docker:build": "docker build -t resources-import-producer --build-arg lambda_name=import-producer --build-arg lambda_dir=resources-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",
+    "docker:build": "docker build -t resources-scheduled-importer --build-arg lambda_name=sched-importer --build-arg lambda_dir=resources-domain/lambdas -f ../../../lambdas/Dockerfile ../../../",
     "test:unit": "jest tests/unit",
     "test": "jest"
   }

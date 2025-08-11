@@ -78,3 +78,5 @@ typings/
 .cdk.staging
 cdk.out
 cdk.context.json
+
+junit.xml
