@@ -145,6 +145,11 @@ export const resourceService = () => {
 
       const boundedSearchParameters: SearchParameters = {
         ...searchParameters,
+        filters: {
+          ...searchParameters.filters,
+          // exclude resources that are explicitly flagged as inactive
+          isActive: true,
+        },
         pagination: { ...searchParameters.pagination!, limit },
       };
 

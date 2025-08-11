@@ -134,6 +134,11 @@ export const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     id: {
       type: 'keyword',
     },
+    isActive: {
+      type: 'boolean',
+      indexValueGenerator: attribute =>
+        attribute.value !== undefined ? Boolean(attribute.value) : true,
+    },
     name: {
       type: 'text',
       hasLanguageFields: true,
