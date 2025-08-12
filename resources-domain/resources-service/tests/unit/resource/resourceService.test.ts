@@ -262,7 +262,7 @@ describe('searchResources', () => {
             limit: expectedSearchLimit ?? esInput.pagination.limit,
           },
           filters: {
-            isActive: true,
+            isActive: false,
           },
         },
       });
