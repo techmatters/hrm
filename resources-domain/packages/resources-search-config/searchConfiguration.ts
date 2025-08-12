@@ -14,8 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
+import {
+  QueryDslQueryContainer,
+  SearchSuggester,
+} from '@elastic/elasticsearch/lib/api/types';
 import { SuggestParameters } from '@tech-matters/elasticsearch-client';
+
+export type FilterValue = boolean | number | string | Date | string[];
 
 /**
  * Used if you need to alias a text filter in the API to a different field in the index.
@@ -38,7 +43,13 @@ type RangeFilterMapping = {
   operator: RangeFilterOperator;
 };
 
-type FilterMapping = TermFilterMapping | RangeFilterMapping;
+type CustomFilterMapping = {
+  type: 'custom';
+  targetField?: string;
+  filterGenerator: (value: FilterValue) => QueryDslQueryContainer;
+};
+
+type FilterMapping = TermFilterMapping | RangeFilterMapping | CustomFilterMapping;
 
 export type ResourcesSearchConfiguration = {
   searchFieldBoosts: Record<string, number>;
