@@ -5,6 +5,7 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/s3-client" },
     { "path": "packages/sqs-client" },
     { "path": "resources-domain/lambdas/sched-importer" }
   ]
