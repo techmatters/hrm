@@ -18,7 +18,7 @@ import type {
   AccountSID,
   FlatResource,
   InlineAttributeProperty,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 import { KhpApiResource } from '.';
 import {
   FieldMappingContext,

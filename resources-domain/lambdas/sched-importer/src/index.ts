@@ -15,12 +15,12 @@
  */
 
 import type { ScheduledEvent } from 'aws-lambda';
+import type { AccountSID } from '@tech-matters/types';
 import type {
-  AccountSID,
   ImportBatch,
   ImportProgress,
   TimeSequence,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 import parseISO from 'date-fns/parseISO';
 import {
   publishToImportConsumer,
