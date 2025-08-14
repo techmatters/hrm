@@ -15,7 +15,14 @@
  */
 
 import type { S3Event } from 'aws-lambda';
+import { parse } from 'csv-parse';
+import { getS3Object } from '@tech-matters/s3-client';
 
 export const handler = async (event: S3Event): Promise<void> => {
   console.debug('Triggered by event:', JSON.stringify(event));
+  event.Records.map(async ({ s3: { object, bucket } }) => {
+    const csv = await getS3Object({ bucket: bucket.name, key: object.key });
+    for await (const csvLine of parse(csv, { fromLine: 2 })) {
+    }
+  });
 };
