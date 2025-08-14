@@ -16,11 +16,10 @@
 import { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { SearchQuery } from '@tech-matters/elasticsearch-client';
 import {
+  FilterValue,
   ResourcesSearchConfiguration,
   getQuerySearchFields,
 } from './searchConfiguration';
-
-type FilterValue = boolean | number | string | Date | string[];
 
 export type SearchParameters = {
   filters?: Record<string, boolean | number | string | string[]>;
@@ -82,7 +81,7 @@ const generateFilters = (
     const targetField = mapping?.targetField ?? key;
     if (mapping) {
       switch (mapping.type) {
-        case 'range':
+        case 'range': {
           if (!Array.isArray(value)) {
             filterClauses.push({
               range: {
@@ -97,9 +96,15 @@ const generateFilters = (
             );
           }
           break;
-        case 'term':
+        }
+        case 'term': {
           filterClauses.push(generateTermFilter(targetField, value));
           break;
+        }
+        case 'custom': {
+          filterClauses.push(mapping.filterGenerator(value));
+          break;
+        }
       }
     } else if (!Array.isArray(value) && typeof value !== 'string') {
       // If there is no explicit mapping, but it isn't a string or a string array, still treat it as a term filter

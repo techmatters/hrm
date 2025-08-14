@@ -32,7 +32,15 @@ export type {
 export const insertProfileSql = (profile: NewProfileRecord & NewRecordCommons) => `
   ${pgp.helpers.insert(
     profile,
-    ['accountSid', 'name', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'],
+    [
+      'accountSid',
+      'name',
+      'definitionVersion',
+      'createdAt',
+      'updatedAt',
+      'createdBy',
+      'updatedBy',
+    ],
     'Profiles',
   )}
   RETURNING *

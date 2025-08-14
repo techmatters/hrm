@@ -553,8 +553,13 @@ export const KHP_MAPPING_NODE: MappingNode = {
           `coverage/${currentValue._id ?? captures.coverageIndex}`,
         {
           info: ({ currentValue }) => currentValue,
-          value: ({ currentValue, captures }) =>
-            `coverage/${currentValue._id ?? captures.coverageIndex}`,
+          value: ({ currentValue }) => {
+            const { postalCode, city, region, province, country } = currentValue;
+            return [postalCode, city, region, province, country]
+              .filter(Boolean)
+              .join(', ');
+          },
+          // `coverage/${currentValue._id ?? captures.coverageIndex}`,
         },
       ),
     },

@@ -261,6 +261,9 @@ describe('searchResources', () => {
             ...esInput.pagination,
             limit: expectedSearchLimit ?? esInput.pagination.limit,
           },
+          filters: {
+            isActive: false,
+          },
         },
       });
       expect(getByIdList).toHaveBeenCalledWith(

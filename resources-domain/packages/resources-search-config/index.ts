@@ -50,6 +50,16 @@ const resourceSearchConfiguration: ResourcesSearchConfiguration = {
     interpretationTranslationServicesAvailable: {
       type: 'term',
     },
+    isActive: {
+      type: 'custom',
+      filterGenerator: value => ({
+        bool: {
+          must_not: {
+            term: { isActive: value },
+          },
+        },
+      }),
+    },
   },
   generateSuggestQuery,
 };
