@@ -23,7 +23,11 @@ import {
   KhpApiResponse,
 } from '../../src';
 import each from 'jest-each';
-import type { FlatResource, ImportProgress, TimeSequence } from '@tech-matters/types';
+import type {
+  FlatResource,
+  ImportProgress,
+  TimeSequence,
+} from '@tech-matters/resources-types';
 import { ScheduledEvent } from 'aws-lambda';
 import { addSeconds, subHours, subMinutes } from 'date-fns';
 import {

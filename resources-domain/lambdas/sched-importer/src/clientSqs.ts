@@ -16,7 +16,8 @@
 
 import { getQueueAttributes, SqsClient } from '@tech-matters/sqs-client';
 
-import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
+import type { AccountSID } from '@tech-matters/types';
+import type { ImportRequestBody } from '@tech-matters/resources-types';
 
 export const publishToImportConsumer =
   (sqsClient: SqsClient, importResourcesSqsQueueUrl: URL) =>

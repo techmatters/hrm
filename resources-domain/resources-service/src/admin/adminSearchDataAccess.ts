@@ -14,7 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AccountSID, FlatResource } from '@tech-matters/types';
+import type { AccountSID } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
 import { db, pgp } from '../connection-pool';
 import { generateSelectResourcesForReindexSql } from './sql/adminSearchSql';
 import QueryStream from 'pg-query-stream';

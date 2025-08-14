@@ -14,7 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { streamResourcesForReindexing } from './adminSearchDataAccess';
-import { AccountSID, FlatResource } from '@tech-matters/types';
+import { AccountSID } from '@tech-matters/types';
+import { FlatResource } from '@tech-matters/resources-types';
 import { publishSearchIndexJob } from '../resource-jobs/client-sqs';
 import ReadableStream = NodeJS.ReadableStream;
 import { Transform } from 'stream';

@@ -13,14 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-import {
-  AccountSID,
+import type { AccountSID } from '@tech-matters/types';
+import type {
   FlatResource,
   ReferrableResource,
   ReferrableResourceAttribute,
   ResourceAttributeNode,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 
 import { getClient, SuggestParameters } from '@tech-matters/elasticsearch-client';
 

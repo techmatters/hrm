@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { FlatResource } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
 import { resourceIndexConfiguration, RESOURCE_INDEX_TYPE } from '../../index';
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');

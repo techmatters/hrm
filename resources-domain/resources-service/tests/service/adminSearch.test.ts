@@ -20,7 +20,8 @@ import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { addDays, parseISO, subDays } from 'date-fns';
 import each from 'jest-each';
-import { AccountSID, FlatResource, ResourcesJobType } from '@tech-matters/types';
+import { AccountSID } from '@tech-matters/types';
+import { FlatResource, ResourcesJobType } from '@tech-matters/resources-types';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
 import range from './range';
 

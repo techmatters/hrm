@@ -17,7 +17,7 @@ import {
   IndexConfiguration,
   SearchConfiguration,
 } from '@tech-matters/elasticsearch-client';
-import { FlatResource } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
 import { convertIndexDocument } from './convertIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';
 import { generateSuggestQuery } from './generateSuggestQuery';

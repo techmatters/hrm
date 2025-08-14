@@ -22,7 +22,7 @@ import {
 } from '../../../src/resource/resourceService';
 import each from 'jest-each';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
-import { FlatResource } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
 import { getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
 
 jest.mock('../../../src/resource/resourceDataAccess', () => ({
