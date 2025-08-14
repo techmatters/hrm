@@ -24,7 +24,8 @@ import {
   referenceAttributeMapping,
   translatableAttributeMapping,
 } from '../../src/mappers';
-import { AccountSID, FlatResource } from '@tech-matters/types';
+import { AccountSID } from '@tech-matters/types';
+import { FlatResource } from '@tech-matters/resources-types';
 import each from 'jest-each';
 import {
   failingId,
