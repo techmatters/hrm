@@ -15,7 +15,8 @@
  */
 
 import { IRouter, Router } from 'express';
-import { ImportRequestBody, HrmAccountId } from '@tech-matters/types';
+import { HrmAccountId } from '@tech-matters/types';
+import { ImportRequestBody } from '@tech-matters/resources-types';
 import importService, { isValidationFailure } from './importService';
 import createError from 'http-errors';
 

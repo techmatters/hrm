@@ -15,13 +15,12 @@
  */
 
 import { pgp } from '../connection-pool';
-import {
-  AccountSID,
+import type { AccountSID, HrmAccountId } from '@tech-matters/types';
+import type {
   ImportProgress,
   FlatResource,
   ImportBatch,
-  HrmAccountId,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 
 const DELETE_RESOURCE_ATTRIBUTES_SQL = `DELETE FROM resources."ResourceStringAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;
     DELETE FROM resources."ResourceNumberAttributes" WHERE "resourceId" = $<resourceId> AND "accountSid" = $<accountSid>;

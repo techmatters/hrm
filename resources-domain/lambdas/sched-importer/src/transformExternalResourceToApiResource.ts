@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import type { AccountSID } from '@tech-matters/types';
 import type {
-  AccountSID,
   FlatResource,
   InlineAttributeProperty,
 } from '@tech-matters/resources-types';
