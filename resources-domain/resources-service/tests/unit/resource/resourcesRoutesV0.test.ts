@@ -14,7 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ReferrableResource, HrmAccountId } from '@tech-matters/types';
+import { HrmAccountId } from '@tech-matters/types';
+import { ReferrableResource } from '@tech-matters/resources-types';
 import { SearchParameters } from '@tech-matters/resources-search-config';
 
 import { Request, Response, Router } from 'express';
