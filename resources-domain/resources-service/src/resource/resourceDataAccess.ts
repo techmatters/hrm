@@ -17,7 +17,6 @@
 import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
 
-
 import { db } from '../connection-pool';
 import { SELECT_RESOURCE_IN_IDS } from './sql/resourceGetSql';
 
