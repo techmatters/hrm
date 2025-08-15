@@ -19,18 +19,18 @@ import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/
 import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
-import {
-  AccountSID,
+import { AccountSID } from '@tech-matters/types';
+import type {
   FlatResource,
   ImportBatch,
   ImportProgress,
   ImportRequestBody,
   ResourcesJobType,
   TimeSequence,
-} from '@tech-matters/types';
+  ReferrableResource,
+} from '@tech-matters/resources-types';
 import { internalHeaders } from './server';
 import each from 'jest-each';
-import { ReferrableResource } from '@tech-matters/types';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';

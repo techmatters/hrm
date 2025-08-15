@@ -17,9 +17,12 @@
 import parseISO from 'date-fns/parseISO';
 import { handler } from '../../index';
 import each from 'jest-each';
-import type { FlatResource, ImportRequestBody } from '@tech-matters/types';
+import type {
+  FlatResource,
+  ImportRequestBody,
+  TimeSequence,
+} from '@tech-matters/resources-types';
 import type { SQSEvent } from 'aws-lambda';
-import { TimeSequence } from '@tech-matters/types';
 
 const mockFetch = jest.fn();
 
