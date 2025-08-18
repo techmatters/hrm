@@ -24,50 +24,57 @@ import {
 import { NewPostSurvey, PostSurvey } from './postSurveyDataAccess';
 import { createPostSurvey, getPostSurveysByContactTaskId } from './postSurvey';
 
-const postSurveysRouter = SafeRouter();
+const newPostSurveyRouter = (isPublic: boolean) => {
+  const postSurveysRouter = SafeRouter();
 
-postSurveysRouter.post(
-  '/',
-  publicEndpoint,
-  async (req: Request<NewPostSurvey>, res: Response<PostSurvey>) => {
-    const { hrmAccountId } = req;
+  // Public only endpoints
+  if (isPublic) {
+    const canViewPostSurvey = (req: RequestWithPermissions, res, next) => {
+      if (!req.isPermitted()) {
+        const { user, can } = req;
 
-    const createdPostSurvey = await createPostSurvey(hrmAccountId, req.body);
-    res.json(createdPostSurvey);
-  },
-);
+        // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
+        if (can(user, actionsMaps.postSurvey.VIEW_POST_SURVEY, null)) {
+          console.debug(
+            `[Permission - PERMITTED] User ${user.workerSid} is permitted to perform ${actionsMaps.postSurvey.VIEW_POST_SURVEY} on account ${req.hrmAccountId}`,
+          );
+          req.permit();
+        } else {
+          console.debug(
+            `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${actionsMaps.postSurvey.VIEW_POST_SURVEY} on account ${req.hrmAccountId}`,
+          );
+          req.block();
+        }
+      }
 
-const canViewPostSurvey = (req: RequestWithPermissions, res, next) => {
-  if (!req.isPermitted()) {
-    const { user, can } = req;
+      next();
+    };
 
-    // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
-    if (can(user, actionsMaps.postSurvey.VIEW_POST_SURVEY, null)) {
-      console.debug(
-        `[Permission - PERMITTED] User ${user.workerSid} is permitted to perform ${actionsMaps.postSurvey.VIEW_POST_SURVEY} on account ${req.hrmAccountId}`,
-      );
-      req.permit();
-    } else {
-      console.debug(
-        `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${actionsMaps.postSurvey.VIEW_POST_SURVEY} on account ${req.hrmAccountId}`,
-      );
-      req.block();
-    }
+    postSurveysRouter.get(
+      '/contactTaskId/:id',
+      canViewPostSurvey,
+      async (req: Request, res: Response) => {
+        const { hrmAccountId } = req;
+        const { id } = req.params;
+
+        const postSurveys = await getPostSurveysByContactTaskId(hrmAccountId, id);
+        res.json(postSurveys);
+      },
+    );
   }
 
-  next();
+  postSurveysRouter.post(
+    '/',
+    publicEndpoint,
+    async (req: Request<NewPostSurvey>, res: Response<PostSurvey>) => {
+      const { hrmAccountId } = req;
+
+      const createdPostSurvey = await createPostSurvey(hrmAccountId, req.body);
+      res.json(createdPostSurvey);
+    },
+  );
+
+  return postSurveysRouter.expressRouter;
 };
 
-postSurveysRouter.get(
-  '/contactTaskId/:id',
-  canViewPostSurvey,
-  async (req: Request, res: Response) => {
-    const { hrmAccountId } = req;
-    const { id } = req.params;
-
-    const postSurveys = await getPostSurveysByContactTaskId(hrmAccountId, id);
-    res.json(postSurveys);
-  },
-);
-
-export default postSurveysRouter.expressRouter;
+export default newPostSurveyRouter;

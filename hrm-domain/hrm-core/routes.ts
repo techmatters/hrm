@@ -34,6 +34,8 @@ const publicCases = cases(true);
 const internalCases = cases(false);
 const publicContacts = contacts(true);
 const internalContacts = contacts(false);
+const publicPostSurveys = postSurveys(true);
+const internalPostSurveys = postSurveys(false);
 
 export const HRM_ROUTES: {
   path: string;
@@ -41,7 +43,7 @@ export const HRM_ROUTES: {
 }[] = [
   { path: '/contacts', routerFactory: () => publicContacts },
   { path: '/cases', routerFactory: () => publicCases },
-  { path: '/postSurveys', routerFactory: () => postSurveys },
+  { path: '/postSurveys', routerFactory: () => publicPostSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
   { path: '/profiles', routerFactory: () => profiles },
   { path: '/referrals', routerFactory: () => referrals() },
@@ -78,6 +80,7 @@ export const INTERNAL_ROUTES: {
   { path: '/contacts', routerFactory: () => internalContacts },
   { path: '/profiles', routerFactory: () => internalProfiles },
   { path: '/cases', routerFactory: () => internalCases },
+  { path: '/postSurveys', routerFactory: () => internalPostSurveys },
 ];
 
 export const internalApiV0 = () => {
