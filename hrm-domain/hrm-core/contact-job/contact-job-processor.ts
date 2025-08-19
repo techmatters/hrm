@@ -27,6 +27,7 @@ import { publishDueContactJobs } from './contact-job-publish';
 import { ContactJobType } from '@tech-matters/types';
 import { db } from '../dbConnection';
 
+const JOB_PROCESSING_SKIP = process.env.JOB_PROCESSING_SKIP || false;
 let processingJobs = false;
 let JOB_PROCESSING_INTERVAL_MILLISECONDS: number;
 try {
@@ -49,7 +50,7 @@ const JOB_TYPE_SPECIFIC_RETRY_INTERVAL_MILLISECONDS: {
 export const JOB_MAX_ATTEMPTS = 20;
 
 export function processContactJobs() {
-  if (!processingJobs) {
+  if (!processingJobs && !JOB_PROCESSING_SKIP) {
     console.info(
       `Started processing jobs every ${JOB_PROCESSING_INTERVAL_MILLISECONDS} milliseconds.`,
     );
