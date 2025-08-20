@@ -110,7 +110,7 @@ export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
 
 export const USCH_MAPPING_NODE: MappingNode = {
   ResourceID: resourceFieldMapping('id'),
-  Name: translatableAttributeMapping('name', { language: 'en' }),
+  Name: resourceFieldMapping('name'),
   AlternateName: translatableAttributeMapping('alternateName', { language: 'en' }),
   Address: attributeMapping('stringAttributes', 'address/street'),
   City: attributeMapping('stringAttributes', 'address/city'),
