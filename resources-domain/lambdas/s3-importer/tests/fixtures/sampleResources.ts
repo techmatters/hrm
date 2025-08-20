@@ -66,8 +66,3 @@ export const EMPTY_CSV_LINE: UschCsvResource = {
   UpdatedOn: '',
   WebsiteAddress: '',
 };
-export const EMPTY_EXPANDED_RESOURCE = {
-  ...EMPTY_CSV_LINE,
-  Categories: [],
-  Coverage: [],
-};
