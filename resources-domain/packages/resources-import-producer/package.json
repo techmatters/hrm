@@ -14,8 +14,5 @@
     "@tech-matters/resources-types": "^1.0.0",
     "@tsconfig/node22": "^22.0.0",
     "typescript": "^5.7.3"
-  },
-  "scripts": {
-    "test:unit": "jest tests/unit"
   }
 }
