@@ -16,7 +16,7 @@
 
 import type { S3Event } from 'aws-lambda';
 import { parse } from 'csv-parse';
-import { getS3Object } from '@tech-matters/s3-client';
+import { deleteS3Object, getS3Object, putS3Object } from '@tech-matters/s3-client';
 import { expandCsvLine, transformUschResourceToApiResource } from './uschMappings';
 import {
   waitForEmptyQueue,
@@ -25,6 +25,8 @@ import {
 } from '@tech-matters/resources-import-producer';
 import getConfig from './config';
 import { newSqsClient } from '@tech-matters/sqs-client';
+
+const COMPLETED_KEY = 'completed-s3-imports';
 
 export const handler = async (event: S3Event): Promise<void> => {
   console.debug('Triggered by event:', JSON.stringify(event));
@@ -45,6 +47,7 @@ export const handler = async (event: S3Event): Promise<void> => {
     s3: { object, bucket },
   } of event.Records) {
     const csv = await getS3Object({ bucket: bucket.name, key: object.key });
+    const key = decodeURIComponent(object.key);
     for await (const csvLine of parse(csv, {
       columns: headings => headings,
     })) {
@@ -59,5 +62,19 @@ export const handler = async (event: S3Event): Promise<void> => {
       };
       await configuredPublish(resourceMessage);
     }
+    const keyParts = key.split('/');
+    const restOfCompletedKey = (keyParts.length > 1 ? keyParts.slice(1) : keyParts).join(
+      '/',
+    );
+    await putS3Object({
+      bucket: bucket.name,
+      key: `${COMPLETED_KEY}${restOfCompletedKey}`,
+      body: csv,
+      contentType: 'text/csv; charset=utf-8',
+    });
+    await deleteS3Object({
+      bucket: bucket.name,
+      key,
+    });
   }
 };
