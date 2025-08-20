@@ -22,6 +22,7 @@ import {
 } from '@tech-matters/resources-mappers';
 import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
+import { parse } from 'date-fns';
 
 /*
  * This defines all the mapping logic to convert Childhelp resource to an Aselo resource.
@@ -158,7 +159,9 @@ export const USCH_MAPPING_NODE: MappingNode = {
   FeeStructure: translatableAttributeMapping('feeStructure', { language: 'en' }),
   OtherLanguages: attributeMapping('stringAttributes', 'otherLanguages'),
   EnteredOn: attributeMapping('stringAttributes', 'enteredOn'),
-  UpdatedOn: attributeMapping('stringAttributes', 'updatedOn'),
+  UpdatedOn: resourceFieldMapping('lastUpdated', ({ currentValue }) =>
+    parse(currentValue, 'd/M/YYYY', new Date()).toISOString(),
+  ),
   ShortDescription: translatableAttributeMapping('shortDescription', { language: 'en' }),
   LastVerifiedOn: attributeMapping('stringAttributes', 'lastVerified/on'),
   LastVerifiedByName: attributeMapping('stringAttributes', 'lastVerified/name'),
