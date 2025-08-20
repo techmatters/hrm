@@ -160,7 +160,7 @@ export const USCH_MAPPING_NODE: MappingNode = {
   OtherLanguages: attributeMapping('stringAttributes', 'otherLanguages'),
   EnteredOn: attributeMapping('stringAttributes', 'enteredOn'),
   UpdatedOn: resourceFieldMapping('lastUpdated', ({ currentValue }) =>
-    parse(currentValue, 'd/M/yyyy', new Date()).toISOString(),
+    parse(currentValue, 'M/d/yyyy', new Date()).toISOString(),
   ),
   ShortDescription: translatableAttributeMapping('shortDescription', { language: 'en' }),
   LastVerifiedOn: attributeMapping('stringAttributes', 'lastVerified/on'),
