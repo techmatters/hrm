@@ -14,10 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { handler } from '../../src';
+import { COMPLETED_KEY, handler } from '../../src';
 import each from 'jest-each';
 import { S3EventRecord } from 'aws-lambda';
-import { getS3Object } from '@tech-matters/s3-client';
+import { deleteS3Object, getS3Object, putS3Object } from '@tech-matters/s3-client';
 import * as fs from 'node:fs/promises';
 import {
   publishToImportConsumer,
@@ -27,6 +27,8 @@ import { parse } from 'csv-parse';
 
 jest.mock('@tech-matters/s3-client', () => ({
   getS3Object: jest.fn(),
+  putS3Object: jest.fn(),
+  deleteS3Object: jest.fn(),
 }));
 jest.mock('@tech-matters/resources-import-producer', () => ({
   waitForEmptyQueue: jest.fn().mockResolvedValue(Promise.resolve()),
@@ -42,6 +44,8 @@ jest.mock('../../src/config', () =>
 
 // const mockGetConfig = getConfig as jest.MockedFunction<typeof getConfig>;
 const mockGetS3Object = getS3Object as jest.MockedFunction<typeof getS3Object>;
+const mockPutS3Object = putS3Object as jest.MockedFunction<typeof putS3Object>;
+const mockDeleteS3Object = deleteS3Object as jest.MockedFunction<typeof deleteS3Object>;
 const mockPublishToImportConsumer = publishToImportConsumer as jest.MockedFunction<
   typeof publishToImportConsumer
 >;
@@ -88,6 +92,8 @@ beforeAll(async () => {
 
 beforeEach(() => {
   mockGetS3Object.mockClear();
+  mockDeleteS3Object.mockReset();
+  mockPutS3Object.mockReset();
   mockWaitForEmptyQueue.mockClear();
   mockConfiguredPublish.mockReset();
   mockConfiguredPublish.mockImplementation(message => {
@@ -113,5 +119,15 @@ describe('resources-scheduled-importer handler', () => {
     });
     expect(mockWaitForEmptyQueue).toHaveBeenCalledTimes(1);
     expect(mockConfiguredPublish).toHaveBeenCalledTimes(csvRecordCount);
+    expect(mockPutS3Object).toHaveBeenCalledWith({
+      bucket: 'my-bucket',
+      key: `${COMPLETED_KEY}/the-key`,
+      body: csvContent,
+      contentType: 'text/csv; charset=utf-8',
+    });
+    expect(mockDeleteS3Object).toHaveBeenCalledWith({
+      bucket: 'my-bucket',
+      key: 'the-key',
+    });
   });
 });

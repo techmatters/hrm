@@ -26,7 +26,7 @@ import {
 import getConfig from './config';
 import { newSqsClient } from '@tech-matters/sqs-client';
 
-const COMPLETED_KEY = 'completed-s3-imports';
+export const COMPLETED_KEY = 'completed-s3-imports';
 
 export const handler = async (event: S3Event): Promise<void> => {
   console.debug('Triggered by event:', JSON.stringify(event));
@@ -68,7 +68,7 @@ export const handler = async (event: S3Event): Promise<void> => {
     );
     await putS3Object({
       bucket: bucket.name,
-      key: `${COMPLETED_KEY}${restOfCompletedKey}`,
+      key: `${COMPLETED_KEY}/${restOfCompletedKey}`,
       body: csv,
       contentType: 'text/csv; charset=utf-8',
     });
