@@ -19,7 +19,7 @@ import {
   UschExpandedResource,
 } from '../../src/uschMappings';
 import each from 'jest-each';
-import { EMPTY_CSV_LINE, EMPTY_EXPANDED_RESOURCE } from '../fixtures/sampleResources';
+import { EMPTY_CSV_LINE } from '../fixtures/sampleResources';
 
 const TEST_RESOURCE_ID = 'test-id';
 
@@ -30,7 +30,6 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
     });
     expect(result).toStrictEqual({
-      ...EMPTY_CSV_LINE,
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: [],
@@ -43,7 +42,6 @@ describe('expandCsvLine', () => {
       Categories: 'One category',
     });
     expect(result).toStrictEqual({
-      ...EMPTY_CSV_LINE,
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['One category'],
@@ -56,7 +54,6 @@ describe('expandCsvLine', () => {
       Categories: 'A ;few; categories',
     });
     expect(result).toStrictEqual({
-      ...EMPTY_CSV_LINE,
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['A ', 'few', ' categories'],
@@ -69,7 +66,6 @@ describe('expandCsvLine', () => {
       Coverage: 'One coverage',
     });
     expect(result).toStrictEqual({
-      ...EMPTY_CSV_LINE,
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['One coverage'],
       Categories: [],
@@ -82,7 +78,6 @@ describe('expandCsvLine', () => {
       Coverage: 'A ;few; coverages',
     });
     expect(result).toStrictEqual({
-      ...EMPTY_CSV_LINE,
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['A ', 'few', ' coverages'],
       Categories: [],
@@ -103,14 +98,12 @@ describe('Mapping valid sample resources should produce no warnings', () => {
     {
       description: 'Empty resource',
       resource: {
-        ...EMPTY_EXPANDED_RESOURCE,
         ResourceID: 'EMPTY_RESOURCE',
       },
     },
     {
       description: 'Resource with address',
       resource: {
-        ...EMPTY_EXPANDED_RESOURCE,
         ResourceID: 'ADDRESS_RESOURCE',
         Address: '123 Fake Street',
         City: 'City Wok',
@@ -122,7 +115,6 @@ describe('Mapping valid sample resources should produce no warnings', () => {
     {
       description: 'Resource with phone numbers',
       resource: {
-        ...EMPTY_EXPANDED_RESOURCE,
         ResourceID: 'PHONE_RESOURCE',
         Phone1: '1234567',
         Phone1Name: 'Batphone',
@@ -139,7 +131,6 @@ describe('Mapping valid sample resources should produce no warnings', () => {
     {
       description: 'Resource with verification',
       resource: {
-        ...EMPTY_EXPANDED_RESOURCE,
         ResourceID: 'VERIFICATION_RESOURCE',
         LastVerificationApprovedBy: 'Bob',
         LastVerifiedByEmailAddress: 'lorna@ballantyne.com',
@@ -152,7 +143,6 @@ describe('Mapping valid sample resources should produce no warnings', () => {
     {
       description: 'Resource with categories',
       resource: {
-        ...EMPTY_EXPANDED_RESOURCE,
         ResourceID: 'CATEGORY_RESOURCE',
         Categories: ['CATEGORY 1', 'CATEGORY 2', 'CATEGORY 3'],
       },
@@ -160,7 +150,6 @@ describe('Mapping valid sample resources should produce no warnings', () => {
     {
       description: 'Resource with coverage',
       resource: {
-        ...EMPTY_EXPANDED_RESOURCE,
         ResourceID: 'EMPTY_RESOURCE',
         Coverage: ['COVERAGE 1', 'COVERAGE 2', 'COVERAGE 3'],
       },
