@@ -17,12 +17,47 @@
 import type { S3Event } from 'aws-lambda';
 import { parse } from 'csv-parse';
 import { getS3Object } from '@tech-matters/s3-client';
+import { expandCsvLine, transformUschResourceToApiResource } from './uschMappings';
+import {
+  waitForEmptyQueue,
+  publishToImportConsumer,
+  ResourceMessage,
+} from '@tech-matters/resources-import-producer';
+import getConfig from './config';
+import { newSqsClient } from '@tech-matters/sqs-client';
 
 export const handler = async (event: S3Event): Promise<void> => {
   console.debug('Triggered by event:', JSON.stringify(event));
-  event.Records.map(async ({ s3: { object, bucket } }) => {
-    const csv = await getS3Object({ bucket: bucket.name, key: object.key });
-    for await (const csvLine of parse(csv, { fromLine: 2 })) {
-    }
+  const { largeMessagesS3Bucket, importResourcesSqsQueueUrl, accountSid } =
+    await getConfig();
+
+  const sqs = newSqsClient({
+    largeMessageS3BaseLocation: {
+      bucket: largeMessagesS3Bucket,
+      key: 'sqsLargeMessageContent',
+    },
   });
+  const configuredPublish = publishToImportConsumer(sqs, importResourcesSqsQueueUrl);
+
+  await waitForEmptyQueue(importResourcesSqsQueueUrl);
+
+  for (const {
+    s3: { object, bucket },
+  } of event.Records) {
+    const csv = await getS3Object({ bucket: bucket.name, key: object.key });
+    for await (const csvLine of parse(csv, {
+      columns: headings => headings,
+    })) {
+      const aseloResource = transformUschResourceToApiResource(
+        accountSid,
+        expandCsvLine(csvLine),
+      );
+      const resourceMessage: ResourceMessage = {
+        batch: { fromSequence: '', toSequence: '', remaining: 0 },
+        accountSid,
+        importedResources: [aseloResource],
+      };
+      await configuredPublish(resourceMessage);
+    }
+  }
 };

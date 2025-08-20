@@ -14,14 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import {
+  attributeMapping,
   FieldMappingContext,
   MappingNode,
-  substituteCaptureTokens,
-  resourceFieldMapping,
-  attributeMapping,
-  translatableAttributeMapping,
   referenceAttributeMapping,
+  resourceFieldMapping,
+  substituteCaptureTokens,
+  transformExternalResourceToApiResource,
+  translatableAttributeMapping,
 } from '@tech-matters/resources-mappers';
+import type { AccountSID } from '@tech-matters/types/';
+import { KhpApiResource } from './index';
+import { FlatResource } from '@tech-matters/resources-types';
 
 // TODO: Change objectId to site ID when we have it
 const siteKey = (subsection: string) => (context: FieldMappingContext) => {
@@ -252,7 +256,6 @@ const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
 
 const MAX_TAXONOMY_DEPTH = 5;
 
-// TODO: this is an array of arrays, is this shape correct?
 const KHP_MAPPING_NODE_TAXONOMIES = (depth: number = 0): { children: MappingNode } => ({
   children: {
     '{taxonomyIndex}': {
@@ -739,3 +742,9 @@ export const KHP_MAPPING_NODE: MappingNode = {
     },
   },
 };
+
+export const transformKhpResourceToApiResource = (
+  accountSid: AccountSID,
+  khpResource: KhpApiResource,
+): FlatResource =>
+  transformExternalResourceToApiResource(KHP_MAPPING_NODE, accountSid, khpResource);
