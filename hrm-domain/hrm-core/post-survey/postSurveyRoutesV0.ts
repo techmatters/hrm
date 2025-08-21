@@ -22,7 +22,7 @@ import {
   RequestWithPermissions,
 } from '../permissions';
 import { NewPostSurvey, PostSurvey } from './postSurveyDataAccess';
-import { createPostSurvey, getPostSurveysByContactTaskId } from './postSurvey';
+import { createPostSurvey, getPostSurveysByContactTaskId } from './postSurveyService';
 
 const newPostSurveyRouter = (isPublic: boolean) => {
   const postSurveysRouter = SafeRouter();
