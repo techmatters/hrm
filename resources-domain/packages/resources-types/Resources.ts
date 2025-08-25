@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { AccountSID } from './twilio';
-import { HrmAccountId } from './HrmAccountId';
+import { AccountSID } from '@tech-matters/types';
+import { HrmAccountId } from '@tech-matters/types';
 
 export type TimeSequence = `${number}-${number}`;
 

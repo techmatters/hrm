@@ -14,7 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types';
+import type {
+  FlatResource,
+  ReferrableResourceAttribute,
+} from '@tech-matters/resources-types';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import {
   isHighBoostGlobalField,

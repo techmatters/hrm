@@ -19,7 +19,10 @@ import {
   BulkOperations,
   ExecuteBulkResponse,
 } from '@tech-matters/elasticsearch-client';
-import { FlatResource, ResourcesSearchIndexPayload } from '@tech-matters/types';
+import type {
+  FlatResource,
+  ResourcesSearchIndexPayload,
+} from '@tech-matters/resources-types';
 
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import {

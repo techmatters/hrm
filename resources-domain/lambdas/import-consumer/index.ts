@@ -17,7 +17,8 @@
 import { ResourceImportProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
-import type { ImportRequestBody, HrmAccountId } from '@tech-matters/types';
+import type { HrmAccountId } from '@tech-matters/types';
+import type { ImportRequestBody } from '@tech-matters/resources-types';
 import { retrieveMessageContent } from '@tech-matters/sqs-client';
 
 const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;

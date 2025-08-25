@@ -14,7 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { FlatResource, HrmAccountId } from '@tech-matters/types';
+import type { HrmAccountId } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
 
 export const BLANK_ATTRIBUTES: Omit<
   FlatResource,

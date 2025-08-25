@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
 import {
   FieldMappingContext,
   MappingNode,
@@ -22,7 +21,7 @@ import {
   attributeMapping,
   translatableAttributeMapping,
   referenceAttributeMapping,
-} from './mappers';
+} from '@tech-matters/resources-mappers';
 
 // TODO: Change objectId to site ID when we have it
 const siteKey = (subsection: string) => (context: FieldMappingContext) => {

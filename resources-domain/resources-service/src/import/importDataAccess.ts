@@ -14,12 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  AccountSID,
+import type { AccountSID } from '@tech-matters/types';
+
+import type {
   FlatResource,
   ImportBatch,
   ImportProgress,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 import {
   generateInsertImportErrorSql,
   generateUpdateImportBatchRecordSql,

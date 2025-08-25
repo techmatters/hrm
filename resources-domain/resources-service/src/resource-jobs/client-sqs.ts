@@ -19,12 +19,12 @@ import { SQS } from 'aws-sdk';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { publishSns } from '@tech-matters/sns-client';
 
-import type {
+import type { HrmAccountId } from '@tech-matters/types';
+import {
   FlatResource,
   ResourcesSearchIndexPayload,
-  HrmAccountId,
-} from '@tech-matters/types';
-import { ResourcesJobType } from '@tech-matters/types';
+  ResourcesJobType,
+} from '@tech-matters/resources-types';
 
 const RETRY_COUNT = 4;
 

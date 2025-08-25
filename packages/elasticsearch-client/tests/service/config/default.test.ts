@@ -20,7 +20,7 @@ import { orderBy } from 'lodash';
 import { getClient } from '../../../src';
 import { SearchParameters, SearchResponse, Client, IndexClient } from '../../../';
 import { resourceDocuments } from '../../fixtures/resources';
-import { FlatResource } from '@tech-matters/types/Resources';
+import { FlatResource } from '@tech-matters/resources-types';
 import {
   resourceIndexConfiguration,
   resourceSearchConfiguration,

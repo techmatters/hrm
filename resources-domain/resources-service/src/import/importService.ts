@@ -14,14 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import parseISO from 'date-fns/parseISO';
-import {
-  AccountSID,
+import type { AccountSID, HrmAccountId } from '@tech-matters/types';
+import type {
   FlatResource,
   ImportBatch,
   ImportProgress,
   TimeSequence,
-  HrmAccountId,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 import { db } from '../connection-pool';
 import {
   getImportState,
