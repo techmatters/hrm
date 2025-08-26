@@ -15,7 +15,7 @@
     "@types/aws-lambda": "^8.10.108",
     "@tech-matters/testing": "^1.0.0",
     "@tech-matters/hrm-service-test-support": "^1.0.0",
-    "pg-promise": "10.11.1",
+    "pg-promise": "11.5.5",
     "cross-env": "^7.0.3",
     "date-fns": "^4.1.0",
     "jest-each": "^29.2.1",
