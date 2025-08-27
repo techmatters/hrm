@@ -10,6 +10,7 @@
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/resources-types": "^1.0.0",
     "@tech-matters/resources-mappers": "^1.0.0",
+    "@tech-matters/resources-import-producer": "^1.0.0",
     "date-fns": "^2.30.0",
     "lodash": "^4.17.21"
   },

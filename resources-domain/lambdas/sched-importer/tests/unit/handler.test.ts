@@ -34,14 +34,14 @@ import {
   publishToImportConsumer,
   ResourceMessage,
   retrieveUnprocessedMessageCount,
-} from '../../src/clientSqs';
+} from '@tech-matters/resources-import-producer';
 import getConfig from '../../src/config';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
 }));
 
-jest.mock('../../src/clientSqs', () => ({
+jest.mock('@tech-matters/resources-import-producer', () => ({
   publishToImportConsumer: jest.fn(),
   retrieveUnprocessedMessageCount: jest.fn(),
 }));

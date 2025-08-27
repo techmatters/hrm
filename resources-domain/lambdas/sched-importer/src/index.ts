@@ -26,11 +26,11 @@ import {
   publishToImportConsumer,
   ResourceMessage,
   retrieveUnprocessedMessageCount,
-} from './clientSqs';
+} from '@tech-matters/resources-import-producer';
 import getConfig from './config';
-import { transformKhpResourceToApiResource } from './transformExternalResourceToApiResource';
 import path from 'path';
 import { newSqsClient, SqsClient } from '@tech-matters/sqs-client';
+import { transformKhpResourceToApiResource } from './khpMappings';
 
 export type HttpError<T = any> = {
   status: number;
@@ -99,6 +99,7 @@ export type KhpApiResource = {
   updatedAt: string;
   name: { en: string } & Record<string, string>;
 } & Record<string, any>;
+
 export type KhpApiResponse = {
   data: KhpApiResource[];
   totalResults: number;

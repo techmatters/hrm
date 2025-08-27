@@ -49,3 +49,17 @@ export const retrieveUnprocessedMessageCount = async (
 };
 
 export type ResourceMessage = ImportRequestBody & { accountSid: AccountSID };
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const waitForEmptyQueue = async (importResourcesSqsQueueUrl: URL) => {
+  let unprocessedCount: number | undefined;
+  while (
+    (unprocessedCount = await retrieveUnprocessedMessageCount(importResourcesSqsQueueUrl))
+  ) {
+    console.info(
+      `${unprocessedCount} resources still to be processed from prior import run, waiting 10 seconds...`,
+    );
+    await delay(10000);
+  }
+};
