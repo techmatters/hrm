@@ -17,7 +17,7 @@
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
   RESOURCE_INDEX_TYPE,
-  resourceIndexConfiguration,
+  getResourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
 import { STS } from 'aws-sdk';
 
@@ -37,7 +37,8 @@ sts
     process.env.AWS_SECRET_ACCESS_KEY = Credentials!.SecretAccessKey;
     process.env.AWS_SESSION_TOKEN = Credentials!.SessionToken;
 
-    getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client =>
-      client.indexClient(resourceIndexConfiguration).deleteIndex(),
-    );
+    getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
+      const resourceIndexConfiguration = getResourceIndexConfiguration(shortCode);
+      return client.indexClient(resourceIndexConfiguration).deleteIndex();
+    });
   });

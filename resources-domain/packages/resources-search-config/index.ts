@@ -26,6 +26,7 @@ import {
   SearchParameters,
   generateElasticsearchQuery,
 } from './generateElasticsearchQuery';
+import { getMappingsForAccount } from './resourceIndexDocumentMappings';
 
 const resourceSearchConfiguration: ResourcesSearchConfiguration = {
   searchFieldBoosts: {
@@ -61,19 +62,28 @@ const resourceSearchConfiguration: ResourcesSearchConfiguration = {
       }),
     },
   },
-  generateSuggestQuery,
 };
 
 export { SearchParameters };
 
-export const searchConfiguration: SearchConfiguration<SearchParameters> = {
-  generateElasticsearchQuery: generateElasticsearchQuery(resourceSearchConfiguration),
-  generateSuggestQuery: resourceSearchConfiguration.generateSuggestQuery,
+export const getSearchConfiguration: (
+  helplineShortCode: string,
+) => SearchConfiguration<SearchParameters> = (helplineShortCode: string) => {
+  const mappings = getMappingsForAccount(helplineShortCode);
+  return {
+    generateElasticsearchQuery: generateElasticsearchQuery(resourceSearchConfiguration),
+    generateSuggestQuery: generateSuggestQuery(mappings),
+  };
 };
 
-export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
-  convertToIndexDocument: convertIndexDocument,
-  getCreateIndexParams,
+export const getResourceIndexConfiguration: (
+  helplineShortCode: string,
+) => IndexConfiguration<FlatResource> = (helplineShortCode: string) => {
+  const mappings = getMappingsForAccount(helplineShortCode);
+  return {
+    convertToIndexDocument: convertIndexDocument(mappings),
+    getCreateIndexParams: getCreateIndexParams(mappings),
+  };
 };
 
 export const RESOURCE_INDEX_TYPE = 'resources';

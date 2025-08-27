@@ -27,8 +27,9 @@ import type {
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import {
   RESOURCE_INDEX_TYPE,
-  resourceIndexConfiguration,
+  getResourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 export type DocumentsByAccountSid = Record<string, BulkOperations<FlatResource>>;
 
@@ -84,6 +85,11 @@ export const executeBulk = async (
 ) => {
   await Promise.all(
     Object.keys(documentsByAccountSid).map(async accountSid => {
+      const shortCode = await getSsmParameter(
+        `/${process.env.NODE_ENV}/twilio/${accountSid}/short_helpline`,
+      );
+      const resourceIndexConfiguration = getResourceIndexConfiguration(shortCode);
+
       const documents = documentsByAccountSid[accountSid];
       const client = (
         await getClient({
