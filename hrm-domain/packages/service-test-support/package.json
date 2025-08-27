@@ -7,7 +7,7 @@
   "license": "AGPL",
   "dependencies": {
     "@tech-matters/types": "^1.0.0",
-    "pg-promise": "10.11.1"
+    "pg-promise": "11.5.5"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

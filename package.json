@@ -22,7 +22,7 @@
     "@maildrop/api": "^1.0.27",
     "aws-cdk-lib": "^2.189.1",
     "aws-sdk-client-mock": "^3.0.0",
-    "axios": "^1.8.3",
+    "axios": "^1.8.4",
     "dotenv": "^16.3.1",
     "node-fetch": "^2.7.0"
   },
@@ -38,7 +38,7 @@
     "aws-cdk": "^2.87.0",
     "aws-cdk-local": "^2.18.0",
     "cross-env": "^7.0.3",
-    "esbuild": "^0.25.1",
+    "esbuild": "^0.25.2",
     "eslint": "^8.44.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.0.0",
