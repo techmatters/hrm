@@ -28,40 +28,13 @@ import {
 } from './generateElasticsearchQuery';
 import { getMappingsForAccount } from './resourceIndexDocumentMappings';
 
-const resourceSearchConfiguration: ResourcesSearchConfiguration = {
-  searchFieldBoosts: {
-    'name.*': 5,
-    'id.*': 5,
-    'high_boost_global.*': 3,
-    'low_boost_global.*': 2,
-    '*': 1,
-    '*.*': 1,
-  },
-  filterMappings: {
-    minEligibleAge: {
-      type: 'range',
-      targetField: 'eligibilityMaxAge',
-      operator: 'gte',
-    },
-    maxEligibleAge: {
-      type: 'range',
-      targetField: 'eligibilityMinAge',
-      operator: 'lte',
-    },
-    interpretationTranslationServicesAvailable: {
-      type: 'term',
-    },
-    isActive: {
-      type: 'custom',
-      filterGenerator: value => ({
-        bool: {
-          must_not: {
-            term: { isActive: value },
-          },
-        },
-      }),
-    },
-  },
+const searchFieldBoosts: ResourcesSearchConfiguration['searchFieldBoosts'] = {
+  'name.*': 5,
+  'id.*': 5,
+  'high_boost_global.*': 3,
+  'low_boost_global.*': 2,
+  '*': 1,
+  '*.*': 1,
 };
 
 export { SearchParameters };
@@ -70,9 +43,13 @@ export const getSearchConfiguration: (
   helplineShortCode: string,
 ) => SearchConfiguration<SearchParameters> = (helplineShortCode: string) => {
   const mappings = getMappingsForAccount(helplineShortCode);
+  const searchConfiguration: ResourcesSearchConfiguration = {
+    searchFieldBoosts,
+    filterMappings: mappings.filterMappings,
+  };
   return {
-    generateElasticsearchQuery: generateElasticsearchQuery(resourceSearchConfiguration),
-    generateSuggestQuery: generateSuggestQuery(mappings),
+    generateElasticsearchQuery: generateElasticsearchQuery(searchConfiguration),
+    generateSuggestQuery: generateSuggestQuery(mappings.resourceIndexDocumentMappings),
   };
 };
 
@@ -81,8 +58,8 @@ export const getResourceIndexConfiguration: (
 ) => IndexConfiguration<FlatResource> = (helplineShortCode: string) => {
   const mappings = getMappingsForAccount(helplineShortCode);
   return {
-    convertToIndexDocument: convertIndexDocument(mappings),
-    getCreateIndexParams: getCreateIndexParams(mappings),
+    convertToIndexDocument: convertIndexDocument(mappings.resourceIndexDocumentMappings),
+    getCreateIndexParams: getCreateIndexParams(mappings.resourceIndexDocumentMappings),
   };
 };
 

@@ -22,25 +22,19 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
   highBoostGlobalFields: [
     'description',
-    'primaryLocationProvince',
-    'primaryLocationRegion',
-    'primaryLocationRegionCity',
-    'targetPopulation',
-    'languages',
+    'address/street',
+    'address/city',
+    'stateProvince',
+    'address/postalCode',
+    'address/country',
+    'otherLanguages',
     'feeStructure',
-    'taxonomyLevelName',
   ],
 
   mappingFields: {
     // TODO: this may change to a range field depending on discussion around what they really want to search for.
     // Is it likely that they want to put in a child age and find resources where the child age is between eligibilityMinAge and eligibilityMaxAge?
     // Having a range of ages and then passing in a range of ages to search for seems like a strange way to do it.
-    eligibilityMinAge: {
-      type: 'integer',
-    },
-    eligibilityMaxAge: {
-      type: 'integer',
-    },
     id: {
       type: 'keyword',
     },
@@ -51,37 +45,19 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     },
     name: {
       type: 'text',
-      hasLanguageFields: true,
-      isArrayField: true,
     },
-    taxonomyLevelName: {
+    categoriesName: {
       type: 'keyword',
       isArrayField: true,
-      attributeKeyPattern: /^taxonomies\/.*$/,
+      attributeKeyPattern: /^categories\/.*$/,
     },
-    taxonomyLevelNameCompletion: {
+    categoriesNameCompletion: {
       type: 'completion',
       isArrayField: true,
-      attributeKeyPattern: /^taxonomies\/.*$/,
+      attributeKeyPattern: /^categories*$/,
     },
     feeStructure: {
       type: 'keyword',
-    },
-    targetPopulation: {
-      type: 'keyword',
-    },
-    howIsServiceOffered: {
-      type: 'keyword',
-    },
-    interpretationTranslationServicesAvailable: {
-      type: 'boolean',
-    },
-    languages: {
-      type: 'keyword',
-      isArrayField: true,
-      attributeKeyPattern: /^languages\/.*$/,
-      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
-        [info?.language, value].filter(i => i).join(' '),
     },
     province: {
       type: 'keyword',
@@ -110,27 +86,10 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       type: 'text',
       analyzer: 'rebuilt_english',
     },
-    fr: {
-      type: 'text',
-      analyzer: 'rebuilt_french',
-    },
   },
 };
 
 const filterMappings: ResourcesSearchConfiguration['filterMappings'] = {
-  minEligibleAge: {
-    type: 'range',
-    targetField: 'eligibilityMaxAge',
-    operator: 'gte',
-  },
-  maxEligibleAge: {
-    type: 'range',
-    targetField: 'eligibilityMinAge',
-    operator: 'lte',
-  },
-  interpretationTranslationServicesAvailable: {
-    type: 'term',
-  },
   isActive: {
     type: 'custom',
     filterGenerator: value => ({

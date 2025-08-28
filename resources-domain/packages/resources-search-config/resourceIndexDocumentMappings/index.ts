@@ -16,19 +16,24 @@
 
 import type { ResourceIndexDocumentMappings } from './resourceIndexDocumentMappings';
 import khpMappings from './khpMappings';
+import uschMappings from './uschMappings';
+import { ResourcesSearchConfiguration } from '../searchConfiguration';
 
 export * from './resourceIndexDocumentMappings';
 
 export const getMappingsForAccount = (
   shortCode: string,
-): ResourceIndexDocumentMappings => {
+): {
+  resourceIndexDocumentMappings: ResourceIndexDocumentMappings;
+  filterMappings: ResourcesSearchConfiguration['filterMappings'];
+} => {
   switch (shortCode.toUpperCase()) {
     case 'AS':
     case 'CA': {
       return khpMappings;
     }
-    // TODO
     case 'USCH':
+      return uschMappings;
     default: {
       throw new Error(`Mapping not defined for account ${shortCode}`);
     }
