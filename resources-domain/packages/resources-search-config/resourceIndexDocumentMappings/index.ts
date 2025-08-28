@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ResourceIndexDocumentMappings } from './resourceIndexDocumentMappings';
+import type { ResourceIndexDocumentMappings } from './resourceIndexDocumentMappings';
 import khpMappings from './khpMappings';
 
 export * from './resourceIndexDocumentMappings';

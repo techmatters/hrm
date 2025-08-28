@@ -138,6 +138,7 @@ export const resourceService = () => {
       accountSid: AccountSID,
       searchParameters: SearchParameters,
     ): Promise<{ totalCount: number; results: ReferrableResourceSearchResult[] }> => {
+      console.log('>>>>>>>>> RUNNING searchResources')
       const limit = Math.min(
         MAX_SEARCH_RESULTS,
         searchParameters.pagination?.limit ?? Number.MAX_SAFE_INTEGER,

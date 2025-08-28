@@ -15,12 +15,14 @@
  */
 
 import type { FlatResource } from '@tech-matters/resources-types';
-import { resourceIndexConfiguration, RESOURCE_INDEX_TYPE } from '../../index';
+import { getResourceIndexConfiguration, RESOURCE_INDEX_TYPE } from '../../index';
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 
 describe('convertIndexDocument', () => {
-  it('should convert a simple document', () => {
+  it('[CA mapping] should convert a simple document', () => {
+    const accountShortCode = 'CA';
+
     // TODO: need a real example of a document to test against because I still have no idea what these are supposed to look like
     const resource: FlatResource = {
       accountSid: 'AC_FAKE',
@@ -52,6 +54,8 @@ describe('convertIndexDocument', () => {
         { key: 'city', list: 'cities', value: 'Toronto', language: '' },
       ],
     };
+
+    const resourceIndexConfiguration = getResourceIndexConfiguration(accountShortCode);
 
     const document = resourceIndexConfiguration.convertToIndexDocument(
       resource,

@@ -69,6 +69,8 @@ export { SearchParameters };
 export const getSearchConfiguration: (
   helplineShortCode: string,
 ) => SearchConfiguration<SearchParameters> = (helplineShortCode: string) => {
+  console.log('>>>>>>>>>>>> getSearchConfiguration', helplineShortCode);
+  console.log('>>>>>>>>>>>>', typeof getMappingsForAccount);
   const mappings = getMappingsForAccount(helplineShortCode);
   return {
     generateElasticsearchQuery: generateElasticsearchQuery(resourceSearchConfiguration),
