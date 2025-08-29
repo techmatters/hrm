@@ -415,57 +415,57 @@ describe('/contacts/search route', () => {
           expect(contacts[0].rawJson).toMatchObject(noHelpline.rawJson);
         },
       },
-      // {
-      //   changeDescription: 'Test date filters (should all but oneWeekBefore)',
-      //   body: {
-      //     dateFrom: subHours(startTestsTimeStamp, 1).toISOString(),
-      //   },
-      //   expectCallback: response => {
-      //     expect(response.status).toBe(200);
-      //     const { contacts } = response.body;
+      {
+        changeDescription: 'Test date filters (should all but oneWeekBefore)',
+        body: {
+          dateFrom: subHours(startTestsTimeStamp, 1).toISOString(),
+        },
+        expectCallback: response => {
+          expect(response.status).toBe(200);
+          const { contacts } = response.body;
 
-      //     // Expect all but invalid and oneWeekBefore
-      //     expect(contacts).toHaveLength(createdContacts.length - 1);
-      //     const createdContactsByTimeOfContact = createdContacts.sort(
-      //       compareTimeOfContactDesc,
-      //     );
-      //     createdContactsByTimeOfContact.forEach(c => {
-      //       const searchContact = contacts.find(result => result.id === c.id);
-      //       if (searchContact) {
-      //         // Check that all contacts contains the appropriate info
-      //         expect(c.rawJson).toMatchObject(searchContact.rawJson);
-      //       }
-      //     });
-      //   },
-      // },
-      // {
-      //   changeDescription:
-      //     'with date filters as local times - should apply them correctly adjusted',
-      //   body: {
-      //     dateFrom: formatInTimeZone(
-      //       startTestsTimeStamp,
-      //       '-06:00',
-      //       'yyyy-MM-dd HH:mm:ssXXX',
-      //     ),
-      //   },
-      //   expectCallback: response => {
-      //     expect(response.status).toBe(200);
-      //     const { contacts } = response.body;
+          // Expect all but invalid and oneWeekBefore
+          expect(contacts).toHaveLength(createdContacts.length - 1);
+          const createdContactsByTimeOfContact = createdContacts.sort(
+            compareTimeOfContactDesc,
+          );
+          createdContactsByTimeOfContact.forEach(c => {
+            const searchContact = contacts.find(result => result.id === c.id);
+            if (searchContact) {
+              // Check that all contacts contains the appropriate info
+              expect(c.rawJson).toMatchObject(searchContact.rawJson);
+            }
+          });
+        },
+      },
+      {
+        changeDescription:
+          'with date filters as local times - should apply them correctly adjusted',
+        body: {
+          dateFrom: formatInTimeZone(
+            startTestsTimeStamp,
+            '-06:00',
+            'yyyy-MM-dd HH:mm:ssXXX',
+          ),
+        },
+        expectCallback: response => {
+          expect(response.status).toBe(200);
+          const { contacts } = response.body;
 
-      //     // Expect all but invalid and oneWeekBefore
-      //     expect(contacts).toHaveLength(createdContacts.length - 2);
-      //     const createdContactsByTimeOfContact = createdContacts.sort(
-      //       compareTimeOfContactDesc,
-      //     );
-      //     createdContactsByTimeOfContact.forEach(c => {
-      //       const searchContact = contacts.find(result => result.id === c.id);
-      //       if (searchContact) {
-      //         // Check that all contacts contains the appropriate info
-      //         expect(c.rawJson).toMatchObject(searchContact.rawJson);
-      //       }
-      //     });
-      //   },
-      // },
+          // Expect all but invalid and oneWeekBefore
+          expect(contacts).toHaveLength(createdContacts.length - 2);
+          const createdContactsByTimeOfContact = createdContacts.sort(
+            compareTimeOfContactDesc,
+          );
+          createdContactsByTimeOfContact.forEach(c => {
+            const searchContact = contacts.find(result => result.id === c.id);
+            if (searchContact) {
+              // Check that all contacts contains the appropriate info
+              expect(c.rawJson).toMatchObject(searchContact.rawJson);
+            }
+          });
+        },
+      },
       {
         changeDescription:
           'withCSAMReports (filter by contactNumber and check csam reports are retrieved)',
