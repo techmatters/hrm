@@ -16,26 +16,28 @@
 
 import { SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
 import { SuggestParameters } from '@tech-matters/elasticsearch-client';
-import { getMappingFieldNamesByType } from './resourceIndexDocumentMappings';
+import {
+  getMappingFieldNamesByType,
+  ResourceIndexDocumentMappings,
+} from './resourceIndexDocumentMappings';
 
 // TODO: this should probably be moved to the elasticsearch-client package, but the config/client splitting
 // makes it a bit tricky to do that right now.
-export const generateSuggestQuery = ({
-  prefix,
-  size,
-}: SuggestParameters): SearchSuggester => {
-  const suggestQuery: SearchSuggester = {};
+export const generateSuggestQuery =
+  (mappings: ResourceIndexDocumentMappings) =>
+  ({ prefix, size }: SuggestParameters): SearchSuggester => {
+    const suggestQuery: SearchSuggester = {};
 
-  getMappingFieldNamesByType('completion').forEach(fieldName => {
-    suggestQuery[fieldName] = {
-      prefix,
-      completion: {
-        field: fieldName,
-        size,
-        skip_duplicates: true,
-      },
-    };
-  });
+    getMappingFieldNamesByType(mappings)('completion').forEach((fieldName: string) => {
+      suggestQuery[fieldName] = {
+        prefix,
+        completion: {
+          field: fieldName,
+          size,
+          skip_duplicates: true,
+        },
+      };
+    });
 
-  return suggestQuery;
-};
+    return suggestQuery;
+  };
