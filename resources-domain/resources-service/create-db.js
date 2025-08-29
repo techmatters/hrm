@@ -76,8 +76,8 @@ async function create() {
   }
 
   const createSchemaConnection = pgp(
-    `postgres://${encodeURIComponent(config.username)}${
-      config.password ? `:${encodeURIComponent(config.password)}` : ''
+    `postgres://${encodeURIComponent(resourceUsername)}${
+      resourcePassword ? `:${encodeURIComponent(resourcePassword)}` : ''
     }@${config.host}:${config.port}/${encodeURIComponent(
       config.database,
     )}?&application_name=resources-db-create-script`,
@@ -85,14 +85,7 @@ async function create() {
 
   console.log(`Creating  resources schema`);
   await createSchemaConnection.none(`
-      CREATE SCHEMA IF NOT EXISTS resources;
-      GRANT CREATE ON SCHEMA "resources" TO "resources";
-      GRANT ALL ON ALL TABLES IN SCHEMA "resources" TO "resources" WITH GRANT OPTION;
-      GRANT ALL ON ALL ROUTINES IN SCHEMA "resources" TO "resources" WITH GRANT OPTION;
-      GRANT ALL ON ALL SEQUENCES IN SCHEMA "resources" TO "resources" WITH GRANT OPTION;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA "resources" GRANT ALL ON TABLES TO "resources" WITH GRANT OPTION;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA "resources" GRANT ALL ON ROUTINES TO "resources" WITH GRANT OPTION;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA "resources" GRANT ALL ON SEQUENCES TO "resources" WITH GRANT OPTION;
+      CREATE SCHEMA IF NOT EXISTS resources AUTHORIZATION resources;
   `);
 }
 
