@@ -28,10 +28,10 @@ export const getMappingsForAccount = (
   filterMappings: ResourcesSearchConfiguration['filterMappings'];
 } => {
   switch (shortCode.toUpperCase()) {
-    case 'AS':
     case 'CA': {
       return khpMappings;
     }
+    case 'AS':
     case 'USCH':
       return uschMappings;
     default: {
