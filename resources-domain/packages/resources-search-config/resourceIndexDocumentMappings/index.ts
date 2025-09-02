@@ -28,6 +28,7 @@ export const getMappingsForAccount = (
   filterMappings: ResourcesSearchConfiguration['filterMappings'];
 } => {
   switch (shortCode.toUpperCase()) {
+    case 'E2E':
     case 'CA': {
       return khpMappings;
     }
