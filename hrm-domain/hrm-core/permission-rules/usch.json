@@ -1,5 +1,5 @@
 {
-  "viewCase": [["everyone"]],
+  "viewCase": [["isSupervisor"], ["isCreator"],["isCaseContactOwner"]],
   "closeCase": [],
   "reopenCase": [],
   "caseStatusTransition": [],
@@ -8,7 +8,7 @@
   "editCaseOverview": [["isSupervisor"], ["isCreator"],["isCaseContactOwner"]],
   "updateCaseContacts":  [["isSupervisor"], ["isCreator"],["isCaseContactOwner"]],
 
-  "viewContact": [["everyone"]],
+  "viewContact": [["isSupervisor"],["isOwner"]],
   "editContact": [["isSupervisor"], ["isOwner"]],
   "editInProgressContact": [["isOwner"]],
   "viewExternalTranscript": [["everyone"]],
