@@ -219,7 +219,7 @@ describe('searchResources', () => {
     },
   ];
 
-  each(searchResourcesTestCases).test.only(
+  each(searchResourcesTestCases).test(
     '$description',
     async ({
       resultsFromElasticSearch,
