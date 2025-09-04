@@ -15,12 +15,14 @@
  */
 
 import type { FlatResource } from '@tech-matters/resources-types';
-import { resourceIndexConfiguration, RESOURCE_INDEX_TYPE } from '../../index';
+import { getResourceIndexConfiguration, RESOURCE_INDEX_TYPE } from '../../index';
 
 const BASELINE_DATE = new Date('2021-01-01T00:00:00.000Z');
 
 describe('convertIndexDocument', () => {
-  it('should convert a simple document', () => {
+  it('[CA mapping] should convert a simple document', () => {
+    const accountShortCode = 'CA';
+
     // TODO: need a real example of a document to test against because I still have no idea what these are supposed to look like
     const resource: FlatResource = {
       accountSid: 'AC_FAKE',
@@ -53,6 +55,8 @@ describe('convertIndexDocument', () => {
       ],
     };
 
+    const resourceIndexConfiguration = getResourceIndexConfiguration(accountShortCode);
+
     const document = resourceIndexConfiguration.convertToIndexDocument(
       resource,
       RESOURCE_INDEX_TYPE,
@@ -71,6 +75,187 @@ describe('convertIndexDocument', () => {
       province: ['ON'],
       taxonomyLevelName: ['taxonomy1'],
       taxonomyLevelNameCompletion: ['taxonomy1'],
+    });
+  });
+
+  it('[USCH mapping] should convert a simple document', () => {
+    const accountShortCode = 'USCH';
+
+    const resource: FlatResource = {
+      accountSid: 'AC_FAKE',
+      name: 'Resource',
+      id: '1234',
+      lastUpdated: BASELINE_DATE.toISOString(),
+      stringAttributes: [
+        {
+          key: 'address/street',
+          value: 'street',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'address/city',
+          value: 'city',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'stateProvince',
+          value: 'province',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'address/postalCode',
+          value: '1234',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'address/country',
+          value: 'country',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'phoneFax',
+          value: '111-222-3333',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'phone/Hotline/number',
+          value: '111-222-3333',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'phone/Hotline/description',
+          value: 'Hotline-description',
+          info: null,
+          language: 'en',
+        },
+        {
+          key: 'phone/Business/number',
+          value: '111-222-3333',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'websiteAddress',
+          value: 'https://websiteAddress',
+          info: null,
+          language: 'en',
+        },
+        {
+          key: 'description',
+          value: 'description',
+          info: null,
+          language: 'en',
+        },
+        {
+          key: 'enteredOn',
+          value: '1/10/2025',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'shortDescription',
+          value: 'short-description',
+          info: null,
+          language: 'en',
+        },
+        {
+          key: 'lastVerified/on',
+          value: '1/10/2025',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'lastVerified/name',
+          value: 'name',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'lastVerified/title',
+          value: 'title',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'lastVerified/phoneNumber',
+          value: '1112223333',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'lastVerified/emailAddress',
+          value: 'emailAddress@example.org',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'lastVerified/verificationApprovedBy',
+          value: 'approver',
+          info: null,
+          language: '',
+        },
+        {
+          key: 'categories/0',
+          value: 'CF - Counseling for Athletes',
+          info: null,
+          language: 'en',
+        },
+        {
+          key: 'categories/1',
+          value: ' CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
+          info: null,
+          language: 'en',
+        },
+        {
+          key: 'coverage/0',
+          value: 'CO - Some County - State',
+          info: null,
+          language: 'en',
+        },
+        {
+          key: 'feeStructure',
+          value: 'Free',
+          info: null,
+          language: 'en',
+        },
+      ],
+      numberAttributes: [],
+      booleanAttributes: [],
+      dateTimeAttributes: [],
+      referenceStringAttributes: [],
+    };
+
+    const resourceIndexConfiguration = getResourceIndexConfiguration(accountShortCode);
+
+    const document = resourceIndexConfiguration.convertToIndexDocument(
+      resource,
+      RESOURCE_INDEX_TYPE,
+    );
+
+    console.log(JSON.stringify(document, null, 2));
+
+    expect(document).toEqual({
+      id: '1234',
+      name: 'Resource',
+      high_boost_global: 'street city province 1234 country description Free',
+      low_boost_global:
+        '111-222-3333 111-222-3333 Hotline-description 111-222-3333 https://websiteAddress 1/10/2025 short-description 1/10/2025 name title 1112223333 emailAddress@example.org approver CO - Some County - State',
+      categoriesName: [
+        'CF - Counseling for Athletes',
+        ' CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
+      ],
+      categoriesNameCompletion: [
+        'CF - Counseling for Athletes',
+        ' CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
+      ],
+      feeStructure: 'Free',
     });
   });
 });

@@ -41,13 +41,16 @@ export const handler = async (event: S3Event): Promise<void> => {
   });
   const configuredPublish = publishToImportConsumer(sqs, importResourcesSqsQueueUrl);
 
+  console.debug('waiting for empty queue');
   await waitForEmptyQueue(importResourcesSqsQueueUrl);
 
   for (const {
     s3: { object, bucket },
   } of event.Records) {
+    console.debug('getting csv from bucket');
     const csv = await getS3Object({ bucket: bucket.name, key: object.key });
     const key = decodeURIComponent(object.key);
+    console.debug('got csv from bucket, key: ', key);
     for await (const csvLine of parse(csv, {
       columns: headings => headings,
     })) {

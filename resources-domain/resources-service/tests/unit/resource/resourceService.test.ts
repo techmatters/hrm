@@ -24,6 +24,7 @@ import each from 'jest-each';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
 import type { FlatResource } from '@tech-matters/resources-types';
 import { getClient, SearchResponse } from '@tech-matters/elasticsearch-client';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 jest.mock('../../../src/resource/resourceDataAccess', () => ({
   getByIdList: jest.fn(),
@@ -35,9 +36,14 @@ jest.mock('@tech-matters/elasticsearch-client', () => ({
   getClient: jest.fn(),
 }));
 
-let mockGetClient = getClient as jest.Mock<ReturnType<typeof getClient>>;
+jest.mock('@tech-matters/ssm-cache', () => ({
+  ...jest.requireActual('@tech-matters/ssm-cache'),
+  getSsmParameter: jest.fn(),
+}));
 
+let mockGetClient = getClient as jest.Mock<ReturnType<typeof getClient>>;
 const mockGetByIdList = getByIdList as jest.Mock<Promise<FlatResource[]>>;
+const mockGetSsmParameter = getSsmParameter as jest.Mock<Promise<string>>;
 
 const { searchResources } = resourceService();
 
@@ -225,6 +231,7 @@ describe('searchResources', () => {
     }: SearchResourcesTestCaseParameters) => {
       mockEsSearch.mockResolvedValue(resultsFromElasticSearch);
       mockGetByIdList.mockResolvedValue(resultsFromDb);
+      mockGetSsmParameter.mockResolvedValueOnce('CA');
       const res = await searchResources(ACCOUNT_SID, input);
       expect(res.totalCount).toBe(expectedTotal);
       expect(res.results).toStrictEqual(
@@ -577,6 +584,7 @@ describe('searchResources', () => {
     mockGetByIdList.mockResolvedValue(
       resultSet.map(rs => ({ ...rs, stringAttributes: attributeRecords })),
     );
+    mockGetSsmParameter.mockResolvedValueOnce('CA');
     const res = await searchResources(ACCOUNT_SID, {
       generalSearchTerm: 'Res',
       filters: {},
