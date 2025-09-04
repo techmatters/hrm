@@ -584,6 +584,7 @@ describe('searchResources', () => {
     mockGetByIdList.mockResolvedValue(
       resultSet.map(rs => ({ ...rs, stringAttributes: attributeRecords })),
     );
+    mockGetSsmParameter.mockResolvedValueOnce('CA');
     const res = await searchResources(ACCOUNT_SID, {
       generalSearchTerm: 'Res',
       filters: {},
