@@ -33,7 +33,7 @@ jobs:
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Create production release
         uses: techmatters/flex-plugins/.github/actions/generate-production-release@master
