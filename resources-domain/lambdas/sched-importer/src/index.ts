@@ -185,12 +185,13 @@ const sendUpdates =
         console.debug(
           `[Imported Resource Trace] Publishing resource ${accountSid}/${khpResource._id}:`,
         );
-        await publishToImportConsumer(
+        const output = await publishToImportConsumer(
           sqs,
           importResourcesSqsQueueUrl,
         )(transformedResource);
         console.debug(
           `[Imported Resource Trace] Published resource ${accountSid}/${khpResource._id}:`,
+          output,
         );
       } catch (error) {
         console.error(
