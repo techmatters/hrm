@@ -29,6 +29,7 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     'languages',
     'feeStructure',
     'taxonomyLevelName',
+    'coverage',
   ],
 
   mappingFields: {
@@ -103,6 +104,11 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       attributeKeyPattern: /(.*)[rR]egion$/,
       indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
         [info?.name, value].filter(i => i).join(' '),
+    },
+    coverage: {
+      type: 'keyword',
+      isArrayField: true,
+      attributeKeyPattern: /^coverage\/.*$/,
     },
   },
   languageFields: {

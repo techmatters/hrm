@@ -40,14 +40,17 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
       acc[accountSid] = [];
     }
     if (document.deletedAt) {
-      console.debug('Delete Document for resource ID:', document.id);
+      console.debug(
+        `[Imported Resource Trace ${accountSid}] Delete Document for resource ID:`,
+        document.id,
+      );
       acc[accountSid].push({
         action: 'delete',
         id: document.id,
       });
     } else {
       console.debug(
-        'Index Document for resource ID:',
+        `[Imported Resource Trace ${accountSid}] Index Document for resource ID:`,
         document.id,
         'Converted document:',
         document,
@@ -125,7 +128,10 @@ export const mapMessages = (
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
-  console.debug('Received event:', JSON.stringify(event, null, 2));
+  console.debug(
+    `Received resource index request with ${event.Records.length} records`,
+    JSON.stringify(event, null, 2),
+  );
   // We need to keep track of the documentId to messageId mapping so we can
   // return the correct messageId in the batchItemFailures array on error.
   const documentIdToMessageId: Record<string, string> = {};
@@ -140,24 +146,31 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     response.batchItemFailures.push({
       itemIdentifier: documentIdToMessageId[documentId],
     });
-
+  let fullyQualifiedResourceCsv = '[not determined]';
   try {
     // Map the messages and add the documentId to messageId mapping.
     const messages = mapMessages(event.Records, addDocumentIdToMessageId);
-    console.debug('Mapped messages:', JSON.stringify(messages, null, 2));
+    fullyQualifiedResourceCsv = messages
+      .map(m => `${m.accountSid}/${m.document.id}`)
+      .join(', ');
+    console.debug(
+      `[Imported Resource Trace] Mapped messages for resources: ${fullyQualifiedResourceCsv}`,
+    );
 
     // Convert the messages to a bulk requests grouped by accountSid.
     const documentsByAccountSid = convertDocumentsToBulkRequest(messages);
     console.debug(
-      'Converted documents to bulk request:',
-      JSON.stringify(documentsByAccountSid, null, 2),
+      `[Imported Resource Trace] Converted documents to bulk request: ${fullyQualifiedResourceCsv}`,
     );
 
     // Iterates over groups of documents and index them using an accountSid specific client
     await executeBulk(documentsByAccountSid, addDocumentIdToFailures);
-    console.debug(`Successfully indexed documents`);
+    console.debug(
+      `[Imported Resource Trace] Successfully indexed documents ${fullyQualifiedResourceCsv}`,
+    );
   } catch (err) {
     console.error(
+      `[Imported Resource Trace] Error indexing documents ${fullyQualifiedResourceCsv}`,
       new ResourceIndexProcessorError('Failed to process search index request'),
       err,
     );

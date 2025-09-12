@@ -81,7 +81,9 @@ const importService = () => {
               err.resourceId = resource.id;
               throw err;
             }
-            console.debug(`Upserting ${accountSid}/${resource.id}`);
+            console.debug(
+              `[Imported Resource Trace ${accountSid}] Upserting ${accountSid}/${resource.id}`,
+            );
             const result = await upsert(accountSid, resource);
             if (!result.success) {
               const dbErr = new Error('Error inserting resource into database.') as any;
@@ -90,13 +92,17 @@ const importService = () => {
               dbErr.cause = result.error;
               throw dbErr;
             }
+            console.debug(`Upserted ${accountSid}/${resource.id}`);
             results.push(result);
 
             try {
               await publishSearchIndexJob(resource.accountSid, resource);
+              console.debug(
+                `[Imported Resource Trace ${accountSid}] Published search index job for ${accountSid}/${resource.id}`,
+              );
             } catch (e) {
               console.error(
-                `Failed to publish search index job for ${resource.accountSid}/${resource.id}`,
+                `[Imported Resource Trace ${accountSid}] Failed to publish search index job for ${resource.accountSid}/${resource.id}`,
               );
             }
           }

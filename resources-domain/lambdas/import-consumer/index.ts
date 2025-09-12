@@ -18,7 +18,7 @@ import { ResourceImportProcessorError } from '@tech-matters/job-errors';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type { HrmAccountId } from '@tech-matters/types';
-import type { ImportRequestBody } from '@tech-matters/resources-types';
+import type { FlatResource, ImportRequestBody } from '@tech-matters/resources-types';
 import { retrieveMessageContent } from '@tech-matters/sqs-client';
 
 const internalResourcesBaseUrl = process.env.internal_resources_base_url as string;
@@ -80,16 +80,32 @@ const upsertRecordWithoutException = async (
 ): Promise<ProcessedResult> => {
   const jsonBody = await retrieveMessageContent(sqsRecord.body, sqsRecord.messageId);
   const { accountSid, ...body } = JSON.parse(jsonBody);
-
+  const resourceIds = body.importedResources.map((r: FlatResource) => r.id).join(', ');
+  console.debug(
+    `[Imported Resource Trace] Calling HRM to upsert ${accountSid}/${resourceIds}`,
+    `Batch:`,
+    body.batch,
+  );
   try {
     await upsertRecord(accountSid, body);
 
+    console.debug(
+      `[Imported Resource Trace] Successfully called HRM to upsert ${accountSid}/${resourceIds}`,
+      `Batch:`,
+      body.batch,
+    );
     return {
       status: 'success',
       messageId: sqsRecord.messageId,
     };
   } catch (err) {
-    console.error(new ResourceImportProcessorError('Failed to process record'), err);
+    console.error(
+      `[Imported Resource Trace] Error upserting ${accountSid}/${resourceIds}`,
+      new ResourceImportProcessorError('Failed to process record'),
+      err,
+      `Batch:`,
+      body.batch,
+    );
 
     const errMessage = err instanceof Error ? err.message : String(err);
 
@@ -131,7 +147,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     }
 
     // This assumes messages are posted in the correct order by the producer
-    // Syncronously wait for each message to be processed since order matters here
+    // Synchronously wait for each message to be processed since order matters here
     for (const sqsRecord of event.Records) {
       const processed = await upsertRecordWithoutException(sqsRecord);
 

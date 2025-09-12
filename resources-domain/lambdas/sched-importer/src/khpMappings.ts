@@ -45,6 +45,10 @@ const siteKey = (subsection: string) => (context: FieldMappingContext) => {
  * If the names of the child nodes are dynamic, e.g. one per language, or one per social media channel, the node should be named with a placeholder token, e.g. '{language}' or '{channel}'. This will make the importer process all child data nodes and capture their property under `captures` property of the context object for use generating keys, values & info etc..
  */
 
+const SUPPORTED_KHP_COUNTRY_NAME_CODE_MAP: Record<string, string> = {
+  Canada: 'CA',
+};
+
 const CANADIAN_PROVINCE_NAME_CODE_MAP: Record<string, string> = {
   Alberta: 'AB',
   'British Columbia': 'BC',
@@ -63,6 +67,9 @@ const CANADIAN_PROVINCE_NAME_CODE_MAP: Record<string, string> = {
 
 const lookupProvinceCode = (provinceName: string): string =>
   CANADIAN_PROVINCE_NAME_CODE_MAP[provinceName] ?? provinceName;
+
+const lookupCountryCode = (countryName: string): string =>
+  SUPPORTED_KHP_COUNTRY_NAME_CODE_MAP[countryName] ?? countryName;
 
 const KHP_MAPPING_NODE_SITES: { children: MappingNode } = {
   children: {
@@ -311,8 +318,6 @@ const KHP_MAPPING_NODE_TAXONOMIES = (depth: number = 0): { children: MappingNode
 
 export const KHP_MAPPING_NODE: MappingNode = {
   _id: resourceFieldMapping('id'),
-  // TODO: Remove this and all other 'objectId' mappings once the updated Arctic API is deployed to production
-  objectId: resourceFieldMapping('id'),
   timeSequence: resourceFieldMapping('importSequenceId'),
   sites: KHP_MAPPING_NODE_SITES,
   taxonomies: {
@@ -558,9 +563,16 @@ export const KHP_MAPPING_NODE: MappingNode = {
           info: ({ currentValue }) => currentValue,
           value: ({ currentValue }) => {
             const { postalCode, city, region, province, country } = currentValue;
-            return [postalCode, city, region, province, country]
+            const text = [postalCode, city, region, province, country]
               .filter(Boolean)
               .join(', ');
+            const filterPath = [
+              lookupCountryCode(country),
+              lookupProvinceCode(province),
+              region,
+              city,
+            ];
+            return `${filterPath} ${text}`;
           },
           // `coverage/${currentValue._id ?? captures.coverageIndex}`,
         },
