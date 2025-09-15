@@ -92,7 +92,9 @@ const importService = () => {
               dbErr.cause = result.error;
               throw dbErr;
             }
-            console.debug(`[Imported Resource Trace] Upserted ${accountSid}/${resource.id}`);
+            console.debug(
+              `[Imported Resource Trace] Upserted ${accountSid}/${resource.id}`,
+            );
             results.push(result);
 
             try {
