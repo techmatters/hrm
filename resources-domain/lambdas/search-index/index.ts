@@ -41,8 +41,8 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
     }
     if (document.deletedAt) {
       console.debug(
-        `[Imported Resource Trace ${accountSid}] Delete Document for resource ID:`,
-        document.id,
+        `[Imported Resource Trace] Delete Document for resource ID:`,
+        `${accountSid}/${document.id}`,
       );
       acc[accountSid].push({
         action: 'delete',
@@ -50,8 +50,8 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
       });
     } else {
       console.debug(
-        `[Imported Resource Trace ${accountSid}] Index Document for resource ID:`,
-        document.id,
+        `[Imported Resource Trace] Index Document for resource ID:`,
+        `${accountSid}/${document.id}`,
         'Converted document:',
         document,
       );
