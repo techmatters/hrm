@@ -25,13 +25,16 @@ export const publishToImportConsumer =
     //TODO: more robust error handling/messaging
     try {
       const queueUrl = importResourcesSqsQueueUrl.toString();
-
+      const messageGroupId = `${params.accountSid}/${
+        params.importedResources[0]?.id ?? '__EMPTY_BATCH'
+      }`;
+      console.debug(
+        `[Imported Resource Trace] Publishing resource to queue ${queueUrl} group ID ${messageGroupId}:`,
+      );
       return await sqsClient.sendSqsMessage({
         message: JSON.stringify(params),
         queueUrl,
-        messageGroupId: `${params.accountSid}/${
-          params.importedResources[0]?.id ?? '__EMPTY_BATCH'
-        }`,
+        messageGroupId,
       });
     } catch (err) {
       console.error('Error trying to send message to SQS queue', err);
