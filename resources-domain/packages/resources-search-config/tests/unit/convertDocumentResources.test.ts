@@ -100,7 +100,7 @@ describe('convertIndexDocument', () => {
           language: '',
         },
         {
-          key: 'stateProvince',
+          key: 'address/province',
           value: 'province',
           info: null,
           language: '',
@@ -209,7 +209,7 @@ describe('convertIndexDocument', () => {
         },
         {
           key: 'categories/1',
-          value: ' CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
+          value: 'CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
           info: null,
           language: 'en',
         },
@@ -244,17 +244,20 @@ describe('convertIndexDocument', () => {
     expect(document).toEqual({
       id: '1234',
       name: 'Resource',
-      high_boost_global: 'street city province 1234 country description Free',
+      high_boost_global: 'street 1234 description Free',
       low_boost_global:
         '111-222-3333 111-222-3333 Hotline-description 111-222-3333 https://websiteAddress 1/10/2025 short-description 1/10/2025 name title 1112223333 emailAddress@example.org approver CO - Some County - State',
       categoriesName: [
         'CF - Counseling for Athletes',
-        ' CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
+        'CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
       ],
       categoriesNameCompletion: [
         'CF - Counseling for Athletes',
-        ' CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
+        'CF - Eating Disorders\nCF - Helplines\nCF - Medical Resources/CTE',
       ],
+      country: ['country'],
+      province: ['province'],
+      city: ['city'],
       feeStructure: 'Free',
     });
   });
