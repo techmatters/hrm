@@ -23,7 +23,7 @@ import type {
 
 import { getClient, SuggestParameters } from '@tech-matters/elasticsearch-client';
 
-import { getById, getByIdList } from './resourceDataAccess';
+import { getById, getByIdList, getDistinctStringAttributes } from './resourceDataAccess';
 import {
   RESOURCE_INDEX_TYPE,
   getSearchConfiguration,
@@ -215,5 +215,11 @@ export const resourceService = () => {
 
       return client.suggest({ suggestParameters });
     },
+
+    getDistinctResourceStringAttributes: async (
+      accountSid: AccountSID,
+      key: string,
+      language: string,
+    ) => getDistinctStringAttributes(accountSid, key, language),
   };
 };
