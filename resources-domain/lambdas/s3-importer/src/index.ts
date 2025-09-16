@@ -55,14 +55,14 @@ export const handler = async (event: S3Event): Promise<void> => {
       columns: headings => headings,
     })) {
       console.debug(
-        `[Imported Resource Trace] Transforming resource ${accountSid}/${csvLine.ResourceID}:`,
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${csvLine.ResourceID}): Transforming resourcw`,
       );
       const aseloResource = transformUschResourceToApiResource(
         accountSid,
         expandCsvLine(csvLine),
       );
       console.debug(
-        `[Imported Resource Trace] Publishing resource ${accountSid}/${aseloResource.id}:`,
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${aseloResource.id}): Publishing resource to import pending queue`,
       );
       const resourceMessage: ResourceMessage = {
         batch: { fromSequence: '', toSequence: '', remaining: 0 },
@@ -71,7 +71,7 @@ export const handler = async (event: S3Event): Promise<void> => {
       };
       await configuredPublish(resourceMessage);
       console.debug(
-        `[Imported Resource Trace] Published resource ${accountSid}/${aseloResource.id}:`,
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${aseloResource.id}): Published resource to import pending queue`,
       );
     }
     const keyParts = key.split('/');

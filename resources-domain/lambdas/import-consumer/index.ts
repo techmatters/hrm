@@ -80,33 +80,40 @@ const upsertRecordWithoutException = async (
 ): Promise<ProcessedResult> => {
   const jsonBody = await retrieveMessageContent(sqsRecord.body, sqsRecord.messageId);
   const { accountSid, ...body } = JSON.parse(jsonBody);
-  const resourceIds = body.importedResources.map((r: FlatResource) => r.id).join(', ');
-  console.debug(
-    `[Imported Resource Trace] Calling HRM to upsert ${accountSid}/${resourceIds}`,
-    `Batch:`,
-    body.batch,
+  const resourceIds = body.importedResources.map(
+    (r: FlatResource) => `${accountSid}/${r.id}`,
+  );
+  resourceIds.forEach((resourceId: string) =>
+    console.debug(
+      `[Imported Resource Trace](qualifiedResourceId:${resourceId}): POSTing to HRM to upsert`,
+      `Batch:`,
+      body.batch,
+    ),
   );
   try {
     await upsertRecord(accountSid, body);
 
-    console.debug(
-      `[Imported Resource Trace] Successfully called HRM to upsert ${accountSid}/${resourceIds}`,
-      `Batch:`,
-      body.batch,
+    resourceIds.forEach((resourceId: string) =>
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${resourceId}): Successfully completed HRM to upsert`,
+        `Batch:`,
+        body.batch,
+      ),
     );
     return {
       status: 'success',
       messageId: sqsRecord.messageId,
     };
   } catch (err) {
-    console.error(
-      `[Imported Resource Trace] Error upserting ${accountSid}/${resourceIds}`,
-      new ResourceImportProcessorError('Failed to process record'),
-      err,
-      `Batch:`,
-      body.batch,
+    resourceIds.forEach((resourceId: string) =>
+      console.error(
+        `[Imported Resource Trace](qualifiedResourceId:${resourceId}): Error upserting.`,
+        new ResourceImportProcessorError('Failed to process record'),
+        err,
+        `Batch:`,
+        body.batch,
+      ),
     );
-
     const errMessage = err instanceof Error ? err.message : String(err);
 
     return {

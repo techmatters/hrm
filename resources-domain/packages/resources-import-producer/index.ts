@@ -29,7 +29,7 @@ export const publishToImportConsumer =
         params.importedResources[0]?.id ?? '__EMPTY_BATCH'
       }`;
       console.debug(
-        `[Imported Resource Trace] Publishing resource to queue ${queueUrl} group ID ${messageGroupId}:`,
+        `[Imported Resource Trace](qualifiedResourceId:${messageGroupId}): Publishing resource to queue ${queueUrl} group ID ${messageGroupId}:`,
       );
       return await sqsClient.sendSqsMessage({
         message: JSON.stringify(params),

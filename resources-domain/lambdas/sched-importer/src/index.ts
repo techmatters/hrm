@@ -175,7 +175,7 @@ const sendUpdates =
       remaining--;
       try {
         console.debug(
-          `[Imported Resource Trace] Transforming resource ${accountSid}/${khpResource._id}:`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Transforming resource to standard format for import.`,
         );
         const transformedResource: ResourceMessage = {
           batch: { ...importBatch, remaining },
@@ -183,19 +183,19 @@ const sendUpdates =
           accountSid,
         };
         console.debug(
-          `[Imported Resource Trace] Publishing resource ${accountSid}/${khpResource._id}:`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Publishing resource to import pending queue`,
         );
         const output = await publishToImportConsumer(
           sqs,
           importResourcesSqsQueueUrl,
         )(transformedResource);
         console.debug(
-          `[Imported Resource Trace] Published resource ${accountSid}/${khpResource._id}:`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Published resource to import pending queue.`,
           output,
         );
       } catch (error) {
         console.error(
-          `[Imported Resource Trace] Unable to transform & send resource ${accountSid}/${khpResource._id}:`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Unable to transform & send resource.`,
           error,
         );
       }

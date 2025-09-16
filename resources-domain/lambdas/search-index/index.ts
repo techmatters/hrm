@@ -41,8 +41,8 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
     }
     if (document.deletedAt) {
       console.debug(
-        `[Imported Resource Trace] Delete Document for resource ID:`,
-        `${accountSid}/${document.id}`,
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${document.id}): Deleting Document for resource.`,
+        ``,
       );
       acc[accountSid].push({
         action: 'delete',
@@ -50,8 +50,7 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
       });
     } else {
       console.debug(
-        `[Imported Resource Trace] Index Document for resource ID:`,
-        `${accountSid}/${document.id}`,
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${document.id}): Indexing Document for resource.`,
         'Converted document:',
         document,
       );
@@ -146,33 +145,39 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     response.batchItemFailures.push({
       itemIdentifier: documentIdToMessageId[documentId],
     });
-  let fullyQualifiedResourceCsv = '[not determined]';
+  let fullyQualifiedResources = ['not determined'];
   try {
     // Map the messages and add the documentId to messageId mapping.
     const messages = mapMessages(event.Records, addDocumentIdToMessageId);
-    fullyQualifiedResourceCsv = messages
-      .map(m => `${m.accountSid}/${m.document.id}`)
-      .join(', ');
-    console.debug(
-      `[Imported Resource Trace] Mapped messages for resources: ${fullyQualifiedResourceCsv}`,
+    fullyQualifiedResources = messages.map(m => `${m.accountSid}/${m.document.id}`);
+    fullyQualifiedResources.forEach(fqr =>
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Mapped messages for resources.`,
+      ),
     );
 
     // Convert the messages to a bulk requests grouped by accountSid.
     const documentsByAccountSid = convertDocumentsToBulkRequest(messages);
-    console.debug(
-      `[Imported Resource Trace] Converted documents to bulk request: ${fullyQualifiedResourceCsv}`,
+    fullyQualifiedResources.forEach(fqr =>
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Converted document to bulk request.`,
+      ),
     );
 
     // Iterates over groups of documents and index them using an accountSid specific client
     await executeBulk(documentsByAccountSid, addDocumentIdToFailures);
-    console.debug(
-      `[Imported Resource Trace] Successfully indexed documents ${fullyQualifiedResourceCsv}`,
+    fullyQualifiedResources.forEach(fqr =>
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Successfully indexed document.`,
+      ),
     );
   } catch (err) {
-    console.error(
-      `[Imported Resource Trace] Error indexing documents ${fullyQualifiedResourceCsv}`,
-      new ResourceIndexProcessorError('Failed to process search index request'),
-      err,
+    fullyQualifiedResources.forEach(fqr =>
+      console.error(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Error indexing document.`,
+        new ResourceIndexProcessorError('Failed to process search index request'),
+        err,
+      ),
     );
 
     response.batchItemFailures = event.Records.map(record => {

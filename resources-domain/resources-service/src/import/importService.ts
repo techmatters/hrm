@@ -82,7 +82,7 @@ const importService = () => {
               throw err;
             }
             console.debug(
-              `[Imported Resource Trace] Upserting ${accountSid}/${resource.id}`,
+              `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${resource.id}): Upserting resource.`,
             );
             const result = await upsert(accountSid, resource);
             if (!result.success) {
@@ -93,18 +93,18 @@ const importService = () => {
               throw dbErr;
             }
             console.debug(
-              `[Imported Resource Trace] Upserted ${accountSid}/${resource.id}`,
+              `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${resource.id}): Upserted resource.`,
             );
             results.push(result);
 
             try {
               await publishSearchIndexJob(resource.accountSid, resource);
               console.debug(
-                `[Imported Resource Trace] Published search index job for ${accountSid}/${resource.id}`,
+                `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${resource.id}): Published search index job.`,
               );
             } catch (e) {
               console.error(
-                `[Imported Resource Trace] Failed to publish search index job for ${resource.accountSid}/${resource.id}`,
+                `[Imported Resource Trace](qualifiedResourceId:${resource.accountSid}/${resource.id}): Failed to publish search index job for `,
               );
             }
           }
