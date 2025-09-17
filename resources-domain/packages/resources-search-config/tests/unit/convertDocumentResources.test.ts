@@ -244,7 +244,7 @@ describe('convertIndexDocument', () => {
     expect(document).toEqual({
       id: '1234',
       name: 'Resource',
-      high_boost_global: 'street 1234 description Free',
+      high_boost_global: 'street city province 1234 country description Free',
       low_boost_global:
         '111-222-3333 111-222-3333 Hotline-description 111-222-3333 https://websiteAddress 1/10/2025 short-description 1/10/2025 name title 1112223333 emailAddress@example.org approver CO - Some County - State',
       categoriesName: [

@@ -23,10 +23,10 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   highBoostGlobalFields: [
     'description',
     'address/street',
-    'address/city',
-    'address/province',
     'address/postalCode',
-    'address/country',
+    'city',
+    'province',
+    'country',
     'otherLanguages',
     'feeStructure',
   ],
