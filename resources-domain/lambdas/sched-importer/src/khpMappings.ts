@@ -571,7 +571,7 @@ export const KHP_MAPPING_NODE: MappingNode = {
               lookupProvinceCode(province),
               region,
               city,
-            ];
+            ].join('/');
             return `${filterPath} ${text}`;
           },
           // `coverage/${currentValue._id ?? captures.coverageIndex}`,
