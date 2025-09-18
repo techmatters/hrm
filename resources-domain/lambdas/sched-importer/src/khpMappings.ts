@@ -566,6 +566,8 @@ export const KHP_MAPPING_NODE: MappingNode = {
             const text = [postalCode, city, region, province, country]
               .filter(Boolean)
               .join(', ');
+            // The filterPath matches the option values set for the filters in the Aselo GUI, e.g. regions are ON/Toronto.
+            // Including it in the coverage values ensures the resource will be included in results when a filter matching that coverage location is specified
             const filterPath = [
               lookupCountryCode(country),
               lookupProvinceCode(province),
