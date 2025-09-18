@@ -576,7 +576,6 @@ export const KHP_MAPPING_NODE: MappingNode = {
             ].join('/');
             return `${filterPath} ${text}`;
           },
-          // `coverage/${currentValue._id ?? captures.coverageIndex}`,
         },
       ),
     },
