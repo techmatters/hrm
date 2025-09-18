@@ -114,7 +114,7 @@ export const USCH_MAPPING_NODE: MappingNode = {
   AlternateName: translatableAttributeMapping('alternateName', { language: 'en' }),
   Address: attributeMapping('stringAttributes', 'address/street'),
   City: attributeMapping('stringAttributes', 'address/city'),
-  StateProvince: attributeMapping('stringAttributes', 'stateProvince'),
+  StateProvince: attributeMapping('stringAttributes', 'address/province'),
   PostalCode: attributeMapping('stringAttributes', 'address/postalCode'),
   Country: attributeMapping('stringAttributes', 'address/country'),
   HoursOfOperation: translatableAttributeMapping('hoursOfOperation'),
