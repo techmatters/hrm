@@ -55,7 +55,7 @@ export const handler = async (event: S3Event): Promise<void> => {
       columns: headings => headings,
     })) {
       console.debug(
-        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${csvLine.ResourceID}): Transforming resourcw`,
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${csvLine.ResourceID}): Transforming resource`,
       );
       const aseloResource = transformUschResourceToApiResource(
         accountSid,
