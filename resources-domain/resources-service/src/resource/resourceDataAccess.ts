@@ -18,7 +18,10 @@ import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
 
 import { db } from '../connection-pool';
-import { SELECT_RESOURCE_IN_IDS } from './sql/resourceGetSql';
+import {
+  SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL,
+  SELECT_RESOURCE_IN_IDS,
+} from './sql/resourceGetSql';
 
 export const getById = async (
   accountSid: AccountSID,
@@ -46,5 +49,23 @@ export const getByIdList = async (
     t.manyOrNone(SELECT_RESOURCE_IN_IDS, { accountSid, resourceIds }),
   );
   console.debug('Retrieved resources:', res?.length);
+  return res;
+};
+
+export const getDistinctStringAttributes = async (
+  accountSid: AccountSID,
+  key: string,
+  language: string | undefined,
+): Promise<string[]> => {
+  const res = await db.task(async t =>
+    t.manyOrNone(SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL, {
+      accountSid,
+      key,
+      language: language || undefined, // Ensure any falsy value is converted to undefined so to be NULL for the query
+    }),
+  );
+  console.debug(
+    `Retrieved ${res.length} distinct attributes from key ${key}, language ${language}'`,
+  );
   return res;
 };

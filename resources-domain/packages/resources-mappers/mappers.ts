@@ -173,10 +173,17 @@ export const attributeMapping = <T extends AttributeProperty>(
   valueGenerator:
     typeof value === 'function'
       ? value
-      : () =>
-          property === 'dateTimeAttributes' && value && typeof value === 'string'
-            ? parseISO(value).toString()
-            : value,
+      : () => {
+          if (property === 'dateTimeAttributes' && value && typeof value === 'string') {
+            return parseISO(value).toString();
+          }
+
+          if (typeof value === 'string') {
+            return value?.trim();
+          }
+
+          return value;
+        },
   infoGenerator: typeof info === 'function' ? info : () => info,
 });
 

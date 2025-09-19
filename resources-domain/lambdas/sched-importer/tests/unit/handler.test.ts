@@ -118,7 +118,7 @@ const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
   `${date.valueOf()}-${sequence}`;
 
 const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResource => ({
-  objectId: resourceId,
+  _id: resourceId,
   name: {
     en: `Resource ${resourceId}`,
   },
