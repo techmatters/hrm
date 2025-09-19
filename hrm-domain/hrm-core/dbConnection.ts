@@ -25,7 +25,9 @@ export { pgp } from '@tech-matters/database-connect';
 
 let dbWithAdmin: Database;
 
-export const getDbForAdmin = () => {
+type DB = ReturnType<typeof connectToPostgres>;
+
+export const getDbForAdmin = (): DB => {
   // Instantiate lazily because only the poller instance uses this
   if (!dbWithAdmin) {
     dbWithAdmin = connectToPostgres({
@@ -36,7 +38,7 @@ export const getDbForAdmin = () => {
   return dbWithAdmin;
 };
 
-export const db = connectToPostgres({
+export const db: DB = connectToPostgres({
   ...adminConnectionConfig,
   applicationName: 'hrm-service',
 });
