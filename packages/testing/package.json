@@ -6,7 +6,7 @@
   "license": "AGPL",
   "main": "dist/index.js",
   "dependencies": {
-    "pg-promise": "^10.11.1",
+    "pg-promise": "^11.15.0",
     "global-agent": "^3.0.0",
     "mockttp": "^3.16.0",
     "jest": "^28.1.3",
