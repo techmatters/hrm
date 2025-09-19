@@ -23,11 +23,12 @@ import type {
 
 import { getClient, SuggestParameters } from '@tech-matters/elasticsearch-client';
 
-import { getById, getByIdList } from './resourceDataAccess';
+import { getById, getByIdList, getDistinctStringAttributes } from './resourceDataAccess';
 import {
   RESOURCE_INDEX_TYPE,
-  searchConfiguration,
+  getSearchConfiguration,
 } from '@tech-matters/resources-search-config';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 // Represents a resource whose ID was returned by a search, but which is not in the database
 export type MissingResource = {
@@ -152,6 +153,11 @@ export const resourceService = () => {
         pagination: { ...searchParameters.pagination!, limit },
       };
 
+      const shortCode = await getSsmParameter(
+        `/${process.env.NODE_ENV}/twilio/${accountSid}/short_helpline`,
+      );
+      const searchConfiguration = getSearchConfiguration(shortCode);
+
       const client = (
         await getClient({
           accountSid,
@@ -195,6 +201,11 @@ export const resourceService = () => {
       accountSid: AccountSID,
       suggestParameters: SuggestParameters,
     ) => {
+      const shortCode = await getSsmParameter(
+        `/${process.env.NODE_ENV}/twilio/${accountSid}/short_helpline`,
+      );
+      const searchConfiguration = getSearchConfiguration(shortCode);
+
       const client = (
         await getClient({
           accountSid,
@@ -204,5 +215,11 @@ export const resourceService = () => {
 
       return client.suggest({ suggestParameters });
     },
+
+    getDistinctResourceStringAttributes: async (
+      accountSid: AccountSID,
+      key: string,
+      language: string,
+    ) => getDistinctStringAttributes(accountSid, key, language),
   };
 };

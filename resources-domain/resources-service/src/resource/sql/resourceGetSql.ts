@@ -76,3 +76,9 @@ LEFT JOIN LATERAL (
 export const SELECT_RESOURCE_IN_IDS = `${SELECT_RESOURCES}
 WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>) AND r."deletedAt" IS NULL
 `;
+
+export const SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL = `
+  SELECT DISTINCT("value") FROM "ResourceStringAttributes" 
+  WHERE "accountSid" = $<accountSid> AND 
+  "key" = $<key> AND 
+  ($<language> IS NULL OR "language"=$<language>)`;

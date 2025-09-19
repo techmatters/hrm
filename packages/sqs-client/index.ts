@@ -252,8 +252,14 @@ export const newSqsClient = ({
         VisibilityTimeout: visibilityTimeout,
         WaitTimeSeconds: waitTimeSeconds,
       });
-
-      return retrieveReceivedMessagesContents(await sqs.send(command));
+      console.debug(`[SQS client trace] Receiving messages from URL: ${QueueUrl}`);
+      const output = await retrieveReceivedMessagesContents(await sqs.send(command));
+      console.debug(
+        `[SQS client trace] Received messages from URL: ${QueueUrl}, ${output.Messages?.map(
+          m => m.MessageId,
+        ).join(', ')}`,
+      );
+      return output;
     },
 
     getQueueAttributes: async (params: { queueUrl: string; attributes: string[] }) => {
@@ -279,7 +285,14 @@ export const newSqsClient = ({
         MessageGroupId,
       });
 
-      return sqs.send(command);
+      console.debug(
+        `[SQS client trace] Sending message to URL: ${QueueUrl}, Group: ${MessageGroupId}`,
+      );
+      const output = await sqs.send(command);
+      console.debug(
+        `[SQS client trace] Sent message to URL: ${QueueUrl}, Group: ${MessageGroupId}, MessageId: ${output.MessageId}`,
+      );
+      return output;
     },
 
     sendSqsMessageBatch: async (params: SendSqsMessageBatchParams) => {

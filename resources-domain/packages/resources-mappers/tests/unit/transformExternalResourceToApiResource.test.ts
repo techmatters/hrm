@@ -13,30 +13,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import {
-  transformExternalResourceToApiResource,
-  transformKhpResourceToApiResource,
-} from '../../src/transformExternalResourceToApiResource';
+import { transformExternalResourceToApiResource } from '../../transformExternalResourceToApiResource';
 import {
   MappingNode,
   resourceFieldMapping,
   attributeMapping,
   referenceAttributeMapping,
   translatableAttributeMapping,
-} from '../../src/mappers';
-import { AccountSID } from '@tech-matters/types';
-import { FlatResource } from '@tech-matters/resources-types';
+} from '../../mappers';
+import type { AccountSID } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
 import each from 'jest-each';
-import {
-  failingId,
-  khpResources_20240822,
-  khpResourceWithAncestorTaxonmies,
-  khpResourceWithoutSites,
-  khpResourceWithSites,
-  khpSampleResource_20240418,
-  khpSampleResource_20240418_2,
-  withSites_20240823,
-} from '../fixtures/sampleResources';
 
 const startedDate = new Date().toISOString();
 const ACCOUNT_SID: AccountSID = 'AC000';
@@ -906,62 +893,5 @@ describe('Simple mapping, nested structure', () => {
 
     const result = transformExternalResourceToApiResource(mapping, ACCOUNT_SID, resource);
     expect(result).toMatchObject(expected);
-  });
-});
-
-/**
- * Not the most scientific tests, but a vehicle to verify we are handling the real data correctly as it evolves.
- */
-describe('Mapping valid sample resources should produce no warnings', () => {
-  type TestCase = {
-    description: string;
-    resource: any;
-  };
-
-  const testCases: TestCase[] = [
-    {
-      description: 'KHP resource with ancestor taxonomies',
-      resource: khpResourceWithAncestorTaxonmies,
-    },
-    {
-      description: 'KHP resource with no sites',
-      resource: khpResourceWithoutSites,
-    },
-    {
-      description: 'KHP resource with sites',
-      resource: khpResourceWithSites,
-    },
-    {
-      description: 'KHP resource after API update',
-      resource: khpSampleResource_20240418,
-    },
-    {
-      description: 'KHP resource after API update 2',
-      resource: khpSampleResource_20240418_2,
-    },
-    {
-      description: 'KHP resource failing id after API update 2',
-      resource: failingId,
-    },
-    ...khpResources_20240822.map((resource, idx) => ({
-      description: `KHP resource from 2024-08-22 ${idx} (${resource._id})`,
-      resource,
-    })),
-    {
-      description: 'withSites_20240823',
-      resource: withSites_20240823,
-    },
-  ];
-
-  each(testCases).test('$description', ({ resource }) => {
-    const warnSpy = jest.spyOn(console, 'warn');
-    try {
-      console.log(
-        JSON.stringify(transformKhpResourceToApiResource('AC000', resource), null, 2),
-      );
-      expect(warnSpy).not.toHaveBeenCalled();
-    } finally {
-      warnSpy.mockRestore();
-    }
   });
 });

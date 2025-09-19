@@ -27,8 +27,9 @@ import type {
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import {
   RESOURCE_INDEX_TYPE,
-  resourceIndexConfiguration,
+  getResourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 export type DocumentsByAccountSid = Record<string, BulkOperations<FlatResource>>;
 
@@ -39,15 +40,17 @@ export const convertDocumentsToBulkRequest = (messages: ResourcesSearchIndexPayl
       acc[accountSid] = [];
     }
     if (document.deletedAt) {
-      console.debug('Delete Document for resource ID:', document.id);
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${document.id}): Deleting Document for resource.`,
+        ``,
+      );
       acc[accountSid].push({
         action: 'delete',
         id: document.id,
       });
     } else {
       console.debug(
-        'Index Document for resource ID:',
-        document.id,
+        `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${document.id}): Indexing Document for resource.`,
         'Converted document:',
         document,
       );
@@ -84,6 +87,11 @@ export const executeBulk = async (
 ) => {
   await Promise.all(
     Object.keys(documentsByAccountSid).map(async accountSid => {
+      const shortCode = await getSsmParameter(
+        `/${process.env.NODE_ENV}/twilio/${accountSid}/short_helpline`,
+      );
+      const resourceIndexConfiguration = getResourceIndexConfiguration(shortCode);
+
       const documents = documentsByAccountSid[accountSid];
       const client = (
         await getClient({
@@ -119,7 +127,10 @@ export const mapMessages = (
 
 export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
   const response: SQSBatchResponse = { batchItemFailures: [] };
-  console.debug('Received event:', JSON.stringify(event, null, 2));
+  console.debug(
+    `Received resource index request with ${event.Records.length} records`,
+    JSON.stringify(event, null, 2),
+  );
   // We need to keep track of the documentId to messageId mapping so we can
   // return the correct messageId in the batchItemFailures array on error.
   const documentIdToMessageId: Record<string, string> = {};
@@ -134,26 +145,39 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
     response.batchItemFailures.push({
       itemIdentifier: documentIdToMessageId[documentId],
     });
-
+  let fullyQualifiedResources = ['not determined'];
   try {
     // Map the messages and add the documentId to messageId mapping.
     const messages = mapMessages(event.Records, addDocumentIdToMessageId);
-    console.debug('Mapped messages:', JSON.stringify(messages, null, 2));
+    fullyQualifiedResources = messages.map(m => `${m.accountSid}/${m.document.id}`);
+    fullyQualifiedResources.forEach(fqr =>
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Mapped messages for resources.`,
+      ),
+    );
 
     // Convert the messages to a bulk requests grouped by accountSid.
     const documentsByAccountSid = convertDocumentsToBulkRequest(messages);
-    console.debug(
-      'Converted documents to bulk request:',
-      JSON.stringify(documentsByAccountSid, null, 2),
+    fullyQualifiedResources.forEach(fqr =>
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Converted document to bulk request.`,
+      ),
     );
 
     // Iterates over groups of documents and index them using an accountSid specific client
     await executeBulk(documentsByAccountSid, addDocumentIdToFailures);
-    console.debug(`Successfully indexed documents`);
+    fullyQualifiedResources.forEach(fqr =>
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Successfully indexed document.`,
+      ),
+    );
   } catch (err) {
-    console.error(
-      new ResourceIndexProcessorError('Failed to process search index request'),
-      err,
+    fullyQualifiedResources.forEach(fqr =>
+      console.error(
+        `[Imported Resource Trace](qualifiedResourceId:${fqr}): Error indexing document.`,
+        new ResourceIndexProcessorError('Failed to process search index request'),
+        err,
+      ),
     );
 
     response.batchItemFailures = event.Records.map(record => {

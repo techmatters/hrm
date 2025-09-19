@@ -8,11 +8,16 @@
   "dependencies": {
     "@tech-matters/sqs-client": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/s3-client": "^1.0.0",
+    "@tech-matters/resources-mappers": "^1.0.0",
+    "@tech-matters/resources-import-producer": "^1.0.0",
     "date-fns": "^2.30.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "csv-parse": "^6.1.0"
   },
   "devDependencies": {
     "@tech-matters/types": "^1.0.0",
+    "@tech-matters/resources-types": "^1.0.0",
     "@tsconfig/node22": "^22.0.0",
     "@types/aws-lambda": "^8.10.108",
     "@types/lodash": "^4.14.194",

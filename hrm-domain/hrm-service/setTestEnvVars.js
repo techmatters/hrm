@@ -32,6 +32,7 @@ process.env.PERMISSIONS_ACtz = 'tz';
 process.env.PERMISSIONS_ACukmh = 'ukmh';
 process.env.PERMISSIONS_ACusch = 'usch';
 process.env.PERMISSIONS_ACuscr = 'uscr';
+process.env.PERMISSIONS_ACusvc = 'usvc';
 process.env.PERMISSIONS_ACza = 'za';
 process.env.PERMISSIONS_ACzm = 'zm';
 process.env.PERMISSIONS_ACzw = 'zw';

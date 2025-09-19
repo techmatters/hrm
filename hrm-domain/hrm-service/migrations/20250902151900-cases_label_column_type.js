@@ -13,6 +13,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+'use strict';
 
-export * from './mappers';
-export * from './transformExternalResourceToApiResource';
+/** @type {import('sequelize-cli').Migration} */
+module.exports = {
+  up: async queryInterface => {
+    await queryInterface.sequelize.query(`
+        ALTER TABLE public."Cases" ALTER COLUMN "label" TYPE TEXT;
+    `);
+    console.log('"label" column set to type TEXT');
+  },
+  down: async queryInterface => {
+    await queryInterface.sequelize.query(`
+        ALTER TABLE public."Cases" ALTER COLUMN "label" TYPE character varying(255);
+    `);
+    console.log('"label" column set to type TEXT');
+  },
+};

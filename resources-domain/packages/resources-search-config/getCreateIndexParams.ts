@@ -26,56 +26,58 @@
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 import {
   convertMappingFieldsToProperties,
-  resourceIndexDocumentMappings,
+  ResourceIndexDocumentMappings,
 } from './resourceIndexDocumentMappings';
 
 /**
  * This function is used to make a request to create the resources search index in ES.
  * @param index
  */
-export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
-  const { languageFields } = resourceIndexDocumentMappings;
+export const getCreateIndexParams =
+  (mappings: ResourceIndexDocumentMappings) =>
+  (index: string): IndicesCreateRequest => {
+    const { languageFields } = mappings;
 
-  return {
-    index,
-    settings: {
-      analysis: {
-        filter: {
-          english_stemmer: {
-            type: 'stemmer',
-            language: 'english',
+    return {
+      index,
+      settings: {
+        analysis: {
+          filter: {
+            english_stemmer: {
+              type: 'stemmer',
+              language: 'english',
+            },
+            french_stemmer: {
+              type: 'stemmer',
+              language: 'french',
+            },
           },
-          french_stemmer: {
-            type: 'stemmer',
-            language: 'french',
-          },
-        },
-        analyzer: {
-          rebuilt_english: {
-            type: 'custom',
-            tokenizer: 'standard',
-            filter: ['lowercase', 'english_stemmer'],
-          },
-          rebuilt_french: {
-            type: 'custom',
-            tokenizer: 'standard',
-            filter: ['lowercase', 'french_stemmer'],
+          analyzer: {
+            rebuilt_english: {
+              type: 'custom',
+              tokenizer: 'standard',
+              filter: ['lowercase', 'english_stemmer'],
+            },
+            rebuilt_french: {
+              type: 'custom',
+              tokenizer: 'standard',
+              filter: ['lowercase', 'french_stemmer'],
+            },
           },
         },
       },
-    },
-    mappings: {
-      properties: {
-        high_boost_global: {
-          type: 'text',
-          fields: languageFields,
+      mappings: {
+        properties: {
+          high_boost_global: {
+            type: 'text',
+            fields: languageFields,
+          },
+          low_boost_global: {
+            type: 'text',
+            fields: languageFields,
+          },
+          ...convertMappingFieldsToProperties(mappings),
         },
-        low_boost_global: {
-          type: 'text',
-          fields: languageFields,
-        },
-        ...convertMappingFieldsToProperties(),
       },
-    },
+    };
   };
-};
