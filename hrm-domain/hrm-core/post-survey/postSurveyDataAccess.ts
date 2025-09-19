@@ -15,8 +15,8 @@
  */
 
 import { NewPostSurvey, PostSurvey } from '@tech-matters/hrm-types';
-import { SELECT_POST_SURVEYS_BY_CONTACT_TASK } from './sql/post-survey-get-sql';
-import { insertPostSurveySql } from './sql/post-survey-insert-sql';
+import { SELECT_POST_SURVEYS_BY_CONTACT_TASK } from './sql/postSurveyGetSql';
+import { insertPostSurveySql } from './sql/postSurveyInsertSql';
 import { getDbForAccount } from '../dbConnection';
 
 export type { NewPostSurvey, PostSurvey };

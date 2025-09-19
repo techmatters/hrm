@@ -1,0 +1,205 @@
+/**
+ * Copyright (C) 2021-2023 Technology Matters
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/.
+ */
+import {
+  MappingNode,
+  resourceFieldMapping,
+  attributeMapping,
+  transformExternalResourceToApiResource,
+  translatableAttributeMapping,
+} from '@tech-matters/resources-mappers';
+import type { AccountSID } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
+import { parse } from 'date-fns';
+
+/*
+ * This defines all the mapping logic to convert Childhelp resource to an Aselo resource.
+ * The mapping is defined as a tree of nodes.
+ * If the content of this node needs to be written to the Aselo DB, it should be provided a "khp mapping" function, depending on where the data should be written.
+ * Child nodes are defined within the `children` property. This are processed recursively.
+ * If the names of the child nodes are dynamic, e.g. one per language, or one per social media channel, the node should be named with a placeholder token, e.g. '{language}' or '{channel}'. This will make the importer process all child data nodes and capture their property under `captures` property of the context object for use generating keys, values & info etc..
+ */
+
+/**
+ * Represents the resource as parsed from the Csv
+ */
+export type UschCsvResource = {
+  ResourceID: string;
+  Name: string;
+  AlternateName: string;
+  Address: string;
+  City: string;
+  StateProvince: string;
+  PostalCode: string;
+  Country: string;
+  HoursOfOperation: string;
+  Phone1: string;
+  Phone1Name: string;
+  Phone1Description: string;
+  Phone2: string;
+  Phone2Name: string;
+  Phone2Description: string;
+  Phone3: string;
+  Phone3Name: string;
+  Phone3Description: string;
+  Phone4: string;
+  Phone4Name: string;
+  Phone4Description: string;
+  PhoneFax: string;
+  PhoneTTY: string;
+  PhoneTTYDescription: string;
+  PhoneHotline: string;
+  PhoneHotlineDescription: string;
+  PhoneBusiness: string;
+  PhoneBusinessDescription: string;
+  PhoneAfterHours: string;
+  PhoneAfterHoursDescription: string;
+  EmailAddress: string;
+  WebsiteAddress: string;
+  Description: string;
+  FeeStructure: string;
+  OtherLanguages: string;
+  EnteredOn: string;
+  UpdatedOn: string;
+  ShortDescription: string;
+  LastVerifiedOn: string;
+  LastVerifiedByName: string;
+  LastVerifiedByTitle: string;
+  LastVerifiedByPhoneNumber: string;
+  LastVerifiedByEmailAddress: string;
+  LastVerificationApprovedBy: string;
+  Categories: string;
+  Coverage: string;
+  Comment: string;
+  HoursFormatted: string;
+};
+
+export type UschExpandedResource = Partial<
+  Omit<UschCsvResource, 'Categories' | 'Coverage'> & {
+    Categories: string[];
+    Coverage: string[];
+  }
+>;
+
+export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
+  const expanded = {
+    ...csv,
+    Categories: csv.Categories?.split(';').filter(Boolean),
+    Coverage: csv.Coverage?.split(';').filter(Boolean),
+  };
+  for (const key in expanded) {
+    const validKey = key as keyof UschExpandedResource;
+    if (expanded[validKey] === undefined || expanded[validKey] === '') {
+      delete expanded[validKey];
+    }
+  }
+  return expanded;
+};
+
+export const USCH_MAPPING_NODE: MappingNode = {
+  ResourceID: resourceFieldMapping('id'),
+  Name: resourceFieldMapping('name'),
+  AlternateName: translatableAttributeMapping('alternateName', { language: 'en' }),
+  Address: attributeMapping('stringAttributes', 'address/street'),
+  City: attributeMapping('stringAttributes', 'address/city'),
+  StateProvince: attributeMapping('stringAttributes', 'address/province'),
+  PostalCode: attributeMapping('stringAttributes', 'address/postalCode'),
+  Country: attributeMapping('stringAttributes', 'address/country'),
+  HoursOfOperation: translatableAttributeMapping('hoursOfOperation'),
+  ...Object.fromEntries(
+    [1, 2, 3, 4].flatMap(phoneIdentifier => [
+      [
+        `Phone${phoneIdentifier}`,
+        translatableAttributeMapping(`phone/${phoneIdentifier}/number`, {
+          language: 'en',
+        }),
+      ],
+      [
+        `Phone${phoneIdentifier}Name`,
+        translatableAttributeMapping(`phone/${phoneIdentifier}/name`, { language: 'en' }),
+      ],
+      [
+        `Phone${phoneIdentifier}Description`,
+        translatableAttributeMapping(`phone/${phoneIdentifier}/description`, {
+          language: 'en',
+        }),
+      ],
+    ]),
+  ),
+  PhoneFax: translatableAttributeMapping('phoneFax'),
+  ...Object.fromEntries(
+    ['TTY', 'Hotline', 'Business', 'AfterHours'].flatMap(phoneIdentifier => [
+      [
+        `Phone${phoneIdentifier}`,
+        translatableAttributeMapping(`phone/${phoneIdentifier}/number`),
+      ],
+      [
+        `Phone${phoneIdentifier}Description`,
+        translatableAttributeMapping(`phone/${phoneIdentifier}/description`, {
+          language: 'en',
+        }),
+      ],
+    ]),
+  ),
+  EmailAddress: translatableAttributeMapping('emailAddress', { language: 'en' }),
+  WebsiteAddress: translatableAttributeMapping('websiteAddress', { language: 'en' }),
+  Description: translatableAttributeMapping('description', { language: 'en' }),
+  FeeStructure: translatableAttributeMapping('feeStructure', { language: 'en' }),
+  OtherLanguages: attributeMapping('stringAttributes', 'otherLanguages'),
+  EnteredOn: attributeMapping('stringAttributes', 'enteredOn'),
+  UpdatedOn: resourceFieldMapping('lastUpdated', ({ currentValue }) =>
+    parse(currentValue, 'M/d/yyyy', new Date()).toISOString(),
+  ),
+  ShortDescription: translatableAttributeMapping('shortDescription', { language: 'en' }),
+  LastVerifiedOn: attributeMapping('stringAttributes', 'lastVerified/on'),
+  LastVerifiedByName: attributeMapping('stringAttributes', 'lastVerified/name'),
+  LastVerifiedByTitle: attributeMapping('stringAttributes', 'lastVerified/title'),
+  LastVerifiedByPhoneNumber: attributeMapping(
+    'stringAttributes',
+    'lastVerified/phoneNumber',
+  ),
+  LastVerifiedByEmailAddress: attributeMapping(
+    'stringAttributes',
+    'lastVerified/emailAddress',
+  ),
+  LastVerificationApprovedBy: attributeMapping(
+    'stringAttributes',
+    'lastVerified/verificationApprovedBy',
+  ),
+  Categories: {
+    children: {
+      '{categoryIndex}': translatableAttributeMapping('categories/{categoryIndex}', {
+        value: ({ currentValue }) => currentValue,
+        language: 'en',
+      }),
+    },
+  },
+  Coverage: {
+    children: {
+      '{coverageIndex}': translatableAttributeMapping('coverage/{coverageIndex}', {
+        value: ({ currentValue }) => currentValue,
+        language: 'en',
+      }),
+    },
+  },
+  Comment: translatableAttributeMapping('comment', { language: 'en' }),
+  HoursFormatted: translatableAttributeMapping('hoursFormatted', { language: 'en' }),
+};
+
+export const transformUschResourceToApiResource = (
+  accountSid: AccountSID,
+  uschResource: UschExpandedResource,
+): FlatResource =>
+  transformExternalResourceToApiResource(USCH_MAPPING_NODE, accountSid, uschResource);

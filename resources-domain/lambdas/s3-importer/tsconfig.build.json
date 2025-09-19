@@ -7,6 +7,9 @@
     { "path": "packages/s3-client" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/sqs-client" },
+    { "path": "resources-domain/packages/resources-types" },
+    { "path": "resources-domain/packages/resources-mappers" },
+    { "path": "resources-domain/packages/resources-import-producer" },
     { "path": "resources-domain/lambdas/s3-importer" }
   ]
 }

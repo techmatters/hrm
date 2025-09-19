@@ -21,13 +21,13 @@ import {
   updateImportProgress,
   upsertImportedResource,
 } from '../../../src/import/importDataAccess';
+import { AccountSID } from '@tech-matters/types';
 import {
-  AccountSID,
   FlatResource,
   ImportBatch,
   ImportProgress,
   TimeSequence,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 import importService from '../../../src/import/importService';
 import { BLANK_ATTRIBUTES } from '../../mockResources';
 import { publishSearchIndexJob } from '../../../src/resource-jobs/client-sqs';

@@ -14,12 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import type { AccountSID } from '@tech-matters/types';
 import type {
-  AccountSID,
   FlatResource,
   InlineAttributeProperty,
-} from '@tech-matters/types';
-import { KhpApiResource } from '.';
+} from '@tech-matters/resources-types';
 import {
   FieldMappingContext,
   InlineAttributeMapping,
@@ -33,7 +32,6 @@ import {
   isResourceMappingList,
   ResourceMapping,
 } from './mappers';
-import * as khp from './khpMappings';
 import { isValid, parseISO } from 'date-fns';
 
 const pushResourceFieldMapping = ({
@@ -245,7 +243,7 @@ const mapNode = (
 export const transformExternalResourceToApiResource = <T>(
   resourceMapping: MappingNode,
   accountSid: AccountSID,
-  khpResource: T,
+  externalResource: T,
 ): FlatResource => {
   const resource: FlatResource = {
     accountSid,
@@ -262,14 +260,8 @@ export const transformExternalResourceToApiResource = <T>(
 
   return mapNode(
     resourceMapping,
-    khpResource,
-    { captures: {}, path: [], rootResource: khpResource },
+    externalResource,
+    { captures: {}, path: [], rootResource: externalResource },
     resource,
   );
 };
-
-export const transformKhpResourceToApiResource = (
-  accountSid: AccountSID,
-  khpResource: KhpApiResource,
-): FlatResource =>
-  transformExternalResourceToApiResource(khp.KHP_MAPPING_NODE, accountSid, khpResource);

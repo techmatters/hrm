@@ -17,7 +17,7 @@ import {
   IndexConfiguration,
   SearchConfiguration,
 } from '@tech-matters/elasticsearch-client';
-import { FlatResource } from '@tech-matters/types';
+import type { FlatResource } from '@tech-matters/resources-types';
 import { convertIndexDocument } from './convertIndexDocument';
 import { getCreateIndexParams } from './getCreateIndexParams';
 import { generateSuggestQuery } from './generateSuggestQuery';
@@ -26,54 +26,41 @@ import {
   SearchParameters,
   generateElasticsearchQuery,
 } from './generateElasticsearchQuery';
+import { getMappingsForAccount } from './resourceIndexDocumentMappings';
 
-const resourceSearchConfiguration: ResourcesSearchConfiguration = {
-  searchFieldBoosts: {
-    'name.*': 5,
-    'id.*': 5,
-    'high_boost_global.*': 3,
-    'low_boost_global.*': 2,
-    '*': 1,
-    '*.*': 1,
-  },
-  filterMappings: {
-    minEligibleAge: {
-      type: 'range',
-      targetField: 'eligibilityMaxAge',
-      operator: 'gte',
-    },
-    maxEligibleAge: {
-      type: 'range',
-      targetField: 'eligibilityMinAge',
-      operator: 'lte',
-    },
-    interpretationTranslationServicesAvailable: {
-      type: 'term',
-    },
-    isActive: {
-      type: 'custom',
-      filterGenerator: value => ({
-        bool: {
-          must_not: {
-            term: { isActive: value },
-          },
-        },
-      }),
-    },
-  },
-  generateSuggestQuery,
+const searchFieldBoosts: ResourcesSearchConfiguration['searchFieldBoosts'] = {
+  'name.*': 5,
+  'id.*': 5,
+  'high_boost_global.*': 3,
+  'low_boost_global.*': 2,
+  '*': 1,
+  '*.*': 1,
 };
 
 export { SearchParameters };
 
-export const searchConfiguration: SearchConfiguration<SearchParameters> = {
-  generateElasticsearchQuery: generateElasticsearchQuery(resourceSearchConfiguration),
-  generateSuggestQuery: resourceSearchConfiguration.generateSuggestQuery,
+export const getSearchConfiguration: (
+  helplineShortCode: string,
+) => SearchConfiguration<SearchParameters> = (helplineShortCode: string) => {
+  const mappings = getMappingsForAccount(helplineShortCode);
+  const searchConfiguration: ResourcesSearchConfiguration = {
+    searchFieldBoosts,
+    filterMappings: mappings.filterMappings,
+  };
+  return {
+    generateElasticsearchQuery: generateElasticsearchQuery(searchConfiguration),
+    generateSuggestQuery: generateSuggestQuery(mappings.resourceIndexDocumentMappings),
+  };
 };
 
-export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
-  convertToIndexDocument: convertIndexDocument,
-  getCreateIndexParams,
+export const getResourceIndexConfiguration: (
+  helplineShortCode: string,
+) => IndexConfiguration<FlatResource> = (helplineShortCode: string) => {
+  const mappings = getMappingsForAccount(helplineShortCode);
+  return {
+    convertToIndexDocument: convertIndexDocument(mappings.resourceIndexDocumentMappings),
+    getCreateIndexParams: getCreateIndexParams(mappings.resourceIndexDocumentMappings),
+  };
 };
 
 export const RESOURCE_INDEX_TYPE = 'resources';

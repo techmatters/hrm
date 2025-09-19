@@ -7,6 +7,7 @@
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/elasticsearch-client" },
+    { "path": "resources-domain/packages/resources-types" },
     { "path": "resources-domain/packages/resources-search-config" },
     { "path": "resources-domain/lambdas/search-index" }
   ]

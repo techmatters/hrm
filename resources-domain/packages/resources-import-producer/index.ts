@@ -16,7 +16,8 @@
 
 import { getQueueAttributes, SqsClient } from '@tech-matters/sqs-client';
 
-import type { AccountSID, ImportRequestBody } from '@tech-matters/types';
+import type { AccountSID } from '@tech-matters/types';
+import type { ImportRequestBody } from '@tech-matters/resources-types';
 
 export const publishToImportConsumer =
   (sqsClient: SqsClient, importResourcesSqsQueueUrl: URL) =>
@@ -24,13 +25,16 @@ export const publishToImportConsumer =
     //TODO: more robust error handling/messaging
     try {
       const queueUrl = importResourcesSqsQueueUrl.toString();
-
+      const messageGroupId = `${params.accountSid}/${
+        params.importedResources[0]?.id ?? '__EMPTY_BATCH'
+      }`;
+      console.debug(
+        `[Imported Resource Trace](qualifiedResourceId:${messageGroupId}): Publishing resource to queue ${queueUrl} group ID ${messageGroupId}:`,
+      );
       return await sqsClient.sendSqsMessage({
         message: JSON.stringify(params),
         queueUrl,
-        messageGroupId: `${params.accountSid}/${
-          params.importedResources[0]?.id ?? '__EMPTY_BATCH'
-        }`,
+        messageGroupId,
       });
     } catch (err) {
       console.error('Error trying to send message to SQS queue', err);
@@ -48,3 +52,17 @@ export const retrieveUnprocessedMessageCount = async (
 };
 
 export type ResourceMessage = ImportRequestBody & { accountSid: AccountSID };
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+export const waitForEmptyQueue = async (importResourcesSqsQueueUrl: URL) => {
+  let unprocessedCount: number | undefined;
+  while (
+    (unprocessedCount = await retrieveUnprocessedMessageCount(importResourcesSqsQueueUrl))
+  ) {
+    console.info(
+      `${unprocessedCount} resources still to be processed from prior import run, waiting 10 seconds...`,
+    );
+    await delay(10000);
+  }
+};

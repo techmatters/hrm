@@ -14,7 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ReferrableResource, ReferrableResourceAttribute } from '@tech-matters/types';
+import {
+  ReferrableResource,
+  ReferrableResourceAttribute,
+} from '@tech-matters/resources-types';
 
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
 import { headers, getRequest, getServer } from './server';

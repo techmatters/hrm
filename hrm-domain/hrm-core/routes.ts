@@ -19,7 +19,7 @@ import { IRouter, Router } from 'express';
 import cases from './case/caseRoutesV0';
 import contacts from './contact/contactRoutesV0';
 import csamReports from './csam-report/csamReportRoutesV0';
-import postSurveys from './post-survey/post-survey-routes-v0';
+import postSurveys from './post-survey/postSurveyRoutesV0';
 import referrals from './referral/referral-routes-v0';
 import permissions from './permissions/permissions-routes-v0';
 import profiles from './profile/profileRoutesV0';
@@ -34,6 +34,8 @@ const publicCases = cases(true);
 const internalCases = cases(false);
 const publicContacts = contacts(true);
 const internalContacts = contacts(false);
+const publicPostSurveys = postSurveys(true);
+const internalPostSurveys = postSurveys(false);
 
 export const HRM_ROUTES: {
   path: string;
@@ -41,7 +43,7 @@ export const HRM_ROUTES: {
 }[] = [
   { path: '/contacts', routerFactory: () => publicContacts },
   { path: '/cases', routerFactory: () => publicCases },
-  { path: '/postSurveys', routerFactory: () => postSurveys },
+  { path: '/postSurveys', routerFactory: () => publicPostSurveys },
   { path: '/csamReports', routerFactory: () => csamReports },
   { path: '/profiles', routerFactory: () => profiles },
   { path: '/referrals', routerFactory: () => referrals() },
@@ -78,6 +80,7 @@ export const INTERNAL_ROUTES: {
   { path: '/contacts', routerFactory: () => internalContacts },
   { path: '/profiles', routerFactory: () => internalProfiles },
   { path: '/cases', routerFactory: () => internalCases },
+  { path: '/postSurveys', routerFactory: () => internalPostSurveys },
 ];
 
 export const internalApiV0 = () => {

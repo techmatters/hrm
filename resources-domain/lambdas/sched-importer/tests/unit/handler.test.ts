@@ -23,21 +23,25 @@ import {
   KhpApiResponse,
 } from '../../src';
 import each from 'jest-each';
-import type { FlatResource, ImportProgress, TimeSequence } from '@tech-matters/types';
+import type {
+  FlatResource,
+  ImportProgress,
+  TimeSequence,
+} from '@tech-matters/resources-types';
 import { ScheduledEvent } from 'aws-lambda';
 import { addSeconds, subHours, subMinutes } from 'date-fns';
 import {
   publishToImportConsumer,
   ResourceMessage,
   retrieveUnprocessedMessageCount,
-} from '../../src/clientSqs';
+} from '@tech-matters/resources-import-producer';
 import getConfig from '../../src/config';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
 }));
 
-jest.mock('../../src/clientSqs', () => ({
+jest.mock('@tech-matters/resources-import-producer', () => ({
   publishToImportConsumer: jest.fn(),
   retrieveUnprocessedMessageCount: jest.fn(),
 }));
@@ -114,7 +118,7 @@ const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
   `${date.valueOf()}-${sequence}`;
 
 const generateKhpResource = (updatedAt: Date, resourceId: string): KhpApiResource => ({
-  objectId: resourceId,
+  _id: resourceId,
   name: {
     en: `Resource ${resourceId}`,
   },

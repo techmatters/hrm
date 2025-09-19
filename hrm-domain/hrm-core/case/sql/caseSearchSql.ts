@@ -27,7 +27,7 @@ export const OrderByColumn = {
   ID: 'id',
   CREATED_AT: 'createdAt',
   UPDATED_AT: 'updatedAt',
-  CHILD_NAME: 'childName',
+  LABEL: 'label',
 } as const;
 
 export type OrderByColumnType = (typeof OrderByColumn)[keyof typeof OrderByColumn];
@@ -36,7 +36,7 @@ const ORDER_BY_FIELDS: Record<OrderByColumnType, string> = {
   id: pgp.as.name('id'),
   createdAt: pgp.as.name('createdAt'),
   updatedAt: pgp.as.name('updatedAt'),
-  childName: pgp.as.name('childName'),
+  label: pgp.as.name('label'),
 } as const;
 
 const DEFAULT_SORT: OrderByClauseItem[] = [

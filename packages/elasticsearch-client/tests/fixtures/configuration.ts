@@ -14,7 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/types/Resources';
+import type {
+  FlatResource,
+  ReferrableResourceAttribute,
+} from '@tech-matters/resources-types/Resources';
 import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
 import type { MappingProperty, PropertyName } from '@elastic/elasticsearch/lib/api/types';
 

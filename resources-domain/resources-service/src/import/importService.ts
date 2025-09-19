@@ -14,14 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import parseISO from 'date-fns/parseISO';
-import {
-  AccountSID,
+import type { AccountSID, HrmAccountId } from '@tech-matters/types';
+import type {
   FlatResource,
   ImportBatch,
   ImportProgress,
   TimeSequence,
-  HrmAccountId,
-} from '@tech-matters/types';
+} from '@tech-matters/resources-types';
 import { db } from '../connection-pool';
 import {
   getImportState,
@@ -82,7 +81,9 @@ const importService = () => {
               err.resourceId = resource.id;
               throw err;
             }
-            console.debug(`Upserting ${accountSid}/${resource.id}`);
+            console.debug(
+              `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${resource.id}): Upserting resource.`,
+            );
             const result = await upsert(accountSid, resource);
             if (!result.success) {
               const dbErr = new Error('Error inserting resource into database.') as any;
@@ -91,13 +92,19 @@ const importService = () => {
               dbErr.cause = result.error;
               throw dbErr;
             }
+            console.debug(
+              `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${resource.id}): Upserted resource.`,
+            );
             results.push(result);
 
             try {
               await publishSearchIndexJob(resource.accountSid, resource);
+              console.debug(
+                `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${resource.id}): Published search index job.`,
+              );
             } catch (e) {
               console.error(
-                `Failed to publish search index job for ${resource.accountSid}/${resource.id}`,
+                `[Imported Resource Trace](qualifiedResourceId:${resource.accountSid}/${resource.id}): Failed to publish search index job for `,
               );
             }
           }

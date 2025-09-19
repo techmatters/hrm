@@ -1,0 +1,20 @@
+{
+  "name": "@tech-matters/resources-mappers",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/types": "^1.0.0",
+    "date-fns": "^2.30.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3",
+    "jest-each": "^29.2.1"
+  },
+  "scripts": {
+    "test:unit": "jest tests/unit"
+  }
+}

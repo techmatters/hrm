@@ -18,6 +18,7 @@ import { IRouter, Router } from 'express';
 import { resourceService } from './resourceService';
 import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
+import { getDistinctStringAttributes } from './resourceDataAccess';
 
 const resourceRoutes = () => {
   const router: IRouter = Router();
@@ -60,6 +61,32 @@ const resourceRoutes = () => {
     });
 
     res.json(suggestions);
+  });
+
+  router.get('/list-string-attributes', async (req, res) => {
+    const { key, language } = req.query;
+
+    if (!key || typeof key !== 'string') {
+      res.status(400).json({
+        message: 'invalid parameter key',
+      });
+      return;
+    }
+
+    if (language && typeof language !== 'string') {
+      res.status(400).json({
+        message: 'invalid parameter language',
+      });
+      return;
+    }
+
+    const attributes = await getDistinctStringAttributes(
+      <AccountSID>req.hrmAccountId,
+      key,
+      language,
+    );
+
+    res.json(attributes);
   });
 
   return router;

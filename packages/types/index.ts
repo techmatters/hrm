@@ -16,8 +16,6 @@
 
 export * from './HrmAccountId';
 export * from './ContactJob';
-export * from './ResourcesImport';
-export * from './Resources';
 export * from './Result';
 export * from './twilio';
 export * from './assertExhaustive';

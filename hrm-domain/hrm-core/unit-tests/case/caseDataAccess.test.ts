@@ -154,11 +154,11 @@ describe('search', () => {
         listConfig: {
           limit: '100',
           offset: '25',
-          sortBy: OrderByColumn.CHILD_NAME,
+          sortBy: OrderByColumn.LABEL,
           sortDirection: 'ASC',
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"childName" ASC NULLS LAST'],
+        expectedInSql: ['"id" DESC', '"label" ASC NULLS LAST'],
       },
       {
         description: 'should ignore unrecognised sortBy columns',
@@ -189,10 +189,10 @@ describe('search', () => {
         listConfig: {
           limit: '100',
           offset: '25',
-          sortBy: OrderByColumn.CHILD_NAME,
+          sortBy: OrderByColumn.LABEL,
         },
         expectedDbParameters: { limit: 100, offset: 25 },
-        expectedInSql: ['"id" DESC', '"childName" DESC NULLS LAST'],
+        expectedInSql: ['"id" DESC', '"label" DESC NULLS LAST'],
       },
     ];
 
