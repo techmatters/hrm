@@ -95,7 +95,7 @@ const retrieveCurrentStatus =
   };
 
 export type KhpApiResource = {
-  objectId: string;
+  _id: string;
   updatedAt: string;
   name: { en: string } & Record<string, string>;
 } & Record<string, any>;
@@ -174,18 +174,28 @@ const sendUpdates =
     for (const khpResource of resources) {
       remaining--;
       try {
+        console.debug(
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Transforming resource to standard format for import.`,
+        );
         const transformedResource: ResourceMessage = {
           batch: { ...importBatch, remaining },
           importedResources: [transformKhpResourceToApiResource(accountSid, khpResource)],
           accountSid,
         };
-        await publishToImportConsumer(
+        console.debug(
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Publishing resource to import pending queue`,
+        );
+        const output = await publishToImportConsumer(
           sqs,
           importResourcesSqsQueueUrl,
         )(transformedResource);
+        console.debug(
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Published resource to import pending queue.`,
+          output,
+        );
       } catch (error) {
         console.error(
-          `Unable to transform & send resource ${JSON.stringify(khpResource)}:`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Unable to transform & send resource.`,
           error,
         );
       }
