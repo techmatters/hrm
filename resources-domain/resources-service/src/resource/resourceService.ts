@@ -210,6 +210,7 @@ export const resourceService = () => {
         await getClient({
           accountSid,
           indexType: RESOURCE_INDEX_TYPE,
+          ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
         })
       ).searchClient(searchConfiguration);
 
