@@ -86,7 +86,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so repo output will work
-          mask-aws-account-id: false'
+          mask-aws-account-id: 'false'
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -144,7 +144,7 @@ jobs:
           aws-region: ${{ inputs.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so env.DOCKER_IMAGE will work
-          mask-aws-account-id: false'
+          mask-aws-account-id: 'false'
 
       - name: Download current ECS task definition
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-transcript-scrubber --query taskDefinition > task-definition-transcript-scrubber.json

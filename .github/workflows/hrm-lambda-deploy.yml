@@ -99,7 +99,7 @@ jobs:
           aws-region: ${{ env.PRIMARY_AWS_REGION }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so repo output will work
-          mask-aws-account-id: false'
+          mask-aws-account-id: 'false'
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -185,7 +185,7 @@ jobs:
           aws-region: ${{ matrix.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so repo output will work
-          mask-aws-account-id: false'
+          mask-aws-account-id: 'false'
 
       # The search and replace is kinda ugly but works. We need to replace the primary region with the region we're deploying to.
       # because lambdas don't support ECR images in different regions. We use cross region replication in ECR to make the image
