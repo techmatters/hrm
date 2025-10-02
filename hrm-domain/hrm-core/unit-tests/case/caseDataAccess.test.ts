@@ -210,12 +210,12 @@ describe('search', () => {
           { ...createMockCaseRecord({ id: 1 }), totalCount: 1337 },
         ];
         const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-        const result = await caseDb.search(
+        const result = await caseDb.list(
           user,
           rulesMap.open.viewCase as TKConditionsSets<'case'>,
           listConfig,
           accountSid,
-          {},
+          null,
           filters,
         );
         expect(anySpy).toHaveBeenCalledWith(
@@ -288,20 +288,17 @@ describe('search', () => {
       expectedResult = dbResult,
     }) => {
       const anySpy = jest.spyOn(conn, 'any').mockResolvedValue(dbResult);
-      const result = await caseDb.search(
+      const result = await caseDb.list(
         user,
         openViewPermissions,
         listConfig,
         accountSid,
-        {},
+        null,
         filters,
       );
       expect(anySpy).toHaveBeenCalledWith(
         expect.stringContaining('Cases'),
         expect.objectContaining({
-          contactNumber: null,
-          firstName: null,
-          lastName: null,
           ...expectedDbParameters,
           accountSid,
         }),

@@ -28,7 +28,6 @@ import {
   validateSingleCaseResponse,
 } from './caseValidation';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as mocks from '../mocks';
 import {
   connectContactToCase,
@@ -58,10 +57,6 @@ type InsertSampleCaseSettings = {
   categoriesGenerator?: (idx: number) => Record<string, string[]>;
 };
 
-export type CaseWithContact = {
-  case: CaseService;
-  contact: Contact;
-};
 const insertSampleCases = async ({
   sampleSize,
   accounts,
@@ -159,7 +154,7 @@ const insertSampleCases = async ({
 };
 
 describe('/cases route', () => {
-  const route = `/v0/accounts/${accountSid}/cases`;
+  const route = `/v0/accounts/${accountSid}/cases/list`;
 
   describe('GET', () => {
     test('should return 401', async () => {
@@ -169,7 +164,7 @@ describe('/cases route', () => {
       expect(response.body.error).toBe('Authorization failed');
     });
     test('should return 200', async () => {
-      const response = await request.get(route).set(headers);
+      const response = await request.post(route).set(headers);
 
       expect(response.status).toBe(200);
       expect(response.body).toStrictEqual({ cases: [], count: 0 });
@@ -214,112 +209,10 @@ describe('/cases route', () => {
 
       // eslint-disable-next-line jest/expect-expect
       test('should return 200 when populated', async () => {
-        const response = await request.get(route).set(headers);
+        const response = await request.post(route).set(headers);
 
         validateSingleCaseResponse(response, createdCase);
       });
-    });
-    describe('With multiple records', () => {
-      const CASE_SAMPLE_SIZE = 10;
-      const createdCases: CaseService[] = [];
-      const accounts = ['ACCOUNT_SID_1', 'ACCOUNT_SID_2'] as const;
-      const helplines = ['helpline-1', 'helpline-2', 'helpline-3'];
-      beforeEach(async () => {
-        createdCases.length = 0;
-        createdCases.push(
-          ...(await insertSampleCases({
-            sampleSize: CASE_SAMPLE_SIZE,
-            helplines,
-            accounts,
-          })),
-        );
-      });
-
-      type TestCase = {
-        description: string;
-        listRoute: string;
-        expectedCases: () => CaseService[];
-        expectedTotalCount: number;
-      };
-
-      const testCases: TestCase[] = [
-        {
-          description:
-            'should return all cases for account when no helpline, limit or offset is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases`,
-          expectedCases: () =>
-            createdCases
-              .filter(cas => cas.accountSid === accounts[0])
-              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
-          expectedTotalCount: 5,
-        },
-        {
-          description:
-            'should return all cases for account & helpline when helpline is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[1]}`,
-          expectedCases: () =>
-            createdCases
-              .filter(
-                cas => cas.accountSid === accounts[0] && cas.helpline === helplines[1],
-              )
-              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
-          expectedTotalCount: 1,
-        },
-        {
-          description: 'should return first X cases when limit X is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=3`,
-          expectedCases: () =>
-            createdCases
-              .filter(cas => cas.accountSid === accounts[0])
-              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
-              .slice(0, 3),
-          expectedTotalCount: 5,
-        },
-        {
-          description:
-            'should return X cases, starting at Y when limit X and offset Y are specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?limit=2&offset=1`,
-          expectedCases: () =>
-            createdCases
-              .filter(cas => cas.accountSid === accounts[0])
-              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
-              .slice(1, 3),
-          expectedTotalCount: 5,
-        },
-        {
-          description:
-            'should return remaining cases, starting at Y when offset Y and no limit is specified',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?offset=2`,
-          expectedCases: () =>
-            createdCases
-              .filter(cas => cas.accountSid === accounts[0])
-              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
-              .slice(2),
-          expectedTotalCount: 5,
-        },
-        {
-          description:
-            'should apply offset and limit to filtered set when helpline filter is applied',
-          listRoute: `/v0/accounts/${accounts[0]}/cases?helpline=${helplines[0]}&limit=1&offset=1`,
-          expectedCases: () =>
-            createdCases
-              .filter(
-                cas => cas.accountSid === accounts[0] && cas.helpline === helplines[0],
-              )
-              .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
-              .slice(1, 2),
-          expectedTotalCount: 2,
-        },
-      ];
-
-      // eslint-disable-next-line jest/expect-expect
-      each(testCases).test(
-        '$description',
-        async ({ listRoute, expectedCases, expectedTotalCount }: TestCase) => {
-          const response = await request.get(listRoute).set(headers);
-          validateCaseListResponse(response, expectedCases(), expectedTotalCount);
-        },
-      );
     });
 
     test(`with connectedContacts $description`, async () => {
@@ -349,14 +242,10 @@ describe('/cases route', () => {
       );
 
       useOpenRules();
-      const response = await request
-        .get(route)
-        .query({
-          dateFrom: createdCase.createdAt,
-          dateTo: createdCase.createdAt,
-          firstName: 'withTaskId',
-        })
-        .set(headers);
+      const response = await request.post(route).set(headers).send({
+        dateFrom: createdCase.createdAt,
+        dateTo: createdCase.createdAt,
+      });
 
       expect(response.status).toBe(200);
 
@@ -412,13 +301,12 @@ describe('/cases route', () => {
     ],
   };
 
-  describe('/cases/search route', () => {
+  describe('/cases/list route', () => {
     describe('POST', () => {
       describe('3 sample records', () => {
         let createdCase1: CaseService;
         let createdCase2: CaseService;
         let createdCase3: CaseService;
-        const subRoute = `${route}/search`;
         const searchTestRunStart = new Date().toISOString();
 
         beforeEach(async () => {
@@ -436,7 +324,7 @@ describe('/cases route', () => {
             accountSid,
           );
           createdCase2 = await caseApi.createCase(
-            case1,
+            { ...case1, status: 'closed' },
             accountSid,
             workerSid,
             undefined,
@@ -478,7 +366,7 @@ describe('/cases route', () => {
 
         test('should return 401', async () => {
           const response = await request
-            .post(subRoute)
+            .post(route)
             .query({ limit: 20, offset: 0 })
             .send({});
 
@@ -488,19 +376,12 @@ describe('/cases route', () => {
 
         each([
           {
-            description:
-              'When first name and last name specified, should return records that match',
+            description: 'When status specified, should return records that match',
             body: {
               helpline: 'helpline',
-              firstName: 'maria',
-              lastName: 'silva',
-            },
-          },
-          {
-            description: 'When phone number specified, should return records that match',
-            body: {
-              helpline: 'helpline',
-              phoneNumber: '2025550184',
+              filters: {
+                statuses: ['open', 'closed'],
+              },
             },
           },
           {
@@ -513,7 +394,7 @@ describe('/cases route', () => {
           },
         ]).test('$description', async ({ body }) => {
           const response = await request
-            .post(subRoute)
+            .post(route)
             .query({ limit: 20, offset: 0 })
             .set(headers)
             .send(body);
@@ -526,13 +407,15 @@ describe('/cases route', () => {
           expect(response.body.count).toBe(3);
         });
 
-        test('should return 200 - search by contact number', async () => {
+        test('should return 200 - search by status', async () => {
           const body = {
             helpline: 'helpline',
-            contactNumber: '+1-202-555-0184',
+            filters: {
+              statuses: ['closed'],
+            },
           };
           const response = await request
-            .post(subRoute)
+            .post(route)
             .query({ limit: 20, offset: 0 })
             .set(headers)
             .send(body);
@@ -544,12 +427,23 @@ describe('/cases route', () => {
           const body = {
             closedCases: false,
           };
+          // M<ake sure case with contact has 'open' status so it returns
+          const updatedCase = await caseApi.updateCaseStatus(
+            createdCase2.id,
+            'open',
+            accountSid,
+            ALWAYS_CAN,
+            true,
+          );
           const response = await request
-            .post(subRoute)
+            .post(route)
             .query({ limit: 20, offset: 0 })
             .set(headers)
             .send(body);
-          validateSingleCaseResponse(response, createdCase2);
+          validateSingleCaseResponse(response, {
+            ...updatedCase,
+            precalculatedPermissions: { userOwnsContact: true },
+          });
         });
 
         // eslint-disable-next-line jest/expect-expect
@@ -557,15 +451,8 @@ describe('/cases route', () => {
           const body = {
             closedCases: false,
           };
-          await caseApi.updateCaseStatus(
-            createdCase2.id,
-            'closed',
-            accountSid,
-            ALWAYS_CAN,
-            true,
-          );
           const response = await request
-            .post(subRoute)
+            .post(route)
             .query({ limit: 20, offset: 0 })
             .set(headers)
             .send(body);
@@ -584,46 +471,6 @@ describe('/cases route', () => {
           sampleSize: 10,
         };
 
-        const SEARCHABLE_PHONE_NUMBER_SAMPLE_CONFIG: InsertSampleCaseSettings = {
-          ...SIMPLE_SAMPLE_CONFIG,
-          accounts: ['ACCOUNT_SID_1'],
-          cases: [
-            {
-              case: case1,
-              sections: {
-                perpetrator: [
-                  {
-                    workerSid,
-                    section: { sectionTypeSpecificData: { phone1: '111 222 333' } },
-                  },
-                ],
-              },
-            },
-            {
-              case: case1,
-              sections: {
-                perpetrator: [
-                  {
-                    workerSid,
-                    section: { sectionTypeSpecificData: { phone1: '444 555 666' } },
-                  },
-                ],
-              },
-            },
-            { case: case1, sections: {} },
-            {
-              case: case1,
-              sections: {
-                household: [
-                  {
-                    workerSid,
-                    section: { sectionTypeSpecificData: { phone1: '111 222 333' } },
-                  },
-                ],
-              },
-            },
-          ],
-        };
         const SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG: InsertSampleCaseSettings = {
           ...SIMPLE_SAMPLE_CONFIG,
           accounts: ['ACCOUNT_SID_1'],
@@ -644,7 +491,7 @@ describe('/cases route', () => {
             {
               description:
                 'should return all cases for account when no helpline, limit or offset is specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
               expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
@@ -655,7 +502,7 @@ describe('/cases route', () => {
             {
               description:
                 'should return all cases for account & helpline when helpline is specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 helpline: helplines[1],
               },
@@ -672,7 +519,7 @@ describe('/cases route', () => {
             {
               description:
                 'should return all cases for account & any specified helpline when multiple helplines are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   helplines: [helplines[1], helplines[2]],
@@ -691,7 +538,7 @@ describe('/cases route', () => {
             },
             {
               description: 'should return first X cases when limit X is specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?limit=3`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list?limit=3`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
               expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
@@ -703,7 +550,7 @@ describe('/cases route', () => {
             {
               description:
                 'should return X cases, starting at Y when limit X and offset Y are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?limit=2&offset=1`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list?limit=2&offset=1`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
               expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
@@ -715,7 +562,7 @@ describe('/cases route', () => {
             {
               description:
                 'should return remaining cases, starting at Y when offset Y and no limit is specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?offset=2`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list?offset=2`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
               expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
@@ -727,7 +574,7 @@ describe('/cases route', () => {
             {
               description:
                 'should apply offset and limit to filtered set when helpline filter is applied',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?limit=1&offset=1`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list?limit=1&offset=1`,
               body: {
                 helpline: helplines[0],
               },
@@ -744,7 +591,7 @@ describe('/cases route', () => {
             },
             {
               description: 'should order by ID ASC when this is specified in the query',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?sortBy=id&sortDirection=ASC`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list?sortBy=id&sortDirection=ASC`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
               expectedCases: sampleCasesAndContacts =>
                 sampleCasesAndContacts
@@ -753,64 +600,8 @@ describe('/cases route', () => {
               expectedTotalCount: 5,
             },
             {
-              description:
-                'should find phone number matches on attached households and perpetrators',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?`,
-              body: {
-                phoneNumber: '111 222 333',
-              },
-              sampleConfig: SEARCHABLE_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCases: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .filter((ccc, idx) => idx % 4 === 0 || idx % 4 === 3)
-                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
-              expectedTotalCount: 5,
-            },
-            {
-              description:
-                'should find other phone number on partial start matches on attached households and perpetrators',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?`,
-              body: {
-                phoneNumber: '444',
-              },
-              sampleConfig: SEARCHABLE_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCases: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .filter((ccc, idx) => idx % 4 === 1)
-                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
-              expectedTotalCount: 3,
-            },
-            {
-              description: 'should find phone number matches with limit applied',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search?limit = 3`,
-              body: {
-                phoneNumber: '111 222 333',
-              },
-              sampleConfig: SEARCHABLE_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCases: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .filter((ccc, idx) => idx % 4 === 0 || idx % 4 === 3)
-                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id))
-                  .slice(0, 3),
-              expectedTotalCount: 5,
-            },
-            {
-              description:
-                'should find phone number matches on attached households and perpetrators',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
-              body: {
-                phoneNumber: '111 222 333',
-              },
-              sampleConfig: SEARCHABLE_CONTACT_PHONE_NUMBER_SAMPLE_CONFIG,
-              expectedCases: sampleCasesAndContacts =>
-                sampleCasesAndContacts
-                  .filter((ccc, idx) => idx % 4 === 1 || idx % 4 === 3)
-                  .sort((c1, c2) => parseInt(c2.id) - parseInt(c1.id)),
-              expectedTotalCount: 5,
-            },
-            {
               description: 'should filter by specified statuses',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   statuses: ['other', 'closed'],
@@ -828,7 +619,7 @@ describe('/cases route', () => {
             },
             {
               description: 'should filter by specified workers',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   counsellors: ['WK-worker-1', 'WK-worker-3'],
@@ -849,7 +640,7 @@ describe('/cases route', () => {
             {
               description:
                 'should filter out cases with no contact if includeOrphans filter is set false',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   includeOrphans: false,
@@ -868,7 +659,7 @@ describe('/cases route', () => {
             {
               description:
                 'should only include cases with followUpDate prior to the followUpDate.to filter if specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   caseInfoFilters: {
@@ -895,7 +686,7 @@ describe('/cases route', () => {
             {
               description:
                 'should only include cases with followUpDate between the followUpDate.from and the followUpDate.to filter if both are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   caseInfoFilters: {
@@ -925,7 +716,7 @@ describe('/cases route', () => {
             {
               description:
                 'should exclude cases with followUpDate set as empty string if the followUpDate.from and the followUpDate.to filter if both are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   caseInfoFilters: {
@@ -957,7 +748,7 @@ describe('/cases route', () => {
             {
               description:
                 'should only include cases without followUpDate set in followUpDate.exists: MUST_NOT_EXIST filter specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   caseInfoFilters: {
@@ -981,7 +772,7 @@ describe('/cases route', () => {
             {
               description:
                 'should count an empty string value as not existing followUpDate.exists: MUST_NOT_EXIST filter specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   caseInfoFilters: {
@@ -1005,7 +796,7 @@ describe('/cases route', () => {
             {
               description:
                 'should not include cases with createdAt not between the createdAt.from and the createdAt.to filter if both are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   createdAt: {
@@ -1024,7 +815,7 @@ describe('/cases route', () => {
             {
               description:
                 'should include cases with createdAt between the createdAt.from and the createdAt.to filter if both are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   createdAt: {
@@ -1046,7 +837,7 @@ describe('/cases route', () => {
             {
               description:
                 'should not include cases with updatedAt not between the updatedAt.from and the updatedAt.to filter if both are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   updatedAt: {
@@ -1065,7 +856,7 @@ describe('/cases route', () => {
             {
               description:
                 'should include cases with updatedAt between the updatedAt.from and the updatedAt.to filter if both are specified',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   updatedAt: {
@@ -1087,14 +878,14 @@ describe('/cases route', () => {
             {
               description:
                 'should return empty set if different HRM sub account specified',
-              searchRoute: `/v0/accounts/${accounts[0]}-other/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}-other/cases/list`,
               sampleConfig: SIMPLE_SAMPLE_CONFIG,
               expectedCases: () => [],
               expectedTotalCount: 0,
             },
             {
               description: 'should filter cases by operatingArea using caseInfoFilters',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   caseInfoFilters: {
@@ -1133,7 +924,7 @@ describe('/cases route', () => {
             {
               description:
                 'should filter cases by multiple operatingArea values using caseInfoFilters',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 filters: {
                   caseInfoFilters: {
@@ -1170,7 +961,7 @@ describe('/cases route', () => {
             },
             {
               description: 'should combine caseInfoFilters with other filters correctly',
-              searchRoute: `/v0/accounts/${accounts[0]}/cases/search`,
+              searchRoute: `/v0/accounts/${accounts[0]}/cases/list`,
               body: {
                 helpline: helplines[0],
                 filters: {
@@ -1274,7 +1065,7 @@ describe('/cases route', () => {
       useOpenRules();
 
       const response = await request
-        .post(`${route}/search`)
+        .post(route)
         .query({ limit: 20, offset: 0 })
         .set(headers)
         .send({

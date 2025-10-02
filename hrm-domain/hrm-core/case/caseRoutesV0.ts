@@ -162,36 +162,23 @@ const newCaseRouter = (isPublic: boolean) => {
      *
      * @returns {CaseSearchReturn} - List of cases
      */
-    casesRouter.get('/', openEndpoint, async (req, res) => {
-      const { hrmAccountId } = req;
-      const { sortDirection, sortBy, limit, offset, ...search } = req.query;
+    const listHandler = async (req, res) => {
+      const { hrmAccountId, query } = req;
+      const { closedCases, counselor, helpline, filters } = req.body || {};
 
-      const { closedCases, counselor, helpline, ...searchCriteria } = search;
-
-      const cases = await caseApi.searchCases(
+      const { sortDirection, sortBy, limit, offset } = query;
+      const searchResults = await caseApi.listCases(
         hrmAccountId,
         { sortDirection, sortBy, limit, offset },
-        searchCriteria,
-        { filters: { includeOrphans: false }, closedCases, counselor, helpline },
-        req,
-      );
-      res.json(cases);
-    });
-
-    casesRouter.post('/search', openEndpoint, async (req, res) => {
-      const { hrmAccountId } = req;
-      const { closedCases, counselor, helpline, filters, ...searchCriteria } =
-        req.body || {};
-
-      const searchResults = await caseApi.searchCases(
-        hrmAccountId,
-        req.query || {},
-        searchCriteria,
+        null,
         { closedCases, counselor, helpline, filters },
         req,
       );
       res.json(searchResults);
-    });
+    };
+    // TODO: Migrate flex to call /list, then we can migrate /search to /generalizedSearch
+    casesRouter.post('/list', openEndpoint, listHandler);
+    casesRouter.post('/search', openEndpoint, listHandler);
 
     // Endpoint used for generalized search powered by ElasticSearch
     casesRouter.post(

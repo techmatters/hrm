@@ -137,77 +137,6 @@ const filterSql = ({
   AND `);
 };
 
-const nameAndPhoneNumberSearchSql = (
-  firstNameSources: string[],
-  lastNameSources: string[],
-  phoneNumberColumns: string[],
-) =>
-  `CASE WHEN $<firstName> IS NULL THEN TRUE
-        ELSE ${firstNameSources.map(fns => `${fns} ILIKE $<firstName>`).join('\n OR ')}
-        END
-      AND
-        CASE WHEN $<lastName> IS NULL THEN TRUE
-        ELSE ${lastNameSources.map(lns => `${lns} ILIKE $<lastName>`).join('\n OR ')}
-        END
-      AND
-        CASE WHEN $<phoneNumber> IS NULL THEN TRUE
-        ELSE (
-          ${phoneNumberColumns
-            .map(pn => `regexp_replace(${pn}, '\\D', '', 'g') ILIKE $<phoneNumber>`)
-            .join('\n OR ')}
-        )
-        END`;
-
-const SEARCH_WHERE_CLAUSE = `(
-      -- search on childInformation of connectedContacts
-      ($<firstName> IS NULL AND $<lastName> IS NULL AND $<phoneNumber> IS NULL) OR
-      EXISTS (
-        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id  AND c."accountSid" = cases."accountSid"
-          AND (
-            (
-            ${nameAndPhoneNumberSearchSql(
-              ["c.\"rawJson\"->'childInformation'->>'firstName'"],
-              ["c.\"rawJson\"->'childInformation'->>'lastName'"],
-              [
-                "c.\"rawJson\"->'childInformation'->'location'->>'phone1'",
-                "c.\"rawJson\"->'childInformation'->'location'->>'phone2'",
-                'c.number',
-              ],
-            )})
-            -- search on callerInformation of connectedContacts
-            OR ( 
-              ${nameAndPhoneNumberSearchSql(
-                ["c.\"rawJson\"->'callerInformation'->>'firstName'"],
-                ["c.\"rawJson\"->'callerInformation'->>'lastName'"],
-                [
-                  "c.\"rawJson\"->'callerInformation'->'location'->>'phone1'",
-                  "c.\"rawJson\"->'callerInformation'->'location'->>'phone2'",
-                ],
-              )}  
-            )
-          )
-      )
-      -- search on case sections in the expected format
-      OR EXISTS (
-        SELECT 1 FROM "CaseSections" cs WHERE cs."caseId" = cases.id AND cs."accountSid" = cases."accountSid"
-          AND
-          ${nameAndPhoneNumberSearchSql(
-            ['cs."sectionTypeSpecificData"->>\'firstName\''],
-            ['cs."sectionTypeSpecificData"->>\'lastName\''],
-            [
-              'cs."sectionTypeSpecificData"->>\'phone1\'',
-              'cs."sectionTypeSpecificData"->>\'phone2\'',
-            ],
-          )}
-      )
-    )
-    AND (
-      $<contactNumber> IS NULL OR
-      EXISTS (
-        SELECT 1 FROM "Contacts" c WHERE c."caseId" = cases.id AND c."accountSid" = cases."accountSid" AND c.number = $<contactNumber>
-      )
-    )`;
-
 const selectCasesUnorderedSql = ({
   whereClause,
   havingClause = '',
@@ -276,12 +205,6 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
     });
   };
 };
-
-export const selectCaseSearch = selectSearchCaseBaseQuery(
-  `$<accountSid> IS NOT NULL AND cases."accountSid" = $<accountSid>
-    AND ${SEARCH_WHERE_CLAUSE}
-  `,
-);
 
 export const selectCaseFilterOnly = selectSearchCaseBaseQuery(
   'cases."accountSid" = $<accountSid>',

@@ -40,7 +40,6 @@
     { "path": "hrm-domain/lambdas/search-index-consumer" },
     { "path": "hrm-domain/lambdas/export-json-writer" },
     { "path": "hrm-domain/hrm-core" },
-    { "path": "hrm-domain/scheduled-tasks/hrm-data-pull" },
     { "path": "hrm-domain/scheduled-tasks/contact-job-cleanup" },
     { "path": "hrm-domain/scheduled-tasks/case-status-transition" },
     { "path": "hrm-domain/scheduled-tasks/profile-flags-cleanup" },

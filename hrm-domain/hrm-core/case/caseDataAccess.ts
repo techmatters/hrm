@@ -23,7 +23,6 @@ import {
   SELECT_CASES_TO_RENOTIFY,
   selectCaseFilterOnly,
   selectCasesByIds,
-  selectCaseSearch,
   selectCaseSearchByProfileId,
 } from './sql/caseSearchSql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
@@ -201,45 +200,18 @@ const generalizedSearchQueryFunction = <T>(
   };
 };
 
-const searchParametersToQueryParameters: SearchQueryParamsBuilder<CaseSearchCriteria> = (
-  accountSid,
-  user,
-  searchCriteria,
-  filters,
-  limit,
-  offset,
-) => ({
-  ...filters,
-  accountSid,
-  firstName: searchCriteria.firstName ? `%${searchCriteria.firstName}%` : null,
-  lastName: searchCriteria.lastName ? `%${searchCriteria.lastName}%` : null,
-  phoneNumber: searchCriteria.phoneNumber
-    ? `%${searchCriteria.phoneNumber.replace(/[\D]/gi, '')}%`
-    : null,
-  contactNumber: searchCriteria.contactNumber || null,
-  limit: limit,
-  offset: offset,
-  twilioWorkerSid: user.workerSid,
-});
-
-export const search: SearchQueryFunction<CaseSearchCriteria> = (
-  user,
-  permissions,
-  listConfiguration,
-  accountSid,
-  searchCriteria,
-  filters,
-) =>
+export const list: SearchQueryFunction<null> =
   // searchCriteria is only set in legacy search queries. Once support for this is removed, remove this check and all supporting SQL
-  generalizedSearchQueryFunction<CaseSearchCriteria>(
-    searchCriteria?.contactNumber ||
-      searchCriteria?.phoneNumber ||
-      searchCriteria?.firstName ||
-      searchCriteria?.lastName
-      ? selectCaseSearch
-      : selectCaseFilterOnly,
-    searchParametersToQueryParameters,
-  )(user, permissions, listConfiguration, accountSid, searchCriteria, filters);
+  generalizedSearchQueryFunction<null>(
+    selectCaseFilterOnly,
+    (accountSid, user, _criteria, filters, limit, offset) => ({
+      ...filters,
+      accountSid,
+      limit: limit,
+      offset: offset,
+      twilioWorkerSid: user.workerSid,
+    }),
+  );
 
 export const searchByProfileId = generalizedSearchQueryFunction<{
   profileId: number;

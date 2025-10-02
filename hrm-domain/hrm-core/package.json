@@ -42,7 +42,7 @@
     "debug": "^4.1.1",
     "deep-diff": "^1.0.2",
     "dotenv": "^8.2.0",
-    "express": "^4.20.0",
+    "express": "^4.21.2",
     "express-async-errors": "^3.1.1",
     "http-errors": "^1.7.3",
     "js-yaml": "^3.13.1",

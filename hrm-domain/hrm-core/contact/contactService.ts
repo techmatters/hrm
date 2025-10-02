@@ -46,7 +46,6 @@ import {
   getById,
   getByTaskSid,
   patch,
-  search,
   searchByProfileId,
   searchByIds,
   ContactRecord,
@@ -533,8 +532,6 @@ const generalizedSearchContacts =
       contacts,
     };
   };
-
-export const searchContacts = generalizedSearchContacts(search);
 
 const searchContactsByProfileId = generalizedSearchContacts(searchByProfileId);
 

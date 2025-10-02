@@ -145,10 +145,10 @@ describe('searchCases', () => {
       const expected = { cases: expectedCases, count: 1337 };
 
       const searchSpy = jest
-        .spyOn(caseDb, 'search')
+        .spyOn(caseDb, 'list')
         .mockResolvedValue({ cases: casesFromDb, count: 1337 });
 
-      const result = await caseApi.searchCases(
+      const result = await caseApi.listCases(
         accountSid,
         listConfig,
         search,
@@ -220,7 +220,6 @@ describe('search cases permissions', () => {
       counsellors: undefined,
     },
   ]).test('$description', async ({ isSupervisor, canOnlyViewOwnCases, counsellors }) => {
-    const searchParameters = {};
     const filterParameters = {
       helpline: 'helpline',
       closedCases: true,
@@ -246,22 +245,16 @@ describe('search cases permissions', () => {
     };
 
     const searchSpy = jest
-      .spyOn(caseDb, 'search')
+      .spyOn(caseDb, 'list')
       .mockResolvedValue({ cases: [], count: 0 });
-    await caseApi.searchCases(
-      accountSid,
-      limitOffset,
-      searchParameters,
-      filterParameters,
-      reqData,
-    );
+    await caseApi.listCases(accountSid, limitOffset, null, filterParameters, reqData);
 
     expect(searchSpy).toHaveBeenCalledWith(
       user,
       canOnlyViewOwnCases ? [['isCreator']] : [['everyone']],
       limitOffset,
       accountSid,
-      {},
+      null,
       filterParameters.filters,
     );
   });
