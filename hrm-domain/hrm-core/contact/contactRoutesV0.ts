@@ -24,7 +24,6 @@ import {
   getContactById,
   getContactByTaskId,
   patchContact,
-  searchContacts,
   generalisedContactSearch,
 } from './contactService';
 import type { NextFunction, Request, Response } from 'express';
@@ -81,51 +80,38 @@ const newContactRouter = (isPublic: boolean) => {
       },
     );
 
-    // Legacy Search endpoint
-    contactsRouter.post('/search', openEndpoint, async (req, res) => {
-      const { hrmAccountId } = req;
+    const searchHandler = async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { hrmAccountId, can, user, permissions, query, body } = req;
 
-      const searchResults = await searchContacts(hrmAccountId, req.body, req.query, {
-        can: req.can,
-        user: req.user,
-        permissions: req.permissions,
-      });
-      res.json(searchResults);
-    });
+        // TODO: use better validation
+        const { limit, offset } = query as { limit: string; offset: string };
+        const { searchParameters } = body;
+
+        const contactsResponse = await generalisedContactSearch(
+          hrmAccountId,
+          searchParameters,
+          { limit, offset },
+          {
+            can,
+            user,
+            permissions,
+          },
+        );
+
+        if (isErr(contactsResponse)) {
+          return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
+        }
+
+        res.json(contactsResponse.data);
+      } catch (err) {
+        return next(createError(500, err.message));
+      }
+    };
 
     // Endpoint used for generalized search powered by ElasticSearch
-    contactsRouter.post(
-      '/generalizedSearch',
-      openEndpoint,
-      async (req: Request, res: Response, next: NextFunction) => {
-        try {
-          const { hrmAccountId, can, user, permissions, query, body } = req;
-
-          // TODO: use better validation
-          const { limit, offset } = query as { limit: string; offset: string };
-          const { searchParameters } = body;
-
-          const contactsResponse = await generalisedContactSearch(
-            hrmAccountId,
-            searchParameters,
-            { limit, offset },
-            {
-              can,
-              user,
-              permissions,
-            },
-          );
-
-          if (isErr(contactsResponse)) {
-            return next(mapHTTPError(contactsResponse, { InternalServerError: 500 }));
-          }
-
-          res.json(contactsResponse.data);
-        } catch (err) {
-          return next(createError(500, err.message));
-        }
-      },
-    );
+    contactsRouter.post('/search', openEndpoint, searchHandler);
+    contactsRouter.post('/generalizedSearch', openEndpoint, searchHandler);
 
     contactsRouter.post(
       '/:contactId/conversationMedia',

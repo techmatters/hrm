@@ -13,27 +13,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import each from 'jest-each';
 import { mockTransaction, mockConnection } from '../mockDb';
 import * as contactDb from '../../contact/contactDataAccess';
 import {
   connectContactToCase,
   createContact,
   patchContact,
-  searchContacts,
 } from '../../contact/contactService';
 
-import { ContactBuilder } from './contact-builder';
 import { omit } from 'lodash';
-import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { newOk, newOkFromData } from '@tech-matters/types';
 import * as profilesDB from '../../profile/profileDataAccess';
 import * as profilesService from '../../profile/profileService';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
-import { ALWAYS_CAN, OPEN_CONTACT_ACTION_CONDITIONS } from '../mocks';
+import { ALWAYS_CAN } from '../mocks';
 import '@tech-matters/testing/expectToParseAsDate';
-import { openRules } from '../../permissions/json-permissions';
-import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
 import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 
 const flushPromises = async () => {
@@ -48,7 +42,6 @@ const publishContactChangeNotificationSpy = jest
   .mockImplementation(() => Promise.resolve('Ok') as any);
 
 const accountSid = 'AC-accountSid';
-const workerSid = 'WK-WORKER_SID';
 const parameterAccountSid = 'AC-parameter account-sid';
 const contactCreatorSid = 'WK-contact-creator';
 const contactPatcherSid = 'WK-contact-patcher';
@@ -388,189 +381,4 @@ describe('patchContact', () => {
       patchContact(accountSid, contactPatcherSid, true, '1234', samplePatch, ALWAYS_CAN),
     ).rejects.toThrow();
   });
-});
-
-describe('searchContacts', () => {
-  const contactSearcher = 'WK-contact-searcher';
-  test('Returns contacts returned by data layer unmodified', async () => {
-    const jillSmithBuilder = new ContactBuilder()
-      .withId(4321)
-      .withHelpline('a helpline')
-      .withTaskId('jill-smith-task')
-      .withChildFirstName('Jill')
-      .withChildLastName('Smith')
-      .withCallSummary('Lost young boy')
-      .withNumber('+12025550142')
-      .withCallType('Child calling about self')
-      .withTwilioWorkerId(workerSid)
-      .withCreatedBy(contactSearcher)
-      .withCreatedAt(new Date('2020-03-10T00:00:00Z'))
-      .withTimeOfContact(new Date('2020-03-10T00:00:00Z'))
-      .withChannel('voice')
-      .withConversationDuration(10);
-    const sarahParkBuilder = new ContactBuilder()
-      .withId(1234)
-      .withTaskId('sarah-park-task')
-      .withChildFirstName('Sarah')
-      .withChildLastName('Park')
-      .withCallSummary('Young pregnant woman')
-      .withNumber('Anonymous')
-      .withCallType('Child calling about self')
-      .withTwilioWorkerId(workerSid)
-      .withCreatedBy(contactSearcher)
-      .withCreatedAt(new Date('2020-03-15T00:00:00Z'))
-      .withTimeOfContact(new Date('2020-03-15T00:00:00Z'));
-    const expectedSearchResult: { count: number; contacts: contactDb.Contact[] } = {
-      count: 2,
-      contacts: [jillSmithBuilder.buildContact(), sarahParkBuilder.buildContact()],
-    };
-
-    const mockedResult = {
-      count: 2,
-      rows: [jillSmithBuilder.build(), sarahParkBuilder.build()],
-    };
-    const searchSpy = jest.spyOn(contactDb, 'search').mockResolvedValue(mockedResult);
-    const parameters = { helpline: 'helpline', onlyDataContacts: false };
-
-    const result = await searchContacts(accountSid, parameters, {}, ALWAYS_CAN);
-
-    expect(searchSpy).toHaveBeenCalledWith(
-      accountSid,
-      parameters,
-      expect.any(Number),
-      0,
-      ALWAYS_CAN.user,
-      OPEN_CONTACT_ACTION_CONDITIONS,
-    );
-    expect(result).toStrictEqual(expectedSearchResult);
-  });
-
-  test('Call search without limit / offset, a default limit and offset 0', async () => {
-    const body = {
-      helpline: 'helpline',
-      firstName: 'Jill',
-      lastName: 'Smith',
-      counselor: 'counselorId',
-      phoneNumber: '123',
-      dateFrom: '2020-03-10',
-      dateTo: '2020-03-15',
-      contactNumber: '+123456',
-      onlyDataContacts: true,
-    };
-    const searchSpy = jest
-      .spyOn(contactDb, 'search')
-      .mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(accountSid, body, {}, ALWAYS_CAN);
-
-    expect(searchSpy).toHaveBeenCalledWith(
-      accountSid,
-      body,
-      expect.any(Number),
-      0,
-      ALWAYS_CAN.user,
-      OPEN_CONTACT_ACTION_CONDITIONS,
-    );
-  });
-
-  test('Call search without limit / offset, a default limit and offset 0', async () => {
-    const body = {
-      helpline: 'helpline',
-      onlyDataContacts: true,
-    };
-    const searchSpy = jest
-      .spyOn(contactDb, 'search')
-      .mockResolvedValue({ count: 0, rows: [] });
-    await searchContacts(accountSid, body, { limit: '10', offset: '1000' }, ALWAYS_CAN);
-
-    expect(searchSpy).toHaveBeenCalledWith(
-      accountSid,
-      body,
-      10,
-      1000,
-      ALWAYS_CAN.user,
-      OPEN_CONTACT_ACTION_CONDITIONS,
-    );
-  });
-});
-
-describe('search contacts permissions', () => {
-  type TestCase = {
-    description: string;
-    isSupervisor: boolean;
-    viewContactsPermissions: TKConditionsSets<'contact'>;
-    counselorSearchParam: string;
-  };
-
-  const testCases: TestCase[] = [
-    {
-      description: 'Supervisor can view others contacts',
-      isSupervisor: true,
-      viewContactsPermissions: [['isSupervisor']],
-      counselorSearchParam: 'any-worker-sid',
-    },
-    {
-      description: 'Agent can view others contacts',
-      isSupervisor: false,
-      viewContactsPermissions: OPEN_CONTACT_ACTION_CONDITIONS,
-      counselorSearchParam: 'any-worker-sid',
-    },
-    {
-      description: 'Agent cannot view others contacts',
-      isSupervisor: false,
-      viewContactsPermissions: [['isOwner']],
-      counselorSearchParam: 'any-worker-sid',
-    },
-    {
-      description: 'Agent can view own contacts',
-      isSupervisor: false,
-      viewContactsPermissions: [['isOwner']],
-      counselorSearchParam: workerSid,
-    },
-    {
-      description: 'Agent defaults to own contacts when no counselor specified',
-      isSupervisor: false,
-      viewContactsPermissions: [['isOwner']],
-      counselorSearchParam: undefined,
-    },
-  ];
-
-  each(testCases).test(
-    '$description',
-    async ({ isSupervisor, viewContactsPermissions, counselorSearchParam }: TestCase) => {
-      const body = {
-        helpline: 'helpline',
-        onlyDataContacts: true,
-        counselor: counselorSearchParam,
-      };
-      const limitOffset = { limit: '10', offset: '0' };
-      const can = () => true;
-      const roles = [];
-      const user = {
-        ...newTwilioUser(accountSid, workerSid, roles),
-        isSupervisor: isSupervisor,
-      };
-      const permissions: RulesFile = {
-        ...openRules,
-        viewContact: viewContactsPermissions,
-      };
-      const reqData = {
-        can,
-        user,
-        permissions,
-      };
-
-      const searchSpy = jest
-        .spyOn(contactDb, 'search')
-        .mockResolvedValue({ count: 0, rows: [] });
-      await searchContacts(accountSid, body, limitOffset, reqData);
-      expect(searchSpy).toHaveBeenCalledWith(
-        accountSid,
-        body,
-        10,
-        0,
-        user,
-        viewContactsPermissions,
-      );
-    },
-  );
 });

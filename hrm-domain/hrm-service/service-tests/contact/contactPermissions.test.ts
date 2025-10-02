@@ -186,29 +186,6 @@ describe('isOwner', () => {
       },
     );
   });
-  describe('POST /contacts/search', () => {
-    const route = `/v0/accounts/${accountSid}/contacts/search`;
-    each(testCases).test(
-      '$description',
-      async ({ viewContactPermissions, expectedContactsByOwner }: TestCase) => {
-        overrideViewContactPermissions(viewContactPermissions);
-
-        const searchParams: contactDb.SearchParameters = {
-          onlyDataContacts: false,
-        };
-
-        const response = await request.post(route).set(headers).send(searchParams);
-
-        expect(response.status).toBe(200);
-        expect(response.body.count).toBe(expectedContactsByOwner.length);
-        expect(
-          response.body.contacts
-            .map((contact: contactDb.Contact) => contact.twilioWorkerId)
-            .sort(),
-        ).toStrictEqual(expectedContactsByOwner.sort());
-      },
-    );
-  });
 });
 
 describe('Time based condition', () => {
@@ -341,28 +318,6 @@ describe('Time based condition', () => {
             parseISO(sampleContacts[cct.toISOString()].timeOfContact),
           ),
         );
-      },
-    );
-  });
-  describe('contacts/search route - POST', () => {
-    each(testCases).test(
-      '$description',
-      async ({ permissions, expectedPermittedContactCreationTimes }: TestCase) => {
-        setRules({ viewContact: permissions });
-        const expectedIds = expectedPermittedContactCreationTimes.map(cct =>
-          parseISO(sampleContacts[cct.toISOString()].timeOfContact),
-        );
-        const {
-          body: { contacts, count },
-          status,
-        } = await request.post(`${route}/search`).set(headers);
-        expect(status).toBe(200);
-        expect(
-          contacts
-            .map(c => parseISO(c.timeOfContact))
-            .sort((a, b) => a.valueOf() - b.valueOf()),
-        ).toEqual(expectedIds);
-        expect(count).toBe(expectedPermittedContactCreationTimes.length);
       },
     );
   });

@@ -23,11 +23,10 @@ import {
   CaseListConfiguration,
   CaseListFilters,
   CaseRecord,
-  CaseSearchCriteria,
   create,
   deleteById,
   getById,
-  search,
+  list,
   searchByCaseIds,
   searchByProfileId,
   SearchQueryFunction,
@@ -249,7 +248,7 @@ export const getCase = async (
   return;
 };
 
-export type SearchParameters = CaseSearchCriteria & {
+export type SearchParameters = {
   filters?: CaseListFilters;
 } & {
   helpline?: string;
@@ -315,7 +314,7 @@ const generalizedSearchCases =
     };
   };
 
-export const searchCases = generalizedSearchCases(search);
+export const listCases = generalizedSearchCases(list);
 
 const searchCasesByProfileId = generalizedSearchCases(searchByProfileId);
 

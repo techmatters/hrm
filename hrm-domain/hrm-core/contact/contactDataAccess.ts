@@ -16,7 +16,6 @@
 
 import { getDbForAccount, pgp } from '../dbConnection';
 import {
-  selectContactSearch,
   selectContactsByProfileId,
   getContactsByIds,
   SELECT_CONTACTS_TO_RENOTIFY,
@@ -42,7 +41,7 @@ import {
 } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
 
-import { ExistingContactRecord, Contact, dataCallTypes } from '@tech-matters/hrm-types';
+import { ExistingContactRecord, Contact } from '@tech-matters/hrm-types';
 
 export { ExistingContactRecord, Contact };
 
@@ -123,59 +122,6 @@ type SearchParametersForQueryParameters = {
   contactNumber?: string;
   helpline?: string;
   counselor?: string;
-};
-
-const searchParametersToQueryParameters = (
-  accountSid: HrmAccountId,
-  { workerSid }: TwilioUser,
-  {
-    firstName,
-    lastName,
-    phoneNumber,
-    dateFrom,
-    dateTo,
-    helpline,
-    contactNumber,
-    counselor,
-    ...restOfSearch
-  }: SearchParametersForQueryParameters,
-  limit: number,
-  offset: number,
-): QueryParams => {
-  const queryParams: QueryParams = {
-    ...{
-      helpline: undefined,
-      lastNamePattern: undefined,
-      firstNamePattern: undefined,
-      phoneNumberPattern: undefined,
-      counselor: undefined,
-      contactNumber: undefined,
-      onlyDataContacts: false,
-      shouldIncludeUpdatedAt: false,
-    },
-    ...restOfSearch,
-    helpline: helpline || undefined, // ensure empty strings are replaced with nulls
-    contactNumber: contactNumber || undefined, // ensure empty strings are replaced with nulls
-    counselor: counselor || undefined, // ensure empty strings are replaced with nulls
-    dateFrom: dateFrom ? parseISO(dateFrom).toISOString() : undefined,
-    dateTo: dateTo ? parseISO(dateTo).toISOString() : undefined,
-    accountSid,
-    twilioWorkerSid: workerSid,
-
-    dataCallTypes: Object.values(dataCallTypes),
-    limit,
-    offset,
-  };
-  if (firstName) {
-    queryParams.firstNamePattern = `%${firstName}%`;
-  }
-  if (lastName) {
-    queryParams.lastNamePattern = `%${lastName}%`;
-  }
-  if (phoneNumber) {
-    queryParams.phoneNumberPattern = `%${phoneNumber.replace(/[\D]/gi, '')}%`;
-  }
-  return queryParams;
 };
 
 type CreateResultRecord = ContactRecord & { isNewRecord: boolean };
@@ -323,9 +269,6 @@ const generalizedSearchQueryFunction = <T>(
     });
   };
 };
-
-export const search: SearchQueryFunction<SearchParameters> =
-  generalizedSearchQueryFunction(selectContactSearch, searchParametersToQueryParameters);
 
 export const searchByProfileId: SearchQueryFunction<
   Pick<OptionalSearchQueryParams, 'counselor' | 'helpline'> & { profileId: number }

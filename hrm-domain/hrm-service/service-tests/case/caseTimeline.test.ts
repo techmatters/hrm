@@ -36,7 +36,6 @@ import {
   connectContactToCase,
   Contact,
   createContact,
-  searchContacts,
 } from '@tech-matters/hrm-core/contact/contactService';
 import { TimelineActivity } from '@tech-matters/hrm-types';
 import { setupServiceTests } from '../setupServiceTest';
@@ -136,19 +135,20 @@ beforeEach(async () => {
     },
   ];
 
-  await Promise.all(
-    sampleContacts.map(async c => {
-      const created = await createContact(accountSid, workerSid, c, ALWAYS_CAN, true);
-      return connectContactToCase(
-        accountSid,
-        created.id.toString(),
-        sampleCase.id.toString(),
-        ALWAYS_CAN,
-        true,
-      );
-    }),
-  );
-  expectedContacts = (await searchContacts(accountSid, {}, {}, ALWAYS_CAN)).contacts
+  expectedContacts = (
+    await Promise.all(
+      sampleContacts.map(async c => {
+        const created = await createContact(accountSid, workerSid, c, ALWAYS_CAN, true);
+        return connectContactToCase(
+          accountSid,
+          created.id.toString(),
+          sampleCase.id.toString(),
+          ALWAYS_CAN,
+          true,
+        );
+      }),
+    )
+  )
     .sort(
       (a, b) => parseISO(a.timeOfContact).valueOf() - parseISO(b.timeOfContact).valueOf(),
     )

@@ -131,8 +131,8 @@ const overridePermissions = <T extends TargetKind>(
 const overrideViewCasePermissions = (permissions: TKConditionsSets<'case'>) =>
   overridePermissions('viewCase', permissions);
 
-describe('search cases permissions', () => {
-  const route = `/v0/accounts/${accountSid}/cases/search`;
+describe('list cases permissions', () => {
+  const route = `/v0/accounts/${accountSid}/cases/list`;
   let userCase: caseDb.CaseRecord, otherUserCase: caseDb.CaseRecord;
 
   beforeEach(async () => {
