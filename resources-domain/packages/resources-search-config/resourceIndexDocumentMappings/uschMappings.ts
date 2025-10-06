@@ -90,6 +90,15 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
 };
 
 const filterMappings: ResourcesSearchConfiguration['filterMappings'] = {
+  country: {
+    type: 'term',
+  },
+  province: {
+    type: 'term',
+  },
+  city: {
+    type: 'term',
+  },
   isActive: {
     type: 'custom',
     filterGenerator: value => ({
