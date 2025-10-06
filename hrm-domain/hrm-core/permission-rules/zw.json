@@ -4,7 +4,7 @@
   "reopenCase": [["isSupervisor"]],
   "caseStatusTransition": [],
   "addCaseSection": [["everyone"], ["isCaseOpen"]],
-  "editCaseSection": [["isSupervisor"]],
+  "editCaseSection": [["everyone"]],
   "editCaseOverview": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "updateCaseContacts": [["isSupervisor"], ["isCaseOpen"]],
 
