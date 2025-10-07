@@ -24,6 +24,69 @@ import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
 import { parse } from 'date-fns';
 
+// https://gist.github.com/mshafrir/2646763
+const US_STATE_CODE_MAPPING = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AS: 'American Samoa',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  DC: 'District Of Columbia',
+  FM: 'Federated States Of Micronesia',
+  FL: 'Florida',
+  GA: 'Georgia',
+  GU: 'Guam',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MH: 'Marshall Islands',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  MP: 'Northern Mariana Islands',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PW: 'Palau',
+  PA: 'Pennsylvania',
+  PR: 'Puerto Rico',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VI: 'Virgin Islands',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+} as Record<string, string>;
+
 /*
  * This defines all the mapping logic to convert Childhelp resource to an Aselo resource.
  * The mapping is defined as a tree of nodes.
@@ -93,6 +156,20 @@ export type UschExpandedResource = Partial<
   }
 >;
 
+const lookupUsStateNameFromCode = ({
+  Country: country,
+  StateProvince: stateProvince,
+}: UschExpandedResource): string | undefined => {
+  if (
+    ['us', 'usa', 'unitedstates'].includes(
+      (country ?? '').toLowerCase().replace(/[.\s]/, ''),
+    )
+  ) {
+    return US_STATE_CODE_MAPPING[stateProvince ?? ''] ?? stateProvince;
+  }
+  return stateProvince;
+};
+
 export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
   const expanded = {
     ...csv,
@@ -113,8 +190,27 @@ export const USCH_MAPPING_NODE: MappingNode = {
   Name: resourceFieldMapping('name'),
   AlternateName: translatableAttributeMapping('alternateName', { language: 'en' }),
   Address: attributeMapping('stringAttributes', 'address/street'),
-  City: attributeMapping('stringAttributes', 'address/city'),
-  StateProvince: attributeMapping('stringAttributes', 'address/province'),
+  City: attributeMapping('stringAttributes', 'address/city', {
+    value: ({ currentValue, rootResource }) =>
+      [
+        (rootResource as UschExpandedResource).Country,
+        (rootResource as UschExpandedResource).StateProvince,
+        currentValue,
+      ].join('/'),
+    info: ({ currentValue, rootResource }) => ({
+      country: (rootResource as UschExpandedResource).Country,
+      stateProvince: lookupUsStateNameFromCode(rootResource as UschExpandedResource),
+      name: currentValue,
+    }),
+  }),
+  StateProvince: attributeMapping('stringAttributes', 'address/province', {
+    value: ({ currentValue, rootResource }) =>
+      `${(rootResource as UschExpandedResource).Country}/${currentValue}`,
+    info: ({ rootResource }) => ({
+      country: (rootResource as UschExpandedResource).Country,
+      name: lookupUsStateNameFromCode(rootResource as UschExpandedResource),
+    }),
+  }),
   PostalCode: attributeMapping('stringAttributes', 'address/postalCode'),
   Country: attributeMapping('stringAttributes', 'address/country'),
   HoursOfOperation: translatableAttributeMapping('hoursOfOperation'),
@@ -189,7 +285,16 @@ export const USCH_MAPPING_NODE: MappingNode = {
   Coverage: {
     children: {
       '{coverageIndex}': translatableAttributeMapping('coverage/{coverageIndex}', {
-        value: ({ currentValue }) => currentValue,
+        value: ({ currentValue }) =>
+          `United States/${currentValue.replace(/\s+-\s+/, '/')}`,
+        info: ({ currentValue }) => {
+          const [stateProvince, city] = currentValue.toString().split(/\s+-\s+/);
+          return {
+            country: 'United States',
+            stateProvince,
+            city,
+          };
+        },
         language: 'en',
       }),
     },
