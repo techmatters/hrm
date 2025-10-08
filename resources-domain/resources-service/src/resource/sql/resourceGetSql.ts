@@ -78,7 +78,8 @@ WHERE r."accountSid" = $<accountSid> AND r."id" IN ($<resourceIds:csv>) AND r."d
 `;
 
 export const SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL = `
-  SELECT DISTINCT("value") FROM "ResourceStringAttributes" 
+  SELECT DISTINCT "value", "info" FROM "ResourceStringAttributes" 
   WHERE "accountSid" = $<accountSid> AND 
   "key" = $<key> AND 
-  ($<language> IS NULL OR "language"=$<language>)`;
+  ($<language> IS NULL OR "language"=$<language>) AND
+  ($<valueLikePattern> IS NULL OR "value" LIKE $<valueLikePattern>)`;

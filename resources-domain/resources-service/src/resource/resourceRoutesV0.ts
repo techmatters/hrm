@@ -63,8 +63,10 @@ const resourceRoutes = () => {
     res.json(suggestions);
   });
 
-  router.get('/list-string-attributes', async (req, res) => {
-    const { key, language } = req.query;
+  const listStringAttributesHandler = async (req: any, res: any) => {
+    const { queryKey, language, valueStartsWith } = req.query;
+    console.debug('PATH PARAMS', req.params);
+    const key = req.params[0] || queryKey;
 
     if (!key || typeof key !== 'string') {
       res.status(400).json({
@@ -84,10 +86,14 @@ const resourceRoutes = () => {
       <AccountSID>req.hrmAccountId,
       key,
       language,
+      valueStartsWith,
     );
 
     res.json(attributes);
-  });
+  };
+
+  router.get('/list-string-attributes/*', listStringAttributesHandler);
+  router.get('/list-string-attributes', listStringAttributesHandler);
 
   return router;
 };

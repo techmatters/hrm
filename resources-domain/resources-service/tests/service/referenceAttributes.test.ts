@@ -188,8 +188,7 @@ describe('GET /reference-attributes/:list', () => {
       expectedIds: ['baseline', 'other value'],
     },
     {
-      description:
-        'valueStartsWithFilter and language set- returns specified list with filter applied for specified language',
+      description: 'list with no values - returns empty list',
       list: 'not-even-a-list',
       expectedIds: [],
     },

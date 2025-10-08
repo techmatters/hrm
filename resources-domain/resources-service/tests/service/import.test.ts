@@ -20,7 +20,7 @@ import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
 import { AccountSID } from '@tech-matters/types';
-import type {
+import {
   FlatResource,
   ImportBatch,
   ImportProgress,
