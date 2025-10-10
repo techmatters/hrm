@@ -220,7 +220,8 @@ export const resourceService = () => {
     getDistinctResourceStringAttributes: async (
       accountSid: AccountSID,
       key: string,
-      language: string,
-    ) => getDistinctStringAttributes(accountSid, key, language),
+      language: string | undefined,
+      valueStartsWith: string | undefined,
+    ) => getDistinctStringAttributes(accountSid, key, language, valueStartsWith),
   };
 };
