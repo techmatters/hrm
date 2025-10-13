@@ -20,6 +20,14 @@ import { Permissions } from './index';
 import { AccountSID } from '@tech-matters/types';
 
 export const getPermissionsConfigName = async (accountSid: AccountSID) => {
+  const localPermissionsOverrideJson = process.env.PERMISSIONS_CONFIG_LOCAL_OVERRIDE;
+  if (localPermissionsOverrideJson) {
+    const localOverridesMap = JSON.parse(localPermissionsOverrideJson);
+    const localOverride = localOverridesMap[accountSid];
+    if (localOverride) {
+      return localOverride;
+    }
+  }
   const { permissionConfig } = await getFromSSMCache(accountSid);
 
   if (!permissionConfig) throw new Error(`No permissions set for account ${accountSid}.`);
