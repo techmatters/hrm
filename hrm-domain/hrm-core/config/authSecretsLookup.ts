@@ -18,20 +18,11 @@ import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 import { getFromSSMCache } from './ssmConfigurationCache';
 
 const authTokenLookup = async (accountSid: string) => {
-  if (process.env[`TWILIO_AUTH_TOKEN_${accountSid}`]) {
-    return process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] || '';
-  }
-
   const { authToken } = await getFromSSMCache(accountSid);
   return authToken;
 };
 
 const staticKeyLookup = async (keySuffix: string) => {
-  const staticSecretKey = `STATIC_KEY_${keySuffix}`;
-  if (process.env[staticSecretKey]) {
-    return process.env[staticSecretKey] || '';
-  }
-
   const { staticKey } = await getFromSSMCache(keySuffix);
   return staticKey;
 };
