@@ -20,19 +20,14 @@ import { Permissions } from './index';
 import { AccountSID } from '@tech-matters/types';
 
 export const getPermissionsConfigName = async (accountSid: AccountSID) => {
-  const permissionsKey = `PERMISSIONS_${accountSid}`;
-
-  if (process.env[permissionsKey]) {
-    const permissionConfig = process.env[permissionsKey];
-
-    if (!rulesMap[permissionConfig])
-      throw new Error(
-        `Permissions rules with name ${permissionConfig} missing in rules map.`,
-      );
-
-    return permissionConfig;
+  const localPermissionsOverrideJson = process.env.PERMISSIONS_CONFIG_LOCAL_OVERRIDE;
+  if (localPermissionsOverrideJson) {
+    const localOverridesMap = JSON.parse(localPermissionsOverrideJson);
+    const localOverride = localOverridesMap[accountSid];
+    if (localOverride) {
+      return localOverride;
+    }
   }
-
   const { permissionConfig } = await getFromSSMCache(accountSid);
 
   if (!permissionConfig) throw new Error(`No permissions set for account ${accountSid}.`);
