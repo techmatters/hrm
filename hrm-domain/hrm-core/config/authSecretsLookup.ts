@@ -17,14 +17,18 @@
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 import { getFromSSMCache } from './ssmConfigurationCache';
 
-const lookupLocalOverride = (key: string, overrideEnvVarName: string) => {
+const lookupLocalOverride = (overrideEnvVarName: string, key: string) => {
+  console.debug(
+    `Checking for local overrides on ${overrideEnvVarName} (for key: ${key})`,
+  );
   const localPermissionsOverrideJson = process.env[overrideEnvVarName];
   if (localPermissionsOverrideJson) {
     const localOverridesMap = JSON.parse(localPermissionsOverrideJson);
     const localOverride = localOverridesMap[key];
     if (localOverride) {
       console.warn(
-        `LOCALLY OVERRIDING ${overrideEnvVarName}[${key}] with ${localOverride}`,
+        `Overriding ${overrideEnvVarName}[${key}] with local value:`,
+        localOverride,
       );
       return localOverride;
     }
