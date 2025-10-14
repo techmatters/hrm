@@ -26,7 +26,7 @@ import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { NewCaseSection } from '@tech-matters/hrm-core/case/caseSection/types';
 import { createCaseSection } from '@tech-matters/hrm-core/case/caseSection/caseSectionService';
 import type { AccountSID } from '@tech-matters/types';
-import { openRules } from '@tech-matters/hrm-core/permissions/json-permissions';
+import { openRules } from 'hrm-core/permissions/jsonPermissions';
 
 export const accountSid = 'ACCOUNT_SID';
 

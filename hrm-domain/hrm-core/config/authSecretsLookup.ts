@@ -17,12 +17,37 @@
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 import { getFromSSMCache } from './ssmConfigurationCache';
 
+const lookupLocalOverride = (key: string, overrideEnvVarName: string) => {
+  const localPermissionsOverrideJson = process.env[overrideEnvVarName];
+  if (localPermissionsOverrideJson) {
+    const localOverridesMap = JSON.parse(localPermissionsOverrideJson);
+    const localOverride = localOverridesMap[key];
+    if (localOverride) {
+      console.warn(
+        `LOCALLY OVERRIDING ${overrideEnvVarName}[${key}] with ${localOverride}`,
+      );
+      return localOverride;
+    }
+  }
+  return undefined;
+};
+
 const authTokenLookup = async (accountSid: string) => {
+  console.debug(`Looking up auth token for '${accountSid}'`);
+  const localOverride = lookupLocalOverride('AUTH_TOKEN_LOCAL_OVERRIDE', accountSid);
+  if (localOverride) {
+    return localOverride;
+  }
   const { authToken } = await getFromSSMCache(accountSid);
   return authToken;
 };
 
 const staticKeyLookup = async (keySuffix: string) => {
+  console.debug(`Looking up static key for '${keySuffix}'`);
+  const localOverride = lookupLocalOverride('STATIC_KEYS_LOCAL_OVERRIDE', keySuffix);
+  if (localOverride) {
+    return localOverride;
+  }
   const { staticKey } = await getFromSSMCache(keySuffix);
   return staticKey;
 };
