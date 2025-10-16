@@ -29,6 +29,8 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
     'country',
     'otherLanguages',
     'feeStructure',
+    'categories',
+    'coverage',
   ],
 
   mappingFields: {
