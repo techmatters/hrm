@@ -1,17 +1,17 @@
 {
-  "viewCase": [["isSupervisor"], ["isCreator"]],
-  "closeCase": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "viewCase": [["isSupervisor"]],
+  "closeCase": [["isSupervisor"]],
   "reopenCase": [["isSupervisor"]],
-  "caseStatusTransition": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "addCaseSection": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "caseStatusTransition": [["isSupervisor"], ["isCaseOpen"]],
+  "addCaseSection": [["isSupervisor"]],
   "editCaseSection": [["isSupervisor"]],
-  "editCaseOverview": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "editCaseOverview": [["isSupervisor"], ["isCaseOpen"]],
   "updateCaseContacts": [["isSupervisor"], ["isCaseOpen"]],
 
-  "viewContact": [["everyone"]],
+  "viewContact": [["isSupervisor"]],
   "editContact": [["isSupervisor"], ["isOwner"]],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
-  "viewExternalTranscript": [["everyone"]],
+  "viewExternalTranscript": [["isSupervisor"]],
   "viewRecording": [],
   "addContactToCase": [["isSupervisor"], ["isOwner"]],
   "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
@@ -19,11 +19,11 @@
   "viewProfile": [["everyone"]],
   "flagProfile": [["isSupervisor"]],
   "unflagProfile": [["isSupervisor"]],
-  "viewProfileSection": [["everyone", { "sectionType": "summary" }], ["isSupervisor"]],
+  "viewProfileSection": [ ["isSupervisor"]],
   "createProfileSection": [["isSupervisor"]],
   "editProfileSection": [["isSupervisor"]],
   
   "viewPostSurvey": [["isSupervisor"]],
 
-  "viewIdentifiers": [["everyone"]]
+  "viewIdentifiers": [["isSupervisor"]]
 }
