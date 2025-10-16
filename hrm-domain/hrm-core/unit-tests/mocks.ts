@@ -1,5 +1,5 @@
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { openRules } from '../permissions/json-permissions';
+import { openRules } from '../permissions/jsonPermissions';
 import { TKConditionsSets } from '../permissions/rulesMap';
 
 /**

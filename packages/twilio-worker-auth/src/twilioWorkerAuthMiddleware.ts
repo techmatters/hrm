@@ -73,6 +73,7 @@ const authenticateWithStaticKey =
     if (keySuffix && authorization && authorization.startsWith('Basic')) {
       try {
         const requestSecret = authorization.replace('Basic ', '');
+        console.debug(`Authenticating against static key ${keySuffix} `);
         const staticSecret = await staticKeyLookup(keySuffix);
 
         const isStaticSecretValid =
@@ -81,11 +82,14 @@ const authenticateWithStaticKey =
           crypto.timingSafeEqual(Buffer.from(requestSecret), Buffer.from(staticSecret));
 
         if (isStaticSecretValid) {
+          console.debug(
+            `Successfully against static key ${keySuffix} with ${requestSecret} `,
+          );
           req.user = user;
           return true;
         }
       } catch (err) {
-        console.warn('Static key authentication failed: ', err);
+        console.warn(`Static key authentication failed for ${keySuffix}: `, err);
       }
     }
     return false;
