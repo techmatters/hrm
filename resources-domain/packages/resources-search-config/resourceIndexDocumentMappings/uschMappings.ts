@@ -20,16 +20,7 @@ import { ResourcesSearchConfiguration } from '../searchConfiguration';
 
 const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
   // This is a list of attribute names that should be given higher priority in search results.
-  highBoostGlobalFields: [
-    'description',
-    'address/street',
-    'address/postalCode',
-    'city',
-    'province',
-    'country',
-    'otherLanguages',
-    'feeStructure',
-  ],
+  highBoostGlobalFields: ['categoriesName', 'coverageName'],
 
   mappingFields: {
     // TODO: this may change to a range field depending on discussion around what they really want to search for.
@@ -55,6 +46,11 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       type: 'completion',
       isArrayField: true,
       attributeKeyPattern: /^categories\/.*$/,
+    },
+    coverageName: {
+      type: 'keyword',
+      isArrayField: true,
+      attributeKeyPattern: /^coverage\/.*$/,
     },
     feeStructure: {
       type: 'keyword',
