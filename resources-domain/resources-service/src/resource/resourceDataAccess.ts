@@ -56,12 +56,14 @@ export const getDistinctStringAttributes = async (
   accountSid: AccountSID,
   key: string,
   language: string | undefined,
+  valueStartsWith: string | undefined,
 ): Promise<string[]> => {
   const res = await db.task(async t =>
     t.manyOrNone(SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL, {
       accountSid,
       key,
       language: language || undefined, // Ensure any falsy value is converted to undefined so to be NULL for the query
+      valueLikePattern: valueStartsWith ? `${valueStartsWith}%` : undefined,
     }),
   );
   console.debug(

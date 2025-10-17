@@ -34,7 +34,7 @@ const testReferenceAttributeValueSeed: (ResourceReferenceAttributeStringValue & 
 })[] = [
   {
     accountSid: 'AC1',
-    list: 'the-list',
+    list: 'the/list',
     value: 'path/structured/value',
     id: 'baseline',
     language: 'en',
@@ -42,7 +42,7 @@ const testReferenceAttributeValueSeed: (ResourceReferenceAttributeStringValue & 
   },
   {
     accountSid: 'AC1',
-    list: 'the-list',
+    list: 'the/list',
     value: 'path/structured/value',
     id: 'french',
     language: 'fr',
@@ -50,7 +50,7 @@ const testReferenceAttributeValueSeed: (ResourceReferenceAttributeStringValue & 
   },
   {
     accountSid: 'AC1',
-    list: 'the-list',
+    list: 'the/list',
     value: 'path/structured',
     id: 'ancestor',
     language: 'en',
@@ -58,7 +58,7 @@ const testReferenceAttributeValueSeed: (ResourceReferenceAttributeStringValue & 
   },
   {
     accountSid: 'AC1',
-    list: 'the-list',
+    list: 'the/list',
     value: 'path/structured/other-value',
     id: 'other value',
     language: 'en',
@@ -66,7 +66,7 @@ const testReferenceAttributeValueSeed: (ResourceReferenceAttributeStringValue & 
   },
   {
     accountSid: 'AC1',
-    list: 'the-list',
+    list: 'the/list',
     value: 'path/also-structured/value',
     id: 'other path',
     language: 'en',
@@ -82,7 +82,7 @@ const testReferenceAttributeValueSeed: (ResourceReferenceAttributeStringValue & 
   },
   {
     accountSid: 'AC2',
-    list: 'the-list',
+    list: 'the/list',
     value: 'path/structured/value',
     id: 'other account',
     language: 'en',
@@ -176,6 +176,13 @@ describe('GET /reference-attributes/:list', () => {
     },
     {
       description:
+        'Legacy URI encoded list - returns full specified list for specified language only',
+      language: 'en',
+      list: encodeURIComponent('the/list'),
+      expectedIds: ['baseline', 'ancestor', 'other value', 'other path'],
+    },
+    {
+      description:
         'valueStartsWithFilter set - returns specified list with filter applied for all languages',
       valueStartsWith: 'path/structured/',
       expectedIds: ['baseline', 'other value', 'french'],
@@ -188,8 +195,7 @@ describe('GET /reference-attributes/:list', () => {
       expectedIds: ['baseline', 'other value'],
     },
     {
-      description:
-        'valueStartsWithFilter and language set- returns specified list with filter applied for specified language',
+      description: 'list with no values - returns empty list',
       list: 'not-even-a-list',
       expectedIds: [],
     },
@@ -197,7 +203,7 @@ describe('GET /reference-attributes/:list', () => {
 
   each(testCases).test(
     '$description',
-    async ({ valueStartsWith, language, expectedIds, list = 'the-list' }: TestCase) => {
+    async ({ valueStartsWith, language, expectedIds, list = 'the/list' }: TestCase) => {
       const queryItems = Object.entries({ valueStartsWith, language }).filter(
         ([, value]) => value,
       );
