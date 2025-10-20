@@ -26,6 +26,7 @@ import {
 import { type HrmAccountId } from '@tech-matters/types';
 import { ExportTranscriptDocument, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
+import { getSsmParameter, SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 /**
  * A payload is single object that should be indexed in a particular index. A single message might represent multiple payloads.
@@ -60,18 +61,34 @@ type ContactIndexingInputData = MessageWithMeta & {
   transcript: string | null;
 };
 
+const shouldIndexTranscripts = async (accountSid: HrmAccountId): Promise<boolean> => {
+  try {
+    const indexTranscriptParameterValue = await getSsmParameter(
+      `/${process.env.NODE_ENV}/hrm/${accountSid}/index_transcripts_for_search`,
+    );
+    if (indexTranscriptParameterValue?.toLowerCase() === 'false') {
+      return false;
+    }
+  } catch (e) {
+    // Default when SSM parameter not present is true, continue
+    if (!e instanceof SsmParameterNotFound) {
+      throw e;
+    }
+  }
+  return true;
+};
+
 const contactIndexingInputData = async (
   m: MessageWithMeta & {
     message: IndexContactMessage;
   },
 ): Promise<ContactIndexingInputData> => {
   let transcript: string | null = null;
-
   try {
     const transcriptEntry =
       m.message.contact.conversationMedia?.find(isS3StoredTranscript);
 
-    if (transcriptEntry) {
+    if (transcriptEntry && (await shouldIndexTranscripts(message.accountSid))) {
       const { location } = transcriptEntry.storeTypeSpecificData;
       const { bucket, key } = location || {};
       if (bucket && key) {
@@ -85,6 +102,7 @@ const contactIndexingInputData = async (
   } catch (err) {
     console.error(
       `Error trying to fetch transcript for contact #${m.message.contact.id}`,
+      err,
     );
   }
 
