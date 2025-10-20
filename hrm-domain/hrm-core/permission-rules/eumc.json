@@ -3,8 +3,8 @@
   "closeCase": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "reopenCase": [["isSupervisor"]],
   "caseStatusTransition": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "addCaseSection": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editCaseSection": [["isSupervisor"]],
+  "addCaseSection": [["everyone"]],
+  "editCaseSection": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "editCaseOverview": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
   "updateCaseContacts": [["isSupervisor"], ["isCaseOpen"]],
 
@@ -13,7 +13,7 @@
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["everyone"]],
   "viewRecording": [],
-  "addContactToCase": [["isSupervisor"], ["isOwner"]],
+  "addContactToCase": [["everyone"]],
   "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
   
   "viewProfile": [["everyone"]],
