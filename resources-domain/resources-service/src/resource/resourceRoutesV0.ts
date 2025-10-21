@@ -65,7 +65,6 @@ const resourceRoutes = () => {
 
   const listStringAttributesHandler = async (req: any, res: any) => {
     const { key: queryKey, language, valueStartsWith } = req.query;
-    console.debug('PATH PARAMS', req.params);
     const key = req.params[0] || queryKey;
 
     if (!key || typeof key !== 'string') {

@@ -237,7 +237,6 @@ describe('GET /list-string-attributes', () => {
       const response = await request
         .get(`${basePath}/${key}${queryString.length ? '?' : ''}${queryString}`)
         .set(headers);
-      console.log(response.body);
       expect(response.status).toBe(200);
       expect(
         response.body.sort((a: ResultItem, b: ResultItem) =>
