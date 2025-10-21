@@ -71,7 +71,7 @@ const shouldIndexTranscripts = async (accountSid: HrmAccountId): Promise<boolean
     }
   } catch (e) {
     // Default when SSM parameter not present is true, continue
-    if (!e instanceof SsmParameterNotFound) {
+    if (!((e as any) instanceof SsmParameterNotFound)) {
       throw e;
     }
   }
@@ -84,11 +84,13 @@ const contactIndexingInputData = async (
   },
 ): Promise<ContactIndexingInputData> => {
   let transcript: string | null = null;
+  const {
+    message: { contact, accountSid },
+  } = m;
   try {
-    const transcriptEntry =
-      m.message.contact.conversationMedia?.find(isS3StoredTranscript);
+    const transcriptEntry = contact.conversationMedia?.find(isS3StoredTranscript);
 
-    if (transcriptEntry && (await shouldIndexTranscripts(message.accountSid))) {
+    if (transcriptEntry && (await shouldIndexTranscripts(accountSid))) {
       const { location } = transcriptEntry.storeTypeSpecificData;
       const { bucket, key } = location || {};
       if (bucket && key) {
@@ -100,10 +102,7 @@ const contactIndexingInputData = async (
       }
     }
   } catch (err) {
-    console.error(
-      `Error trying to fetch transcript for contact #${m.message.contact.id}`,
-      err,
-    );
+    console.error(`Error trying to fetch transcript for contact #${contact.id}`, err);
   }
 
   return { ...m, transcript };
