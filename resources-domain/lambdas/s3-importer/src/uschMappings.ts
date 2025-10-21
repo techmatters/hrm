@@ -300,7 +300,8 @@ export const USCH_MAPPING_NODE: MappingNode = {
                 const [stateProvince, city] = currentValue.toString().split(/\s+-\s+/);
                 return {
                   country: 'United States',
-                  stateProvince,
+                  stateProvince:
+                    US_STATE_CODE_MAPPING[stateProvince ?? ''] ?? stateProvince,
                   city,
                 };
               } else {
@@ -339,16 +340,20 @@ export const USCH_MAPPING_NODE: MappingNode = {
             },
             info: ({ currentValue, rootResource }) => {
               if (isUnitedStates(rootResource.Country)) {
-                const [stateProvince] = currentValue.toString().split(/\s+-\s+/);
+                const [stateProvinceCode] = currentValue.toString().split(/\s+-\s+/);
+                const stateProvince =
+                  US_STATE_CODE_MAPPING[stateProvinceCode ?? ''] ?? stateProvinceCode;
                 return {
                   country: 'United States',
                   stateProvince,
+                  name: stateProvince,
                 };
               } else {
                 const [country, stateProvince] = currentValue.toString().split(/\s+-\s+/);
                 return {
                   country,
                   stateProvince,
+                  name: stateProvince,
                 };
               }
             },
@@ -364,11 +369,16 @@ export const USCH_MAPPING_NODE: MappingNode = {
             },
             info: ({ currentValue, rootResource }) => {
               if (isUnitedStates(rootResource.Country)) {
-                const [stateProvince, city] = currentValue.toString().split(/\s+-\s+/);
+                const [stateProvinceCode, city] = currentValue
+                  .toString()
+                  .split(/\s+-\s+/);
+                const stateProvince =
+                  US_STATE_CODE_MAPPING[stateProvinceCode ?? ''] ?? stateProvinceCode;
                 return {
                   country: 'United States',
                   stateProvince,
                   city,
+                  name: city,
                 };
               } else {
                 return null;
