@@ -162,7 +162,6 @@ export const loadParameter = async (name: string) => {
     }
   } catch (e) {
     addErrorToCache(name, e as Error);
-    return;
   }
 };
 
