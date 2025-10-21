@@ -162,7 +162,7 @@ const lookupUsStateNameFromCode = ({
 }: UschExpandedResource): string | undefined => {
   if (
     ['us', 'usa', 'unitedstates'].includes(
-      (country ?? '').toLowerCase().replaceAll(/[.\s]/, ''),
+      (country ?? '').toLowerCase().replaceAll(/[.\s]/g, ''),
     )
   ) {
     return US_STATE_CODE_MAPPING[stateProvince ?? ''] ?? stateProvince;
