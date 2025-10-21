@@ -316,7 +316,7 @@ export const USCH_MAPPING_NODE: MappingNode = {
             },
             language: 'en',
           }),
-          translatableAttributeMapping('coverageCountry/{coverageIndex}', {
+          translatableAttributeMapping('coverage/country/{coverageIndex}', {
             value: ({ rootResource, currentValue }) => {
               if (isUnitedStates(rootResource.Country)) {
                 return `United States`;
@@ -327,7 +327,7 @@ export const USCH_MAPPING_NODE: MappingNode = {
             },
             language: 'en',
           }),
-          translatableAttributeMapping('coverageStateProvince/{coverageIndex}', {
+          translatableAttributeMapping('coverage/stateProvince/{coverageIndex}', {
             value: ({ rootResource, currentValue }) => {
               if (isUnitedStates(rootResource.Country)) {
                 const [state] = currentValue.toString().split(/\s+-\s+/);
@@ -354,7 +354,7 @@ export const USCH_MAPPING_NODE: MappingNode = {
             },
             language: 'en',
           }),
-          translatableAttributeMapping('coverageCity/{coverageIndex}', {
+          translatableAttributeMapping('coverage/city/{coverageIndex}', {
             value: ({ rootResource, currentValue }) => {
               if (isUnitedStates(rootResource.Country)) {
                 return `United States/${currentValue.replace(/\s+-\s+/, '/')}`;
