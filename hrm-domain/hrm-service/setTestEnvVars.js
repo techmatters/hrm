@@ -14,36 +14,39 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-process.env.PERMISSIONS_ACbr = 'br';
-process.env.PERMISSIONS_ACca = 'ca';
-process.env.PERMISSIONS_ACcl = 'cl';
-process.env.PERMISSIONS_ACco = 'co';
-process.env.PERMISSIONS_ACet = 'et';
-process.env.PERMISSIONS_AChu = 'hu';
-process.env.PERMISSIONS_ACin = 'in';
-process.env.PERMISSIONS_ACjm = 'jm';
-process.env.PERMISSIONS_ACmt = 'mt';
-process.env.PERMISSIONS_ACmw = 'mw';
-process.env.PERMISSIONS_ACnz = 'nz';
-process.env.PERMISSIONS_ACph = 'ph';
-process.env.PERMISSIONS_ACsg = 'sg';
-process.env.PERMISSIONS_ACth = 'th';
-process.env.PERMISSIONS_ACtz = 'tz';
-process.env.PERMISSIONS_ACukmh = 'ukmh';
-process.env.PERMISSIONS_ACusch = 'usch';
-process.env.PERMISSIONS_ACuscr = 'uscr';
-process.env.PERMISSIONS_ACusvc = 'usvc';
-process.env.PERMISSIONS_ACza = 'za';
-process.env.PERMISSIONS_ACzm = 'zm';
-process.env.PERMISSIONS_ACzw = 'zw';
-process.env.PERMISSIONS_ACopen = 'open';
-process.env.PERMISSIONS_ACclosed = 'closed';
-process.env.PERMISSIONS_ACdemo = 'demo';
-process.env.PERMISSIONS_ACdev = 'dev';
-process.env.PERMISSIONS_ACe2e = 'e2e';
-process.env.PERMISSIONS_ACeumc = 'eumc';
-process.env.PERMISSIONS_notConfigured = '';
-process.env.PERMISSIONS_notExistsInRulesMap = 'notExistsInRulesMap';
+process.env.PERMISSIONS_CONFIG_LOCAL_OVERRIDE = JSON.stringify({
+  ACbr: 'br',
+  ACca: 'ca',
+  ACcl: 'cl',
+  ACco: 'co',
+  ACet: 'et',
+  AChu: 'hu',
+  ACin: 'in',
+  ACjm: 'jm',
+  ACmt: 'mt',
+  ACmw: 'mw',
+  ACnz: 'nz',
+  ACph: 'ph',
+  ACsg: 'sg',
+  ACth: 'th',
+  ACtz: 'tz',
+  ACukmh: 'ukmh',
+  ACusch: 'usch',
+  ACuscr: 'uscr',
+  ACusvc: 'usvc',
+  ACza: 'za',
+  ACzm: 'zm',
+  ACzw: 'zw',
+  ACopen: 'open',
+  ACclosed: 'closed',
+  ACdemo: 'demo',
+  ACdev: 'dev',
+  ACe2e: 'e2e',
+  ACeumc: 'eumc',
+  notConfigured: '',
+  notExistsInRulesMap: 'notExistsInRulesMap',
+});
+
 process.env.STATIC_KEY_ACCOUNT_SID = 'BBC';
 
 process.env.INCLUDE_ERROR_IN_RESPONSE = 'true';

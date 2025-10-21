@@ -18,7 +18,7 @@ import express, { Express } from 'express';
 import 'express-async-errors';
 
 import type { Permissions } from './permissions';
-import { jsonPermissions, openPermissions } from './permissions/json-permissions';
+import { jsonPermissions, openPermissions } from './permissions/jsonPermissions';
 import { setUpHrmRoutes } from './setUpHrmRoutes';
 import {
   addAccountSidMiddleware,

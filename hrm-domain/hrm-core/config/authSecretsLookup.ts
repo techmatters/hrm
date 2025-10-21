@@ -17,21 +17,41 @@
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 import { getFromSSMCache } from './ssmConfigurationCache';
 
-const authTokenLookup = async (accountSid: string) => {
-  if (process.env[`TWILIO_AUTH_TOKEN_${accountSid}`]) {
-    return process.env[`TWILIO_AUTH_TOKEN_${accountSid}`] || '';
+const lookupLocalOverride = (overrideEnvVarName: string, key: string) => {
+  console.debug(
+    `Checking for local overrides on ${overrideEnvVarName} (for key: ${key})`,
+  );
+  const localPermissionsOverrideJson = process.env[overrideEnvVarName];
+  if (localPermissionsOverrideJson) {
+    const localOverridesMap = JSON.parse(localPermissionsOverrideJson);
+    const localOverride = localOverridesMap[key];
+    if (localOverride) {
+      console.warn(
+        `Overriding ${overrideEnvVarName}[${key}] with local value:`,
+        localOverride,
+      );
+      return localOverride;
+    }
   }
+  return undefined;
+};
 
+const authTokenLookup = async (accountSid: string) => {
+  console.debug(`Looking up auth token for '${accountSid}'`);
+  const localOverride = lookupLocalOverride('AUTH_TOKEN_LOCAL_OVERRIDE', accountSid);
+  if (localOverride) {
+    return localOverride;
+  }
   const { authToken } = await getFromSSMCache(accountSid);
   return authToken;
 };
 
 const staticKeyLookup = async (keySuffix: string) => {
-  const staticSecretKey = `STATIC_KEY_${keySuffix}`;
-  if (process.env[staticSecretKey]) {
-    return process.env[staticSecretKey] || '';
+  console.debug(`Looking up static key for '${keySuffix}'`);
+  const localOverride = lookupLocalOverride('STATIC_KEYS_LOCAL_OVERRIDE', keySuffix);
+  if (localOverride) {
+    return localOverride;
   }
-
   const { staticKey } = await getFromSSMCache(keySuffix);
   return staticKey;
 };
