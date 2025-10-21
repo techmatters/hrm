@@ -156,15 +156,16 @@ export type UschExpandedResource = Partial<
   }
 >;
 
+const isUnitedStates = (country: string | undefined) =>
+  ['us', 'usa', 'unitedstates'].includes(
+    (country ?? '').toLowerCase().replaceAll(/[.\s]/g, ''),
+  );
+
 const lookupUsStateNameFromCode = ({
   Country: country,
   StateProvince: stateProvince,
 }: UschExpandedResource): string | undefined => {
-  if (
-    ['us', 'usa', 'unitedstates'].includes(
-      (country ?? '').toLowerCase().replaceAll(/[.\s]/g, ''),
-    )
-  ) {
+  if (isUnitedStates(country)) {
     return US_STATE_CODE_MAPPING[stateProvince ?? ''] ?? stateProvince;
   }
   return stateProvince;
@@ -284,19 +285,99 @@ export const USCH_MAPPING_NODE: MappingNode = {
   },
   Coverage: {
     children: {
-      '{coverageIndex}': translatableAttributeMapping('coverage/{coverageIndex}', {
-        value: ({ currentValue }) =>
-          `United States/${currentValue.replace(/\s+-\s+/, '/')}`,
-        info: ({ currentValue }) => {
-          const [stateProvince, city] = currentValue.toString().split(/\s+-\s+/);
-          return {
-            country: 'United States',
-            stateProvince,
-            city,
-          };
-        },
-        language: 'en',
-      }),
+      '{coverageIndex}': {
+        mappings: [
+          translatableAttributeMapping('coverage/{coverageIndex}', {
+            value: ({ rootResource, currentValue }) => {
+              if (isUnitedStates(rootResource.Country)) {
+                return `United States/${currentValue.replace(/\s+-\s+/, '/')}`;
+              } else {
+                return `${currentValue.replace(/\s+-\s+/, '/')}`;
+              }
+            },
+            info: ({ currentValue, rootResource }) => {
+              if (isUnitedStates(rootResource.Country)) {
+                const [stateProvince, city] = currentValue.toString().split(/\s+-\s+/);
+                return {
+                  country: 'United States',
+                  stateProvince,
+                  city,
+                };
+              } else {
+                const [country, stateProvince, city] = currentValue
+                  .toString()
+                  .split(/\s+-\s+/);
+                return {
+                  country,
+                  stateProvince,
+                  city,
+                };
+              }
+            },
+            language: 'en',
+          }),
+          translatableAttributeMapping('coverageCountry/{coverageIndex}', {
+            value: ({ rootResource, currentValue }) => {
+              if (isUnitedStates(rootResource.Country)) {
+                return `United States`;
+              } else {
+                const [country] = currentValue.toString().split(/\s+-\s+/);
+                return country;
+              }
+            },
+            language: 'en',
+          }),
+          translatableAttributeMapping('coverageStateProvince/{coverageIndex}', {
+            value: ({ rootResource, currentValue }) => {
+              if (isUnitedStates(rootResource.Country)) {
+                const [state] = currentValue.toString().split(/\s+-\s+/);
+                return `United States/${state}`;
+              } else {
+                const [country, province] = currentValue.toString().split(/\s+-\s+/);
+                return `${country}/${province}`;
+              }
+            },
+            info: ({ currentValue, rootResource }) => {
+              if (isUnitedStates(rootResource.Country)) {
+                const [stateProvince] = currentValue.toString().split(/\s+-\s+/);
+                return {
+                  country: 'United States',
+                  stateProvince,
+                };
+              } else {
+                const [country, stateProvince] = currentValue.toString().split(/\s+-\s+/);
+                return {
+                  country,
+                  stateProvince,
+                };
+              }
+            },
+            language: 'en',
+          }),
+          translatableAttributeMapping('coverageCity/{coverageIndex}', {
+            value: ({ rootResource, currentValue }) => {
+              if (isUnitedStates(rootResource.Country)) {
+                return `United States/${currentValue.replace(/\s+-\s+/, '/')}`;
+              } else {
+                return '';
+              }
+            },
+            info: ({ currentValue, rootResource }) => {
+              if (isUnitedStates(rootResource.Country)) {
+                const [stateProvince, city] = currentValue.toString().split(/\s+-\s+/);
+                return {
+                  country: 'United States',
+                  stateProvince,
+                  city,
+                };
+              } else {
+                return null;
+              }
+            },
+            language: 'en',
+          }),
+        ],
+      },
     },
   },
   Comment: translatableAttributeMapping('comment', { language: 'en' }),
