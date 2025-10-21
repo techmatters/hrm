@@ -15,7 +15,7 @@
  */
 
 import type { AccountSID } from '@tech-matters/types';
-import type { FlatResource } from '@tech-matters/resources-types';
+import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/resources-types';
 
 import { db } from '../connection-pool';
 import {
@@ -57,8 +57,8 @@ export const getDistinctStringAttributes = async (
   key: string,
   language: string | undefined,
   valueStartsWith: string | undefined,
-): Promise<string[]> => {
-  const res = await db.task(async t =>
+): Promise<ReferrableResourceAttribute<string>[]> => {
+  const res: ReferrableResourceAttribute<string>[] = await db.task(async t =>
     t.manyOrNone(SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL, {
       accountSid,
       key,
