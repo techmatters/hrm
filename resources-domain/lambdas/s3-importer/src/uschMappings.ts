@@ -87,6 +87,22 @@ const US_STATE_CODE_MAPPING = {
   WY: 'Wyoming',
 } as Record<string, string>;
 
+const CANADIAN_PROVINCE_CODE_MAPPING = {
+  AB: 'Alberta',
+  BC: 'British Columbia',
+  NL: 'Newfoundland and Labrador',
+  PE: 'Île-du-Prince-Édouard',
+  NS: 'Nouvelle-Écosse',
+  NB: 'New Brunswick',
+  ON: 'Ontario',
+  MB: 'Manitoba',
+  SK: 'Saskatchewan',
+  YT: 'Yukon',
+  NT: 'Northwest Territories',
+  NU: 'Nunavut',
+  QC: 'Québec',
+} as Record<string, string>;
+
 /*
  * This defines all the mapping logic to convert Childhelp resource to an Aselo resource.
  * The mapping is defined as a tree of nodes.
@@ -160,6 +176,16 @@ const isUnitedStates = (country: string | undefined) =>
   ['us', 'usa', 'unitedstates'].includes(
     (country ?? '').toLowerCase().replaceAll(/[.\s]/g, ''),
   );
+
+const isUSStateOrTerritory = (country: string | undefined) =>
+  country &&
+  (Object.keys(US_STATE_CODE_MAPPING).includes(country) ||
+    Object.values(US_STATE_CODE_MAPPING).includes(country));
+
+const isCanadianProvince = (country: string | undefined) =>
+  country &&
+  (Object.keys(CANADIAN_PROVINCE_CODE_MAPPING).includes(country) ||
+    Object.values(CANADIAN_PROVINCE_CODE_MAPPING).includes(country));
 
 const lookupUsStateNameFromCode = ({
   Country: country,
@@ -288,97 +314,141 @@ export const USCH_MAPPING_NODE: MappingNode = {
       '{coverageIndex}': {
         mappings: [
           translatableAttributeMapping('coverage/{coverageIndex}', {
-            value: ({ rootResource, currentValue }) => {
-              if (isUnitedStates(rootResource.Country)) {
-                return `United States/${currentValue.replace(/\s+-\s+/, '/')}`;
+            value: ({ currentValue }) => {
+              const [countryOrState] = currentValue.toString().split(/\s+-\s+/);
+
+              if (isUSStateOrTerritory(countryOrState)) {
+                return `United States/${currentValue.replaceAll(/\s+-\s+/g, '/')}`;
               } else {
-                return `${currentValue.replace(/\s+-\s+/, '/')}`;
+                return `${currentValue.replaceAll(/\s+-\s+/g, '/')}`;
               }
             },
-            info: ({ currentValue, rootResource }) => {
-              if (isUnitedStates(rootResource.Country)) {
-                const [stateProvince, city] = currentValue.toString().split(/\s+-\s+/);
+            info: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity, internationalCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (
+                isUSStateOrTerritory(countryOrState) ||
+                isCanadianProvince(countryOrState)
+              ) {
                 return {
-                  country: 'United States',
+                  country: isCanadianProvince(countryOrState)
+                    ? 'Canada'
+                    : 'United States',
                   stateProvince:
-                    US_STATE_CODE_MAPPING[stateProvince ?? ''] ?? stateProvince,
-                  city,
+                    US_STATE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState,
+                  city: provinceOrCity,
                 };
               } else {
-                const [country, stateProvince, city] = currentValue
-                  .toString()
-                  .split(/\s+-\s+/);
                 return {
-                  country,
-                  stateProvince,
-                  city,
+                  country: countryOrState,
+                  stateProvince: provinceOrCity,
+                  city: internationalCity,
                 };
               }
             },
             language: 'en',
           }),
-          translatableAttributeMapping('coverage/country/{coverageIndex}', {
-            value: ({ rootResource, currentValue }) => {
-              if (isUnitedStates(rootResource.Country)) {
-                return `United States`;
+          // Not using coverage/country because that makes things bessy with root coverage values
+          translatableAttributeMapping('coverageCountry/{coverageIndex}', {
+            value: ({ currentValue }) => {
+              const [countryOrState] = currentValue.toString().split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                return 'United States';
+              } else if (isCanadianProvince(countryOrState)) {
+                return 'Canada';
               } else {
-                const [country] = currentValue.toString().split(/\s+-\s+/);
-                return country;
+                return countryOrState;
               }
             },
             language: 'en',
           }),
-          translatableAttributeMapping('coverage/stateProvince/{coverageIndex}', {
-            value: ({ rootResource, currentValue }) => {
-              if (isUnitedStates(rootResource.Country)) {
-                const [state] = currentValue.toString().split(/\s+-\s+/);
-                return `United States/${state}`;
-              } else {
-                const [country, province] = currentValue.toString().split(/\s+-\s+/);
-                return `${country}/${province}`;
-              }
+          // Not using coverage/province because that makes things bessy with root coverage values
+          translatableAttributeMapping('coverageStateProvince/{coverageIndex}', {
+            value: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                return `United States/${countryOrState}`;
+              } else if (isCanadianProvince(countryOrState)) {
+                return `Canada/${countryOrState}`;
+              } else if (provinceOrCity) {
+                return `${countryOrState}/${provinceOrCity}`;
+              } else return '';
             },
-            info: ({ currentValue, rootResource }) => {
-              if (isUnitedStates(rootResource.Country)) {
-                const [stateProvinceCode] = currentValue.toString().split(/\s+-\s+/);
+            info: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
                 const stateProvince =
-                  US_STATE_CODE_MAPPING[stateProvinceCode ?? ''] ?? stateProvinceCode;
+                  US_STATE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
                 return {
                   country: 'United States',
                   stateProvince,
                   name: stateProvince,
                 };
-              } else {
-                const [country, stateProvince] = currentValue.toString().split(/\s+-\s+/);
+              } else if (isCanadianProvince(countryOrState)) {
+                const stateProvince =
+                  CANADIAN_PROVINCE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
                 return {
-                  country,
+                  country: 'Canada',
                   stateProvince,
                   name: stateProvince,
                 };
-              }
+              } else if (provinceOrCity) {
+                return {
+                  country: countryOrState,
+                  stateProvince: provinceOrCity,
+                  name: provinceOrCity,
+                };
+              } else return null;
             },
             language: 'en',
           }),
-          translatableAttributeMapping('coverage/city/{coverageIndex}', {
-            value: ({ rootResource, currentValue }) => {
-              if (isUnitedStates(rootResource.Country)) {
-                return `United States/${currentValue.replace(/\s+-\s+/, '/')}`;
-              } else {
-                return '';
-              }
+          // Not using coverage/city because that makes things messy with root coverage values
+          translatableAttributeMapping('coverageCity/{coverageIndex}', {
+            value: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity, internationalCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                return `United States/${countryOrState}/${provinceOrCity}`;
+              } else if (isCanadianProvince(countryOrState)) {
+                return `Canada/${countryOrState}/${provinceOrCity}`;
+              } else if (internationalCity) {
+                return `${countryOrState}/${provinceOrCity}/${internationalCity}`;
+              } else return '';
             },
             info: ({ currentValue, rootResource }) => {
-              if (isUnitedStates(rootResource.Country)) {
-                const [stateProvinceCode, city] = currentValue
-                  .toString()
-                  .split(/\s+-\s+/);
+              const [countryOrState, provinceOrCity, internationalCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
                 const stateProvince =
-                  US_STATE_CODE_MAPPING[stateProvinceCode ?? ''] ?? stateProvinceCode;
+                  US_STATE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
                 return {
                   country: 'United States',
                   stateProvince,
-                  city,
-                  name: city,
+                  city: provinceOrCity,
+                  name: provinceOrCity,
+                };
+              } else if (isCanadianProvince(rootResource.Country)) {
+                const stateProvince =
+                  CANADIAN_PROVINCE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
+                return {
+                  country: 'Canada',
+                  stateProvince,
+                  city: provinceOrCity,
+                  name: provinceOrCity,
+                };
+              } else if (internationalCity) {
+                return {
+                  country: countryOrState,
+                  stateProvince: provinceOrCity,
+                  city: internationalCity,
+                  name: internationalCity,
                 };
               } else {
                 return null;
