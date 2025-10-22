@@ -344,6 +344,7 @@ export const USCH_MAPPING_NODE: MappingNode = {
                   country: countryOrState,
                   stateProvince: provinceOrCity,
                   city: internationalCity,
+                  name: currentValue,
                 };
               }
             },

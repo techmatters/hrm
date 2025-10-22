@@ -83,3 +83,10 @@ export const SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL = `
   "key" = $<key> AND 
   ($<language> IS NULL OR "language"=$<language>) AND
   ($<valueLikePattern> IS NULL OR "value" LIKE $<valueLikePattern>)`;
+
+export const SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_FROM_DESCENDANT_KEYS_SQL = `
+  SELECT DISTINCT "value", "info" FROM "ResourceStringAttributes" 
+  WHERE "accountSid" = $<accountSid> AND 
+  ("key" = $<key> OR "key" LIKE $<keyLikePattern>) AND 
+  ($<language> IS NULL OR "language"=$<language>) AND
+  ($<valueLikePattern> IS NULL OR "value" LIKE $<valueLikePattern>)`;

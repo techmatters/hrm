@@ -93,6 +93,14 @@ const testReferenceAttributeValueSeed: {
     info: { some: 'info' },
   },
   {
+    accountSid: 'AC1',
+    key: 'the/key/descendant',
+    value: 'path/structured/value-from-descendant',
+    resourceId: 'descendant key',
+    language: 'en',
+    info: { some: 'info' },
+  },
+  {
     accountSid: 'AC2',
     key: 'the/key',
     value: 'path/structured/value',
@@ -159,6 +167,7 @@ describe('GET /list-string-attributes', () => {
     language?: string;
     expectedValues: ResultItem[];
     key?: string;
+    allowDescendantKeys?: boolean;
   };
 
   const testCases: TestCase[] = [
@@ -225,14 +234,35 @@ describe('GET /list-string-attributes', () => {
       key: 'not-even-a-list',
       expectedValues: [],
     },
+    {
+      description: 'descendant key',
+      allowDescendantKeys: true,
+      expectedValues: [
+        { value: 'path/structured/value', info: { some: 'info' } },
+        { value: 'path/structured/value', info: { different: 'info' } },
+        { value: 'path/structured/value', info: { quelques: 'infos' } },
+        { value: 'path/structured/other-value', info: { some: 'info' } },
+        { value: 'path/structured', info: { some: 'info' } },
+        { value: 'path/also-structured/value', info: { some: 'info' } },
+        { value: 'path/structured/value-from-descendant', info: { some: 'info' } },
+      ],
+    },
   ];
 
   each(testCases).test(
     '$description',
-    async ({ valueStartsWith, language, expectedValues, key = 'the/key' }: TestCase) => {
-      const queryItems = Object.entries({ valueStartsWith, language }).filter(
-        ([, value]) => value,
-      );
+    async ({
+      valueStartsWith,
+      language,
+      expectedValues,
+      key = 'the/key',
+      allowDescendantKeys = false,
+    }: TestCase) => {
+      const queryItems = Object.entries({
+        valueStartsWith,
+        language,
+        allowDescendantKeys,
+      }).filter(([, value]) => value);
       const queryString = queryItems.map(([k, v]) => `${k}=${v}`).join('&');
       const response = await request
         .get(`${basePath}/${key}${queryString.length ? '?' : ''}${queryString}`)

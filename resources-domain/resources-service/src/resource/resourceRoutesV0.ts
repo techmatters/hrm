@@ -18,7 +18,7 @@ import { IRouter, Router } from 'express';
 import { resourceService } from './resourceService';
 import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
-import { getDistinctStringAttributes } from './resourceDataAccess';
+import { getDistinctStringAttributes } from './resourceService';
 
 const resourceRoutes = () => {
   const router: IRouter = Router();
@@ -64,7 +64,7 @@ const resourceRoutes = () => {
   });
 
   const listStringAttributesHandler = async (req: any, res: any) => {
-    const { key: queryKey, language, valueStartsWith } = req.query;
+    const { key: queryKey, language, valueStartsWith, allowDescendantKeys } = req.query;
     const key = req.params[0] || queryKey;
 
     if (!key || typeof key !== 'string') {
@@ -86,6 +86,7 @@ const resourceRoutes = () => {
       key,
       language,
       valueStartsWith,
+      allowDescendantKeys?.toLowerCase() === 'true',
     );
 
     res.json(attributes);

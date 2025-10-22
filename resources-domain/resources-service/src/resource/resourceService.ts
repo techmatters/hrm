@@ -222,6 +222,14 @@ export const resourceService = () => {
       key: string,
       language: string | undefined,
       valueStartsWith: string | undefined,
-    ) => getDistinctStringAttributes(accountSid, key, language, valueStartsWith),
+      allowDescendantKeys: boolean,
+    ) =>
+      getDistinctStringAttributes({
+        accountSid,
+        key,
+        language,
+        valueStartsWith,
+        allowDescendantKeys,
+      }),
   };
 };
