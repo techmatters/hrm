@@ -327,17 +327,22 @@ export const USCH_MAPPING_NODE: MappingNode = {
               const [countryOrState, provinceOrCity, internationalCity] = currentValue
                 .toString()
                 .split(/\s+-\s+/);
-              if (
-                isUSStateOrTerritory(countryOrState) ||
-                isCanadianProvince(countryOrState)
-              ) {
+              if (isUSStateOrTerritory(countryOrState)) {
                 return {
-                  country: isCanadianProvince(countryOrState)
-                    ? 'Canada'
-                    : 'United States',
+                  country: 'United States',
                   stateProvince:
                     US_STATE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState,
                   city: provinceOrCity,
+                  name: currentValue,
+                };
+              } else if (isCanadianProvince(countryOrState)) {
+                return {
+                  country: 'Canada',
+                  stateProvince:
+                    CANADIAN_PROVINCE_CODE_MAPPING[countryOrState ?? ''] ??
+                    countryOrState,
+                  city: provinceOrCity,
+                  name: currentValue,
                 };
               } else {
                 return {
