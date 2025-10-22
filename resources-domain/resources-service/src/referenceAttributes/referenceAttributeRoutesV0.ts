@@ -22,9 +22,9 @@ const referenceAttributeRoutes = () => {
   const router: IRouter = Router();
   const { getResourceReferenceAttributeList } = referenceAttributeService();
 
-  router.get('/:list', async (req, res) => {
+  router.get('/*', async (req, res) => {
     const { valueStartsWith, language } = req.query;
-    const { list } = req.params;
+    const list = (req as any).params[0];
     const result = await getResourceReferenceAttributeList(
       req.hrmAccountId as AccountSID,
       list,

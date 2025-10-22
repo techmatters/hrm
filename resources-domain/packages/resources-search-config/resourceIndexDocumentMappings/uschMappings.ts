@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { ReferrableResourceAttribute } from '@tech-matters/resources-types';
 import { ResourceIndexDocumentMappings } from './resourceIndexDocumentMappings';
 import { ResourcesSearchConfiguration } from '../searchConfiguration';
 
@@ -59,22 +58,16 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
       type: 'keyword',
       isArrayField: true,
       attributeKeyPattern: /(.*)([cC])ountry$/,
-      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
-        [info?.name, value].filter(i => i).join(' '),
     },
     province: {
       type: 'keyword',
       isArrayField: true,
       attributeKeyPattern: /(.*)([pP])rovince$/,
-      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
-        [info?.name, value].filter(i => i).join(' '),
     },
     city: {
       type: 'keyword',
       isArrayField: true,
       attributeKeyPattern: /(.*)[cC]ity$/,
-      indexValueGenerator: ({ value, info }: ReferrableResourceAttribute<string>) =>
-        [info?.name, value].filter(i => i).join(' '),
     },
   },
   languageFields: {

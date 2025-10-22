@@ -32,7 +32,7 @@
     "test:service": "cross-env POSTGRES_PORT=5433 RDS_USERNAME=hrm RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s -c docker:compose:test:up db:create:schema test:service:ci:migrate test:service:ci:run docker:compose:test:down",
     "test:service:ci": "RDS_USERNAME=rdsadmin RDS_PASSWORD=postgres RESOURCES_PASSWORD=resources-password run-s db:create:schema test:service:ci:migrate test:service:ci:run",
     "test:service:ci:migrate": "node ./db-migrate",
-    "test:service:ci:run": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx SSM_ENDPOINT=http://mock-ssm/ jest --verbose --maxWorkers=1 --forceExit --coverage tests/service/adminSearch.test.ts",
+    "test:service:ci:run": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx SSM_ENDPOINT=http://mock-ssm/ jest --verbose --maxWorkers=1 --forceExit --coverage tests/service",
     "test:coverage": "run-s docker:compose:test:up test:service:migrate test:coverage:run docker:compose:test:down",
     "test:coverage:run": "cross-env POSTGRES_PORT=5433 AWS_REGION=us-east-1 jest --verbose --maxWorkers=1 --coverage",
     "test:migrate": "run-s test:service:migrate",

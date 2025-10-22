@@ -24,6 +24,85 @@ import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
 import { parse } from 'date-fns';
 
+// https://gist.github.com/mshafrir/2646763
+const US_STATE_CODE_MAPPING = {
+  AL: 'Alabama',
+  AK: 'Alaska',
+  AS: 'American Samoa',
+  AZ: 'Arizona',
+  AR: 'Arkansas',
+  CA: 'California',
+  CO: 'Colorado',
+  CT: 'Connecticut',
+  DE: 'Delaware',
+  DC: 'District Of Columbia',
+  FM: 'Federated States Of Micronesia',
+  FL: 'Florida',
+  GA: 'Georgia',
+  GU: 'Guam',
+  HI: 'Hawaii',
+  ID: 'Idaho',
+  IL: 'Illinois',
+  IN: 'Indiana',
+  IA: 'Iowa',
+  KS: 'Kansas',
+  KY: 'Kentucky',
+  LA: 'Louisiana',
+  ME: 'Maine',
+  MH: 'Marshall Islands',
+  MD: 'Maryland',
+  MA: 'Massachusetts',
+  MI: 'Michigan',
+  MN: 'Minnesota',
+  MS: 'Mississippi',
+  MO: 'Missouri',
+  MT: 'Montana',
+  NE: 'Nebraska',
+  NV: 'Nevada',
+  NH: 'New Hampshire',
+  NJ: 'New Jersey',
+  NM: 'New Mexico',
+  NY: 'New York',
+  NC: 'North Carolina',
+  ND: 'North Dakota',
+  MP: 'Northern Mariana Islands',
+  OH: 'Ohio',
+  OK: 'Oklahoma',
+  OR: 'Oregon',
+  PW: 'Palau',
+  PA: 'Pennsylvania',
+  PR: 'Puerto Rico',
+  RI: 'Rhode Island',
+  SC: 'South Carolina',
+  SD: 'South Dakota',
+  TN: 'Tennessee',
+  TX: 'Texas',
+  UT: 'Utah',
+  VT: 'Vermont',
+  VI: 'Virgin Islands',
+  VA: 'Virginia',
+  WA: 'Washington',
+  WV: 'West Virginia',
+  WI: 'Wisconsin',
+  WY: 'Wyoming',
+} as Record<string, string>;
+
+const CANADIAN_PROVINCE_CODE_MAPPING = {
+  AB: 'Alberta',
+  BC: 'British Columbia',
+  NL: 'Newfoundland and Labrador',
+  PE: 'Île-du-Prince-Édouard',
+  NS: 'Nouvelle-Écosse',
+  NB: 'New Brunswick',
+  ON: 'Ontario',
+  MB: 'Manitoba',
+  SK: 'Saskatchewan',
+  YT: 'Yukon',
+  NT: 'Northwest Territories',
+  NU: 'Nunavut',
+  QC: 'Québec',
+} as Record<string, string>;
+
 /*
  * This defines all the mapping logic to convert Childhelp resource to an Aselo resource.
  * The mapping is defined as a tree of nodes.
@@ -93,6 +172,31 @@ export type UschExpandedResource = Partial<
   }
 >;
 
+const isUnitedStates = (country: string | undefined) =>
+  ['us', 'usa', 'unitedstates'].includes(
+    (country ?? '').toLowerCase().replaceAll(/[.\s]/g, ''),
+  );
+
+const isUSStateOrTerritory = (country: string | undefined) =>
+  country &&
+  (Object.keys(US_STATE_CODE_MAPPING).includes(country) ||
+    Object.values(US_STATE_CODE_MAPPING).includes(country));
+
+const isCanadianProvince = (country: string | undefined) =>
+  country &&
+  (Object.keys(CANADIAN_PROVINCE_CODE_MAPPING).includes(country) ||
+    Object.values(CANADIAN_PROVINCE_CODE_MAPPING).includes(country));
+
+const lookupUsStateNameFromCode = ({
+  Country: country,
+  StateProvince: stateProvince,
+}: UschExpandedResource): string | undefined => {
+  if (isUnitedStates(country)) {
+    return US_STATE_CODE_MAPPING[stateProvince ?? ''] ?? stateProvince;
+  }
+  return stateProvince;
+};
+
 export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
   const expanded = {
     ...csv,
@@ -113,8 +217,27 @@ export const USCH_MAPPING_NODE: MappingNode = {
   Name: resourceFieldMapping('name'),
   AlternateName: translatableAttributeMapping('alternateName', { language: 'en' }),
   Address: attributeMapping('stringAttributes', 'address/street'),
-  City: attributeMapping('stringAttributes', 'address/city'),
-  StateProvince: attributeMapping('stringAttributes', 'address/province'),
+  City: attributeMapping('stringAttributes', 'address/city', {
+    value: ({ currentValue, rootResource }) =>
+      [
+        (rootResource as UschExpandedResource).Country,
+        (rootResource as UschExpandedResource).StateProvince,
+        currentValue,
+      ].join('/'),
+    info: ({ currentValue, rootResource }) => ({
+      country: (rootResource as UschExpandedResource).Country,
+      stateProvince: lookupUsStateNameFromCode(rootResource as UschExpandedResource),
+      name: currentValue,
+    }),
+  }),
+  StateProvince: attributeMapping('stringAttributes', 'address/province', {
+    value: ({ currentValue, rootResource }) =>
+      `${(rootResource as UschExpandedResource).Country}/${currentValue}`,
+    info: ({ rootResource }) => ({
+      country: (rootResource as UschExpandedResource).Country,
+      name: lookupUsStateNameFromCode(rootResource as UschExpandedResource),
+    }),
+  }),
   PostalCode: attributeMapping('stringAttributes', 'address/postalCode'),
   Country: attributeMapping('stringAttributes', 'address/country'),
   HoursOfOperation: translatableAttributeMapping('hoursOfOperation'),
@@ -188,10 +311,159 @@ export const USCH_MAPPING_NODE: MappingNode = {
   },
   Coverage: {
     children: {
-      '{coverageIndex}': translatableAttributeMapping('coverage/{coverageIndex}', {
-        value: ({ currentValue }) => currentValue,
-        language: 'en',
-      }),
+      '{coverageIndex}': {
+        mappings: [
+          translatableAttributeMapping('coverage/{coverageIndex}', {
+            value: ({ currentValue }) => {
+              const [countryOrState] = currentValue.toString().split(/\s+-\s+/);
+
+              if (isUSStateOrTerritory(countryOrState)) {
+                return `United States/${currentValue.replaceAll(/\s+-\s+/g, '/')}`;
+              } else {
+                return `${currentValue.replaceAll(/\s+-\s+/g, '/')}`;
+              }
+            },
+            info: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity, internationalCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                return {
+                  country: 'United States',
+                  stateProvince:
+                    US_STATE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState,
+                  city: provinceOrCity,
+                  name: currentValue,
+                };
+              } else if (isCanadianProvince(countryOrState)) {
+                return {
+                  country: 'Canada',
+                  stateProvince:
+                    CANADIAN_PROVINCE_CODE_MAPPING[countryOrState ?? ''] ??
+                    countryOrState,
+                  city: provinceOrCity,
+                  name: currentValue,
+                };
+              } else {
+                return {
+                  country: countryOrState,
+                  stateProvince: provinceOrCity,
+                  city: internationalCity,
+                  name: currentValue,
+                };
+              }
+            },
+            language: 'en',
+          }),
+          // Not using coverage/country because that makes things bessy with root coverage values
+          translatableAttributeMapping('coverageCountry/{coverageIndex}', {
+            value: ({ currentValue }) => {
+              const [countryOrState] = currentValue.toString().split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                return 'United States';
+              } else if (isCanadianProvince(countryOrState)) {
+                return 'Canada';
+              } else {
+                return countryOrState;
+              }
+            },
+            language: 'en',
+          }),
+          // Not using coverage/province because that makes things bessy with root coverage values
+          translatableAttributeMapping('coverageStateProvince/{coverageIndex}', {
+            value: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                return `United States/${countryOrState}`;
+              } else if (isCanadianProvince(countryOrState)) {
+                return `Canada/${countryOrState}`;
+              } else if (provinceOrCity) {
+                return `${countryOrState}/${provinceOrCity}`;
+              } else return '';
+            },
+            info: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                const stateProvince =
+                  US_STATE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
+                return {
+                  country: 'United States',
+                  stateProvince,
+                  name: stateProvince,
+                };
+              } else if (isCanadianProvince(countryOrState)) {
+                const stateProvince =
+                  CANADIAN_PROVINCE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
+                return {
+                  country: 'Canada',
+                  stateProvince,
+                  name: stateProvince,
+                };
+              } else if (provinceOrCity) {
+                return {
+                  country: countryOrState,
+                  stateProvince: provinceOrCity,
+                  name: provinceOrCity,
+                };
+              } else return null;
+            },
+            language: 'en',
+          }),
+          // Not using coverage/city because that makes things messy with root coverage values
+          translatableAttributeMapping('coverageCity/{coverageIndex}', {
+            value: ({ currentValue }) => {
+              const [countryOrState, provinceOrCity, internationalCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                return `United States/${countryOrState}/${provinceOrCity}`;
+              } else if (isCanadianProvince(countryOrState)) {
+                return `Canada/${countryOrState}/${provinceOrCity}`;
+              } else if (internationalCity) {
+                return `${countryOrState}/${provinceOrCity}/${internationalCity}`;
+              } else return '';
+            },
+            info: ({ currentValue, rootResource }) => {
+              const [countryOrState, provinceOrCity, internationalCity] = currentValue
+                .toString()
+                .split(/\s+-\s+/);
+              if (isUSStateOrTerritory(countryOrState)) {
+                const stateProvince =
+                  US_STATE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
+                return {
+                  country: 'United States',
+                  stateProvince,
+                  city: provinceOrCity,
+                  name: provinceOrCity,
+                };
+              } else if (isCanadianProvince(rootResource.Country)) {
+                const stateProvince =
+                  CANADIAN_PROVINCE_CODE_MAPPING[countryOrState ?? ''] ?? countryOrState;
+                return {
+                  country: 'Canada',
+                  stateProvince,
+                  city: provinceOrCity,
+                  name: provinceOrCity,
+                };
+              } else if (internationalCity) {
+                return {
+                  country: countryOrState,
+                  stateProvince: provinceOrCity,
+                  city: internationalCity,
+                  name: internationalCity,
+                };
+              } else {
+                return null;
+              }
+            },
+            language: 'en',
+          }),
+        ],
+      },
     },
   },
   Comment: translatableAttributeMapping('comment', { language: 'en' }),

@@ -18,12 +18,16 @@ import { IRouter, Router } from 'express';
 import { resourceService } from './resourceService';
 import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
-import { getDistinctStringAttributes } from './resourceDataAccess';
 
 const resourceRoutes = () => {
   const router: IRouter = Router();
 
-  const { getResource, searchResources, getResourceTermSuggestions } = resourceService();
+  const {
+    getResource,
+    searchResources,
+    getResourceTermSuggestions,
+    getDistinctResourceStringAttributes,
+  } = resourceService();
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(
@@ -63,8 +67,9 @@ const resourceRoutes = () => {
     res.json(suggestions);
   });
 
-  router.get('/list-string-attributes', async (req, res) => {
-    const { key, language } = req.query;
+  const listStringAttributesHandler = async (req: any, res: any) => {
+    const { key: queryKey, language, valueStartsWith, allowDescendantKeys } = req.query;
+    const key = req.params[0] || queryKey;
 
     if (!key || typeof key !== 'string') {
       res.status(400).json({
@@ -80,14 +85,19 @@ const resourceRoutes = () => {
       return;
     }
 
-    const attributes = await getDistinctStringAttributes(
+    const attributes = await getDistinctResourceStringAttributes(
       <AccountSID>req.hrmAccountId,
       key,
       language,
+      valueStartsWith,
+      allowDescendantKeys?.toLowerCase() === 'true',
     );
 
     res.json(attributes);
-  });
+  };
+
+  router.get('/list-string-attributes/*', listStringAttributesHandler);
+  router.get('/list-string-attributes', listStringAttributesHandler);
 
   return router;
 };
