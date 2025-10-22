@@ -18,12 +18,16 @@ import { IRouter, Router } from 'express';
 import { resourceService } from './resourceService';
 import { AccountSID } from '@tech-matters/types';
 import createError from 'http-errors';
-import { getDistinctStringAttributes } from './resourceService';
 
 const resourceRoutes = () => {
   const router: IRouter = Router();
 
-  const { getResource, searchResources, getResourceTermSuggestions } = resourceService();
+  const {
+    getResource,
+    searchResources,
+    getResourceTermSuggestions,
+    getDistinctResourceStringAttributes,
+  } = resourceService();
 
   router.get('/resource/:resourceId', async (req, res) => {
     const referrableResource = await getResource(
@@ -81,7 +85,7 @@ const resourceRoutes = () => {
       return;
     }
 
-    const attributes = await getDistinctStringAttributes(
+    const attributes = await getDistinctResourceStringAttributes(
       <AccountSID>req.hrmAccountId,
       key,
       language,
