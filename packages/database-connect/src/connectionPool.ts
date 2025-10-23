@@ -24,6 +24,9 @@ export type ConnectionConfig = {
   applicationName: string;
   database: string;
   poolSize?: number;
+  connectionTimeoutMillis?: number;
+  statement_timeout?: number;
+  query_timeout?: number;
 };
 
 export const pgp = pgPromise({});
@@ -36,6 +39,9 @@ export const connectToPostgres = ({
   applicationName,
   database,
   poolSize = 10,
+  connectionTimeoutMillis,
+  query_timeout,
+  statement_timeout,
 }: ConnectionConfig) =>
   pgp({
     host,
@@ -45,6 +51,9 @@ export const connectToPostgres = ({
     application_name: applicationName,
     port: typeof port === 'string' ? parseInt(port) : port,
     max: poolSize,
+    connectionTimeoutMillis,
+    query_timeout,
+    statement_timeout,
   });
 
 const { builtins } = pgp.pg.types;
