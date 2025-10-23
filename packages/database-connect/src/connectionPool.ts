@@ -51,9 +51,9 @@ export const connectToPostgres = ({
     application_name: applicationName,
     port: typeof port === 'string' ? parseInt(port) : port,
     max: poolSize,
-    connectionTimeoutMillis,
-    query_timeout,
-    statement_timeout,
+    ...(connectionTimeoutMillis && { connectionTimeoutMillis }),
+    ...(query_timeout && { query_timeout }),
+    ...(statement_timeout && { connectionTimeoutMillis }),
   });
 
 const { builtins } = pgp.pg.types;
