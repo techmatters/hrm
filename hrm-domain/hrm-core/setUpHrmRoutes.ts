@@ -22,7 +22,6 @@ import {
   getAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
-import { getDbForAccount } from './dbConnection';
 
 export const setUpHrmRoutes = (
   webServer: Express,
@@ -30,28 +29,6 @@ export const setUpHrmRoutes = (
   rules: Permissions,
 ) => {
   const authorizationMiddleware = getAuthorizationMiddleware(authSecretsLookup);
-  webServer.use(
-    `/v0/accounts/:accountSid/test-connection-quick`,
-    addAccountSidMiddleware,
-    authorizationMiddleware,
-    async (req, res) => {
-      const db = await getDbForAccount(req.hrmAccountId);
-      const result = await db.any('SELECT pg_sleep(10)');
-      console.log('>>>> result', result);
-      res.json(result);
-    },
-  );
-  webServer.use(
-    `/v0/accounts/:accountSid/test-connection`,
-    addAccountSidMiddleware,
-    authorizationMiddleware,
-    async (req, res) => {
-      const db = await getDbForAccount(req.hrmAccountId);
-      const result = await db.any('SELECT pg_sleep(600)');
-      console.log('>>>> result', result);
-      res.json(result);
-    },
-  );
   HRM_ROUTES.forEach(({ path }) => {
     webServer.use(
       `/v0/accounts/:accountSid${path}`,
