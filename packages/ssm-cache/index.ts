@@ -59,31 +59,20 @@ const getSsmConfig = () => {
 
 let ssm: SSMClient;
 
-export type SsmCacheParameter = {
-  value: string;
-  expiryDate: Date;
-};
-
-export type SsmCache = {
-  values: Record<string, SsmCacheParameter | undefined>;
-  expiryDate?: Date;
-  cacheDurationMilliseconds: number;
-};
-
-export const ssmCache: SsmCache = {
-  values: {},
-  cacheDurationMilliseconds: 3600000,
-};
-
 export class SsmParameterNotFound extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(parameterName: string, cause?: ParameterNotFound) {
+    super(`SSM parameter ${parameterName} not found in parameter store`);
 
     // see: https://github.com/microsoft/TypeScript/wiki/FAQ#why-doesnt-extending-built-ins-like-error-array-and-map-work
     Object.setPrototypeOf(this, SsmParameterNotFound.prototype);
     this.name = 'SsmParameterNotFound';
+    this.parameterName = parameterName;
+    this.cause = cause;
   }
+
+  public parameterName: string;
 }
+
 export class SsmParameterAlreadyExists extends Error {
   constructor(message: string) {
     super(message);
@@ -93,6 +82,24 @@ export class SsmParameterAlreadyExists extends Error {
     this.name = 'SsmParameterAlreadyExists';
   }
 }
+
+export type SsmCacheParameter = {
+  value: string | Error;
+  expiryDate: Date;
+};
+
+export type SsmCache = {
+  values: Record<string, SsmCacheParameter | undefined>;
+  expiryDate?: Date;
+  cacheDurationMilliseconds: number;
+  errorCacheDurationMilliseconds: number;
+};
+
+export const ssmCache: SsmCache = {
+  values: {},
+  cacheDurationMilliseconds: 3600000,
+  errorCacheDurationMilliseconds: 60 * 1000 * 5, // 5 minutes,
+};
 
 export const hasParameterExpired = (parameter: SsmCacheParameter | undefined) => {
   return !!(parameter?.expiryDate && new Date() > parameter.expiryDate);
@@ -129,6 +136,13 @@ export const addToCache = (regex: RegExp | undefined, { Name, Value }: SsmParame
   };
 };
 
+export const addErrorToCache = (parameterName: string, errorToCache: Error) => {
+  ssmCache.values[parameterName] = {
+    value: errorToCache,
+    expiryDate: new Date(Date.now() + ssmCache.errorCacheDurationMilliseconds),
+  };
+};
+
 export const loadParameter = async (name: string) => {
   const params = {
     Name: name,
@@ -138,15 +152,16 @@ export const loadParameter = async (name: string) => {
   const command = new GetParameterCommand(params);
   try {
     const { Parameter } = await getSsmClient().send(command);
-    if (!Parameter?.Name) {
-      return;
+    if (Parameter?.Name) {
+      addToCache(undefined, Parameter);
+    } else {
+      addErrorToCache(
+        name,
+        new Error(`Invalid parameter returned looking up ${name}: ${Parameter}`),
+      );
     }
-    addToCache(undefined, Parameter);
   } catch (e) {
-    if (e instanceof ParameterNotFound) {
-      return;
-    }
-    throw e;
+    addErrorToCache(name, e as Error);
   }
 };
 
@@ -164,11 +179,14 @@ export const getSsmParameter = async (
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
 
   // If the cache still doesn't have the requested parameter, throw an error
+  // Shouldn't happen, an error should be cached here from a previous attempt if not found
   if (!parameterExistsInCache(name)) {
-    throw new SsmParameterNotFound(`Parameter ${name} not found`);
+    throw new SsmParameterNotFound(name);
   }
-
-  return ssmCache.values[name]?.value || '';
+  const value = ssmCache.values[name]?.value || '';
+  if (value instanceof ParameterNotFound) throw new SsmParameterNotFound(name, value);
+  if (value instanceof Error) throw value;
+  return value;
 };
 
 export const putSsmParameter = async (

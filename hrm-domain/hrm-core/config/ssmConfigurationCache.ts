@@ -14,7 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { loadSsmCache as loadSsmCacheRoot, ssmCache } from '@tech-matters/ssm-cache';
+import {
+  loadSsmCache as loadSsmCacheRoot,
+  getSsmParameter,
+} from '@tech-matters/ssm-cache';
 
 import env from 'dotenv';
 
@@ -52,15 +55,16 @@ export const getFromSSMCache = async (accountSid: string) => {
   // does nothing if cache is still valid
   await loadSsmCache();
 
+  // Should be cached already
   return {
-    staticKey:
-      ssmCache.values[`/${process.env.NODE_ENV}/twilio/${accountSid}/static_key`]
-        ?.value || '',
-    authToken:
-      ssmCache.values[`/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`]
-        ?.value || '',
-    permissionConfig:
-      ssmCache.values[`/${process.env.NODE_ENV}/config/${accountSid}/permission_config`]
-        ?.value || '',
+    staticKey: await getSsmParameter(
+      `/${process.env.NODE_ENV}/twilio/${accountSid}/static_key`,
+    ),
+    authToken: await getSsmParameter(
+      `/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`,
+    ),
+    permissionConfig: await getSsmParameter(
+      `/${process.env.NODE_ENV}/config/${accountSid}/permission_config`,
+    ),
   };
 };
