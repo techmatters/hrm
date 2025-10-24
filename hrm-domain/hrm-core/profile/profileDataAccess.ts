@@ -70,7 +70,7 @@ import type {
   ProfileFlag,
   ProfileSection,
 } from '@tech-matters/hrm-types';
-import { getDbForAccount, pgp } from '../dbConnection';
+import { getDbForAccount, getDbForAdmin, pgp } from '../dbConnection';
 import QueryStream from 'pg-query-stream';
 import { getProfilesToRenotifySql } from './sql/profileRenotifyStreamSql';
 
@@ -535,7 +535,7 @@ export const streamProfileForRenotifying = async ({
     batchSize,
   });
   console.debug('qs:', qs);
-  const db = await getDbForAccount(accountSid);
+  const db = await Promise.resolve(getDbForAdmin());
   // Expose the readable stream to the caller as a promise for further pipelining
   console.debug('db:', db);
   return new Promise(resolve => {

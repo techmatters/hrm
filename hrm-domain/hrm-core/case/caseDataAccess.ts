@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getDbForAccount, pgp } from '../dbConnection';
+import { getDbForAccount, getDbForAdmin, pgp } from '../dbConnection';
 import { getPaginationElements } from '../search';
 import { PATCH_CASE_INFO_BY_ID, updateByIdSql } from './sql/caseUpdateSql';
 import {
@@ -302,7 +302,7 @@ export const streamCasesForRenotifying = async ({
     },
   );
 
-  const db = await getDbForAccount(accountSid);
+  const db = await Promise.resolve(getDbForAdmin());
   // Expose the readable stream to the caller as a promise for further pipelining
   return new Promise(resolve => {
     db.stream(qs, resultStream => {

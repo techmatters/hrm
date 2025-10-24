@@ -131,6 +131,9 @@ export const connectToPostgresWithDynamicUser = (
         user,
         password,
         poolSize: 5,
+        connectionTimeoutMillis: 10000, // 10s: fail if can't connect
+        statementTimeoutMillis: 120000, // 120s: server fail if query takes longer
+        queryTimeoutMillis: 150000, // 150s: client fail if query takes longer
       });
     }
     return connectionPoolMap[dynamicUserKey];

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getDbForAccount, pgp } from '../dbConnection';
+import { getDbForAccount, getDbForAdmin, pgp } from '../dbConnection';
 import {
   selectContactsByProfileId,
   getContactsByIds,
@@ -327,7 +327,7 @@ export const streamContactsAfterNotified = ({
   );
   // Expose the readable stream to the caller as a promise for further pipelining
   return new Promise(resolve => {
-    getDbForAccount(accountSid).then(db =>
+    Promise.resolve(getDbForAdmin()).then(db =>
       db.stream(qs, resultStream => {
         resolve(resultStream);
       }),

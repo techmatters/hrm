@@ -17,7 +17,7 @@
 import { HrmAccountId } from '@tech-matters/types';
 import QueryStream from 'pg-query-stream';
 import ReadableStream = NodeJS.ReadableStream;
-import { getDbForAccount, pgp } from '@tech-matters/hrm-core/dbConnection';
+import { getDbForAdmin, pgp } from '@tech-matters/hrm-core/dbConnection';
 
 const HIGH_WATER_MARK = 1000;
 
@@ -58,7 +58,7 @@ export const streamTrainingSetContacts = async (
 
   const qs = new QueryStream(formattedQuery, [], { highWaterMark: HIGH_WATER_MARK });
   // Expose the readable stream to the caller as a promise for further pipelining
-  const db = await getDbForAccount(accountSid);
+  const db = await Promise.resolve(getDbForAdmin());
   return new Promise((resolve, reject) => {
     db.stream(qs, resultStream => {
       resolve(resultStream);
