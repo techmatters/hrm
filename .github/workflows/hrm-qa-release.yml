@@ -98,7 +98,7 @@ jobs:
 
       # Upload artifacts
       # TODO: this is not working and cant tell why :(
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: ${{ always() }}
         with:
           name: test-artifacts
