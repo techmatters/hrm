@@ -15,10 +15,11 @@
  */
 
 import type { AccountSID } from '@tech-matters/types';
-import type { FlatResource } from '@tech-matters/resources-types';
+import { FlatResource, ReferrableResourceAttribute } from '@tech-matters/resources-types';
 
 import { db } from '../connection-pool';
 import {
+  SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_FROM_DESCENDANT_KEYS_SQL,
   SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL,
   SELECT_RESOURCE_IN_IDS,
 } from './sql/resourceGetSql';
@@ -52,17 +53,32 @@ export const getByIdList = async (
   return res;
 };
 
-export const getDistinctStringAttributes = async (
-  accountSid: AccountSID,
-  key: string,
-  language: string | undefined,
-): Promise<string[]> => {
-  const res = await db.task(async t =>
-    t.manyOrNone(SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL, {
-      accountSid,
-      key,
-      language: language || undefined, // Ensure any falsy value is converted to undefined so to be NULL for the query
-    }),
+export const getDistinctStringAttributes = async ({
+  accountSid,
+  key,
+  language,
+  valueStartsWith,
+  allowDescendantKeys,
+}: {
+  accountSid: AccountSID;
+  key: string;
+  language: string | undefined;
+  valueStartsWith: string | undefined;
+  allowDescendantKeys: boolean;
+}): Promise<ReferrableResourceAttribute<string>[]> => {
+  const res: ReferrableResourceAttribute<string>[] = await db.task(async t =>
+    t.manyOrNone(
+      allowDescendantKeys
+        ? SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_FROM_DESCENDANT_KEYS_SQL
+        : SELECT_DISTINCT_RESOURCE_STRING_ATTRIBUTES_SQL,
+      {
+        accountSid,
+        key,
+        keyLikePattern: `${key}${key.endsWith('/') ? '' : '/'}%`,
+        language: language || undefined, // Ensure any falsy value is converted to undefined so to be NULL for the query
+        valueLikePattern: valueStartsWith ? `${valueStartsWith}%` : undefined,
+      },
+    ),
   );
   console.debug(
     `Retrieved ${res.length} distinct attributes from key ${key}, language ${language}'`,
