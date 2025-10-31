@@ -340,12 +340,7 @@ export const patchContact = async (
   updatedBy: TwilioUserIdentifier,
   finalize: boolean,
   contactId: string,
-  {
-    referrals,
-    rawJson,
-    definitionVersion: definitionVersionFromPatch,
-    ...restOfPatch
-  }: PatchPayload,
+  { referrals, rawJson, definitionVersion, ...restOfPatch }: PatchPayload,
   { can, user }: { can: InitializedCan; user: TwilioUser },
   skipSearchIndex = false,
 ): Promise<Contact> => {
@@ -365,7 +360,6 @@ export const patchContact = async (
       }
     }
 
-    let definitionVersion = definitionVersionFromPatch || rawJson?.definitionVersion;
     if (!definitionVersion) {
       const contactRecord = await getById(accountSid, parseInt(contactId));
       definitionVersion = contactRecord.definitionVersion;
