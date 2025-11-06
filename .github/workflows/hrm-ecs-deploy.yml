@@ -98,7 +98,7 @@ jobs:
 
   deploy_job_processor:
     needs: build_docker
-    name: Deploy to Amazon ECS
+    name: Deploy Job Processing service to Amazon ECS
     runs-on: ubuntu-latest
 
     strategy:
@@ -145,8 +145,10 @@ jobs:
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
   deploy_api_service:
-    needs: deploy_job_processor
-    name: Deploy to Amazon ECS
+    needs:
+      - build_docker
+      - deploy_job_processor
+    name: Deploy HTTP service to Amazon ECS
     runs-on: ubuntu-latest
 
     strategy:
@@ -192,7 +194,9 @@ jobs:
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
   deploy_scheduled_tasks:
-    needs: deploy_job_processor
+    needs:
+      - build_docker
+      - deploy_job_processor
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
 
