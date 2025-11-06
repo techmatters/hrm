@@ -104,10 +104,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
+        region: ${{ fromJson(needs.build_docker.outputs.regions) }}
 
     env:
-      DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
+      DOCKER_IMAGE: ${{ needs.build_docker.outputs.docker_image }}
 
     steps:
       - name: Download artifacts
@@ -152,10 +152,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
+        region: ${{ fromJson(needs.build_docker.outputs.regions) }}
 
     env:
-      DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
+      DOCKER_IMAGE: ${{ needs.build_docker.outputs.docker_image }}
 
     steps:
       - name: Download artifacts
@@ -199,10 +199,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
+        region: ${{ fromJson(needs.build_docker.outputs.regions) }}
 
     env:
-      DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
+      DOCKER_IMAGE: ${{ needs.build_docker.outputs.docker_image }}
 
     steps:
       - name: Download artifacts
@@ -253,10 +253,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        region: ${{ fromJson(needs.deploy_docker.outputs.regions) }}
+        region: ${{ fromJson(needs.build_docker.outputs.regions) }}
 
     env:
-      DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
+      DOCKER_IMAGE: ${{ needs.build_docker.outputs.docker_image }}
 
     steps:
       - name: Download artifacts
