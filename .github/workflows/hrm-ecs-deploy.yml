@@ -144,6 +144,7 @@ jobs:
           service: ${{ inputs.environment }}-job-processor
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
+          tags: Environment:${{ inputs.environment }}
 
       - name: Download current ECS task definition for the api service
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
@@ -163,6 +164,7 @@ jobs:
           service: ${{ inputs.environment }}-ecs-service
           cluster: ${{ inputs.environment }}-ecs-cluster
           wait-for-service-stability: true
+          tags: Environment:${{ inputs.environment }}
 
       - name: Download current ECS task definition for scheduled tasks
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task --query taskDefinition > task-definition-hrm-scheduled-task.json
