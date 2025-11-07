@@ -248,6 +248,7 @@ jobs:
           ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-scheduled-task" "${{ steps.scheduled-task-definition.outputs.task-definition-arn }}"
   notify:
     needs:
+      - build_docker
       - deploy_api_service
       - deploy_job_processor
       - deploy_scheduled_tasks
