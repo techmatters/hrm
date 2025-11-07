@@ -19,6 +19,7 @@ import {
   SSMClient,
   GetParameterCommand,
   GetParametersByPathCommand,
+  ParameterNotFound,
 } from '@aws-sdk/client-ssm';
 import { mockClient } from 'aws-sdk-client-mock';
 import * as SsmCache from '../../index';
@@ -73,6 +74,7 @@ describe('getSsmParameter', () => {
   beforeEach(() => {
     // Reset to default
     SsmCache.ssmCache.values = {};
+    jest.clearAllMocks();
   });
   it('should return the value of a parameter', async () => {
     const ssmParam = {
@@ -112,7 +114,7 @@ describe('getSsmParameter', () => {
       ssmParam.Value,
     );
 
-    expect(loadParameterSpy).toHaveBeenCalledTimes(2);
+    expect(loadParameterSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should reload parameter after it is expired', async () => {
@@ -133,7 +135,7 @@ describe('getSsmParameter', () => {
       ssmParams[0].Value,
     );
 
-    expect(loadParameterSpy).toHaveBeenCalledTimes(3);
+    expect(loadParameterSpy).toHaveBeenCalledTimes(1);
 
     const newSsmParam = {
       Name: '/test/param',
@@ -148,7 +150,50 @@ describe('getSsmParameter', () => {
       newSsmParam.Value,
     );
 
-    expect(loadParameterSpy).toHaveBeenCalledTimes(4);
+    expect(loadParameterSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should cache not found errors for the duration specified in errorCacheDurationMilliseconds', async () => {
+    const loadParameterSpy = jest.spyOn(SsmCache, 'loadParameter');
+    const originalErrorCacheDurationMilliseconds =
+      SsmCache.ssmCache.errorCacheDurationMilliseconds;
+    try {
+      SsmCache.ssmCache.errorCacheDurationMilliseconds = -1000;
+
+      // Mock initial ssm params
+      const ssmParam = {
+        Name: '/test/param',
+        Value: 'value',
+      };
+      const notFoundError = new ParameterNotFound({ message: 'BONK!', $metadata: {} });
+      mockSSMClient
+        .on(GetParameterCommand, { Name: ssmParam.Name })
+        .rejects(notFoundError);
+
+      await expect(SsmCache.getSsmParameter(ssmParam.Name)).rejects.toThrow();
+
+      expect(loadParameterSpy).toHaveBeenCalledTimes(1);
+
+      await expect(SsmCache.getSsmParameter(ssmParam.Name)).rejects.toThrow();
+
+      expect(loadParameterSpy).toHaveBeenCalledTimes(2);
+
+      SsmCache.ssmCache.errorCacheDurationMilliseconds =
+        originalErrorCacheDurationMilliseconds;
+
+      delete SsmCache.ssmCache.values[ssmParam.Name];
+
+      await expect(SsmCache.getSsmParameter(ssmParam.Name)).rejects.toThrow();
+
+      expect(loadParameterSpy).toHaveBeenCalledTimes(3);
+
+      await expect(SsmCache.getSsmParameter(ssmParam.Name)).rejects.toThrow();
+
+      expect(loadParameterSpy).toHaveBeenCalledTimes(3);
+    } finally {
+      SsmCache.ssmCache.errorCacheDurationMilliseconds =
+        originalErrorCacheDurationMilliseconds;
+    }
   });
 });
 
