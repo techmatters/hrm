@@ -16,7 +16,7 @@
 
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 import { getFromSSMCache } from './ssmConfigurationCache';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getSsmParameter, SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 const lookupLocalOverride = (overrideEnvVarName: string, key: string) => {
   console.debug(
@@ -53,11 +53,22 @@ const staticKeyLookup = async (keyName: string) => {
   if (localOverride) {
     return localOverride;
   }
-  return getSsmParameter(
-    `/${process.env.NODE_ENV}/hrm/service/${
-      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/static_key/${keyName}`,
-  );
+  try {
+    return await getSsmParameter(
+      `/${process.env.NODE_ENV}/hrm/service/${
+        process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+      }/static_key/${keyName}`,
+    );
+  } catch (error) {
+    // Fall back to the auth token if the internal API static key hasn't been set up, because at the point of switchover, they are the same
+    // Remove when a terraform apply has been done for all accounts
+    if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
+      console.warn(
+        `Internal API key not set up for ${keyName} yet, looking for twilio auth token`,
+      );
+      return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/auth_token`);
+    } else throw error;
+  }
 };
 
 export const defaultAuthSecretsLookup: AuthSecretsLookup = {
