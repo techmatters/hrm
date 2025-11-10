@@ -60,13 +60,12 @@ const staticKeyLookup = async (keyName: string) => {
       }/static_key/${keyName}`,
     );
   } catch (error) {
-    // Fall back to the auth token if the internal API static key hasn't been set up, because at the point of switchover, they are the same
     // Remove when a terraform apply has been done for all accounts
     if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
       console.warn(
-        `Internal API key not set up for ${keyName} yet, looking for twilio auth token`,
+        `New internal API key not set up for ${keyName} yet, looking for legacy key`,
       );
-      return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/auth_token`);
+      return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/static_key`);
     } else throw error;
   }
 };
