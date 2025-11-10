@@ -16,6 +16,7 @@
 
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 import { getFromSSMCache } from './ssmConfigurationCache';
+import { getSsmParameter, SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 const lookupLocalOverride = (overrideEnvVarName: string, key: string) => {
   console.debug(
@@ -46,14 +47,27 @@ const authTokenLookup = async (accountSid: string) => {
   return authToken;
 };
 
-const staticKeyLookup = async (keySuffix: string) => {
-  console.debug(`Looking up static key for '${keySuffix}'`);
-  const localOverride = lookupLocalOverride('STATIC_KEYS_LOCAL_OVERRIDE', keySuffix);
+const staticKeyLookup = async (keyName: string) => {
+  console.debug(`Looking up static key for '${keyName}'`);
+  const localOverride = lookupLocalOverride('STATIC_KEYS_LOCAL_OVERRIDE', keyName);
   if (localOverride) {
     return localOverride;
   }
-  const { staticKey } = await getFromSSMCache(keySuffix);
-  return staticKey;
+  try {
+    return await getSsmParameter(
+      `/${process.env.NODE_ENV}/hrm/service/${
+        process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+      }/static_key/${keyName}`,
+    );
+  } catch (error) {
+    // Remove when a terraform apply has been done for all accounts
+    if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
+      console.warn(
+        `New internal API key not set up for ${keyName} yet, looking for legacy key`,
+      );
+      return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/static_key`);
+    } else throw error;
+  }
 };
 
 export const defaultAuthSecretsLookup: AuthSecretsLookup = {
