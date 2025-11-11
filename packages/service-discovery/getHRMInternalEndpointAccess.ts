@@ -98,7 +98,6 @@ export const getHRMInternalEndpointAccess = async ({
     RoleArn: string;
     RoleSessionName: string;
   };
-  staticKeyPattern: RegExp;
 }) => {
   const sts = new STS();
   const { Credentials } = await sts.assumeRole(assumeRoleParams).promise();
@@ -119,7 +118,7 @@ export const getHRMInternalEndpointAccess = async ({
   internalResourcesUrl!.port = '8081';
 
   const authKey = await getSsmParameter(
-    `/${environment}/hrm/service/${region}/static_key_admin_hrm`,
+    `/${environment}/hrm/service/${region}/static_key/ADMIN_HRM`,
   );
 
   return {
