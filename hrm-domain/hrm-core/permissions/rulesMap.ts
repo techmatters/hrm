@@ -21,6 +21,7 @@ const devRules = require('../permission-rules/dev.json');
 const e2eRules = require('../permission-rules/e2e.json');
 const brRules = require('../permission-rules/br.json');
 const caRules = require('../permission-rules/ca.json');
+const clhsRules = require('../permission-rules/clhs.json');
 const clRules = require('../permission-rules/cl.json');
 const coRules = require('../permission-rules/co.json');
 const etRules = require('../permission-rules/et.json');
@@ -254,6 +255,7 @@ const isValidTargetKindActions = (validated: { [k in Actions]: boolean }) =>
 const rulesMapDef = {
   br: brRules,
   ca: caRules,
+  clhs: clhsRules,
   cl: clRules,
   co: coRules,
   et: etRules,
