@@ -15,7 +15,7 @@
  */
 
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getAdminV0URL, staticKeyPattern } from '../../../hrmInternalConfig';
+import { getAdminV0URL } from '../../../hrmInternalConfig';
 
 export const command = 'list';
 export const describe = 'List the profile flags for the given account';
@@ -51,7 +51,6 @@ export const handler = async ({ region, environment, accountSid }) => {
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      staticKeyPattern,
       assumeRoleParams,
     });
 

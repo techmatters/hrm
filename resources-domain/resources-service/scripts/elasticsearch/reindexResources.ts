@@ -20,8 +20,6 @@ import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { AccountSID } from '@tech-matters/types';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 
-const staticKeyPattern = /^STATIC_KEY_SEARCH_REINDEXER=(?<key>.*)$/im;
-
 const reindexResources = async <T extends boolean>(
   internalResourcesUrl: URL,
   authKey: string,
@@ -112,7 +110,6 @@ const main = async () => {
   const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
     region,
     environment,
-    staticKeyPattern,
     assumeRoleParams,
   });
 
