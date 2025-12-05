@@ -41,6 +41,7 @@
     { "path": "hrm-domain/lambdas/export-json-writer" },
     { "path": "hrm-domain/hrm-core" },
     { "path": "hrm-domain/scheduled-tasks/contact-job-cleanup" },
+    { "path": "hrm-domain/scheduled-tasks/conversation-cleanup" },
     { "path": "hrm-domain/scheduled-tasks/case-status-transition" },
     { "path": "hrm-domain/scheduled-tasks/profile-flags-cleanup" },
     { "path": "hrm-domain/scheduled-tasks/transcript-scrubber" },

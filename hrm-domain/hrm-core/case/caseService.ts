@@ -47,7 +47,6 @@ import {
   hrmSearchConfiguration,
 } from '@tech-matters/hrm-search-config';
 import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
-import { enablePublishHrmSearchIndex } from '../featureFlags';
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
   CaseListCondition,
@@ -123,10 +122,6 @@ const doCaseChangeNotification =
     caseRecord?: CaseRecord;
   }) => {
     try {
-      if (!enablePublishHrmSearchIndex) {
-        return;
-      }
-
       const caseObj =
         caseRecord ?? (await getById(parseInt(caseId), accountSid, maxPermissions.user));
 

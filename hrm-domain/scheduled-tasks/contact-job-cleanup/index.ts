@@ -16,7 +16,7 @@
 
 import { ContactJobType } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getSsmParameter, SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import {
   ContactJob,
   deleteContactJob,
@@ -82,17 +82,27 @@ const deleteTranscript = async (job: RetrieveContactTranscriptJob): Promise<bool
   }
 
   await setContactJobCleanupActive(id);
+  const client = await getClient({ accountSid });
   try {
-    const client = await getClient({ accountSid });
-    await client.chat.v2
-      .services(job.resource.serviceSid)
-      .channels.get(job.resource.channelSid)
-      .remove();
+    await client.conversations.v1.conversations.get(job.resource.channelSid).remove();
   } catch (err) {
     if (err.status === 404) {
-      console.log(
-        `Channel ${channelSid} not found, assuming it has already been deleted`,
+      console.info(
+        `Conversation ${channelSid} not found, checking legacy chat API just in case.`,
       );
+      try {
+        await client.chat.v2
+          .services(job.resource.serviceSid)
+          .channels.get(job.resource.channelSid)
+          .remove();
+      } catch (chatError) {
+        if (err.status === 404) {
+          console.info(
+            `${channelSid} not found as a chat channel or conversation, assuming it has already been deleted`,
+          );
+          return true;
+        }
+      }
     } else {
       console.error(
         new ContactJobCleanupError(
@@ -118,9 +128,11 @@ const cleanupContactJob = async (job: ContactJob): Promise<void> => {
     if (!(await deleteTranscript(job))) return;
   }
 
-  const { accountSid, id } = job;
+  const { accountSid, id, jobType, contactId } = job;
   await deleteContactJob(accountSid, id);
-  console.log(`Successfully cleaned up contact job ${id}`);
+  console.info(
+    `Successfully cleaned up contact job ${id} (${jobType}) for contact ${contactId}`,
+  );
 };
 
 /**
@@ -137,10 +149,20 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
           `/${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days`,
         ),
       ) || MAX_CLEANUP_JOB_RETENTION_DAYS;
-  } catch (err) {
-    console.error(
-      `Error trying to fetch /${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days ${err}, using default`,
+    console.debug(
+      `SSM parameter for transcript retention days set to ${ssmRetentionDays} for account ${accountSid}, so using that`,
     );
+  } catch (err) {
+    if ((err as any) instanceof SsmParameterNotFound) {
+      console.debug(
+        `SSM parameter for transcript retention days not set for account ${accountSid}, so using default ${MAX_CLEANUP_JOB_RETENTION_DAYS}`,
+      );
+    } else {
+      console.error(
+        `Error trying to fetch /${process.env.NODE_ENV}/hrm/${accountSid}/transcript_retention_days ${err}, using default`,
+        err,
+      );
+    }
     ssmRetentionDays = MAX_CLEANUP_JOB_RETENTION_DAYS;
   }
 
@@ -159,10 +181,10 @@ export const cleanupContactJobs = async (): Promise<void> => {
   try {
     const accountSids = await getPendingCleanupJobAccountSids();
 
-    console.log(`Cleaning up contact jobs for accounts:`, accountSids);
+    console.info(`Cleaning up contact jobs for accounts:`, accountSids);
 
     for (const accountSid of accountSids) {
-      console.log(`Cleaning up contact jobs for account:`, accountSid);
+      console.info(`Cleaning up contact jobs for account:`, accountSid);
       const cleanupRetentionDays = await getCleanupRetentionDays(accountSid);
       const pendingJobs = await getPendingCleanupJobs(accountSid, cleanupRetentionDays);
 
@@ -171,7 +193,9 @@ export const cleanupContactJobs = async (): Promise<void> => {
           await cleanupContactJob(job);
         } catch (err) {
           console.error(
-            new ContactJobCleanupError(`Error processing job ${job.id}: ${err}`),
+            new ContactJobCleanupError(
+              `Error processing job ${job.id} (contact: ${job.contactId}): ${err}`,
+            ),
           );
         }
       }

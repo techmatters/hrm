@@ -14,13 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { handleSignals } from './handleSignals';
-import { cleanupContactJobs } from '@tech-matters/contact-job-cleanup';
-
-const gracefulExit = async () => {
-  //TODO: this should probably handle closing any running processes and open db connections
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+      reporters: ['default', 'jest-junit'],
+    }
+  );
 };
-
-cleanupContactJobs();
-
-handleSignals(gracefulExit);

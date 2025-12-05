@@ -70,7 +70,7 @@ beforeAll(async () => {
   process.env.TWILIO_AUTH_TOKEN = 'mockAuthToken';
   process.env.TWILIO_CLIENT_USE_ENV_AUTH_TOKEN = 'true';
   const client = await getClient({ accountSid });
-  twilioSpy = jest.spyOn(client.chat.v2, 'services');
+  twilioSpy = jest.spyOn(client.conversations.v1.conversations, 'get');
 
   await mockingProxy.start();
   const mockttp = await mockingProxy.mockttpServer();

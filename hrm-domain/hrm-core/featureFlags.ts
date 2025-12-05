@@ -13,15 +13,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-export const enableCleanupJobs = /^true$/i.test(process.env.ENABLE_CLEANUP_JOBS);
-export const enableProfileFlagsCleanup = /^true$/i.test(
-  process.env.ENABLE_PROFILE_FLAGS_CLEANUP,
-);
-export const enablePublishHrmSearchIndex = /^true$/i.test(
-  process.env.ENABLE_PUBLISH_HRM_SEARCH_INDEX,
-);
-export const enableSnsHrmSearchIndex = /^true$/i.test(
-  process.env.ENABLE_SNS_HRM_SEARCH_INDEX,
+export const enableConversationsCleanup = /^true$/i.test(
+  process.env.ENABLE_CONVERSATIONS_CLEANUP,
 );
 export const enableDbUserPerAccount = /^true$/i.test(
   process.env.ENABLE_DB_USER_PER_ACCOUNT,
