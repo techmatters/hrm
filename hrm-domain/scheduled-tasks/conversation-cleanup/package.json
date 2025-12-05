@@ -1,0 +1,21 @@
+{
+  "name": "@tech-matters/conversation-cleanup",
+  "version": "1.0.0",
+  "description": "The easiest way to run the tests locally is to run the test DB in docker.",
+  "scripts": {
+    "start": "cd dist && node ./index"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies" : {
+    "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/twilio-client": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
+    "date-fns": "^2.28.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
+  }
+}
