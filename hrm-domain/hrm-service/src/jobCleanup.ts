@@ -16,14 +16,11 @@
 
 import { handleSignals } from './handleSignals';
 import { cleanupContactJobs } from '@tech-matters/contact-job-cleanup';
-import { enableCleanupJobs } from '@tech-matters/hrm-core/featureFlags';
 
 const gracefulExit = async () => {
   //TODO: this should probably handle closing any running processes and open db connections
 };
 
-if (enableCleanupJobs) {
-  cleanupContactJobs();
+cleanupContactJobs();
 
-  handleSignals(gracefulExit);
-}
+handleSignals(gracefulExit);

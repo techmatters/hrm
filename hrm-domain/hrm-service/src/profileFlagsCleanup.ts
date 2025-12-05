@@ -15,15 +15,12 @@
  */
 
 import { handleSignals } from './handleSignals';
-import { enableProfileFlagsCleanup } from '@tech-matters/hrm-core/featureFlags';
 import { cleanupProfileFlags } from '@tech-matters/profile-flags-cleanup';
 
 const gracefulExit = async () => {
   //TODO: this should probably handle closing any running processes and open db connections
 };
 
-if (enableProfileFlagsCleanup) {
-  cleanupProfileFlags();
+cleanupProfileFlags();
 
-  handleSignals(gracefulExit);
-}
+handleSignals(gracefulExit);
