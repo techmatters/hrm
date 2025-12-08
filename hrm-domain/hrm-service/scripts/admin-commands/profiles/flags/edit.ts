@@ -15,7 +15,7 @@
  */
 
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getAdminV0URL, staticKeyPattern } from '../../../hrmInternalConfig';
+import { getAdminV0URL } from '../../../hrmInternalConfig';
 
 export const command = 'edit';
 export const describe = 'Edit an existing profile flag';
@@ -63,7 +63,6 @@ export const handler = async ({ region, environment, accountSid, flagId, name })
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      staticKeyPattern,
       assumeRoleParams,
     });
 

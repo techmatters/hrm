@@ -16,8 +16,6 @@
 
 import type { AccountSID } from '@tech-matters/types';
 
-export const staticKeyPattern = /^STATIC_KEY_ADMIN_HRM=(?<key>.*)$/im;
-
 export const getAdminV0URL = (
   internalResourcesUrl: URL,
   accountSid: AccountSID,
