@@ -59,7 +59,6 @@ import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referralService';
 import { createContactJob } from '../contact-job/contact-job';
-import { enablePublishHrmSearchIndex } from '../featureFlags';
 import {
   type ConversationMedia,
   type NewConversationMedia,
@@ -207,10 +206,6 @@ const doContactChangeNotification =
     contactId: Contact['id'];
   }) => {
     try {
-      if (!enablePublishHrmSearchIndex) {
-        return;
-      }
-
       const contact = await getById(accountSid, parseInt(contactId));
 
       if (contact) {

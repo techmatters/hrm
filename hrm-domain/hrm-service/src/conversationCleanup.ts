@@ -15,12 +15,17 @@
  */
 
 import { handleSignals } from './handleSignals';
-import { cleanupContactJobs } from '@tech-matters/contact-job-cleanup';
+import { cleanupConversations } from '@tech-matters/conversation-cleanup';
+import { enableConversationsCleanup } from '@tech-matters/hrm-core/featureFlags';
 
 const gracefulExit = async () => {
-  //TODO: this should probably handle closing any running processes and open db connections
+  //Only a Twilio and AWS client is used, so nothing to do here.
 };
 
-cleanupContactJobs();
+if (enableConversationsCleanup) {
+  cleanupConversations();
 
-handleSignals(gracefulExit);
+  handleSignals(gracefulExit);
+} else {
+  console.debug('enableCleanupJobs not set, skipping conversation cleanup.');
+}
