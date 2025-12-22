@@ -44,7 +44,7 @@ RUN rsync -a ${task_dir}/node_modules/ /var/task/node_modules; exit 0
 # The added layers from our build increase image size significantly. This flattens the image
 # to reduce the size of the final image.
 FROM crprivateaiprod.azurecr.io/deid:4.0.0-cpu-text AS final
-ENV NODE_VERSION=18.17.0
+ENV NODE_VERSION=22.20.0
 RUN apt install -y curl
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 ENV NVM_DIR=/root/.nvm
