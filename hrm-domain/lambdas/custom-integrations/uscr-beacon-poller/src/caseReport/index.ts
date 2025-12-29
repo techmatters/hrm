@@ -265,12 +265,17 @@ export const addCaseReportSectionsToAseloCase: ItemProcessor<
       }
     }
     const errors = (await Promise.all(results)).filter(isErr);
+
+    // If every error is 'warn', set the aggregate error as 'warn'. If there are any error level logs or ones where a level isn't specified, assume an error
+    const level = errors.find(err => isErr(err) && err.error.level !== 'warn')
+      ? 'error'
+      : 'warn';
     if (errors.length) {
       return newErr({
         message: 'Failed to add additional sections from case report to Aselo case',
         error: {
           type: 'AggregateError',
-          level: 'error',
+          level,
           lastUpdated: caseReportResult.unwrap(),
           errors,
         },

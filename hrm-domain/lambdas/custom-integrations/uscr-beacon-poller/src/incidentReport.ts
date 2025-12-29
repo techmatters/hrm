@@ -144,12 +144,16 @@ export const addIncidentReportSectionsToAseloCase: ItemProcessor<IncidentReport>
     const errors = [...responderResults, overviewPatchResult].filter(result =>
       isErr(result),
     );
+    // If every error is 'warn', set the aggregate error as 'warn'. If there are any error level logs or ones where a level isn't specified, assume an error
+    const level = errors.find(err => isErr(err) && err.error.level !== 'warn')
+      ? 'error'
+      : 'warn';
     if (errors.length) {
       return newErr({
         message: 'Failed to add responders from incident report to Aselo case',
         error: {
           type: 'AggregateError',
-          level: 'error',
+          level,
           lastUpdated: incidentReportResult.unwrap(),
           errors,
         },
