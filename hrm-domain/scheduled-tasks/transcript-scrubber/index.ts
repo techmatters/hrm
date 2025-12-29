@@ -45,7 +45,7 @@ const waitForPrivateAiToBeReady = async () => {
     if (Date.now() > timeoutTime) {
       throw new Error('Private AI did not start in time');
     }
-    console.log(
+    console.debug(
       `Waiting for ${Math.round(
         (Date.now() - timeoutTime) / 1000,
       )} more seconds for Private AI to be ready...`,
@@ -71,7 +71,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
     }),
   });
   const responsePayload = await response.json();
-  console.log('Response from PrivateAI:', response.status);
+  console.debug('Response from PrivateAI:', response.status);
   const results = responsePayload as { processed_text: string }[];
   const scrubbedKey = key.replace('transcripts', 'scrubbed-transcripts');
   const scrubbedMessages = transcript.messages.map((m, idx) => ({
@@ -93,7 +93,7 @@ const scrubS3Transcript = async (bucket: string, key: string) => {
 };
 
 const pollQueue = async (): Promise<boolean> => {
-  console.log('Polling queue', PENDING_TRANSCRIPT_SQS_QUEUE_URL);
+  console.info('Polling queue', PENDING_TRANSCRIPT_SQS_QUEUE_URL);
   const messagesPayload = await receiveSqsMessage({
     queueUrl: PENDING_TRANSCRIPT_SQS_QUEUE_URL,
   });
@@ -135,7 +135,7 @@ const pollQueue = async (): Promise<boolean> => {
           attemptResult: ContactJobAttemptResult.SUCCESS,
         }),
       });
-      console.log(
+      console.info(
         `Successfully scrubbed transcript: ${key}, scrubbed version at ${scrubbedKey}${key}, jobId: ${jobId} (attempt ${attemptNumber}), contact ${accountSid}/${contactId}`,
       );
     } catch (error) {
@@ -144,6 +144,7 @@ const pollQueue = async (): Promise<boolean> => {
       await sendSqsMessage({
         queueUrl: COMPLETED_TRANSCRIPT_SQS_QUEUE_URL,
         message: JSON.stringify({
+          ...parsedPendingMessage,
           attemptPayload: errorMessage,
           attemptResult: ContactJobAttemptResult.FAILURE,
         }),
@@ -168,7 +169,7 @@ export const executeTask = async () => {
       break;
     }
   }
-  console.log(`Processed ${processedMessages} messages this run`);
+  console.info(`Processed ${processedMessages} messages this run`);
 };
 
 executeTask().catch(console.error);
