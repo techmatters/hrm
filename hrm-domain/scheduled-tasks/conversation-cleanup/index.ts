@@ -99,11 +99,20 @@ const removeConversationsBySids = async (
       }
     }
     console.debug(`Removing conversation ${sid} from account ${accountSid}`);
-    const result = await twilioClient.conversations.v1.conversations.get(sid).remove();
-    if (result) {
-      console.debug(`Removed conversation ${sid} from account ${accountSid}`);
-    } else {
-      console.warn(`Failed to remove conversation ${sid} from account ${accountSid}`);
+    try {
+      const result = await twilioClient.conversations.v1.conversations.get(sid).remove();
+      if (result) {
+        console.debug(`Removed conversation ${sid} from account ${accountSid}`);
+      } else {
+        console.warn(
+          `Failed to remove conversation ${sid} from account ${accountSid}. Method returned false`,
+        );
+      }
+    } catch (err) {
+      console.warn(
+        `Failed to remove conversation ${sid} from account ${accountSid}. Error thrown:`,
+        err,
+      );
     }
   });
   return Promise.all(removePromises);
