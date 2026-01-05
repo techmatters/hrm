@@ -24,7 +24,7 @@ import type {
   PayloadsByAccountSid,
   PayloadsByIndex,
 } from './messagesToPayloads';
-import { type HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
+import { type HrmAccountId, newErr, newOkFromData, isErr } from '@tech-matters/types';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
 
 const handleIndexPayload =
@@ -89,6 +89,13 @@ const handleIndexPayload =
           const result = await client.deleteDocument({
             id: documentId.toString(),
           });
+
+          if (isErr(result)) {
+            // bubble error if it's different from "not found", ignore otherwise
+            if (result.extraProperties?.meta?.statusCode !== 404) {
+              result.unwrap();
+            }
+          }
 
           return {
             accountSid,

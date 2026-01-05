@@ -29,6 +29,7 @@ export type ErrorResult<TError> = ResultBase & {
   status: 'error';
   message: string;
   error: TError;
+  extraProperties?: Record<string, any>;
   readonly unwrap: () => never;
 };
 
