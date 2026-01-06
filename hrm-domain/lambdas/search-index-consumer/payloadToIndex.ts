@@ -94,7 +94,7 @@ const handleIndexPayload =
 
           if (isErr(result)) {
             // bubble error if it's different from "not found", ignore otherwise
-            if (result.extraProperties?.meta?.statusCode !== 404) {
+            if (result.extraProperties?.statusCode !== 404) {
               result.unwrap();
             }
           }
