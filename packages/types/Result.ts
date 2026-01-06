@@ -52,12 +52,14 @@ class ResultError<T extends ErrorResult<any>> extends Error {
 export const newErr = <TError>({
   message,
   error,
+  extraProperties,
 }: NewErrorResultParams<TError>): ErrorResult<TError> => {
   return {
     _tag: 'Result',
     status: 'error',
     message,
     error,
+    extraProperties,
     unwrap: function (this: ErrorResult<TError>) {
       throw new ResultError(this);
     },
