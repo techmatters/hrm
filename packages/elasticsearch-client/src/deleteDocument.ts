@@ -37,7 +37,6 @@ export const deleteDocument = async <T>({
 
     return newOk({ data: response });
   } catch (error) {
-    console.log('>>>>>> original error', JSON.stringify(error, null, 2));
     return newErr({
       error: 'DeleteDocumentError',
       message: error instanceof Error ? error.message : String(error),

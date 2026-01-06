@@ -90,8 +90,6 @@ const handleIndexPayload =
             id: documentId.toString(),
           });
 
-          console.log('>>>>>>>> delete document result', JSON.stringify(result, null, 2));
-
           if (isErr(result)) {
             // bubble error if it's different from "not found", ignore otherwise
             if (result.extraProperties?.statusCode !== 404) {
