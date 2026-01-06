@@ -12,19 +12,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-services:
-  db:
-    build: .
+FROM library/postgres:16.8
 
-    environment:
-      POSTGRES_USER: rdsadmin
-      POSTGRES_HOST_AUTH_METHOD: trust
-      POSTGRES_DB: hrmdb
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-16-pgaudit \
+    && rm -rf /var/lib/apt/lists/*
 
-    volumes:
-      - ./hrmdb.sql:/docker-entrypoint-initdb.d/hrmdb.sql
+EXPOSE 5432
 
-    command: ['postgres', '-c', 'log_statement=all']
-
-    ports:
-      - '5432:5432'
+CMD ["postgres", "-c", "shared_preload_libraries=pgaudit"]
