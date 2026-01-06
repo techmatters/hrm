@@ -41,10 +41,14 @@ const newContactRouter = (isPublic: boolean) => {
   if (isPublic) {
     contactsRouter.get('/byTaskSid/:taskSid', openEndpoint, async (req, res) => {
       const { hrmAccountId, user, can } = req;
-      const contact = await getContactByTaskId(hrmAccountId, req.params.taskSid, {
+      const { taskSid } = req.params;
+      const contact = await getContactByTaskId(hrmAccountId, taskSid, {
         can: req.can,
         user,
       });
+      console.info(
+        `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: Contact read by task sid, taskSid: ${taskSid}`,
+      );
       if (!contact || !can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
         throw createError(404);
       }
@@ -237,6 +241,10 @@ const newContactRouter = (isPublic: boolean) => {
     isPublic ? canPerformViewContactAction : openEndpoint,
     async (req, res) => {
       const { hrmAccountId, can, user } = req;
+
+      console.info(
+        `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: Contact read by task sid, taskSid: ${req.params.contactId}`,
+      );
       const contact = await getContactById(hrmAccountId, req.params.contactId, {
         can: req.can,
         user,

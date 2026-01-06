@@ -147,7 +147,10 @@ export const getContactById = async (
   contactId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
-  const contact = await getById(accountSid, parseInt(contactId));
+  console.info(
+    `[Data Access Audit] ${accountSid}: Contact read by ${userId}, id: ${contactId}`,
+  );
+  const contact = await getById(accountSid, parseInt(contactId), user.workerSid);
 
   return contact
     ? bindApplyTransformations(can, user)(contactRecordToContact(contact))
@@ -159,7 +162,7 @@ export const getContactByTaskId = async (
   taskId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
-  const contact = await getByTaskSid(accountSid, taskId);
+  const contact = await getByTaskSid(accountSid, taskId, user.workerSid);
 
   return contact
     ? bindApplyTransformations(can, user)(contactRecordToContact(contact))
@@ -356,7 +359,11 @@ export const patchContact = async (
     }
 
     if (!definitionVersion) {
-      const contactRecord = await getById(accountSid, parseInt(contactId));
+      const contactRecord = await getById(
+        accountSid,
+        user.workerSid,
+        parseInt(contactId),
+      );
       definitionVersion = contactRecord.definitionVersion;
     }
 
@@ -396,6 +403,7 @@ export const patchContact = async (
 
   return patched;
 };
+
 export const connectContactToCase = async (
   accountSid: HrmAccountId,
   contactId: string,
@@ -614,6 +622,9 @@ export const generalisedContactSearch = async (
 
     const contactIds = items.map(item => parseInt(item.id, 10));
 
+    console.info(
+      `[Data Access Audit] Account: ${accountSid}, User: ${user.workerSid}, Action: Contacts searched, contact ids: ${contactIds}`,
+    );
     const { contacts } = await searchContactsByIds(
       accountSid,
       { contactIds },
