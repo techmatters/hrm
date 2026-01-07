@@ -64,7 +64,7 @@ async function create() {
       lastErr = undefined;
       break;
     } catch (err) {
-      if (error.message?.toLowerCase?.includes('connect')) {
+      if (err.message?.toLowerCase?.includes('connect')) {
         console.debug(
           "Creation failed connecting to DB, assuming it's not ready yet & retrying...",
         );
