@@ -82,7 +82,7 @@ async function migrate() {
       console.info('Migration complete.', JSON.stringify(ret));
       break;
     } catch (err) {
-      if (err.message?.includes('ECONNRESET')) {
+      if (err.message?.includes('ConnectionRefusedError')) {
         console.debug(
           "Migration failed to connect to DB, assuming it's not ready yet & retrying...",
         );
