@@ -27,6 +27,6 @@
     "test:service:run": "jest --verbose --maxWorkers=1 --forceExit tests/service",
     "test:unit": "jest --verbose tests/unit",
     "test:service": "cd ./tests/service && docker compose up -d && cd ../../../../../hrm-service && cross-env POSTGRES_PORT=5433 npm run test:service:ci:migrate && cd ../lambdas/custom-integrations/uscr-beacon-poller && cross-env HRM_DATABASE_PORT=5433 npm run test:service:run && cd ./tests/service && docker compose down",
-    "test:service:ci": "cd ./tests/service && docker compose -f docker-compose-ci.yml up -d && cd ../../../../../hrm-service && npm run test:service:ci:migrate && cd ../lambdas/custom-integrations/uscr-beacon-poller && npm run test:service:run; cd ./tests/service && docker compose -f docker-compose-ci.yml down"
+    "test:service:ci": "run-s test:service"
   }
 }

@@ -64,10 +64,18 @@ async function create() {
       lastErr = undefined;
       break;
     } catch (err) {
-      console.log('Creation failed. Retrying...', err);
-      // eslint-disable-next-line @typescript-eslint/no-loop-func
-      await new Promise(resolve => setTimeout(resolve, 250));
-      lastErr = err;
+      if (
+        ['SequelizeConnectionRefusedError', 'SequelizeConnectionError'].includes(err.name)
+      ) {
+        console.debug(
+          "Creation failed to connect to DB, assuming it's not ready yet & retrying...",
+        );
+        // eslint-disable-next-line @typescript-eslint/no-loop-func
+        await new Promise(resolve => setTimeout(resolve, 250));
+        lastErr = err;
+      } else {
+        throw err;
+      }
     }
   }
 
