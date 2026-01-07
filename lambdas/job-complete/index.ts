@@ -19,9 +19,10 @@ import { CompletedJobProcessorError } from '@tech-matters/job-errors';
 // eslint-disable-next-line prettier/prettier
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 
-const processRecord = async ({ body, messageId, eventSource }: SQSRecord) => {
+const processRecord = async ({ body, messageId, eventSource, ...rest }: SQSRecord) => {
   try {
     console.log('Completed processing message:', messageId, eventSource);
+    console.log('Additional message info:', body, eventSource, rest);
     console.debug(`Message body:`, body);
   } catch (err) {
     console.error(new CompletedJobProcessorError('Failed to log completed record'), err);
