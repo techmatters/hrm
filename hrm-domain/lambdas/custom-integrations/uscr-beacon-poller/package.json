@@ -26,7 +26,7 @@
     "docker:build": "docker build -t uscr-beacon-poller --build-arg lambda_name=uscr-beacon-poller --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../",
     "test:service:run": "jest --verbose --maxWorkers=1 --forceExit tests/service",
     "test:unit": "jest --verbose tests/unit",
-    "test:service": "cd ./tests/service && docker compose up -d && cd ../../../../../hrm-service && cross-env POSTGRES_PORT=5433 npm run test:service:ci:migrate && cd ../lambdas/custom-integrations/uscr-beacon-poller && cross-env HRM_DATABASE_PORT=5433 npm run test:service:run && cd ./tests/service && docker compose down",
+    "test:service": "cd ./tests/service && docker compose up -d && cd ../../../../../hrm-service && cross-env POSTGRES_PORT=5434 npm run test:service:ci:migrate && cd ../lambdas/custom-integrations/uscr-beacon-poller && cross-env HRM_DATABASE_PORT=5433 npm run test:service:run && cd ./tests/service && docker compose down",
     "test:service:ci": "run-s test:service"
   }
 }

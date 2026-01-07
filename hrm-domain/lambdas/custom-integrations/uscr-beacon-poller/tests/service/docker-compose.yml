@@ -29,7 +29,7 @@ services:
     command: ['postgres', '-c', 'log_statement=all', '-c', 'shared_preload_libraries=pgaudit']
 
     ports:
-      - '127.0.0.1:5433:5432'
+      - '127.0.0.1:5434:5432'
   service:
     image: hrm-service
     ports:
