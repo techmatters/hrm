@@ -83,8 +83,7 @@ async function migrate() {
       break;
     } catch (err) {
       if (
-        err.message?.includes('ConnectionRefusedError') ||
-        err.message?.includes('SequelizeConnectionError')
+        ['SequelizeConnectionRefusedError', 'SequelizeConnectionError'].includes(err.name)
       ) {
         console.debug(
           "Migration failed to connect to DB, assuming it's not ready yet & retrying...",
