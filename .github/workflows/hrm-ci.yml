@@ -149,6 +149,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build
+        run: npm run build
+
       - name: Build Service Docker Image
         uses: docker/build-push-action@v6
         with:

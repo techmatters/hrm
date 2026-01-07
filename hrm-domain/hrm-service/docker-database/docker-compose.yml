@@ -24,7 +24,7 @@ services:
     volumes:
       - ./hrmdb.sql:/docker-entrypoint-initdb.d/hrmdb.sql
 
-    command: ['postgres', '-c', 'log_statement=all']
+    command: ['postgres', '-c', 'log_statement=all', '-c', 'shared_preload_libraries=pgaudit']
 
     ports:
       - '5432:5432'
