@@ -149,6 +149,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build Service Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          file: ./hrm-domain/hrm-service/Dockerfile
+          push: false
+          tags: hrm-service
+
       - name: Run Service Tests
         run: npm run test:service:ci
 
