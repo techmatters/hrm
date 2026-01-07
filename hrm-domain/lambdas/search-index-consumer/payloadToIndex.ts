@@ -91,10 +91,15 @@ const handleIndexPayload =
           });
 
           if (isErr(result)) {
-            // bubble error if it's different from "not found", ignore otherwise
+            // bubble error if it's different from "not found"
             if (result.extraProperties?.statusCode !== 404) {
-              result.unwrap();
+              return result.unwrap();
             }
+
+            console.info(
+              'handleIndexPayload: delete operation resulted in 404, ignoring message with id',
+              messageId,
+            );
           }
 
           return {
