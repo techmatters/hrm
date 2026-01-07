@@ -79,13 +79,19 @@ async function migrate() {
     try {
       // eslint-disable-next-line no-await-in-loop
       ret = await umzug.up();
-      console.log('Migration complete.', JSON.stringify(ret));
+      console.info('Migration complete.', JSON.stringify(ret));
       break;
     } catch (err) {
-      console.log('Migration failed. Retrying...', err);
-      // eslint-disable-next-line @typescript-eslint/no-loop-func
-      await new Promise(resolve => setTimeout(resolve, 250));
-      lastErr = err;
+      if (err.message?.includes('ECONNRESET')) {
+        console.debug(
+          "Migration failed to connect to DB, assuming it's not ready yet & retrying...",
+        );
+        // eslint-disable-next-line @typescript-eslint/no-loop-func
+        await new Promise(resolve => setTimeout(resolve, 250));
+        lastErr = err;
+      } else {
+        throw err;
+      }
     }
   }
   if (ret) {
