@@ -256,10 +256,18 @@ const generalizedSearchQueryFunction = <T>(
 ): SearchQueryFunction<T> => {
   return async (accountSid, searchParameters, limit, offset, user, viewPermissions) => {
     return (await getDbForAccount(accountSid)).task(async connection => {
+      const sql = sqlQueryGenerator(viewPermissions, user.isSupervisor);
+      const parameters = sqlQueryParamsBuilder(
+        accountSid,
+        user,
+        searchParameters,
+        limit,
+        offset,
+      );
       const searchResults: (ContactRecord & { totalCount: number })[] =
         await connection.manyOrNone<ContactRecord & { totalCount: number }>(
-          sqlQueryGenerator(viewPermissions, user.isSupervisor),
-          sqlQueryParamsBuilder(accountSid, user, searchParameters, limit, offset),
+          sql,
+          parameters,
         );
 
       return {

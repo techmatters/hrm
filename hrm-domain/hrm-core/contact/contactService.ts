@@ -147,6 +147,9 @@ export const getContactById = async (
   contactId: string,
   { can, user }: { can: InitializedCan; user: TwilioUser },
 ) => {
+  console.info(
+    `[Data Access Audit] ${accountSid}: Contact read by ${user.workerSid}, id: ${contactId}`,
+  );
   const contact = await getById(accountSid, parseInt(contactId));
 
   return contact
@@ -396,6 +399,7 @@ export const patchContact = async (
 
   return patched;
 };
+
 export const connectContactToCase = async (
   accountSid: HrmAccountId,
   contactId: string,
@@ -619,6 +623,9 @@ export const generalisedContactSearch = async (
       { contactIds },
       {}, // limit and offset are computed in ES query
       ctx,
+    );
+    console.info(
+      `[Data Access Audit] Account: ${accountSid}, User: ${ctx.user.workerSid}, Action: Contacts searched, contact ids: ${contactIds}`,
     );
 
     // Monitors & dashboards use this log statement, review them before updating to ensure they remain aligned.
