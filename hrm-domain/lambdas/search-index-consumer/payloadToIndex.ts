@@ -24,7 +24,7 @@ import type {
   PayloadsByAccountSid,
   PayloadsByIndex,
 } from './messagesToPayloads';
-import { type HrmAccountId, newErr, newOkFromData } from '@tech-matters/types';
+import { type HrmAccountId, newErr, newOkFromData, isErr } from '@tech-matters/types';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
 
 const handleIndexPayload =
@@ -89,6 +89,18 @@ const handleIndexPayload =
           const result = await client.deleteDocument({
             id: documentId.toString(),
           });
+
+          if (isErr(result)) {
+            // bubble error if it's different from "not found"
+            if (result.extraProperties?.statusCode !== 404) {
+              return result.unwrap();
+            }
+
+            console.info(
+              'handleIndexPayload: delete operation resulted in 404, ignoring message with id',
+              messageId,
+            );
+          }
 
           return {
             accountSid,
