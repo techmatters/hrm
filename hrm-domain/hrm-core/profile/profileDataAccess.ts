@@ -51,7 +51,7 @@ import {
   listProfilesSql,
 } from './sql/profile-list-sql';
 import { getPaginationElements } from '../search';
-import { TOUCH_PROFILE_SQL, updateProfileByIdSql } from './sql/profile-update.sql';
+import { TOUCH_PROFILE_SQL, updateProfileByIdSql } from './sql/profileUpdate.sql';
 import {
   ensureRejection,
   newErr,
