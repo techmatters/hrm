@@ -64,7 +64,8 @@ async function create() {
       lastErr = undefined;
       break;
     } catch (err) {
-      if (err.message?.toLowerCase()?.includes('connect')) {
+      // Catch and ECONNRESET, ECONNREFUSED or messages with 'connection' / 'connect' in. Cast a broad net!
+      if (err.message?.toLowerCase()?.includes('conn')) {
         console.debug(
           "Creation failed connecting to DB, assuming it's not ready yet & retrying...",
         );
