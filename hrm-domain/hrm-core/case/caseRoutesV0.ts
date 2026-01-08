@@ -110,7 +110,7 @@ const newCaseRouter = (isPublic: boolean) => {
     });
 
     console.info(
-      `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: Case read, case id: ${caseId}, parameters: `,
+      `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Case read, case id: ${id}, parameters: `,
     );
     if (!caseFromDB) {
       throw createError(404);
@@ -149,7 +149,7 @@ const newCaseRouter = (isPublic: boolean) => {
       );
 
       console.info(
-        `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: Case timeline read, case id: ${caseId}, parameters: `,
+        `[Data Access Audit] Account:${hrmAccountId}, User: ${req.user.workerSid}, Action: Case timeline read, case id: ${caseId}, parameters: `,
         query,
       );
       res.json(timeline);

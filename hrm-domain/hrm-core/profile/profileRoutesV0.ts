@@ -125,7 +125,7 @@ profilesRouter.get(
       );
 
       console.info(
-        `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: contacts for profile read, profile id: ${profileId}`,
+        `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: contacts for profile read, profile id: ${profileId}`,
       );
 
       if (isErr(result)) {
@@ -155,7 +155,7 @@ profilesRouter.get(
       );
 
       console.info(
-        `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: cases for profile read, profile id: ${profileId}`,
+        `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: cases for profile read, profile id: ${profileId}`,
       );
 
       if (isErr(result)) {
@@ -353,7 +353,7 @@ profilesRouter.get(
   '/:profileId/sections/:sectionId',
   canViewProfileSection,
   async (req: Request, res: Response) => {
-    const { hrmAccountId } = req;
+    const { hrmAccountId, user } = req;
     const { profileId, sectionId } = req.params;
     const result = await profileController.getProfileSectionById(hrmAccountId, {
       profileId: parseInt(profileId, 10),
@@ -361,7 +361,7 @@ profilesRouter.get(
     });
 
     console.info(
-      `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: Profile section read, profile id: ${profileId}, section id: ${sectionId}`,
+      `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Profile section read, profile id: ${profileId}, section id: ${sectionId}`,
     );
 
     if (!result) {
@@ -395,7 +395,7 @@ profilesRouter.get(
     );
 
     console.info(
-      `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid} Action: profile read, profile id: ${profileId}`,
+      `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid} Action: profile read, profile id: ${profileId}`,
     );
 
     if (!result) {
