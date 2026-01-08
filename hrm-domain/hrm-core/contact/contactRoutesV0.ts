@@ -47,7 +47,7 @@ const newContactRouter = (isPublic: boolean) => {
         user,
       });
       console.info(
-        `[Data Access Audit] Account:${accountSid}, User: ${user.workerSid}, Action: Contact read by task sid, taskSid: ${taskSid}`,
+        `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Contact read by task sid, taskSid: ${taskSid}`,
       );
       if (!contact || !can(user, actionsMaps.contact.VIEW_CONTACT, contact)) {
         throw createError(404);

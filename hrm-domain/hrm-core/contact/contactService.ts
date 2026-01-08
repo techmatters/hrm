@@ -618,14 +618,14 @@ export const generalisedContactSearch = async (
 
     const contactIds = items.map(item => parseInt(item.id, 10));
 
-    console.info(
-      `[Data Access Audit] Account: ${accountSid}, User: ${user.workerSid}, Action: Contacts searched, contact ids: ${contactIds}`,
-    );
     const { contacts } = await searchContactsByIds(
       accountSid,
       { contactIds },
       {}, // limit and offset are computed in ES query
       ctx,
+    );
+    console.info(
+      `[Data Access Audit] Account: ${accountSid}, User: ${ctx.user.workerSid}, Action: Contacts searched, contact ids: ${contactIds}`,
     );
 
     // Monitors & dashboards use this log statement, review them before updating to ensure they remain aligned.
