@@ -1,4 +1,4 @@
-# Copyright (C) 2021-2023 Technology Matters
+ # Copyright (C) 2021-2023 Technology Matters
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
@@ -149,6 +149,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build
+        run: npm run build
+
       - name: Build Service Docker Image
         uses: docker/build-push-action@v6
         with:
@@ -156,20 +159,6 @@ jobs:
           file: ./hrm-domain/hrm-service/Dockerfile
           push: false
           tags: hrm-service
-
-      - name: Setup database tables
-        uses: m4nu56/postgresql-action@1.0
-        with:
-          # Version of PostgreSQL to use
-          postgresql version: 16.3
-          # POSTGRES_DB - name for the default database that is created
-          postgresql db: hrmdb
-          # POSTGRES_USER - create the specified user with superuser power
-          postgresql user: rdsadmin
-          # POSTGRES_PASSWORD - superuser password
-          postgresql password: postgres
-          # POSTGRES_INIT_SCRIPTS - directory containing DB init scripts
-          postgresql init scripts: test-support/db-init
 
       - name: Run Service Tests
         run: npm run test:service:ci

@@ -64,10 +64,17 @@ async function create() {
       lastErr = undefined;
       break;
     } catch (err) {
-      console.log('Creation failed. Retrying...', err);
-      // eslint-disable-next-line @typescript-eslint/no-loop-func
-      await new Promise(resolve => setTimeout(resolve, 250));
-      lastErr = err;
+      // Catch and ECONNRESET, ECONNREFUSED or messages with 'connection' / 'connect' in. Cast a broad net!
+      if (err.message?.toLowerCase()?.includes('conn')) {
+        console.debug(
+          "Creation failed connecting to DB, assuming it's not ready yet & retrying...",
+        );
+        // eslint-disable-next-line @typescript-eslint/no-loop-func
+        await new Promise(resolve => setTimeout(resolve, 250));
+        lastErr = err;
+      } else {
+        throw err;
+      }
     }
   }
 
