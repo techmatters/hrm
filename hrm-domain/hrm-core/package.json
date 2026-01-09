@@ -36,7 +36,7 @@
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "@tech-matters/database-connect": "^1.0.0",
-    "aws-sdk": "^2.1231.0",
+    "aws-sdk": "^2.1693.0",
     "cors": "^2.8.5",
     "date-fns": "^2.28.0",
     "debug": "^4.1.1",
