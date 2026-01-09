@@ -116,7 +116,7 @@ jobs:
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: workflow-scripts-artifacts
           path: .github/workflows/scripts
