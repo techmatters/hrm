@@ -16,7 +16,7 @@ version: '3'
 
 services:
   db:
-    image: library/postgres:16.8
+    build: ../hrm-service/docker-database
 
     environment:
       POSTGRES_USER: rdsadmin
@@ -26,7 +26,7 @@ services:
     volumes:
       - ./db-init/dump.sql:/docker-entrypoint-initdb.d/dump.sql
 
-    command: ['postgres', '-c', 'log_statement=all']
+    command: ['postgres', '-c', 'log_statement=all', '-c', 'shared_preload_libraries=pgaudit']
 
     ports:
       - '5433:5432'
