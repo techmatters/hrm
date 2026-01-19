@@ -11,7 +11,7 @@
   "viewContact": [["everyone"]],
   "editContact": [["isSupervisor"]],
   "editInProgressContact": [["isSupervisor"]],
-  "viewExternalTranscript": [],
+  "viewExternalTranscript": [["isSupervisor"]],
   "viewRecording": [],
   "addContactToCase": [],
   "removeContactFromCase": [],
