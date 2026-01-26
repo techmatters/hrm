@@ -399,6 +399,10 @@ export const generalisedCasesSearch = async (
       ctx,
     );
 
+    console.info(
+      `[Data Access Audit] Account: ${accountSid}, User: ${ctx.user.workerSid}, Action: Cases searched, ids: ${caseIds}`,
+    );
+
     // Monitors & dashboards use this log statement, review them before updating to ensure they remain aligned.
     console.info(
       `[generalised-search-cases] AccountSid: ${accountSid} - Search Complete. Total count from ES: ${total}, Paginated count from ES: ${caseIds.length}, Paginated count from DB: ${cases.length}.`,

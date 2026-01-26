@@ -109,6 +109,9 @@ const newCaseRouter = (isPublic: boolean) => {
       user,
     });
 
+    console.info(
+      `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Case read, case id: ${id}, parameters: `,
+    );
     if (!caseFromDB) {
       throw createError(404);
     }
@@ -143,6 +146,11 @@ const newCaseRouter = (isPublic: boolean) => {
         (sectionTypes ?? '').split(','),
         includeContacts?.toLowerCase() !== 'false',
         { limit: limit ?? 20, offset: offset ?? 0 },
+      );
+
+      console.info(
+        `[Data Access Audit] Account:${hrmAccountId}, User: ${req.user.workerSid}, Action: Case timeline read, case id: ${caseId}, parameters: `,
+        query,
       );
       res.json(timeline);
     },
