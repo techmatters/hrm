@@ -33,7 +33,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: [],
-      Deactivated: false,
+      Inactive: false,
     });
   });
   test('Csv line with single category - outputs expanded resource with single item category array', async () => {
@@ -46,7 +46,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['One category'],
-      Deactivated: false,
+      Inactive: false,
     });
   });
   test('Csv line with multiple categories seperated by semi-colons - outputs expanded resource with category array without trimming', async () => {
@@ -59,7 +59,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['A ', 'few', ' categories'],
-      Deactivated: false,
+      Inactive: false,
     });
   });
   test('Csv line with single coverage item - outputs expanded resource with single item coverage array', async () => {
@@ -72,7 +72,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['One coverage'],
       Categories: [],
-      Deactivated: false,
+      Inactive: false,
     });
   });
   test('Csv line with multiple coverage seperated by semi-colons - outputs expanded resource with coverage array without trimming', async () => {
@@ -85,40 +85,40 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['A ', 'few', ' coverages'],
       Categories: [],
-      Deactivated: false,
+      Inactive: false,
     });
   });
-  test('Csv line with Deactivated set false, sets Deactivated as false', async () => {
+  test('Csv line with Inactive set false, sets Inactive as false', async () => {
     const result: UschExpandedResource = expandCsvLine({
       ...EMPTY_CSV_LINE,
       ResourceID: TEST_RESOURCE_ID,
-      Deactivated: 'false',
+      Inactive: 'false',
     });
     expect(result).toStrictEqual({
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: [],
-      Deactivated: false,
+      Inactive: false,
     });
   });
   each([
-    { deactivatedCsvValue: 'true' },
-    { deactivatedCsvValue: 'TRUE' },
-    { deactivatedCsvValue: 'True' },
-    { deactivatedCsvValue: 'tRuE' },
+    { inactiveCsvValue: 'true' },
+    { inactiveCsvValue: 'TRUE' },
+    { inactiveCsvValue: 'True' },
+    { inactiveCsvValue: 'tRuE' },
   ]).test(
-    "Csv line with Deactivated set '$deactivatedCsvValue', sets Deactivated as true",
-    async ({ deactivatedCsvValue }) => {
+    "Csv line with Inactive set '$inactiveCsvValue', sets Inactive as true",
+    async ({ inactiveCsvValue }) => {
       const result: UschExpandedResource = expandCsvLine({
         ...EMPTY_CSV_LINE,
         ResourceID: TEST_RESOURCE_ID,
-        Deactivated: deactivatedCsvValue,
+        Inactive: inactiveCsvValue,
       });
       expect(result).toStrictEqual({
         ResourceID: TEST_RESOURCE_ID,
         Coverage: [],
         Categories: [],
-        Deactivated: true,
+        Inactive: true,
       });
     },
   );
@@ -194,11 +194,11 @@ describe('Mapping valid sample resources should produce no warnings', () => {
       },
     },
     {
-      description: 'Resource with coverage and deactivated flag',
+      description: 'Resource with coverage and inactive flag',
       resource: {
         ResourceID: 'EMPTY_RESOURCE',
         Coverage: ['COVERAGE 1', 'COVERAGE 2', 'COVERAGE 3'],
-        Deactivated: true,
+        Inactive: true,
       },
     },
   ];

@@ -65,5 +65,5 @@ export const EMPTY_CSV_LINE: UschCsvResource = {
   StateProvince: '',
   UpdatedOn: '',
   WebsiteAddress: '',
-  Deactivated: '',
+  Inactive: '',
 };
