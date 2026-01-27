@@ -33,6 +33,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: [],
+      Deactivated: false,
     });
   });
   test('Csv line with single category - outputs expanded resource with single item category array', async () => {
@@ -45,6 +46,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['One category'],
+      Deactivated: false,
     });
   });
   test('Csv line with multiple categories seperated by semi-colons - outputs expanded resource with category array without trimming', async () => {
@@ -57,6 +59,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['A ', 'few', ' categories'],
+      Deactivated: false,
     });
   });
   test('Csv line with single coverage item - outputs expanded resource with single item coverage array', async () => {
@@ -69,6 +72,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['One coverage'],
       Categories: [],
+      Deactivated: false,
     });
   });
   test('Csv line with multiple coverage seperated by semi-colons - outputs expanded resource with coverage array without trimming', async () => {
@@ -81,8 +85,43 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['A ', 'few', ' coverages'],
       Categories: [],
+      Deactivated: false,
     });
   });
+  test('Csv line with Deactivated set false, sets Deactivated as false', async () => {
+    const result: UschExpandedResource = expandCsvLine({
+      ...EMPTY_CSV_LINE,
+      ResourceID: TEST_RESOURCE_ID,
+      Deactivated: 'false',
+    });
+    expect(result).toStrictEqual({
+      ResourceID: TEST_RESOURCE_ID,
+      Coverage: [],
+      Categories: [],
+      Deactivated: false,
+    });
+  });
+  each([
+    { deactivatedCsvValue: 'true' },
+    { deactivatedCsvValue: 'TRUE' },
+    { deactivatedCsvValue: 'True' },
+    { deactivatedCsvValue: 'tRuE' },
+  ]).test(
+    "Csv line with Deactivated set '$deactivatedCsvValue', sets Deactivated as true",
+    async ({ deactivatedCsvValue }) => {
+      const result: UschExpandedResource = expandCsvLine({
+        ...EMPTY_CSV_LINE,
+        ResourceID: TEST_RESOURCE_ID,
+        Deactivated: deactivatedCsvValue,
+      });
+      expect(result).toStrictEqual({
+        ResourceID: TEST_RESOURCE_ID,
+        Coverage: [],
+        Categories: [],
+        Deactivated: true,
+      });
+    },
+  );
 });
 
 /**
@@ -152,6 +191,14 @@ describe('Mapping valid sample resources should produce no warnings', () => {
       resource: {
         ResourceID: 'EMPTY_RESOURCE',
         Coverage: ['COVERAGE 1', 'COVERAGE 2', 'COVERAGE 3'],
+      },
+    },
+    {
+      description: 'Resource with coverage',
+      resource: {
+        ResourceID: 'EMPTY_RESOURCE',
+        Coverage: ['COVERAGE 1', 'COVERAGE 2', 'COVERAGE 3'],
+        Deactivated: true,
       },
     },
   ];
