@@ -194,7 +194,7 @@ describe('Mapping valid sample resources should produce no warnings', () => {
       },
     },
     {
-      description: 'Resource with coverage',
+      description: 'Resource with coverage and deactivated flag',
       resource: {
         ResourceID: 'EMPTY_RESOURCE',
         Coverage: ['COVERAGE 1', 'COVERAGE 2', 'COVERAGE 3'],
