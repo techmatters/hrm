@@ -204,7 +204,7 @@ export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
     ...csv,
     Categories: csv.Categories?.split(';').filter(Boolean),
     Coverage: csv.Coverage?.split(';').filter(Boolean),
-    Deactivated: Boolean(csv.Inactive && csv.Inactive.toLowerCase() === 'true'),
+    Inactive: Boolean(csv.Inactive && csv.Inactive.toLowerCase() === 'true'),
   };
   for (const key in expanded) {
     const validKey = key as keyof UschExpandedResource;
