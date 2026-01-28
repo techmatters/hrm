@@ -163,12 +163,14 @@ export type UschCsvResource = {
   Coverage: string;
   Comment: string;
   HoursFormatted: string;
+  Inactive: string;
 };
 
 export type UschExpandedResource = Partial<
-  Omit<UschCsvResource, 'Categories' | 'Coverage'> & {
+  Omit<UschCsvResource, 'Categories' | 'Coverage' | 'Inactive'> & {
     Categories: string[];
     Coverage: string[];
+    Inactive: boolean;
   }
 >;
 
@@ -202,6 +204,7 @@ export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
     ...csv,
     Categories: csv.Categories?.split(';').filter(Boolean),
     Coverage: csv.Coverage?.split(';').filter(Boolean),
+    Inactive: Boolean(csv.Inactive && csv.Inactive.toLowerCase() === 'true'),
   };
   for (const key in expanded) {
     const validKey = key as keyof UschExpandedResource;
@@ -215,6 +218,9 @@ export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
 export const USCH_MAPPING_NODE: MappingNode = {
   ResourceID: resourceFieldMapping('id'),
   Name: resourceFieldMapping('name'),
+  Inactive: resourceFieldMapping('deletedAt', context =>
+    context.currentValue ? new Date().toISOString() : '',
+  ),
   AlternateName: translatableAttributeMapping('alternateName', { language: 'en' }),
   Address: attributeMapping('stringAttributes', 'address/street'),
   City: attributeMapping('stringAttributes', 'address/city', {

@@ -33,6 +33,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: [],
+      Inactive: false,
     });
   });
   test('Csv line with single category - outputs expanded resource with single item category array', async () => {
@@ -45,6 +46,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['One category'],
+      Inactive: false,
     });
   });
   test('Csv line with multiple categories seperated by semi-colons - outputs expanded resource with category array without trimming', async () => {
@@ -57,6 +59,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
       Categories: ['A ', 'few', ' categories'],
+      Inactive: false,
     });
   });
   test('Csv line with single coverage item - outputs expanded resource with single item coverage array', async () => {
@@ -69,6 +72,7 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['One coverage'],
       Categories: [],
+      Inactive: false,
     });
   });
   test('Csv line with multiple coverage seperated by semi-colons - outputs expanded resource with coverage array without trimming', async () => {
@@ -81,8 +85,43 @@ describe('expandCsvLine', () => {
       ResourceID: TEST_RESOURCE_ID,
       Coverage: ['A ', 'few', ' coverages'],
       Categories: [],
+      Inactive: false,
     });
   });
+  test('Csv line with Inactive set false, sets Inactive as false', async () => {
+    const result: UschExpandedResource = expandCsvLine({
+      ...EMPTY_CSV_LINE,
+      ResourceID: TEST_RESOURCE_ID,
+      Inactive: 'false',
+    });
+    expect(result).toStrictEqual({
+      ResourceID: TEST_RESOURCE_ID,
+      Coverage: [],
+      Categories: [],
+      Inactive: false,
+    });
+  });
+  each([
+    { inactiveCsvValue: 'true' },
+    { inactiveCsvValue: 'TRUE' },
+    { inactiveCsvValue: 'True' },
+    { inactiveCsvValue: 'tRuE' },
+  ]).test(
+    "Csv line with Inactive set '$inactiveCsvValue', sets Inactive as true",
+    async ({ inactiveCsvValue }) => {
+      const result: UschExpandedResource = expandCsvLine({
+        ...EMPTY_CSV_LINE,
+        ResourceID: TEST_RESOURCE_ID,
+        Inactive: inactiveCsvValue,
+      });
+      expect(result).toStrictEqual({
+        ResourceID: TEST_RESOURCE_ID,
+        Coverage: [],
+        Categories: [],
+        Inactive: true,
+      });
+    },
+  );
 });
 
 /**
@@ -152,6 +191,14 @@ describe('Mapping valid sample resources should produce no warnings', () => {
       resource: {
         ResourceID: 'EMPTY_RESOURCE',
         Coverage: ['COVERAGE 1', 'COVERAGE 2', 'COVERAGE 3'],
+      },
+    },
+    {
+      description: 'Resource with coverage and inactive flag',
+      resource: {
+        ResourceID: 'EMPTY_RESOURCE',
+        Coverage: ['COVERAGE 1', 'COVERAGE 2', 'COVERAGE 3'],
+        Inactive: true,
       },
     },
   ];
