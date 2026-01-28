@@ -218,7 +218,7 @@ export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
 export const USCH_MAPPING_NODE: MappingNode = {
   ResourceID: resourceFieldMapping('id'),
   Name: resourceFieldMapping('name'),
-  Deactivated: resourceFieldMapping('deletedAt', context =>
+  Inactive: resourceFieldMapping('deletedAt', context =>
     context.currentValue ? new Date().toISOString() : '',
   ),
   AlternateName: translatableAttributeMapping('alternateName', { language: 'en' }),
