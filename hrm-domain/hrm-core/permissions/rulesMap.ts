@@ -32,6 +32,7 @@ const jmRules = require('../permission-rules/jm.json');
 const mtRules = require('../permission-rules/mt.json');
 const mwRules = require('../permission-rules/mw.json');
 const nzRules = require('../permission-rules/nz.json');
+const nzbaRules = require('../permission-rules/nzba.json');
 const phRules = require('../permission-rules/ph.json');
 const sgRules = require('../permission-rules/sg.json');
 const ukmhRules = require('../permission-rules/ukmh.json');
@@ -265,6 +266,7 @@ const rulesMapDef = {
   mt: mtRules,
   mw: mwRules,
   nz: nzRules,
+  nzba: nzbaRules,
   ph: phRules,
   sg: sgRules,
   th: thRules,
