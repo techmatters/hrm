@@ -215,7 +215,7 @@ const isTKCondition =
         return isSupportedContactCondition(c);
       }
       case 'contactField': {
-        return isContactFieldSpecificCondition(c);
+        return isSupportedContactFieldCondition(c);
       }
       case 'case': {
         return isSupportedCaseCondition(c);
