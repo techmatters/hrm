@@ -55,7 +55,7 @@ import { type PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
 import type { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
-import { actionsMaps } from '../permissions';
+import { actionsMaps, Permissions } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referralService';
 import { createContactJob } from '../contact-job/contact-job';
@@ -86,6 +86,7 @@ import {
 } from './contactSearchIndex';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 import { getDbForAccount } from '../dbConnection';
+import { getExcludedFields } from './contactFieldExclusions';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -339,7 +340,11 @@ export const patchContact = async (
   finalize: boolean,
   contactId: string,
   { referrals, rawJson, definitionVersion, ...restOfPatch }: PatchPayload,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissions,
+  }: { can: InitializedCan; user: TwilioUser; permissions: Permissions },
   skipSearchIndex = false,
 ): Promise<Contact> => {
   const patched = await (
@@ -358,8 +363,8 @@ export const patchContact = async (
       }
     }
 
+    const contactRecord = await getById(accountSid, parseInt(contactId));
     if (!definitionVersion) {
-      const contactRecord = await getById(accountSid, parseInt(contactId));
       definitionVersion = contactRecord.definitionVersion;
     }
 
@@ -369,14 +374,25 @@ export const patchContact = async (
     }
 
     const { profileId, identifierId } = res.data;
+    const excludedFields = getExcludedFields(permissions)(
+      contactRecord,
+      user,
+      'updateContactField',
+    );
 
-    const updatedRecord = await patch(conn)(accountSid, contactId, finalize, {
-      updatedBy,
-      ...restOfPatch,
-      ...rawJson,
-      profileId,
-      identifierId,
-    });
+    const updatedRecord = await patch(conn)(
+      accountSid,
+      contactId,
+      finalize,
+      {
+        updatedBy,
+        ...restOfPatch,
+        ...rawJson,
+        profileId,
+        identifierId,
+      },
+      excludedFields,
+    );
     if (!updatedRecord) {
       throw new Error(`Contact not found with id ${contactId}`);
     }

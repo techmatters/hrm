@@ -59,12 +59,12 @@ const checkConditionsSet =
 /**
  * Given a conditionsState and a set of conditions sets, returns true if one of the conditions sets contains conditions that are all true in the conditionsState
  */
-const checkConditionsSets = <T extends TargetKind>(
+export const checkConditionsSets = <T extends TargetKind>(
   conditionsState: ConditionsState,
   conditionsSets: TKConditionsSets<T>,
 ): boolean => conditionsSets.some(checkConditionsSet(conditionsState));
 
-const applyTimeBasedConditions =
+export const applyTimeBasedConditions =
   (conditions: TimeBasedCondition[]) =>
   (performer: TwilioUser, target: any, ctx: { currentTimestamp: Date }) =>
     conditions

@@ -43,23 +43,7 @@ export default (permissions: Permissions) => {
         }
         const rules = await permissions.rules(accountSid);
 
-        res.json({
-          ...rules,
-          // Added for compatibility with older Flex Plugin versions
-          // TODO: remove this once all plugins are updated to v2.24+
-          addNote: rules.addCaseSection,
-          editNote: rules.editCaseSection,
-          addReferral: rules.addCaseSection,
-          editReferral: rules.editCaseSection,
-          addHousehold: rules.addCaseSection,
-          editHousehold: rules.editCaseSection,
-          addPerpetrator: rules.addCaseSection,
-          editPerpetrator: rules.editCaseSection,
-          addIncident: rules.addCaseSection,
-          editIncident: rules.editCaseSection,
-          addDocument: rules.addCaseSection,
-          editDocument: rules.editCaseSection,
-        });
+        res.json(rules);
       } catch (error) {
         return next(createError(500, error.message));
       }

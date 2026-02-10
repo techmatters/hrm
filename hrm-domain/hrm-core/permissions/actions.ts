@@ -42,6 +42,10 @@ export const actionsMaps = {
     ADD_CONTACT_TO_CASE: 'addContactToCase',
     REMOVE_CONTACT_FROM_CASE: 'removeContactFromCase',
   },
+  contactField: {
+    VIEW_CONTACT_FIELD: 'viewContactField',
+    UPDATE_CONTACT_FIELD: 'updateContactField',
+  },
   profile: {
     VIEW_PROFILE: 'viewProfile',
     // EDIT_PROFILE: 'editProfile', // we don't need edit for now, will be needed when users can attach more identifiers or edit the name

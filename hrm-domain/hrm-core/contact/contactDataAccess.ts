@@ -20,7 +20,10 @@ import {
   getContactsByIds,
   SELECT_CONTACTS_TO_RENOTIFY,
 } from './sql/contactSearchSql';
-import { UPDATE_CASEID_BY_ID, UPDATE_CONTACT_BY_ID } from './sql/contact-update-sql';
+import {
+  UPDATE_CASEID_BY_ID,
+  generateUpdateContactByIdSql,
+} from './sql/contact-update-sql';
 import { parseISO } from 'date-fns';
 import {
   selectSingleContactByIdSql,
@@ -164,10 +167,11 @@ export const patch =
     contactId: string,
     finalize: boolean,
     contactUpdates: ContactUpdates,
+    contactUpdateFieldExclusions: Record<string, string[]>,
   ): Promise<ContactRecord | undefined> => {
     return txIfNotInOne(await getDbForAccount(accountSid), task, async connection => {
       const updatedContact: ContactRecord = await connection.oneOrNone<ContactRecord>(
-        UPDATE_CONTACT_BY_ID,
+        generateUpdateContactByIdSql(contactUpdateFieldExclusions),
         {
           ...BLANK_CONTACT_UPDATES,
           accountSid,

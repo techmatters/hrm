@@ -73,6 +73,23 @@ export type ContactSpecificCondition = (typeof contactSpecificConditions)[number
 const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
   typeof c === 'string' && contactSpecificConditions.includes(c as any);
 
+export type ContactFieldSpecificCondition = {
+  field:
+    | `rawJson.${ContactRawJson[string]}`
+    | `rawJson.${ContactRawJson[string]}.${ContactRawJson[string][string]}`;
+};
+
+export const isContactFieldSpecificCondition = (
+  c: any,
+): c is ContactFieldSpecificCondition => {
+  if (typeof c === 'object') {
+    const [[cond, param]] = Object.entries(c);
+    return cond === 'field' && typeof param === 'string';
+  }
+
+  return false;
+};
+
 const caseSpecificConditions = ['isCreator', 'isCaseOpen', 'isCaseContactOwner'] as const;
 export type CaseSpecificCondition = (typeof caseSpecificConditions)[number];
 
@@ -101,6 +118,16 @@ type SupportedContactCondition =
   | ContactSpecificCondition;
 const isSupportedContactCondition = (c: any): c is SupportedContactCondition =>
   isTimeBasedCondition(c) || isUserBasedCondition(c) || isContactSpecificCondition(c);
+
+type SupportedContactFieldCondition =
+  | TimeBasedCondition
+  | UserBasedCondition
+  | ContactFieldSpecificCondition;
+
+const isSupportedContactFieldCondition = (c: any): c is SupportedContactFieldCondition =>
+  isTimeBasedCondition(c) ||
+  isUserBasedCondition(c) ||
+  isContactFieldSpecificCondition(c);
 
 type SupportedCaseCondition =
   | TimeBasedCondition
@@ -131,6 +158,7 @@ const isSupportedPostSurveyCondition = (c: any): c is SupportedPostSurveyConditi
 // Defines which actions are supported on each TargetKind
 type SupportedTKCondition = {
   contact: SupportedContactCondition;
+  contactField: SupportedContactFieldCondition;
   case: SupportedCaseCondition;
   profile: SupportedProfileCondition;
   profileSection: SupportedProfileSectionCondition;
@@ -185,6 +213,9 @@ const isTKCondition =
     switch (kind) {
       case 'contact': {
         return isSupportedContactCondition(c);
+      }
+      case 'contactField': {
+        return isContactFieldSpecificCondition(c);
       }
       case 'case': {
         return isSupportedCaseCondition(c);

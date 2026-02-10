@@ -18,14 +18,39 @@ import { selectSingleContactByIdSql } from './contact-get-sql';
 
 const ID_WHERE_CLAUSE = `WHERE "accountSid" = $<accountSid> AND "id"=$<contactId>`;
 
-export const UPDATE_CONTACT_BY_ID = `WITH updated AS (
+const generatePartialFormUpdateClause = (formName: string, excluded: string[] = []) => {
+  if (excluded.length) {
+    const exclusionObject = `jsonb_build_object(${excluded.map(
+      excludedField => `'${excludedField}', "rawJson"->'${formName}'->'${excludedField}'`,
+    )})`;
+    return `(CASE WHEN $<${formName}> IS NOT NULL THEN jsonb_build_object('${formName}', $<${formName}>::JSONB || ${exclusionObject}) ELSE '{}'::JSONB END)`;
+  } else {
+    return `(CASE WHEN $<${formName}> IS NOT NULL THEN jsonb_build_object('${formName}', $<${formName}>::JSONB) ELSE '{}'::JSONB END)`;
+  }
+};
+
+export const generateUpdateContactByIdSql = (
+  fieldExclusions: Record<string, string[]>,
+) => `WITH updated AS (
 UPDATE "Contacts"
 SET "rawJson" = COALESCE("rawJson", '{}'::JSONB)
-  || (CASE WHEN $<caseInformation> IS NOT NULL THEN jsonb_build_object('caseInformation', $<caseInformation>::JSONB) ELSE '{}'::JSONB END)
+  || ${generatePartialFormUpdateClause(
+    'caseInformation',
+    fieldExclusions.caseInformation,
+  )}
   || (CASE WHEN $<categories> IS NOT NULL THEN jsonb_build_object('categories', $<categories>::JSONB) ELSE '{}'::JSONB END)
-  || (CASE WHEN $<callerInformation> IS NOT NULL THEN jsonb_build_object('callerInformation', $<callerInformation>::JSONB) ELSE '{}'::JSONB END)
-  || (CASE WHEN $<childInformation> IS NOT NULL THEN jsonb_build_object('childInformation', $<childInformation>::JSONB) ELSE '{}'::JSONB END)
-  || (CASE WHEN $<contactlessTask> IS NOT NULL THEN jsonb_build_object('contactlessTask', $<contactlessTask>::JSONB) ELSE '{}'::JSONB END)
+  || ${generatePartialFormUpdateClause(
+    'callerInformation',
+    fieldExclusions.callerInformation,
+  )}
+  || ${generatePartialFormUpdateClause(
+    'childInformation',
+    fieldExclusions.childInformation,
+  )}
+  || ${generatePartialFormUpdateClause(
+    'contactlessTask',
+    fieldExclusions.contactlessTask,
+  )}
   || (CASE WHEN $<callType> IS NOT NULL THEN jsonb_build_object('callType', $<callType>) ELSE '{}'::JSONB END)
   || (CASE WHEN $<definitionVersion> IS NOT NULL THEN jsonb_build_object('definitionVersion', $<definitionVersion>) ELSE '{}'::JSONB END)
   || (CASE WHEN $<llmSupportedEntries> IS NOT NULL THEN jsonb_build_object('llmSupportedEntries', $<llmSupportedEntries>::JSONB) ELSE '{}'::JSONB END)
