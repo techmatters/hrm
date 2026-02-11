@@ -75,9 +75,7 @@ const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
   typeof c === 'string' && contactSpecificConditions.includes(c as any);
 
 export type ContactFieldSpecificCondition = {
-  field:
-    | `rawJson.${keyof ContactRawJson}`
-    | `rawJson.${keyof ContactRawJson}.${keyof ContactRawJson[keyof ContactRawJson]}`;
+  field: `rawJson.${keyof ContactRawJson}` | `rawJson.${keyof ContactRawJson}.${string}`;
 };
 
 export const isContactFieldSpecificCondition = (

@@ -248,7 +248,7 @@ describe('getExcludedFields', () => {
 
       const excludedFields = await getExcluded(mockContact, user, 'editContactField');
 
-      // The invalid configuration causes both fields to be excluded  
+      // The invalid configuration causes both fields to be excluded
       // because each field's condition set contains the other field condition
       // which is not in conditionsState and evaluates to false
       if (excludedFields.caseInformation) {
@@ -343,7 +343,10 @@ describe('getExcludedFields', () => {
   describe('Time-based conditions', () => {
     it('should allow fields when createdHoursAgo condition is met', async () => {
       const rules = createMockRules([
-        [{ field: 'rawJson.caseInformation.callSummary' as any }, { createdHoursAgo: 24 }],
+        [
+          { field: 'rawJson.caseInformation.callSummary' as any },
+          { createdHoursAgo: 24 },
+        ],
       ]);
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
@@ -361,9 +364,12 @@ describe('getExcludedFields', () => {
         timeOfContact: new Date(Date.now() - 3600 * 1000).toISOString(), // 1 hour ago
         createdAt: new Date(Date.now() - 3600 * 1000).toISOString(),
       };
-      
+
       const rules = createMockRules([
-        [{ field: 'rawJson.caseInformation.callSummary' as any }, { createdHoursAgo: 0.5 }],
+        [
+          { field: 'rawJson.caseInformation.callSummary' as any },
+          { createdHoursAgo: 0.5 },
+        ],
       ]);
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
