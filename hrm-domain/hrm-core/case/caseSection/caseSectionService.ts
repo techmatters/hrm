@@ -186,10 +186,10 @@ export const getCaseTimeline = async (
   accountSid: HrmAccountId,
   {
     user,
-    permissions,
+    permissionRules,
   }: {
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
   caseId: string,
   sectionTypes: string[],
@@ -199,7 +199,7 @@ export const getCaseTimeline = async (
   const dbResult = await getTimeline(
     accountSid,
     user,
-    permissions.viewContact as TKConditionsSets<'contact'>,
+    permissionRules.viewContact as TKConditionsSets<'contact'>,
     [caseId],
     sectionTypes,
     includeContacts,
@@ -233,10 +233,10 @@ export const getMultipleCaseTimelines = async (
   accountSid: HrmAccountId,
   {
     user,
-    permissions,
+    permissionRules,
   }: {
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
   caseIds: string[],
   sectionTypes: string[],
@@ -246,7 +246,7 @@ export const getMultipleCaseTimelines = async (
   const dbResult = await getTimeline(
     accountSid,
     user,
-    permissions.viewContact as TKConditionsSets<'contact'>,
+    permissionRules.viewContact as TKConditionsSets<'contact'>,
     caseIds,
     sectionTypes,
     includeContacts,
@@ -276,7 +276,7 @@ export const getCaseSectionTypeList = async (
 
   req: {
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
   caseId: string,
   sectionType: string,

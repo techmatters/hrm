@@ -29,7 +29,7 @@ export { rulesMap };
 declare global {
   namespace Express {
     export interface Request {
-      permissions: RulesFile;
+      permissionRules: RulesFile;
       can: InitializedCan;
     }
   }
@@ -66,7 +66,7 @@ export const setupPermissions =
       applyPermissions(req, initializeCanForRules(accountRules));
     }
 
-    req.permissions = accountRules;
+    req.permissionRules = accountRules;
     return next();
   };
 
@@ -77,7 +77,7 @@ export type RequestWithPermissions = SafeRouterRequest & {
 export const maxPermissions: {
   user: TwilioUser;
   can: () => boolean;
-  permissions: RulesFile;
+  permissionRules: RulesFile;
 } = {
   can: () => true,
   user: {
@@ -87,5 +87,5 @@ export const maxPermissions: {
     isSupervisor: true,
     isSystemUser: false,
   },
-  permissions: rulesMap.open,
+  permissionRules: rulesMap.open,
 };

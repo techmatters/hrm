@@ -13,15 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import type { HrmAccountId } from '@tech-matters/types';
 import type { Contact } from '@tech-matters/hrm-types';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { ActionsForTK } from '../permissions/actions';
-import type { Permissions } from '../permissions';
 import { isContactOwner } from '../permissions/conditionChecks';
 import {
   ContactFieldSpecificCondition,
   isTimeBasedCondition,
+  RulesFile,
   TKConditionsSets,
 } from '../permissions/rulesMap';
 import {
@@ -31,7 +30,7 @@ import {
 } from '../permissions/initializeCanForRules';
 
 export const getExcludedFields =
-  (permissions: Permissions, accountSid: HrmAccountId) =>
+  (permissionRules: RulesFile) =>
   async (contact: Contact, user: TwilioUser, action: ActionsForTK<'contactField'>) => {
     const generateConditionState = (
       conditionSets: TKConditionsSets<'contactField'>,
@@ -59,11 +58,10 @@ export const getExcludedFields =
     // System users have full access
     if (user.isSystemUser) return {};
 
-    const rules = await permissions.rules(accountSid);
     const conditionSetsByField: Record<string, TKConditionsSets<'contactField'>> = {};
     const globalConditionSets: TKConditionsSets<'contactField'> = [];
     // RulesFile type can't type each of its condition sets based do the action type :-(
-    const conditionSets = rules[action] as TKConditionsSets<'contactField'>;
+    const conditionSets = permissionRules[action] as TKConditionsSets<'contactField'>;
     for (const conditionSet of conditionSets) {
       const fieldConditions = conditionSet.filter(
         r =>

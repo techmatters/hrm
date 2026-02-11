@@ -55,7 +55,7 @@ import { type PaginationQuery, getPaginationElements } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
 import type { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
-import { actionsMaps, Permissions } from '../permissions';
+import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referralService';
 import { createContactJob } from '../contact-job/contact-job';
@@ -343,12 +343,12 @@ export const patchContact = async (
   {
     can,
     user,
-    permissions,
+    permissionRules,
     permissionCheckContact,
   }: {
     can: InitializedCan;
     user: TwilioUser;
-    permissions: Permissions;
+    permissionRules: RulesFile;
     permissionCheckContact: Contact | undefined;
   },
   skipSearchIndex = false,
@@ -384,7 +384,7 @@ export const patchContact = async (
 
     // No permissionCheckContact means it was accessed on an open endpoint - no excluded fields
     const excludedFields = permissionCheckContact
-      ? await getExcludedFields(permissions, accountSid)(
+      ? await getExcludedFields(permissionRules)(
           permissionCheckContact,
           user,
           'editContactField',
@@ -522,11 +522,11 @@ const generalizedSearchContacts =
     {
       can,
       user,
-      permissions,
+      permissionRules,
     }: {
       can: InitializedCan;
       user: TwilioUser;
-      permissions: RulesFile;
+      permissionRules: RulesFile;
     },
   ): Promise<{
     count: number;
@@ -541,7 +541,7 @@ const generalizedSearchContacts =
       limit,
       offset,
       user,
-      permissions.viewContact as TKConditionsSets<'contact'>,
+      permissionRules.viewContact as TKConditionsSets<'contact'>,
     );
     const contacts = unprocessedResults.rows.map(cr =>
       applyTransformations(contactRecordToContact(cr)),
@@ -562,7 +562,7 @@ export const getContactsByProfileId = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
 ): Promise<
   TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByProfileId>>>
@@ -599,7 +599,7 @@ export const generalisedContactSearch = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
 ): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
   try {
@@ -620,8 +620,9 @@ export const generalisedContactSearch = async (
     });
     const permissionFilters = generateContactPermissionsFilters({
       user: ctx.user,
-      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
-      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+      viewContact: ctx.permissionRules.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissionRules
+        .viewExternalTranscript as ContactListCondition[][],
       buildParams: { parentPath: '' },
     });
 
