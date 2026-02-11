@@ -24,7 +24,8 @@ export const accountSid = 'ACCOUNT_SID';
 export const ALWAYS_CAN = {
   user: newTwilioUser(accountSid, workerSid, []),
   can: () => true,
-  permissions: openRules,
+  permissions: { rules: () => Promise.resolve(openRules), cachePermissions: false },
+  permissionCheckContact: undefined,
 };
 
 export const OPEN_CONTACT_ACTION_CONDITIONS: TKConditionsSets<'contact'> = [['everyone']];

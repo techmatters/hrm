@@ -25,7 +25,8 @@ import {
   TimeBasedCondition,
   ProfileSectionSpecificCondition,
   isProfileSectionSpecificCondition,
-  ContactFieldSpecificCondition, isContactFieldSpecificCondition,
+  ContactFieldSpecificCondition,
+  isContactFieldSpecificCondition,
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';

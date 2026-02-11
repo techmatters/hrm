@@ -387,7 +387,7 @@ export const patchContact = async (
       ? await getExcludedFields(permissions, accountSid)(
           permissionCheckContact,
           user,
-          'updateContactField',
+          'editContactField',
         )
       : {};
 

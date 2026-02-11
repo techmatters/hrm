@@ -44,7 +44,7 @@ export const actionsMaps = {
   },
   contactField: {
     VIEW_CONTACT_FIELD: 'viewContactField',
-    UPDATE_CONTACT_FIELD: 'updateContactField',
+    EDIT_CONTACT_FIELD: 'editContactField',
   },
   profile: {
     VIEW_PROFILE: 'viewProfile',

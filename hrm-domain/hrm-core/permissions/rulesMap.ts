@@ -190,7 +190,7 @@ const unsupportedActionConditions: UnsupportedActionConditions = {
     CREATE_PROFILE_SECTION: ['sectionType'],
   },
   contactField: {
-    UPDATE_CONTACT_FIELD: ['field'],
+    EDIT_CONTACT_FIELD: ['field'],
     VIEW_CONTACT_FIELD: ['field'],
   },
 };
