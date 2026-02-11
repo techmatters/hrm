@@ -125,6 +125,7 @@ export const isFilesRelatedAction = (targetKind: TargetKind, action: Actions) =>
       return action === 'viewExternalTranscript' || action === 'viewRecording';
     }
     case 'case':
+    case 'contactField':
     case 'profile':
     case 'profileSection':
     case 'postSurvey': {
@@ -167,6 +168,7 @@ export const isValidFileLocation = async ({
         return newOk({ data: isValid });
       }
       case 'case':
+      case 'contactField':
       case 'profile':
       case 'profileSection':
       case 'postSurvey': {

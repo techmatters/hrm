@@ -25,13 +25,14 @@ import {
   TimeBasedCondition,
   ProfileSectionSpecificCondition,
   isProfileSectionSpecificCondition,
+  ContactFieldSpecificCondition, isContactFieldSpecificCondition,
 } from './rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { assertExhaustive } from '@tech-matters/types';
 import { CaseService } from '../case/caseService';
 
-type ConditionsState = {
+export type ConditionsState = {
   [k: string]: boolean;
 };
 
@@ -139,6 +140,23 @@ const applyProfileSectionSpecificConditions =
         return accum;
       }, {});
 
+const applyContactFieldSpecificConditions =
+  (conditions: ContactFieldSpecificCondition[]) => (performer: TwilioUser, target: any) =>
+    conditions
+      .map(c => Object.entries(c)[0])
+      .reduce<Record<string, boolean>>((accum, [cond, param]) => {
+        // use the stringified cond-param as key, e.g. '{ "sectionType": "summary" }'
+        const key = JSON.stringify({ [cond]: param });
+        if (cond === 'field') {
+          return {
+            ...accum,
+            [key]: target.field === param,
+          };
+        }
+
+        return accum;
+      }, {});
+
 const setupAllow = <T extends TargetKind>(
   kind: T,
   conditionsSets: TKConditionsSets<T>,
@@ -180,6 +198,26 @@ const setupAllow = <T extends TargetKind>(
           isOwner: isContactOwner(performer, target),
           everyone: true,
           ...appliedTimeBasedConditions,
+        };
+
+        return checkConditionsSets(conditionsState, conditionsSets);
+      }
+      case 'contactField': {
+        const specificConditions = conditionsSets.flatMap(cs =>
+          cs
+            .map(c => (isContactFieldSpecificCondition(c) ? c : null))
+            .filter(c => c !== null),
+        );
+        const appliedSpecificConditions = applyContactFieldSpecificConditions(
+          specificConditions,
+        )(performer, target);
+
+        const conditionsState: ConditionsState = {
+          isSupervisor: performer.isSupervisor,
+          isOwner: isContactOwner(performer, target),
+          everyone: true,
+          ...appliedTimeBasedConditions,
+          ...appliedSpecificConditions,
         };
 
         return checkConditionsSets(conditionsState, conditionsSets);

@@ -13,68 +13,98 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { TwilioUser } from '@tech-matters/twilio-worker-auth/dist';
-import { ActionsForTK } from '../permissions/actions';
-import { Permissions } from '../permissions';
+import type { HrmAccountId } from '@tech-matters/types';
+import type { Contact } from '@tech-matters/hrm-types';
+import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import type { ActionsForTK } from '../permissions/actions';
+import type { Permissions } from '../permissions';
 import { isContactOwner } from '../permissions/conditionChecks';
-import { isTimeBasedCondition, TKConditionsSets } from '../permissions/rulesMap';
+import {
+  ContactFieldSpecificCondition,
+  isTimeBasedCondition,
+  TKConditionsSets,
+} from '../permissions/rulesMap';
 import {
   applyTimeBasedConditions,
   checkConditionsSets,
+  ConditionsState,
 } from '../permissions/initializeCanForRules';
 
 export const getExcludedFields =
-  (permissions: Permissions) =>
-  (contact: Contact, user: TwilioUser, action: ActionsForTK<'contactField'>) => {
+  (permissions: Permissions, accountSid: HrmAccountId) =>
+  async (contact: Contact, user: TwilioUser, action: ActionsForTK<'contactField'>) => {
+    const generateConditionState = (
+      conditionSets: TKConditionsSets<'contactField'>,
+    ): ConditionsState => {
+      const timeBasedConditions = conditionSets.flatMap(cs =>
+        cs.filter(isTimeBasedCondition),
+      );
+
+      const ctx = { currentTimestamp: new Date() };
+
+      const appliedTimeBasedConditions = applyTimeBasedConditions(timeBasedConditions)(
+        user,
+        contact,
+        ctx,
+      );
+
+      return {
+        isSupervisor: user.isSupervisor,
+        is: isContactOwner(user, contact),
+        everyone: true,
+        ...appliedTimeBasedConditions,
+      };
+    };
+
+    // System users have full access
+    if (user.isSystemUser) return {};
+
     const rules = await permissions.rules(accountSid);
     const conditionSetsByField: Record<string, TKConditionsSets<'contactField'>> = {};
     const globalConditionSets: TKConditionsSets<'contactField'> = [];
-    const actionRules = rules[action];
-    for (conditionSets of actionRules) {
-      for (const conditionSet of conditionSets) {
-        const fieldConditions = conditionSet.filter(
-          r => typeof r === 'object' && typeof r.field === 'string',
+    // RulesFile type can't type each of its condition sets based do the action type :-(
+    const conditionSets = rules[action] as TKConditionsSets<'contactField'>;
+    for (const conditionSet of conditionSets) {
+      const fieldConditions = conditionSet.filter(
+        r =>
+          typeof r === 'object' &&
+          typeof (r as ContactFieldSpecificCondition).field === 'string',
+      );
+      if (fieldConditions.length > 1) {
+        console.error(
+          'Invalid permission configuration. Multiple field conditions in a single condition set are not valid. Bottom level condition sets have AND logic, having 2 fields here means a field being checked needs to be 2 different fields at the same time. This condition set will always evaluate false',
+          'action:',
+          action,
+          'condition set: ',
+          conditionSet,
         );
-        if (fieldConditions.length > 1) {
-          throw new Error(
-            'Multiple field conditions in a single condition set are not valid',
-          );
-        }
-        if (fieldConditions.length === 1) {
-          conditionSetsByField[fieldConditions[0].field] =
-            conditionSetsByField[fieldConditions[0].field] || [];
-          conditionSetsByField[fieldConditions[0].field].push(
-            conditionSet.filter(r => fieldConditions[0] !== r),
-          );
-        } else {
-          globalConditionSets.push(conditionSet);
-        }
+      } else if (fieldConditions.length === 1) {
+        const fieldCondition = fieldConditions[0] as ContactFieldSpecificCondition;
+        conditionSetsByField[fieldCondition.field] =
+          conditionSetsByField[fieldCondition.field] || [];
+        conditionSetsByField[fieldCondition.field].push(
+          conditionSet.filter(r => fieldCondition !== r),
+        );
+      } else {
+        globalConditionSets.push(conditionSet);
       }
     }
-    const timeBasedConditions = conditionsSets.flatMap(cs =>
-      cs.filter(isTimeBasedCondition),
-    );
 
-    const ctx = { currentTimestamp: new Date() };
+    // If there is a global check that passes, no fields will be excluded
+    // So we can just return an empty set
+    if (
+      checkConditionsSets(
+        generateConditionState(globalConditionSets),
+        globalConditionSets,
+      )
+    ) {
+      return {};
+    }
 
-    const appliedTimeBasedConditions = applyTimeBasedConditions(timeBasedConditions)(
-      performer,
-      target,
-      ctx,
-    );
-
-    const conditionsState: ConditionsState = {
-      isSupervisor: user.isSupervisor,
-      isOwner: isContactOwner(user, target),
-      everyone: true,
-      ...appliedTimeBasedConditions,
-    };
-
-    if (checkConditionsSets(conditionsState, globalConditionSets)) return {};
-
-    const excludedFields = Record<string, string[]>;
-    for ([field, conditionSets] of Object.entries(conditionSetsByField)) {
-      if (!checkConditionsSets(conditionsState, conditionSets)) {
+    const excludedFields: Record<string, string[]> = {};
+    for (const [field, fieldConditionSets] of Object.entries(conditionSetsByField)) {
+      const conditionsState = generateConditionState(fieldConditionSets);
+      if (!checkConditionsSets(conditionsState, fieldConditionSets)) {
         const [, formName, fieldName] = field.split('.');
         excludedFields[formName] = excludedFields[formName] || [];
         excludedFields[formName].push(fieldName);

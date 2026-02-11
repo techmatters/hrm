@@ -211,7 +211,7 @@ const newContactRouter = (isPublic: boolean) => {
     validatePatchPayload,
     isPublic ? canPerformEditContactAction : openEndpoint,
     async (req, res) => {
-      const { hrmAccountId, user } = req;
+      const { hrmAccountId, user, permissions, permissionCheckContact } = req;
       const { contactId } = req.params;
       const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
       try {
@@ -224,6 +224,8 @@ const newContactRouter = (isPublic: boolean) => {
           {
             can: req.can,
             user,
+            permissions,
+            permissionCheckContact,
           },
         );
         res.json(contact);

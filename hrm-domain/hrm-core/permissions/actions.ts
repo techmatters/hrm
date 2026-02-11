@@ -70,6 +70,7 @@ export type ActionsForTK<T extends TargetKind> =
 
 export type Target<T extends TargetKind> = {
   contact: Contact;
+  contactField: Contact;
   case: CaseService;
   profile: ProfileWithRelationships;
   profileSection: ProfileSection;

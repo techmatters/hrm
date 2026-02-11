@@ -344,7 +344,13 @@ export const patchContact = async (
     can,
     user,
     permissions,
-  }: { can: InitializedCan; user: TwilioUser; permissions: Permissions },
+    permissionCheckContact,
+  }: {
+    can: InitializedCan;
+    user: TwilioUser;
+    permissions: Permissions;
+    permissionCheckContact: Contact | undefined;
+  },
   skipSearchIndex = false,
 ): Promise<Contact> => {
   const patched = await (
@@ -362,10 +368,11 @@ export const patchContact = async (
         });
       }
     }
-
-    const contactRecord = await getById(accountSid, parseInt(contactId));
     if (!definitionVersion) {
-      definitionVersion = contactRecord.definitionVersion;
+      const contact =
+        permissionCheckContact ??
+        (await getContactById(accountSid, contactId, { can, user }));
+      definitionVersion = contact.definitionVersion;
     }
 
     const res = await initProfile(conn, accountSid, restOfPatch, definitionVersion);
@@ -374,11 +381,15 @@ export const patchContact = async (
     }
 
     const { profileId, identifierId } = res.data;
-    const excludedFields = getExcludedFields(permissions)(
-      contactRecord,
-      user,
-      'updateContactField',
-    );
+
+    // No permissionCheckContact means it was accessed on an open endpoint - no excluded fields
+    const excludedFields = permissionCheckContact
+      ? await getExcludedFields(permissions, accountSid)(
+          permissionCheckContact,
+          user,
+          'updateContactField',
+        )
+      : {};
 
     const updatedRecord = await patch(conn)(
       accountSid,

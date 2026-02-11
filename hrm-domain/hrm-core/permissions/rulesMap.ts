@@ -46,6 +46,7 @@ const zmRules = require('../permission-rules/zm.json');
 const zwRules = require('../permission-rules/zw.json');
 
 import { assertExhaustive } from '@tech-matters/types';
+import type { ContactRawJson } from '@tech-matters/hrm-types';
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 import type { ProfileSection } from '../profile/profileDataAccess';
 
@@ -75,8 +76,8 @@ const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
 
 export type ContactFieldSpecificCondition = {
   field:
-    | `rawJson.${ContactRawJson[string]}`
-    | `rawJson.${ContactRawJson[string]}.${ContactRawJson[string][string]}`;
+    | `rawJson.${keyof ContactRawJson}`
+    | `rawJson.${keyof ContactRawJson}.${keyof ContactRawJson[keyof ContactRawJson]}`;
 };
 
 export const isContactFieldSpecificCondition = (
@@ -122,6 +123,7 @@ const isSupportedContactCondition = (c: any): c is SupportedContactCondition =>
 type SupportedContactFieldCondition =
   | TimeBasedCondition
   | UserBasedCondition
+  | ContactSpecificCondition
   | ContactFieldSpecificCondition;
 
 const isSupportedContactFieldCondition = (c: any): c is SupportedContactFieldCondition =>
@@ -170,7 +172,10 @@ export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
 export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
 
 export type TKAction<T extends TargetKind> = keyof (typeof actionsMaps)[T];
-type ParameterizedCondition = TimeBasedCondition | ProfileSectionSpecificCondition;
+type ParameterizedCondition =
+  | TimeBasedCondition
+  | ProfileSectionSpecificCondition
+  | ContactFieldSpecificCondition;
 type ExtractSupportedConditionKeys<T extends string | ParameterizedCondition> =
   T extends string ? T : keyof T;
 
@@ -183,6 +188,10 @@ type UnsupportedActionConditions = {
 const unsupportedActionConditions: UnsupportedActionConditions = {
   profileSection: {
     CREATE_PROFILE_SECTION: ['sectionType'],
+  },
+  contactField: {
+    UPDATE_CONTACT_FIELD: ['field'],
+    VIEW_CONTACT_FIELD: ['field'],
   },
 };
 
