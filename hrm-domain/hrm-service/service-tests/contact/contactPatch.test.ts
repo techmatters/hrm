@@ -527,7 +527,7 @@ describe('/contacts/:contactId route', () => {
           ...contact1,
           twilioWorkerId: 'another owner',
         },
-        { user: newTwilioUser(accountSid, 'WK another creator', []), can: () => true },
+        { ...ALWAYS_CAN, user: newTwilioUser(accountSid, 'WK another creator', []) },
         true,
       );
       const response = await request
