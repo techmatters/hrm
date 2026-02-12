@@ -760,5 +760,39 @@ describe('Contact Field Permissions Tests', () => {
         contactData.rawJson.childInformation.firstName,
       );
     });
+
+    it('Should allow all fields when global isOwner condition is present during creation', async () => {
+      overridePermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+        ['isOwner'],
+      ]);
+
+      const contactData: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: 'Summary - should be allowed by isOwner',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      const response = await request.post(routeBase).set(headers).send(contactData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.rawJson.caseInformation.callSummary).toBe(
+        contactData.rawJson.caseInformation.callSummary,
+      );
+    });
   });
 });
