@@ -554,6 +554,7 @@ describe('Contact Field Permissions Tests', () => {
           rawJson: {
             callType: 'Child calling about self',
             categories: {},
+            childInformation: {},
             caseInformation: {
               callSummary: 'Summary - should be allowed by everyone',
             },
@@ -653,10 +654,7 @@ describe('Contact Field Permissions Tests', () => {
       }: CreateTestCase) => {
         overridePermissions(editContactFieldPermissions);
 
-        const response = await request
-          .post(routeBase)
-          .set(headers)
-          .send(contactData);
+        const response = await request.post(routeBase).set(headers).send(contactData);
 
         expect(response.status).toBe(200);
 
@@ -695,6 +693,7 @@ describe('Contact Field Permissions Tests', () => {
         rawJson: {
           callType: 'Child calling about self',
           categories: {},
+          childInformation: {},
           caseInformation: {
             callSummary: 'Summary - should be allowed (within 24 hours)',
           },
@@ -771,6 +770,7 @@ describe('Contact Field Permissions Tests', () => {
         rawJson: {
           callType: 'Child calling about self',
           categories: {},
+          childInformation: {},
           caseInformation: {
             callSummary: 'Summary - should be allowed by isOwner',
           },
@@ -796,12 +796,15 @@ describe('Contact Field Permissions Tests', () => {
     });
 
     it('Should allow fields based on isOwner condition when creating contact on behalf of self', async () => {
-      overridePermissions([[{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner']]);
+      overridePermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
+      ]);
 
       const contactData: NewContactRecord = {
         rawJson: {
           callType: 'Child calling about self',
           categories: {},
+          childInformation: {},
           caseInformation: {
             callSummary: 'Summary - should be allowed because creator is owner',
           },
@@ -827,13 +830,16 @@ describe('Contact Field Permissions Tests', () => {
     });
 
     it('Should exclude fields based on isOwner condition when creating contact on behalf of another user', async () => {
-      overridePermissions([[{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner']]);
+      overridePermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
+      ]);
 
       const anotherUserWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
       const contactData: NewContactRecord = {
         rawJson: {
           callType: 'Child calling about self',
           categories: {},
+          childInformation: {},
           caseInformation: {
             callSummary: 'Summary - should be excluded because creator is not owner',
           },
