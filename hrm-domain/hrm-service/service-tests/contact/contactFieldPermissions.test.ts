@@ -23,10 +23,11 @@ import { TKConditionsSets, RulesFile } from '@tech-matters/hrm-core/permissions/
 import { headers, setRules, useOpenRules } from '../server';
 import * as contactService from '@tech-matters/hrm-core/contact/contactService';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
-import { AccountSID, WorkerSID } from '@tech-matters/types';
+import { WorkerSID } from '@tech-matters/types';
 import { ALWAYS_CAN, accountSid } from '../mocks';
 import { clearAllTables } from '../dbCleanup';
 import { setupServiceTests } from '../setupServiceTest';
+import { finalizeContact } from './finalizeContact';
 
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
 
@@ -368,14 +369,11 @@ describe('Contact Field Permissions Tests', () => {
     it('Should block field updates for non-owners when isOwner condition is specified', async () => {
       const anotherUserWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
       const anotherUsersContact = await createTestContact(anotherUserWorkerId);
+      await finalizeContact(anotherUsersContact);
 
-      // Override permissions - need to ensure viewContact is open so we can view the contact
-      useOpenRules();
-      const rules: Partial<RulesFile> = {
-        editContactField: [[{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner']],
-        viewContact: [['everyone']], // Explicitly allow viewing the contact
-      };
-      setRules(rules);
+      overridePermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
+      ]);
 
       const patchData = {
         rawJson: {
