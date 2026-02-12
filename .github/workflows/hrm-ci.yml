@@ -95,12 +95,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run Elasticsearch
-        uses: elastic/elastic-github-actions/elasticsearch@master
-        with:
-          stack-version: 8.7.0
-          security-enabled: false
-
       - name: Checkout Branch
         uses: actions/checkout@v6
 
@@ -145,9 +139,6 @@ jobs:
 
       - name: Install Packages
         run: npm ci
-
-      - name: Build
-        run: npm run build
 
       - name: Build
         run: npm run build
