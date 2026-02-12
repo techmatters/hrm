@@ -97,12 +97,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run Elasticsearch
-        uses: elastic/elastic-github-actions/elasticsearch@master
-        with:
-          stack-version: 8.7.0
-          security-enabled: false
-
       - name: Checkout Branch
         uses: actions/checkout@v6
 
