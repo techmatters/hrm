@@ -1,0 +1,1018 @@
+"use strict";
+/**
+ * Copyright (C) 2021-2023 Technology Matters
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see https://www.gnu.org/licenses/.
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const crypto_1 = require("crypto");
+const formatISO_1 = __importDefault(require("date-fns/formatISO"));
+const subMinutes_1 = __importDefault(require("date-fns/subMinutes"));
+const jest_each_1 = __importDefault(require("jest-each"));
+const server_1 = require("../server");
+const contactService = __importStar(require("@tech-matters/hrm-core/contact/contactService"));
+const mocks_1 = require("../mocks");
+const dbCleanup_1 = require("../dbCleanup");
+const setupServiceTest_1 = require("../setupServiceTest");
+const finalizeContact_1 = require("./finalizeContact");
+const contactFieldExclusions_1 = require("@tech-matters/hrm-core/contact/contactFieldExclusions");
+const userTwilioWorkerId = `WK${(0, crypto_1.randomBytes)(16).toString('hex')}`;
+const createTestContact = async (twilioWorkerId) => {
+    const rawJson = {
+        callType: 'Child calling about self',
+        categories: {},
+        caseInformation: {
+            actionTaken: 'initial action',
+            callSummary: 'initial summary',
+            okForCaseWorkerToCall: null,
+            hasConversationEvolved: 'Não',
+            didYouDiscussRightsWithTheChild: null,
+            didTheChildFeelWeSolvedTheirProblem: null,
+        },
+        contactlessTask: {
+            date: '',
+            time: '',
+            channel: '',
+            helpline: 'SaferNet',
+            createdOnBehalfOf: twilioWorkerId,
+        },
+        childInformation: {
+            age: '10',
+            city: 'Test City',
+            lastName: 'TestLast',
+            firstName: 'TestFirst',
+            email: 'test@example.com',
+            state: 'Test State',
+            gender: 'Male',
+            phone1: '1234567890',
+            phone2: '',
+            ethnicity: '',
+        },
+        callerInformation: {
+            age: '35',
+            city: 'Caller City',
+            lastName: 'CallerLast',
+            firstName: 'CallerFirst',
+            email: 'caller@example.com',
+            state: 'Caller State',
+            gender: 'Female',
+            phone1: '0987654321',
+            phone2: '',
+            relationshipToChild: 'Parent',
+        },
+        definitionVersion: 'br-v1',
+    };
+    const timeOfContact = (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5));
+    const taskSid = `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`;
+    const channelSid = `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`;
+    return contactService.createContact(mocks_1.accountSid, twilioWorkerId, {
+        rawJson,
+        twilioWorkerId,
+        timeOfContact,
+        taskId: taskSid,
+        channelSid,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+    }, mocks_1.ALWAYS_CAN, true);
+};
+const overridePermissions = (permissions) => {
+    (0, server_1.useOpenRules)();
+    const rules = {
+        editContactField: permissions,
+    };
+    (0, server_1.setRules)(rules);
+};
+const { request } = (0, setupServiceTest_1.setupServiceTests)(userTwilioWorkerId);
+describe('Contact Field Permissions Tests', () => {
+    let testContact;
+    const routeBase = `/v0/accounts/${mocks_1.accountSid}/contacts`;
+    beforeEach(async () => {
+        await (0, dbCleanup_1.clearAllTables)();
+        testContact = await createTestContact(userTwilioWorkerId);
+    });
+    afterEach(async () => {
+        await (0, dbCleanup_1.clearAllTables)();
+    });
+    describe('PATCH /contacts/:id - Field-level permissions', () => {
+        const testCases = [
+            {
+                description: 'If the editContactField rules include condition set without a field condition applies to all fields, if the other conditions evaluate to true, the user can update all fields',
+                editContactFieldPermissions: [['isOwner']],
+                patchData: {
+                    rawJson: {
+                        caseInformation: {
+                            callSummary: 'Updated summary by owner',
+                            actionTaken: 'Updated action by owner',
+                        },
+                        childInformation: {
+                            firstName: 'UpdatedFirstName',
+                            city: 'UpdatedCity',
+                        },
+                    },
+                },
+                expectedFieldsUpdated: true,
+            },
+            {
+                description: 'If the editContactField rules include only condition sets that specify fields, any fields not specifically identified in any conditions are assumed to be permitted',
+                editContactFieldPermissions: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                ],
+                patchData: {
+                    rawJson: {
+                        caseInformation: {
+                            callSummary: 'Updated summary - should be blocked',
+                            actionTaken: 'Updated action - should be allowed',
+                        },
+                        childInformation: {
+                            firstName: 'UpdatedFirstName - should be allowed',
+                        },
+                    },
+                },
+                expectedFieldsUpdated: true,
+                expectedFieldsNotUpdated: ['caseInformation.callSummary'],
+            },
+            {
+                description: 'If the editContactField rules specify a single condition set that specifies multiple field conditions, this condition set always evaluates false, but could be overridden by other condition sets evaluating true',
+                editContactFieldPermissions: [
+                    [
+                        { field: 'rawJson.caseInformation.callSummary' },
+                        { field: 'rawJson.childInformation.firstName' },
+                    ],
+                    ['isOwner'],
+                ],
+                patchData: {
+                    rawJson: {
+                        caseInformation: {
+                            callSummary: 'Updated summary - should be allowed by isOwner',
+                        },
+                        childInformation: {
+                            firstName: 'UpdatedFirstName - should be allowed by isOwner',
+                        },
+                    },
+                },
+                expectedFieldsUpdated: true,
+            },
+            {
+                description: 'If the editContactField rules have no condition sets, the user can update all fields, since fields not called out in conditions are not blocked',
+                editContactFieldPermissions: [],
+                patchData: {
+                    rawJson: {
+                        caseInformation: {
+                            callSummary: 'Updated summary - should be allowed',
+                            actionTaken: 'Updated action - should be allowed',
+                        },
+                        childInformation: {
+                            firstName: 'UpdatedFirstName - should be allowed',
+                            city: 'UpdatedCity - should be allowed',
+                        },
+                    },
+                },
+                expectedFieldsUpdated: true,
+            },
+            {
+                description: 'Field-specific permissions should block specific fields when conditions do not evaluate true',
+                editContactFieldPermissions: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                    [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
+                ],
+                patchData: {
+                    rawJson: {
+                        caseInformation: {
+                            callSummary: 'Updated summary - should be blocked',
+                            actionTaken: 'Updated action - should be allowed',
+                        },
+                        childInformation: {
+                            firstName: 'UpdatedFirstName - should be blocked',
+                            city: 'UpdatedCity - should be allowed',
+                        },
+                    },
+                },
+                expectedFieldsUpdated: true,
+                expectedFieldsNotUpdated: [
+                    'caseInformation.callSummary',
+                    'childInformation.firstName',
+                ],
+            },
+            {
+                description: 'Multiple condition sets for the same field should work with OR logic - if any set evaluates true, field is allowed',
+                editContactFieldPermissions: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
+                ],
+                patchData: {
+                    rawJson: {
+                        caseInformation: {
+                            callSummary: 'Updated summary - should be allowed by isOwner',
+                        },
+                    },
+                },
+                expectedFieldsUpdated: true,
+            },
+            {
+                description: 'Everyone condition set should allow all fields regardless of other restrictions',
+                editContactFieldPermissions: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                    ['everyone'],
+                ],
+                patchData: {
+                    rawJson: {
+                        caseInformation: {
+                            callSummary: 'Updated summary - should be allowed by everyone',
+                        },
+                        childInformation: {
+                            firstName: 'UpdatedFirstName - should be allowed by everyone',
+                        },
+                    },
+                },
+                expectedFieldsUpdated: true,
+            },
+        ];
+        (0, jest_each_1.default)(testCases).test('$description', async ({ editContactFieldPermissions, patchData, expectedFieldsUpdated, expectedFieldsNotUpdated, }) => {
+            overridePermissions(editContactFieldPermissions);
+            const response = await request
+                .patch(`${routeBase}/${testContact.id}`)
+                .set(server_1.headers)
+                .send(patchData);
+            expect(response.status).toBe(200);
+            const updatedContact = response.body;
+            if (expectedFieldsUpdated) {
+                // Check that allowed fields were updated
+                if (patchData.rawJson.caseInformation) {
+                    const caseInfo = patchData.rawJson.caseInformation;
+                    if (caseInfo.actionTaken &&
+                        !expectedFieldsNotUpdated?.includes('caseInformation.actionTaken')) {
+                        expect(updatedContact.rawJson.caseInformation.actionTaken).toBe(caseInfo.actionTaken);
+                    }
+                }
+                if (patchData.rawJson.childInformation) {
+                    const childInfo = patchData.rawJson.childInformation;
+                    if (childInfo.city &&
+                        !expectedFieldsNotUpdated?.includes('childInformation.city')) {
+                        expect(updatedContact.rawJson.childInformation.city).toBe(childInfo.city);
+                    }
+                }
+            }
+            // Check that blocked fields were NOT updated
+            if (expectedFieldsNotUpdated) {
+                for (const fieldPath of expectedFieldsNotUpdated) {
+                    const [form, field] = fieldPath.split('.');
+                    if (patchData.rawJson[form]?.[field]) {
+                        expect(updatedContact.rawJson[form][field]).not.toBe(patchData.rawJson[form][field]);
+                        // Should retain original value
+                        expect(updatedContact.rawJson[form][field]).toBe(testContact.rawJson[form][field]);
+                    }
+                }
+            }
+        });
+    });
+    describe('Field permissions with time-based conditions', () => {
+        it('Should allow field updates when time-based conditions evaluate true', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, { createdHoursAgo: 24 }],
+            ]);
+            const patchData = {
+                rawJson: {
+                    caseInformation: {
+                        callSummary: 'Updated summary - should be allowed',
+                    },
+                },
+            };
+            const response = await request
+                .patch(`${routeBase}/${testContact.id}`)
+                .set(server_1.headers)
+                .send(patchData);
+            expect(response.status).toBe(200);
+            expect(response.body.rawJson.caseInformation.callSummary).toBe(patchData.rawJson.caseInformation.callSummary);
+        });
+    });
+    describe('Field permissions with owner-based conditions', () => {
+        it('Should block field updates for non-owners when isOwner condition is specified', async () => {
+            const anotherUserWorkerId = `WK${(0, crypto_1.randomBytes)(16).toString('hex')}`;
+            const anotherUsersContact = await createTestContact(anotherUserWorkerId);
+            await (0, finalizeContact_1.finalizeContact)(anotherUsersContact);
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
+            ]);
+            const patchData = {
+                rawJson: {
+                    caseInformation: {
+                        callSummary: 'Updated summary - should be blocked',
+                    },
+                },
+            };
+            const response = await request
+                .patch(`${routeBase}/${anotherUsersContact.id}`)
+                .set(server_1.headers)
+                .send(patchData);
+            expect(response.status).toBe(200);
+            // Field should not be updated because user is not the owner
+            expect(response.body.rawJson.caseInformation.callSummary).toBe(anotherUsersContact.rawJson.caseInformation.callSummary);
+        });
+    });
+    describe('Complex field permission scenarios', () => {
+        it('Should handle nested field paths correctly', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                [{ field: 'rawJson.caseInformation.actionTaken' }, 'isSupervisor'],
+            ]);
+            const patchData = {
+                rawJson: {
+                    caseInformation: {
+                        callSummary: 'Updated summary - should be blocked',
+                        actionTaken: 'Updated action - should be blocked',
+                    },
+                    childInformation: {
+                        firstName: 'UpdatedFirstName - should be allowed',
+                    },
+                },
+            };
+            const response = await request
+                .patch(`${routeBase}/${testContact.id}`)
+                .set(server_1.headers)
+                .send(patchData);
+            expect(response.status).toBe(200);
+            // Blocked fields should retain original values
+            expect(response.body.rawJson.caseInformation.callSummary).toBe(testContact.rawJson.caseInformation.callSummary);
+            expect(response.body.rawJson.caseInformation.actionTaken).toBe(testContact.rawJson.caseInformation.actionTaken);
+            // Allowed field should be updated
+            expect(response.body.rawJson.childInformation.firstName).toBe(patchData.rawJson.childInformation.firstName);
+        });
+        it('Should allow all fields when global isOwner condition is present along with field-specific restrictions', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                ['isOwner'],
+            ]);
+            const patchData = {
+                rawJson: {
+                    caseInformation: {
+                        callSummary: 'Updated summary - should be allowed by isOwner',
+                    },
+                },
+            };
+            const response = await request
+                .patch(`${routeBase}/${testContact.id}`)
+                .set(server_1.headers)
+                .send(patchData);
+            expect(response.status).toBe(200);
+            expect(response.body.rawJson.caseInformation.callSummary).toBe(patchData.rawJson.caseInformation.callSummary);
+        });
+    });
+    describe('POST /contacts - Field-level permissions on creation', () => {
+        const createTestCases = [
+            {
+                description: 'If the editContactField rules include condition set without a field condition that evaluates to true, all fields should be allowed during creation',
+                editContactFieldPermissions: [['everyone']],
+                contactData: {
+                    rawJson: {
+                        callType: 'Child calling about self',
+                        categories: {},
+                        caseInformation: {
+                            callSummary: 'Summary - should be allowed',
+                            actionTaken: 'Action - should be allowed',
+                        },
+                        childInformation: {
+                            firstName: 'John',
+                            city: 'Test City',
+                        },
+                        definitionVersion: 'br-v1',
+                    },
+                    twilioWorkerId: userTwilioWorkerId,
+                    timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                    taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    queueName: 'Admin',
+                    helpline: 'helpline',
+                    conversationDuration: 5,
+                    serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    definitionVersion: 'br-v1',
+                },
+                expectedFieldsIncluded: [
+                    'caseInformation.callSummary',
+                    'caseInformation.actionTaken',
+                    'childInformation.firstName',
+                    'childInformation.city',
+                ],
+            },
+            {
+                description: 'Field-specific permissions should exclude specific fields when conditions do not evaluate true during creation',
+                editContactFieldPermissions: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                    [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
+                ],
+                contactData: {
+                    rawJson: {
+                        callType: 'Child calling about self',
+                        categories: {},
+                        caseInformation: {
+                            callSummary: 'Summary - should be excluded',
+                            actionTaken: 'Action - should be allowed',
+                        },
+                        childInformation: {
+                            firstName: 'John - should be excluded',
+                            city: 'Test City - should be allowed',
+                        },
+                        definitionVersion: 'br-v1',
+                    },
+                    twilioWorkerId: userTwilioWorkerId,
+                    timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                    taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    queueName: 'Admin',
+                    helpline: 'helpline',
+                    conversationDuration: 5,
+                    serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    definitionVersion: 'br-v1',
+                },
+                expectedFieldsIncluded: ['caseInformation.actionTaken', 'childInformation.city'],
+                expectedFieldsExcluded: [
+                    'caseInformation.callSummary',
+                    'childInformation.firstName',
+                ],
+            },
+            {
+                description: 'Multiple condition sets for the same field should work with OR logic during creation - if any set evaluates true, field is allowed',
+                editContactFieldPermissions: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'everyone'],
+                ],
+                contactData: {
+                    rawJson: {
+                        callType: 'Child calling about self',
+                        categories: {},
+                        childInformation: {},
+                        caseInformation: {
+                            callSummary: 'Summary - should be allowed by everyone',
+                        },
+                        definitionVersion: 'br-v1',
+                    },
+                    twilioWorkerId: userTwilioWorkerId,
+                    timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                    taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    queueName: 'Admin',
+                    helpline: 'helpline',
+                    conversationDuration: 5,
+                    serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    definitionVersion: 'br-v1',
+                },
+                expectedFieldsIncluded: ['caseInformation.callSummary'],
+            },
+            {
+                description: 'If the editContactField rules have no condition sets, all fields should be allowed during creation',
+                editContactFieldPermissions: [],
+                contactData: {
+                    rawJson: {
+                        callType: 'Child calling about self',
+                        categories: {},
+                        caseInformation: {
+                            callSummary: 'Summary - should be allowed',
+                            actionTaken: 'Action - should be allowed',
+                        },
+                        childInformation: {
+                            firstName: 'John - should be allowed',
+                            city: 'Test City - should be allowed',
+                        },
+                        definitionVersion: 'br-v1',
+                    },
+                    twilioWorkerId: userTwilioWorkerId,
+                    timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                    taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    queueName: 'Admin',
+                    helpline: 'helpline',
+                    conversationDuration: 5,
+                    serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    definitionVersion: 'br-v1',
+                },
+                expectedFieldsIncluded: [
+                    'caseInformation.callSummary',
+                    'caseInformation.actionTaken',
+                    'childInformation.firstName',
+                    'childInformation.city',
+                ],
+            },
+            {
+                description: 'If the editContactField rules specify only condition sets with field conditions, unspecified fields should be allowed during creation',
+                editContactFieldPermissions: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                ],
+                contactData: {
+                    rawJson: {
+                        callType: 'Child calling about self',
+                        categories: {},
+                        caseInformation: {
+                            callSummary: 'Summary - should be excluded',
+                            actionTaken: 'Action - should be allowed (not specified)',
+                        },
+                        childInformation: {
+                            firstName: 'John - should be allowed (not specified)',
+                        },
+                        definitionVersion: 'br-v1',
+                    },
+                    twilioWorkerId: userTwilioWorkerId,
+                    timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                    taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                    queueName: 'Admin',
+                    helpline: 'helpline',
+                    conversationDuration: 5,
+                    serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                    definitionVersion: 'br-v1',
+                },
+                expectedFieldsIncluded: [
+                    'caseInformation.actionTaken',
+                    'childInformation.firstName',
+                ],
+                expectedFieldsExcluded: ['caseInformation.callSummary'],
+            },
+        ];
+        (0, jest_each_1.default)(createTestCases).test('$description', async ({ editContactFieldPermissions, contactData, expectedFieldsIncluded, expectedFieldsExcluded, }) => {
+            overridePermissions(editContactFieldPermissions);
+            const response = await request.post(routeBase).set(server_1.headers).send(contactData);
+            expect(response.status).toBe(200);
+            const createdContact = response.body;
+            // Check that included fields are present
+            if (expectedFieldsIncluded) {
+                for (const fieldPath of expectedFieldsIncluded) {
+                    const [form, field] = fieldPath.split('.');
+                    if (contactData.rawJson[form]?.[field]) {
+                        expect(createdContact.rawJson[form][field]).toBe(contactData.rawJson[form][field]);
+                    }
+                }
+            }
+            // Check that excluded fields were NOT included
+            if (expectedFieldsExcluded) {
+                for (const fieldPath of expectedFieldsExcluded) {
+                    const [form, field] = fieldPath.split('.');
+                    if (contactData.rawJson[form]?.[field]) {
+                        expect(createdContact.rawJson[form]?.[field]).toBeUndefined();
+                    }
+                }
+            }
+        });
+        it('Should allow fields when time-based conditions evaluate true during creation', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, { createdHoursAgo: 24 }],
+            ]);
+            const contactData = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    childInformation: {},
+                    caseInformation: {
+                        callSummary: 'Summary - should be allowed (within 24 hours)',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            const response = await request.post(routeBase).set(server_1.headers).send(contactData);
+            expect(response.status).toBe(200);
+            expect(response.body.rawJson.caseInformation.callSummary).toBe(contactData.rawJson.caseInformation.callSummary);
+        });
+        it('Should handle nested field paths correctly during creation', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                [{ field: 'rawJson.caseInformation.actionTaken' }, 'isSupervisor'],
+            ]);
+            const contactData = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    caseInformation: {
+                        callSummary: 'Summary - should be excluded',
+                        actionTaken: 'Action - should be excluded',
+                    },
+                    childInformation: {
+                        firstName: 'John - should be allowed',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            const response = await request.post(routeBase).set(server_1.headers).send(contactData);
+            expect(response.status).toBe(200);
+            // Excluded fields should not be present
+            expect(response.body.rawJson.caseInformation?.callSummary).toBeUndefined();
+            expect(response.body.rawJson.caseInformation?.actionTaken).toBeUndefined();
+            // Allowed field should be present
+            expect(response.body.rawJson.childInformation.firstName).toBe(contactData.rawJson.childInformation.firstName);
+        });
+        it('Should allow all fields when global isOwner condition is present during creation', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                ['isOwner'],
+            ]);
+            const contactData = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    childInformation: {},
+                    caseInformation: {
+                        callSummary: 'Summary - should be allowed by isOwner',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            const response = await request.post(routeBase).set(server_1.headers).send(contactData);
+            expect(response.status).toBe(200);
+            expect(response.body.rawJson.caseInformation.callSummary).toBe(contactData.rawJson.caseInformation.callSummary);
+        });
+        it('Should allow fields based on isOwner condition when creating contact on behalf of self', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
+            ]);
+            const contactData = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    childInformation: {},
+                    caseInformation: {
+                        callSummary: 'Summary - should be allowed because creator is owner',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId, // Same as the authenticated user
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            const response = await request.post(routeBase).set(server_1.headers).send(contactData);
+            expect(response.status).toBe(200);
+            expect(response.body.rawJson.caseInformation.callSummary).toBe(contactData.rawJson.caseInformation.callSummary);
+        });
+        it('Should exclude fields based on isOwner condition when creating contact on behalf of another user', async () => {
+            overridePermissions([
+                [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
+            ]);
+            const anotherUserWorkerId = `WK${(0, crypto_1.randomBytes)(16).toString('hex')}`;
+            const contactData = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    childInformation: {},
+                    caseInformation: {
+                        callSummary: 'Summary - should be excluded because creator is not owner',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: anotherUserWorkerId, // Different from the authenticated user
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            const response = await request.post(routeBase).set(server_1.headers).send(contactData);
+            expect(response.status).toBe(200);
+            expect(response.body.rawJson.caseInformation?.callSummary).toBeUndefined();
+        });
+    });
+    describe('removeNonPermittedFieldsFromContact - Unit Tests', () => {
+        let testUser;
+        let supervisorUser;
+        let testRules;
+        beforeEach(() => {
+            // Create test user (regular user, not supervisor)
+            testUser = {
+                accountSid: mocks_1.accountSid,
+                workerSid: userTwilioWorkerId,
+                roles: [],
+                isSupervisor: false,
+                isSystemUser: false,
+            };
+            // Create supervisor user
+            supervisorUser = {
+                accountSid: mocks_1.accountSid,
+                workerSid: `WK${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                roles: ['supervisor'],
+                isSupervisor: true,
+                isSystemUser: false,
+            };
+            // Set up test rules
+            testRules = {
+                editContactField: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                    [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
+                ],
+            };
+        });
+        it('Should remove non-permitted fields when full object graph is present', async () => {
+            const contact = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    caseInformation: {
+                        callSummary: 'Summary - should be removed',
+                        actionTaken: 'Action - should remain',
+                    },
+                    childInformation: {
+                        firstName: 'John - should be removed',
+                        city: 'Test City - should remain',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            await (0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(testUser, testRules, contact, true);
+            // Non-permitted fields should be removed
+            expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
+            expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+            // Permitted fields should remain
+            expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+            expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+        });
+        it('Should handle missing rawJson property (noop)', async () => {
+            const contact = {
+                rawJson: undefined,
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            // Should not throw error
+            await expect((0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(testUser, testRules, contact, true)).resolves.not.toThrow();
+            // rawJson should still be undefined
+            expect(contact.rawJson).toBeUndefined();
+        });
+        it('Should handle missing form properties (noop for that form)', async () => {
+            const contact = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    // caseInformation is missing
+                    childInformation: {
+                        firstName: 'John - should be removed',
+                        city: 'Test City - should remain',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            await (0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(testUser, testRules, contact, true);
+            // caseInformation should still be missing (not created)
+            expect(contact.rawJson.caseInformation).toBeUndefined();
+            // childInformation exclusions should still work
+            expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+            expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+        });
+        it('Should handle missing fields (noop for that field)', async () => {
+            const contact = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    caseInformation: {
+                        // callSummary is missing
+                        actionTaken: 'Action - should remain',
+                    },
+                    childInformation: {
+                        // firstName is missing
+                        city: 'Test City - should remain',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            await (0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(testUser, testRules, contact, true);
+            // Missing fields should still be missing
+            expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
+            expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+            // Present fields should remain
+            expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+            expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+        });
+        it('Should not affect other exclusions when some forms are missing', async () => {
+            const contact = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    // caseInformation is missing - should not affect childInformation exclusion
+                    childInformation: {
+                        firstName: 'John - should be removed',
+                        city: 'Test City - should remain',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            await (0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(testUser, testRules, contact, true);
+            // Even though caseInformation is missing, childInformation exclusions should still work
+            expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+            expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+        });
+        it('Should not affect other exclusions when some fields are missing', async () => {
+            const contact = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    caseInformation: {
+                        // callSummary is missing - should not affect other form exclusions
+                        actionTaken: 'Action - should remain',
+                    },
+                    childInformation: {
+                        firstName: 'John - should be removed',
+                        city: 'Test City - should remain',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            await (0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(testUser, testRules, contact, true);
+            // Even though callSummary is missing, childInformation exclusions should still work
+            expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+            expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+            // caseInformation fields should remain as they were
+            expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+        });
+        it('Should allow supervisor to keep all fields', async () => {
+            const contact = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    caseInformation: {
+                        callSummary: 'Summary - should remain',
+                        actionTaken: 'Action - should remain',
+                    },
+                    childInformation: {
+                        firstName: 'John - should remain',
+                        city: 'Test City - should remain',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            await (0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(supervisorUser, testRules, contact, true);
+            // All fields should remain for supervisor
+            expect(contact.rawJson.caseInformation?.callSummary).toBe('Summary - should remain');
+            expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+            expect(contact.rawJson.childInformation?.firstName).toBe('John - should remain');
+            expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+        });
+        it('Should handle forWriting parameter correctly', async () => {
+            const viewRules = {
+                viewContactField: [
+                    [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+                ],
+                editContactField: [],
+            };
+            const contact = {
+                rawJson: {
+                    callType: 'Child calling about self',
+                    categories: {},
+                    caseInformation: {
+                        callSummary: 'Summary',
+                    },
+                    definitionVersion: 'br-v1',
+                },
+                twilioWorkerId: userTwilioWorkerId,
+                timeOfContact: (0, formatISO_1.default)((0, subMinutes_1.default)(new Date(), 5)),
+                taskId: `WT${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                channelSid: `CH${(0, crypto_1.randomBytes)(16).toString('hex')}`,
+                queueName: 'Admin',
+                helpline: 'helpline',
+                conversationDuration: 5,
+                serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+                definitionVersion: 'br-v1',
+            };
+            // When forWriting = false, should check viewContactField rules
+            await (0, contactFieldExclusions_1.removeNonPermittedFieldsFromContact)(testUser, viewRules, contact, false);
+            // Field should be removed based on viewContactField rules
+            expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
+        });
+    });
+});

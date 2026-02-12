@@ -29,6 +29,8 @@ import { clearAllTables } from '../dbCleanup';
 import { setupServiceTests } from '../setupServiceTest';
 import { finalizeContact } from './finalizeContact';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
+import { removeNonPermittedFieldsFromContact } from '@tech-matters/hrm-core/contact/contactFieldExclusions';
+import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
 
@@ -860,6 +862,313 @@ describe('Contact Field Permissions Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.rawJson.caseInformation?.callSummary).toBeUndefined();
+    });
+  });
+
+  describe('removeNonPermittedFieldsFromContact - Unit Tests', () => {
+    let testUser: TwilioUser;
+    let supervisorUser: TwilioUser;
+    let testRules: RulesFile;
+
+    beforeEach(() => {
+      // Create test user (regular user, not supervisor)
+      testUser = {
+        accountSid,
+        workerSid: userTwilioWorkerId,
+        roles: [],
+        isSupervisor: false,
+        isSystemUser: false,
+      };
+
+      // Create supervisor user
+      supervisorUser = {
+        accountSid,
+        workerSid: `WK${randomBytes(16).toString('hex')}`,
+        roles: ['supervisor'],
+        isSupervisor: true,
+        isSystemUser: false,
+      };
+
+      // Set up test rules
+      testRules = {
+        editContactField: [
+          [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+          [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
+        ],
+      } as RulesFile;
+    });
+
+    it('Should remove non-permitted fields when full object graph is present', async () => {
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: 'Summary - should be removed',
+            actionTaken: 'Action - should remain',
+          },
+          childInformation: {
+            firstName: 'John - should be removed',
+            city: 'Test City - should remain',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      await removeNonPermittedFieldsFromContact(testUser, testRules, contact, true);
+
+      // Non-permitted fields should be removed
+      expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
+      expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+
+      // Permitted fields should remain
+      expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+      expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+    });
+
+    it('Should handle missing rawJson property (noop)', async () => {
+      const contact: NewContactRecord = {
+        rawJson: undefined as any,
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      // Should not throw error
+      await expect(
+        removeNonPermittedFieldsFromContact(testUser, testRules, contact, true),
+      ).resolves.not.toThrow();
+
+      // rawJson should still be undefined
+      expect(contact.rawJson).toBeUndefined();
+    });
+
+    it('Should handle missing form properties (noop for that form)', async () => {
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {}, // Empty but present - will test missing form scenario by deleting it
+          childInformation: {
+            firstName: 'John - should be removed',
+            city: 'Test City - should remain',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      // Delete the caseInformation form to test missing form scenario
+      delete (contact.rawJson as any).caseInformation;
+
+      await removeNonPermittedFieldsFromContact(testUser, testRules, contact, true);
+
+      // caseInformation should still be missing (not created)
+      expect(contact.rawJson.caseInformation).toBeUndefined();
+
+      // childInformation exclusions should still work
+      expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+      expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+    });
+
+    it('Should handle missing fields (noop for that field)', async () => {
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            // callSummary is missing
+            actionTaken: 'Action - should remain',
+          },
+          childInformation: {
+            // firstName is missing
+            city: 'Test City - should remain',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      await removeNonPermittedFieldsFromContact(testUser, testRules, contact, true);
+
+      // Missing fields should still be missing
+      expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
+      expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+
+      // Present fields should remain
+      expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+      expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+    });
+
+    it('Should not affect other exclusions when some forms are missing', async () => {
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {}, // Empty but present - will test missing form scenario by deleting it
+          childInformation: {
+            firstName: 'John - should be removed',
+            city: 'Test City - should remain',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      // Delete the caseInformation form to test missing form scenario
+      delete (contact.rawJson as any).caseInformation;
+
+      await removeNonPermittedFieldsFromContact(testUser, testRules, contact, true);
+
+      // Even though caseInformation is missing, childInformation exclusions should still work
+      expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+      expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+    });
+
+    it('Should not affect other exclusions when some fields are missing', async () => {
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            // callSummary is missing - should not affect other form exclusions
+            actionTaken: 'Action - should remain',
+          },
+          childInformation: {
+            firstName: 'John - should be removed',
+            city: 'Test City - should remain',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      await removeNonPermittedFieldsFromContact(testUser, testRules, contact, true);
+
+      // Even though callSummary is missing, childInformation exclusions should still work
+      expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+      expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+
+      // caseInformation fields should remain as they were
+      expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+    });
+
+    it('Should allow supervisor to keep all fields', async () => {
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: 'Summary - should remain',
+            actionTaken: 'Action - should remain',
+          },
+          childInformation: {
+            firstName: 'John - should remain',
+            city: 'Test City - should remain',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      await removeNonPermittedFieldsFromContact(supervisorUser, testRules, contact, true);
+
+      // All fields should remain for supervisor
+      expect(contact.rawJson.caseInformation?.callSummary).toBe('Summary - should remain');
+      expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
+      expect(contact.rawJson.childInformation?.firstName).toBe('John - should remain');
+      expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
+    });
+
+    it('Should handle forWriting parameter correctly', async () => {
+      const viewRules: RulesFile = {
+        viewContactField: [
+          [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+        ],
+        editContactField: [],
+      } as RulesFile;
+
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          childInformation: {}, // Empty but required
+          caseInformation: {
+            callSummary: 'Summary',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      // When forWriting = false, should check viewContactField rules
+      await removeNonPermittedFieldsFromContact(testUser, viewRules, contact, false);
+
+      // Field should be removed based on viewContactField rules
+      expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
     });
   });
 });
