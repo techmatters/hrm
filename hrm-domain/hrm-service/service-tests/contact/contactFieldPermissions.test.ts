@@ -28,6 +28,7 @@ import { ALWAYS_CAN, accountSid } from '../mocks';
 import { clearAllTables } from '../dbCleanup';
 import { setupServiceTests } from '../setupServiceTest';
 import { finalizeContact } from './finalizeContact';
+import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
 
@@ -456,6 +457,307 @@ describe('Contact Field Permissions Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.rawJson.caseInformation.callSummary).toBe(
         patchData.rawJson.caseInformation.callSummary,
+      );
+    });
+  });
+
+  describe('POST /contacts - Field-level permissions on creation', () => {
+    type CreateTestCase = {
+      description: string;
+      editContactFieldPermissions: TKConditionsSets<'contactField'>;
+      contactData: NewContactRecord;
+      expectedFieldsIncluded?: string[];
+      expectedFieldsExcluded?: string[];
+    };
+
+    const createTestCases: CreateTestCase[] = [
+      {
+        description:
+          'If the editContactField rules include condition set without a field condition that evaluates to true, all fields should be allowed during creation',
+        editContactFieldPermissions: [['everyone']],
+        contactData: {
+          rawJson: {
+            callType: 'Child calling about self',
+            categories: {},
+            caseInformation: {
+              callSummary: 'Summary - should be allowed',
+              actionTaken: 'Action - should be allowed',
+            },
+            childInformation: {
+              firstName: 'John',
+              city: 'Test City',
+            },
+            definitionVersion: 'br-v1',
+          },
+          twilioWorkerId: userTwilioWorkerId,
+          timeOfContact: formatISO(subMinutes(new Date(), 5)),
+          taskId: `WT${randomBytes(16).toString('hex')}`,
+          channelSid: `CH${randomBytes(16).toString('hex')}`,
+          queueName: 'Admin',
+          helpline: 'helpline',
+          conversationDuration: 5,
+          serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          definitionVersion: 'br-v1',
+        },
+        expectedFieldsIncluded: [
+          'caseInformation.callSummary',
+          'caseInformation.actionTaken',
+          'childInformation.firstName',
+          'childInformation.city',
+        ],
+      },
+      {
+        description:
+          'Field-specific permissions should exclude specific fields when conditions do not evaluate true during creation',
+        editContactFieldPermissions: [
+          [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+          [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
+        ],
+        contactData: {
+          rawJson: {
+            callType: 'Child calling about self',
+            categories: {},
+            caseInformation: {
+              callSummary: 'Summary - should be excluded',
+              actionTaken: 'Action - should be allowed',
+            },
+            childInformation: {
+              firstName: 'John - should be excluded',
+              city: 'Test City - should be allowed',
+            },
+            definitionVersion: 'br-v1',
+          },
+          twilioWorkerId: userTwilioWorkerId,
+          timeOfContact: formatISO(subMinutes(new Date(), 5)),
+          taskId: `WT${randomBytes(16).toString('hex')}`,
+          channelSid: `CH${randomBytes(16).toString('hex')}`,
+          queueName: 'Admin',
+          helpline: 'helpline',
+          conversationDuration: 5,
+          serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          definitionVersion: 'br-v1',
+        },
+        expectedFieldsIncluded: ['caseInformation.actionTaken', 'childInformation.city'],
+        expectedFieldsExcluded: [
+          'caseInformation.callSummary',
+          'childInformation.firstName',
+        ],
+      },
+      {
+        description:
+          'Multiple condition sets for the same field should work with OR logic during creation - if any set evaluates true, field is allowed',
+        editContactFieldPermissions: [
+          [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+          [{ field: 'rawJson.caseInformation.callSummary' }, 'everyone'],
+        ],
+        contactData: {
+          rawJson: {
+            callType: 'Child calling about self',
+            categories: {},
+            caseInformation: {
+              callSummary: 'Summary - should be allowed by everyone',
+            },
+            definitionVersion: 'br-v1',
+          },
+          twilioWorkerId: userTwilioWorkerId,
+          timeOfContact: formatISO(subMinutes(new Date(), 5)),
+          taskId: `WT${randomBytes(16).toString('hex')}`,
+          channelSid: `CH${randomBytes(16).toString('hex')}`,
+          queueName: 'Admin',
+          helpline: 'helpline',
+          conversationDuration: 5,
+          serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          definitionVersion: 'br-v1',
+        },
+        expectedFieldsIncluded: ['caseInformation.callSummary'],
+      },
+      {
+        description:
+          'If the editContactField rules have no condition sets, all fields should be allowed during creation',
+        editContactFieldPermissions: [],
+        contactData: {
+          rawJson: {
+            callType: 'Child calling about self',
+            categories: {},
+            caseInformation: {
+              callSummary: 'Summary - should be allowed',
+              actionTaken: 'Action - should be allowed',
+            },
+            childInformation: {
+              firstName: 'John - should be allowed',
+              city: 'Test City - should be allowed',
+            },
+            definitionVersion: 'br-v1',
+          },
+          twilioWorkerId: userTwilioWorkerId,
+          timeOfContact: formatISO(subMinutes(new Date(), 5)),
+          taskId: `WT${randomBytes(16).toString('hex')}`,
+          channelSid: `CH${randomBytes(16).toString('hex')}`,
+          queueName: 'Admin',
+          helpline: 'helpline',
+          conversationDuration: 5,
+          serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          definitionVersion: 'br-v1',
+        },
+        expectedFieldsIncluded: [
+          'caseInformation.callSummary',
+          'caseInformation.actionTaken',
+          'childInformation.firstName',
+          'childInformation.city',
+        ],
+      },
+      {
+        description:
+          'If the editContactField rules specify only condition sets with field conditions, unspecified fields should be allowed during creation',
+        editContactFieldPermissions: [
+          [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+        ],
+        contactData: {
+          rawJson: {
+            callType: 'Child calling about self',
+            categories: {},
+            caseInformation: {
+              callSummary: 'Summary - should be excluded',
+              actionTaken: 'Action - should be allowed (not specified)',
+            },
+            childInformation: {
+              firstName: 'John - should be allowed (not specified)',
+            },
+            definitionVersion: 'br-v1',
+          },
+          twilioWorkerId: userTwilioWorkerId,
+          timeOfContact: formatISO(subMinutes(new Date(), 5)),
+          taskId: `WT${randomBytes(16).toString('hex')}`,
+          channelSid: `CH${randomBytes(16).toString('hex')}`,
+          queueName: 'Admin',
+          helpline: 'helpline',
+          conversationDuration: 5,
+          serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+          definitionVersion: 'br-v1',
+        },
+        expectedFieldsIncluded: [
+          'caseInformation.actionTaken',
+          'childInformation.firstName',
+        ],
+        expectedFieldsExcluded: ['caseInformation.callSummary'],
+      },
+    ];
+
+    each(createTestCases).test(
+      '$description',
+      async ({
+        editContactFieldPermissions,
+        contactData,
+        expectedFieldsIncluded,
+        expectedFieldsExcluded,
+      }: CreateTestCase) => {
+        overridePermissions(editContactFieldPermissions);
+
+        const response = await request
+          .post(routeBase)
+          .set(headers)
+          .send(contactData);
+
+        expect(response.status).toBe(200);
+
+        const createdContact = response.body;
+
+        // Check that included fields are present
+        if (expectedFieldsIncluded) {
+          for (const fieldPath of expectedFieldsIncluded) {
+            const [form, field] = fieldPath.split('.');
+            if (contactData.rawJson[form]?.[field]) {
+              expect(createdContact.rawJson[form][field]).toBe(
+                contactData.rawJson[form][field],
+              );
+            }
+          }
+        }
+
+        // Check that excluded fields were NOT included
+        if (expectedFieldsExcluded) {
+          for (const fieldPath of expectedFieldsExcluded) {
+            const [form, field] = fieldPath.split('.');
+            if (contactData.rawJson[form]?.[field]) {
+              expect(createdContact.rawJson[form]?.[field]).toBeUndefined();
+            }
+          }
+        }
+      },
+    );
+
+    it('Should allow fields when time-based conditions evaluate true during creation', async () => {
+      overridePermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, { createdHoursAgo: 24 }],
+      ]);
+
+      const contactData: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: 'Summary - should be allowed (within 24 hours)',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      const response = await request.post(routeBase).set(headers).send(contactData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.rawJson.caseInformation.callSummary).toBe(
+        contactData.rawJson.caseInformation.callSummary,
+      );
+    });
+
+    it('Should handle nested field paths correctly during creation', async () => {
+      overridePermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+        [{ field: 'rawJson.caseInformation.actionTaken' }, 'isSupervisor'],
+      ]);
+
+      const contactData: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: 'Summary - should be excluded',
+            actionTaken: 'Action - should be excluded',
+          },
+          childInformation: {
+            firstName: 'John - should be allowed',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId,
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      const response = await request.post(routeBase).set(headers).send(contactData);
+
+      expect(response.status).toBe(200);
+      // Excluded fields should not be present
+      expect(response.body.rawJson.caseInformation?.callSummary).toBeUndefined();
+      expect(response.body.rawJson.caseInformation?.actionTaken).toBeUndefined();
+      // Allowed field should be present
+      expect(response.body.rawJson.childInformation.firstName).toBe(
+        contactData.rawJson.childInformation.firstName,
       );
     });
   });
