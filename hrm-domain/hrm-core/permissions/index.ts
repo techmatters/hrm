@@ -21,6 +21,7 @@ import { type RulesFile } from './rulesMap';
 import type { Request, Response, NextFunction } from 'express';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { AccountSID } from '@tech-matters/types';
+import type { Contact } from '@tech-matters/hrm-types';
 
 export { SafeRouter, publicEndpoint } from './safe-router';
 export { type Actions, actionsMaps } from './actions';
@@ -31,6 +32,7 @@ declare global {
     export interface Request {
       permissionRules: RulesFile;
       can: InitializedCan;
+      permissionCheckContact?: Contact;
     }
   }
 }
