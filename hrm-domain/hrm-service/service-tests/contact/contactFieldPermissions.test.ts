@@ -1173,5 +1173,45 @@ describe('Contact Field Permissions Tests', () => {
       // email should be removed (not owner)
       expect(contact.rawJson.callerInformation?.email).toBeUndefined();
     });
+
+    it('Should remove fields with falsy values when not permitted', async () => {
+      const mockUser = createMockUser(userTwilioWorkerId);
+      const rules = createBasicRules();
+
+      const contact: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: '', // Empty string - falsy value
+          },
+          childInformation: {
+            firstName: false, // Boolean false - falsy value
+            lastName: 'Should remain',
+          },
+          callerInformation: {
+            email: '', // Empty string - falsy value
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: `WK${randomBytes(16).toString('hex')}`, // Different from mockUser
+        timeOfContact: formatISO(new Date()),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+
+      // All falsy values should still be removed when not permitted
+      expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
+      expect(contact.rawJson.childInformation?.firstName).toBeUndefined();
+      expect(contact.rawJson.childInformation?.lastName).toBe('Should remain');
+      expect(contact.rawJson.callerInformation?.email).toBeUndefined();
+    });
   });
 });

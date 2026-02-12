@@ -129,7 +129,10 @@ export const removeNonPermittedFieldsFromContact = async (
   );
   for (const [exclusionForm, exclusionFields] of Object.entries(writeExclusions)) {
     for (const exclusionField of exclusionFields) {
-      if (contact.rawJson?.[exclusionForm]?.[exclusionField]) {
+      if (
+        contact.rawJson?.[exclusionForm] &&
+        exclusionField in contact.rawJson[exclusionForm]
+      ) {
         delete contact.rawJson[exclusionForm][exclusionField];
       }
     }
