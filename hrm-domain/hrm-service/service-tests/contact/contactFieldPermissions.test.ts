@@ -1129,7 +1129,9 @@ describe('Contact Field Permissions Tests', () => {
       await removeNonPermittedFieldsFromContact(supervisorUser, testRules, contact, true);
 
       // All fields should remain for supervisor
-      expect(contact.rawJson.caseInformation?.callSummary).toBe('Summary - should remain');
+      expect(contact.rawJson.caseInformation?.callSummary).toBe(
+        'Summary - should remain',
+      );
       expect(contact.rawJson.caseInformation?.actionTaken).toBe('Action - should remain');
       expect(contact.rawJson.childInformation?.firstName).toBe('John - should remain');
       expect(contact.rawJson.childInformation?.city).toBe('Test City - should remain');
