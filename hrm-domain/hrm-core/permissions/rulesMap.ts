@@ -91,7 +91,7 @@ const isValidContactFieldPath = (field: string): boolean => {
   const pathWithoutPrefix = field.slice(RAW_JSON_PREFIX.length);
   const parts = pathWithoutPrefix.split('.');
 
-  // Must have at least 2 parts: <form>.<field>
+  // Must have at least 2 parts: <ContactRawJsonKey>.<fieldPath>
   if (parts.length < 2) {
     return false;
   }
@@ -110,8 +110,8 @@ const isValidContactFieldPath = (field: string): boolean => {
     'referrals',
   ];
 
-  const formName = parts[0];
-  return validContactRawJsonKeys.includes(formName);
+  const contactRawJsonKey = parts[0];
+  return validContactRawJsonKeys.includes(contactRawJsonKey);
 };
 
 export const isContactFieldSpecificCondition = (
