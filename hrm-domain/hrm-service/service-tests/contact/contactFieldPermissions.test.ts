@@ -794,5 +794,66 @@ describe('Contact Field Permissions Tests', () => {
         contactData.rawJson.caseInformation.callSummary,
       );
     });
+
+    it('Should allow fields based on isOwner condition when creating contact on behalf of self', async () => {
+      overridePermissions([[{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner']]);
+
+      const contactData: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: 'Summary - should be allowed because creator is owner',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: userTwilioWorkerId, // Same as the authenticated user
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      const response = await request.post(routeBase).set(headers).send(contactData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.rawJson.caseInformation.callSummary).toBe(
+        contactData.rawJson.caseInformation.callSummary,
+      );
+    });
+
+    it('Should exclude fields based on isOwner condition when creating contact on behalf of another user', async () => {
+      overridePermissions([[{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner']]);
+
+      const anotherUserWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
+      const contactData: NewContactRecord = {
+        rawJson: {
+          callType: 'Child calling about self',
+          categories: {},
+          caseInformation: {
+            callSummary: 'Summary - should be excluded because creator is not owner',
+          },
+          definitionVersion: 'br-v1',
+        },
+        twilioWorkerId: anotherUserWorkerId, // Different from the authenticated user
+        timeOfContact: formatISO(subMinutes(new Date(), 5)),
+        taskId: `WT${randomBytes(16).toString('hex')}`,
+        channelSid: `CH${randomBytes(16).toString('hex')}`,
+        queueName: 'Admin',
+        helpline: 'helpline',
+        conversationDuration: 5,
+        serviceSid: 'ISxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        definitionVersion: 'br-v1',
+      };
+
+      const response = await request.post(routeBase).set(headers).send(contactData);
+
+      expect(response.status).toBe(200);
+      expect(response.body.rawJson.caseInformation?.callSummary).toBeUndefined();
+    });
   });
 });
