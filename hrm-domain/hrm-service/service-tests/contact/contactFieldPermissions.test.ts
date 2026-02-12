@@ -1186,7 +1186,7 @@ describe('Contact Field Permissions Tests', () => {
             callSummary: '', // Empty string - falsy value
           },
           childInformation: {
-            firstName: false, // Boolean false - falsy value
+            firstName: false, // Boolean false is a valid value type (string | boolean) - falsy value
             lastName: 'Should remain',
           },
           callerInformation: {
