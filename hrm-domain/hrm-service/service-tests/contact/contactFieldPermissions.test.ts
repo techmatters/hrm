@@ -370,9 +370,13 @@ describe('Contact Field Permissions Tests', () => {
       const anotherUserWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
       const anotherUsersContact = await createTestContact(anotherUserWorkerId);
 
-      overridePermissions([
-        [{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner'],
-      ]);
+      // Override permissions - need to ensure viewContact is open so we can view the contact
+      useOpenRules();
+      const rules: Partial<RulesFile> = {
+        editContactField: [[{ field: 'rawJson.caseInformation.callSummary' }, 'isOwner']],
+        viewContact: [['everyone']], // Explicitly allow viewing the contact
+      };
+      setRules(rules);
 
       const patchData = {
         rawJson: {
