@@ -127,6 +127,7 @@ type SupportedContactFieldCondition =
 const isSupportedContactFieldCondition = (c: any): c is SupportedContactFieldCondition =>
   isTimeBasedCondition(c) ||
   isUserBasedCondition(c) ||
+  isContactSpecificCondition(c) ||
   isContactFieldSpecificCondition(c);
 
 type SupportedCaseCondition =
