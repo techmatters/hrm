@@ -49,7 +49,7 @@ export const getExcludedFields =
 
       return {
         isSupervisor: user.isSupervisor,
-        is: isContactOwner(user, contact),
+        isOwner: isContactOwner(user, contact),
         everyone: true,
         ...appliedTimeBasedConditions,
       };
