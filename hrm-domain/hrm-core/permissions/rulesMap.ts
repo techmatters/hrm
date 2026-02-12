@@ -77,7 +77,7 @@ const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
 export type ContactFieldSpecificCondition = {
   field:
     | `rawJson.${keyof ContactRawJson}`
-    | `rawJson.${keyof ContactRawJson}.${keyof ContactRawJson[keyof ContactRawJson]}`;
+    | `rawJson.${keyof ContactRawJson}.${string}`;
 };
 
 export const isContactFieldSpecificCondition = (
