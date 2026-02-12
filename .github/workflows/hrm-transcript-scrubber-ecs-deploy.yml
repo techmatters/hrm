@@ -110,6 +110,7 @@ jobs:
           file: ./hrm-domain/scheduled-tasks/transcript-scrubber/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}
+          provenance: false
 
       - id: generate-output
         run: |

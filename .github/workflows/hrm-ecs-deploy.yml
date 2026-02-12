@@ -83,6 +83,7 @@ jobs:
           file: ./hrm-domain/hrm-service/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-${{ github.sha }}
+          provenance: false
 
       - id: generate-output
         run: |

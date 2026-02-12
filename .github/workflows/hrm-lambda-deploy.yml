@@ -130,6 +130,7 @@ jobs:
             lambda_dir=${{ env.build_lambda_dir }}
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ecr_repository }}:${{ github.sha }}
+          provenance: false
 
       # The matrix build supports `lambda-groups` defined in the environment-region-map.json file
       # This allows us to deploy multiple lambdas to specific env/region combos that use a common docker image

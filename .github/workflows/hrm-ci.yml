@@ -77,6 +77,7 @@ jobs:
             lambda_dir=${{ env.build_lambda_dir }}
           push: false
           tags: ${{ env.build_lambda_name }}:ci-test
+          provenance: false
 
   build-service-container:
     runs-on: ubuntu-latest
@@ -90,17 +91,12 @@ jobs:
           file: ./hrm-domain/hrm-service/Dockerfile
           push: false
           tags: hrm-service-ci-test
+          provenance: false
 
   unit-tests:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run Elasticsearch
-        uses: elastic/elastic-github-actions/elasticsearch@master
-        with:
-          stack-version: 8.7.0
-          security-enabled: false
-
       - name: Checkout Branch
         uses: actions/checkout@v6
 
@@ -127,14 +123,12 @@ jobs:
           reporter: jest-junit
   service-tests:
     runs-on: ubuntu-latest
-
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+        ports:
+          - 9200:9200
     steps:
-      - name: Run Elasticsearch
-        uses: elastic/elastic-github-actions/elasticsearch@master
-        with:
-          stack-version: 8.7.0
-          security-enabled: false
-
       - name: Checkout Branch
         uses: actions/checkout@v6
 
@@ -159,6 +153,7 @@ jobs:
           file: ./hrm-domain/hrm-service/Dockerfile
           push: false
           tags: hrm-service
+          provenance: false
 
       - name: Run Service Tests
         run: npm run test:service:ci
