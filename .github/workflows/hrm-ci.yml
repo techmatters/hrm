@@ -131,11 +131,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run Elasticsearch
-        uses: elastic/elastic-github-actions/elasticsearch@master
+      - name: Configure sysctl limits
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+
+      - uses: getong/elasticsearch-action@v1.3
         with:
-          stack-version: 8.7.0
-          security-enabled: false
+          elasticsearch version: '8.11.0'
+          host port: 9200
+          container port: 9200
+          host node port: 9300
+          node port: 9300
+          discovery type: 'single-node'
 
       - name: Checkout Branch
         uses: actions/checkout@v6
