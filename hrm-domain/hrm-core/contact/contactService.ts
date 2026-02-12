@@ -16,77 +16,67 @@
 
 import {
   ContactJobType,
-  TResult,
-  isErr,
-  newErr,
-  newOk,
-  Result,
-  newOkFromData,
   ensureRejection,
-  isOk,
-  WorkerSID,
-  HrmAccountId,
-  TwilioUserIdentifier,
   ErrorResult,
   getTwilioAccountSidFromHrmAccountId,
+  HrmAccountId,
+  isErr,
+  isOk,
+  newErr,
+  newOk,
+  newOkFromData,
+  Result,
+  TResult,
+  TwilioUserIdentifier,
+  WorkerSID,
 } from '@tech-matters/types';
+import type { Contact } from '@tech-matters/hrm-types';
 import { getClient } from '@tech-matters/elasticsearch-client';
-import {
-  DocumentType,
-  HRM_CONTACTS_INDEX_TYPE,
-  hrmSearchConfiguration,
-} from '@tech-matters/hrm-search-config';
+import { DocumentType, HRM_CONTACTS_INDEX_TYPE, hrmSearchConfiguration } from '@tech-matters/hrm-search-config';
 
 import {
   connectToCase,
-  Contact,
+  ContactRecord,
   create,
-  SearchQueryFunction,
   ExistingContactRecord,
   getById,
   getByTaskSid,
   patch,
-  searchByProfileId,
   searchByIds,
-  ContactRecord,
+  searchByProfileId,
+  SearchQueryFunction,
 } from './contactDataAccess';
 
-import { type PaginationQuery, getPaginationElements } from '../search';
+import { getPaginationElements, type PaginationQuery } from '../search';
 import type { NewContactRecord } from './sql/contactInsertSql';
 import type { ContactRawJson, ReferralWithoutContactId } from './contactJson';
 import { InitializedCan } from '../permissions/initializeCanForRules';
 import { actionsMaps } from '../permissions';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
+import { newGlobalSystemUser } from '@tech-matters/twilio-worker-auth';
 import { createReferral } from '../referral/referralService';
 import { createContactJob } from '../contact-job/contact-job';
 import {
   type ConversationMedia,
-  type NewConversationMedia,
   createConversationMedia,
   isS3StoredTranscript,
   isS3StoredTranscriptPending,
+  type NewConversationMedia,
   updateConversationMediaSpecificData,
 } from '../conversation-media/conversationMedia';
-import {
-  type Profile,
-  getOrCreateProfileWithIdentifier,
-} from '../profile/profileService';
+import { getOrCreateProfileWithIdentifier, type Profile } from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referralDataAccess';
-import {
-  DatabaseErrorResult,
-  isDatabaseUniqueConstraintViolationErrorResult,
-} from '../sql';
-import { newGlobalSystemUser } from '@tech-matters/twilio-worker-auth';
+import { DatabaseErrorResult, isDatabaseUniqueConstraintViolationErrorResult } from '../sql';
 import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import type { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import {
   ContactListCondition,
-  generateContactSearchFilters,
   generateContactPermissionsFilters,
+  generateContactSearchFilters,
 } from './contactSearchIndex';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 import { getDbForAccount } from '../dbConnection';
-import { getExcludedFields } from './contactFieldExclusions';
+import { getExcludedFields, removeNonPermittedFieldsFromContact } from './contactFieldExclusions';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -244,7 +234,11 @@ export const createContact = async (
   accountSid: HrmAccountId,
   createdBy: WorkerSID,
   newContact: NewContactRecord,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissionRules,
+  }: { can: InitializedCan; user: TwilioUser; permissionRules: RulesFile },
   skipSearchIndex = false,
 ): Promise<Contact> => {
   let result: Result<CreateError, Contact>;
@@ -289,6 +283,12 @@ export const createContact = async (
         identifierId,
         definitionVersion,
       };
+      await removeNonPermittedFieldsFromContact(
+        user,
+        permissionRules,
+        completeNewContact,
+        true,
+      );
       const contactCreateResult = await create(conn)(accountSid, completeNewContact);
       if (isErr(contactCreateResult)) {
         return contactCreateResult;
