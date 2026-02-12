@@ -32,7 +32,11 @@ import {
 } from '@tech-matters/types';
 import type { Contact } from '@tech-matters/hrm-types';
 import { getClient } from '@tech-matters/elasticsearch-client';
-import { DocumentType, HRM_CONTACTS_INDEX_TYPE, hrmSearchConfiguration } from '@tech-matters/hrm-search-config';
+import {
+  DocumentType,
+  HRM_CONTACTS_INDEX_TYPE,
+  hrmSearchConfiguration,
+} from '@tech-matters/hrm-search-config';
 
 import {
   connectToCase,
@@ -64,9 +68,15 @@ import {
   type NewConversationMedia,
   updateConversationMediaSpecificData,
 } from '../conversation-media/conversationMedia';
-import { getOrCreateProfileWithIdentifier, type Profile } from '../profile/profileService';
+import {
+  getOrCreateProfileWithIdentifier,
+  type Profile,
+} from '../profile/profileService';
 import { deleteContactReferrals } from '../referral/referralDataAccess';
-import { DatabaseErrorResult, isDatabaseUniqueConstraintViolationErrorResult } from '../sql';
+import {
+  DatabaseErrorResult,
+  isDatabaseUniqueConstraintViolationErrorResult,
+} from '../sql';
 import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import type { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import {
@@ -76,7 +86,10 @@ import {
 } from './contactSearchIndex';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 import { getDbForAccount } from '../dbConnection';
-import { getExcludedFields, removeNonPermittedFieldsFromContact } from './contactFieldExclusions';
+import {
+  getExcludedFields,
+  removeNonPermittedFieldsFromContact,
+} from './contactFieldExclusions';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
