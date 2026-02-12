@@ -24,11 +24,10 @@ import { headers, setRules, useOpenRules } from '../server';
 import * as contactService from '@tech-matters/hrm-core/contact/contactService';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { AccountSID, WorkerSID } from '@tech-matters/types';
-import { ALWAYS_CAN } from '../mocks';
+import { ALWAYS_CAN, accountSid } from '../mocks';
 import { clearAllTables } from '../dbCleanup';
 import { setupServiceTests } from '../setupServiceTest';
 
-const accountSid: AccountSID = `AC${randomBytes(16).toString('hex')}`;
 const userTwilioWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
 
 const createTestContact = async (twilioWorkerId: WorkerSID) => {
