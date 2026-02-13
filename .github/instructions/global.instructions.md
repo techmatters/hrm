@@ -1,5 +1,4 @@
 ---
-applyTo: "plugin-hrm-form/**"
 excludeAgent: "code-review"
 ---
 
