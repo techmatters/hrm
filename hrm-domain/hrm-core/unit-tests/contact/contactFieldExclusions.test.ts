@@ -108,42 +108,42 @@ const createMockRules = (
 
 describe('getExcludedFields', () => {
   describe('Global condition sets (no field conditions)', () => {
-    it('should allow all fields when isOwner condition evaluates true', async () => {
+    it('should allow all fields when isOwner condition evaluates true', () => {
       const rules = createMockRules([['isOwner']]);
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({});
     });
 
-    it('should allow all fields when everyone condition is present', async () => {
+    it('should allow all fields when everyone condition is present', () => {
       const rules = createMockRules([['everyone']]);
       const user = newTwilioUser(accountSid, anotherWorkerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({});
     });
 
-    it('should allow all fields when isSupervisor condition evaluates true', async () => {
+    it('should allow all fields when isSupervisor condition evaluates true', () => {
       const rules = createMockRules([['isSupervisor']]);
       const user = newTwilioUser(accountSid, anotherWorkerSid, ['supervisor']);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({});
     });
 
-    it('should allow all fields when global condition set includes isOwner OR everyone', async () => {
+    it('should allow all fields when global condition set includes isOwner OR everyone', () => {
       const rules = createMockRules([['isOwner'], ['everyone']]);
       const user = newTwilioUser(accountSid, anotherWorkerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // everyone condition passes even for non-owner
       expect(excludedFields).toEqual({});
@@ -151,40 +151,40 @@ describe('getExcludedFields', () => {
   });
 
   describe('Field-specific condition sets', () => {
-    it('should exclude specific field when field condition does not evaluate true', async () => {
+    it('should exclude specific field when field condition does not evaluate true', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
       ]);
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({
         caseInformation: ['callSummary'],
       });
     });
 
-    it('should allow field when field-specific condition evaluates true', async () => {
+    it('should allow field when field-specific condition evaluates true', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
       ]);
       const user = newTwilioUser(accountSid, workerSid, ['supervisor']);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({});
     });
 
-    it('should allow unspecified fields when only field-specific conditions exist', async () => {
+    it('should allow unspecified fields when only field-specific conditions exist', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
       ]);
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // Only callSummary is restricted, other fields are allowed
       expect(excludedFields).toEqual({
@@ -194,7 +194,7 @@ describe('getExcludedFields', () => {
       expect(excludedFields.callerInformation).toBeUndefined();
     });
 
-    it('should exclude multiple fields in same form when conditions do not evaluate true', async () => {
+    it('should exclude multiple fields in same form when conditions do not evaluate true', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
         [{ field: 'rawJson.caseInformation.actionTaken' as any }, 'isSupervisor'],
@@ -202,14 +202,14 @@ describe('getExcludedFields', () => {
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({
         caseInformation: ['callSummary', 'actionTaken'],
       });
     });
 
-    it('should exclude fields from different forms', async () => {
+    it('should exclude fields from different forms', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
         [{ field: 'rawJson.childInformation.firstName' as any }, 'isSupervisor'],
@@ -217,7 +217,7 @@ describe('getExcludedFields', () => {
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({
         caseInformation: ['callSummary'],
@@ -225,7 +225,7 @@ describe('getExcludedFields', () => {
       });
     });
 
-    it('should use OR logic for multiple condition sets on same field', async () => {
+    it('should use OR logic for multiple condition sets on same field', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isOwner'],
@@ -233,7 +233,7 @@ describe('getExcludedFields', () => {
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // User is owner (workerSid matches), so field is allowed
       expect(excludedFields).toEqual({});
@@ -241,7 +241,7 @@ describe('getExcludedFields', () => {
   });
 
   describe('Multiple field conditions in single set', () => {
-    it('should exclude fields when multiple field conditions in same set (invalid config)', async () => {
+    it('should exclude fields when multiple field conditions in same set (invalid config)', () => {
       const rules = createMockRules([
         [
           { field: 'rawJson.caseInformation.callSummary' as any },
@@ -254,7 +254,7 @@ describe('getExcludedFields', () => {
       // Mock console.error to suppress the warning
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // The invalid configuration causes both fields to be excluded
       // because each field's condition set contains the other field condition
@@ -270,7 +270,7 @@ describe('getExcludedFields', () => {
       consoleErrorSpy.mockRestore();
     });
 
-    it('should allow fields when invalid config is overridden by global condition', async () => {
+    it('should allow fields when invalid config is overridden by global condition', () => {
       const rules = createMockRules([
         [
           { field: 'rawJson.caseInformation.callSummary' as any },
@@ -283,7 +283,7 @@ describe('getExcludedFields', () => {
 
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // Global isOwner condition allows all fields
       expect(excludedFields).toEqual({});
@@ -293,19 +293,19 @@ describe('getExcludedFields', () => {
   });
 
   describe('Empty condition sets', () => {
-    it('should allow all fields when no condition sets are defined', async () => {
+    it('should allow all fields when no condition sets are defined', () => {
       const rules = createMockRules([]);
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({});
     });
   });
 
   describe('Global + field-specific conditions combined', () => {
-    it('should allow all fields when global condition passes despite field restrictions', async () => {
+    it('should allow all fields when global condition passes despite field restrictions', () => {
       const rules = createMockRules([
         ['isOwner'],
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
@@ -313,13 +313,13 @@ describe('getExcludedFields', () => {
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // Global isOwner passes, so no fields are excluded
       expect(excludedFields).toEqual({});
     });
 
-    it('should check field-specific rules when global condition fails', async () => {
+    it('should check field-specific rules when global condition fails', () => {
       const rules = createMockRules([
         ['isSupervisor'], // Global condition
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isOwner'],
@@ -327,7 +327,7 @@ describe('getExcludedFields', () => {
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // Global isSupervisor fails, but field-specific isOwner passes for callSummary
       expect(excludedFields).toEqual({});
@@ -335,21 +335,21 @@ describe('getExcludedFields', () => {
   });
 
   describe('System user', () => {
-    it('should allow all fields for system users', async () => {
+    it('should allow all fields for system users', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
       ]);
       const user = newAccountSystemUser(accountSid);
       const getExcluded = getExcludedFields(rules);
 
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({});
     });
   });
 
   describe('Time-based conditions', () => {
-    it('should allow fields when createdHoursAgo condition is met', async () => {
+    it('should allow fields when createdHoursAgo condition is met', () => {
       const rules = createMockRules([
         [
           { field: 'rawJson.caseInformation.callSummary' as any },
@@ -360,12 +360,12 @@ describe('getExcludedFields', () => {
       const getExcluded = getExcludedFields(rules);
 
       // Contact was just created, so it's within 24 hours
-      const excludedFields = await getExcluded(mockContact, user, 'editContactField');
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({});
     });
 
-    it('should exclude fields when createdHoursAgo condition is not met', async () => {
+    it('should exclude fields when createdHoursAgo condition is not met', () => {
       // Create a contact with an older timestamp
       const oldContact = {
         ...mockContact,
@@ -383,7 +383,7 @@ describe('getExcludedFields', () => {
       const getExcluded = getExcludedFields(rules);
 
       // Contact was created 1 hour ago, which is > 0.5 hours
-      const excludedFields = await getExcluded(oldContact, user, 'editContactField');
+      const excludedFields = getExcluded(oldContact, user, 'editContactField');
 
       expect(excludedFields).toEqual({
         caseInformation: ['callSummary'],
@@ -408,7 +408,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     };
   };
 
-  it('Should remove non-permitted fields from complete contact object', async () => {
+  it('Should remove non-permitted fields from complete contact object', () => {
     const mockUser = createMockUser(workerSid);
     const rules = createBasicRules();
 
@@ -439,7 +439,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
       definitionVersion: 'br-v1',
     };
 
-    await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+    removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
 
     // callSummary should be removed (not owner)
     expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
@@ -451,7 +451,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     expect(contact.rawJson.callerInformation?.email).toBeUndefined();
   });
 
-  it('Should handle missing rawJson property gracefully', async () => {
+  it('Should handle missing rawJson property gracefully', () => {
     const mockUser = createMockUser(workerSid);
     const rules = createBasicRules();
 
@@ -477,9 +477,9 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     };
 
     // Should not throw even with empty forms
-    await expect(
+    expect(() =>
       removeNonPermittedFieldsFromContact(mockUser, rules, contact, true),
-    ).resolves.not.toThrow();
+    ).not.toThrow();
 
     // rawJson should still be present
     expect(contact.rawJson).toBeDefined();
@@ -487,7 +487,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     expect(contact.rawJson.childInformation).toEqual({});
   });
 
-  it('Should handle missing form properties gracefully and not affect other forms', async () => {
+  it('Should handle missing form properties gracefully and not affect other forms', () => {
     const mockUser = createMockUser(workerSid);
     const rules = createBasicRules();
 
@@ -514,7 +514,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
       definitionVersion: 'br-v1',
     };
 
-    await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+    removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
 
     // caseInformation is empty, so no field to remove
     expect(contact.rawJson.caseInformation).toEqual({});
@@ -526,7 +526,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     expect(contact.rawJson.callerInformation).toBeUndefined();
   });
 
-  it('Should handle missing field within a form gracefully', async () => {
+  it('Should handle missing field within a form gracefully', () => {
     const mockUser = createMockUser(workerSid);
     const rules = createBasicRules();
 
@@ -559,7 +559,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
       definitionVersion: 'br-v1',
     };
 
-    await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+    removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
 
     // Fields that were missing should remain missing, no error
     expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
@@ -570,7 +570,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     expect(contact.rawJson.callerInformation?.firstName).toBe('Should remain');
   });
 
-  it('Should not affect other exclusions when some properties are missing', async () => {
+  it('Should not affect other exclusions when some properties are missing', () => {
     const mockUser = createMockUser(workerSid);
     const rules = createBasicRules();
 
@@ -599,7 +599,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
       definitionVersion: 'br-v1',
     };
 
-    await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+    removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
 
     // Even though caseInformation is empty, other exclusions should still work
     expect(contact.rawJson.caseInformation).toEqual({});
@@ -608,7 +608,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     expect(contact.rawJson.callerInformation?.email).toBeUndefined();
   });
 
-  it('Should allow fields when user is owner', async () => {
+  it('Should allow fields when user is owner', () => {
     const mockUser = createMockUser(workerSid);
     const rules = createBasicRules();
 
@@ -639,7 +639,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
       definitionVersion: 'br-v1',
     };
 
-    await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+    removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
 
     // callSummary should remain (user is owner)
     expect(contact.rawJson.caseInformation?.callSummary).toBe(
@@ -653,7 +653,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     expect(contact.rawJson.callerInformation?.email).toBe('should.remain@example.com');
   });
 
-  it('Should allow fields when user is supervisor', async () => {
+  it('Should allow fields when user is supervisor', () => {
     const supervisorWorkerId: WorkerSID = `WK${randomBytes(16).toString('hex')}`;
     // Create supervisor user by passing 'supervisor' role
     const mockUser = newTwilioUser(accountSid, supervisorWorkerId, ['supervisor']);
@@ -686,7 +686,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
       definitionVersion: 'br-v1',
     };
 
-    await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+    removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
 
     // callSummary should be removed (not owner)
     expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
@@ -700,7 +700,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
     expect(contact.rawJson.callerInformation?.email).toBeUndefined();
   });
 
-  it('Should remove fields with falsy values when not permitted', async () => {
+  it('Should remove fields with falsy values when not permitted', () => {
     const mockUser = createMockUser(workerSid);
     const rules = createBasicRules();
 
@@ -731,7 +731,7 @@ describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
       definitionVersion: 'br-v1',
     };
 
-    await removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
+    removeNonPermittedFieldsFromContact(mockUser, rules, contact, true);
 
     // All falsy values should still be removed when not permitted
     expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();

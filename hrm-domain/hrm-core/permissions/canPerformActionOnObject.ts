@@ -25,6 +25,7 @@ import {
   isS3StoredConversationMedia,
 } from '../conversation-media/conversationMedia';
 import { TResult, newErr, newOk, HrmAccountId } from '@tech-matters/types';
+import { openRules } from './jsonPermissions';
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   hrmAccountId,
@@ -55,7 +56,11 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
     switch (targetKind) {
       case 'contact': {
-        const object = await getContactById(hrmAccountId, objectId, { can, user });
+        const object = await getContactById(hrmAccountId, objectId, {
+          can,
+          user,
+          permissionRules: openRules,
+        });
 
         const canPerform = actions.every(action => can(user, action, object));
 

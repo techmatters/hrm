@@ -31,7 +31,7 @@ import {
 
 export const getExcludedFields =
   (permissionRules: RulesFile) =>
-  async (
+  (
     contact: NewContactRecord | Contact,
     user: TwilioUser,
     action: ActionsForTK<'contactField'>,
@@ -115,14 +115,14 @@ export const getExcludedFields =
     return excludedFields;
   };
 
-export const removeNonPermittedFieldsFromContact = async (
+export const removeNonPermittedFieldsFromContact = (
   user: TwilioUser,
   permissionRules: RulesFile,
-  contact: NewContactRecord,
+  contact: NewContactRecord | Contact,
   forWriting: boolean,
 ) => {
   // Filter out any fields in the forms that this user isn't permitted to update
-  const writeExclusions = await getExcludedFields(permissionRules)(
+  const writeExclusions = getExcludedFields(permissionRules)(
     contact,
     user,
     forWriting ? 'editContactField' : 'viewContactField',

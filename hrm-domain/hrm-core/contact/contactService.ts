@@ -116,13 +116,19 @@ const filterExternalTranscripts = (contact: Contact): Contact => {
 };
 
 type PermissionsBasedTransformation = {
-  action: (typeof actionsMaps)['contact'][keyof (typeof actionsMaps)['contact']];
+  action:
+    | (typeof actionsMaps)['contact'][keyof (typeof actionsMaps)['contact']]
+    | (typeof actionsMaps)['contactField'][keyof (typeof actionsMaps)['contactField']];
   transformation: (contact: Contact) => Contact;
 };
 
 const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
   {
     action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
+    transformation: filterExternalTranscripts,
+  },
+  {
+    action: actionsMaps.contactField.VIEW_CONTACT_FIELD,
     transformation: filterExternalTranscripts,
   },
 ];
@@ -137,19 +143,25 @@ export const contactRecordToContact = (record: ContactRecord): Contact => {
 };
 
 export const bindApplyTransformations =
-  (can: InitializedCan, user: TwilioUser) =>
+  (can: InitializedCan, user: TwilioUser, permissionRules: RulesFile) =>
   (contact: Contact): Contact => {
-    return permissionsBasedTransformations.reduce(
+    const transformedContact = permissionsBasedTransformations.reduce(
       (transformed, { action, transformation }) =>
         !can(user, action, contact) ? transformation(transformed) : transformed,
       contact,
     );
+    removeNonPermittedFieldsFromContact(user, permissionRules, transformedContact, false);
+    return transformedContact;
   };
 
 export const getContactById = async (
   accountSid: HrmAccountId,
   contactId: string,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissionRules,
+  }: { can: InitializedCan; user: TwilioUser; permissionRules: RulesFile },
 ) => {
   console.info(
     `[Data Access Audit] ${accountSid}: Contact read by ${user.workerSid}, id: ${contactId}`,
@@ -157,19 +169,31 @@ export const getContactById = async (
   const contact = await getById(accountSid, parseInt(contactId));
 
   return contact
-    ? bindApplyTransformations(can, user)(contactRecordToContact(contact))
+    ? bindApplyTransformations(
+        can,
+        user,
+        permissionRules,
+      )(contactRecordToContact(contact))
     : undefined;
 };
 
 export const getContactByTaskId = async (
   accountSid: HrmAccountId,
   taskId: string,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissionRules,
+  }: { can: InitializedCan; user: TwilioUser; permissionRules: RulesFile },
 ) => {
   const contact = await getByTaskSid(accountSid, taskId);
 
   return contact
-    ? bindApplyTransformations(can, user)(contactRecordToContact(contact))
+    ? bindApplyTransformations(
+        can,
+        user,
+        permissionRules,
+      )(contactRecordToContact(contact))
     : undefined;
 };
 
@@ -312,7 +336,7 @@ export const createContact = async (
       contact.csamReports = [];
       contact.conversationMedia = [];
 
-      const applyTransformations = bindApplyTransformations(can, user);
+      const applyTransformations = bindApplyTransformations(can, user, permissionRules);
 
       return newOkFromData(applyTransformations(contactRecordToContact(contact)));
     });
@@ -384,7 +408,7 @@ export const patchContact = async (
     if (!definitionVersion) {
       const contact =
         permissionCheckContact ??
-        (await getContactById(accountSid, contactId, { can, user }));
+        (await getContactById(accountSid, contactId, { can, user, permissionRules }));
       definitionVersion = contact.definitionVersion;
     }
 
@@ -422,7 +446,7 @@ export const patchContact = async (
     }
     const updated = contactRecordToContact(updatedRecord);
 
-    const applyTransformations = bindApplyTransformations(can, user);
+    const applyTransformations = bindApplyTransformations(can, user, permissionRules);
 
     // trigger index operation but don't await for it
 
@@ -444,7 +468,11 @@ export const connectContactToCase = async (
   accountSid: HrmAccountId,
   contactId: string,
   caseId: string,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissionRules,
+  }: { can: InitializedCan; user: TwilioUser; permissionRules: RulesFile },
   skipSearchIndex = false,
 ): Promise<Contact> => {
   if (caseId === null) {
@@ -463,7 +491,7 @@ export const connectContactToCase = async (
   }
   const updated = contactRecordToContact(updatedRecord);
 
-  const applyTransformations = bindApplyTransformations(can, user);
+  const applyTransformations = bindApplyTransformations(can, user, permissionRules);
 
   // trigger index operation but don't await for it
   if (!skipSearchIndex && !isRemovedOfflineContact(updated)) {
@@ -477,7 +505,11 @@ export const addConversationMediaToContact = async (
   accountSid: HrmAccountId,
   contactId: string,
   conversationMediaPayload: NewConversationMedia[],
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissionRules,
+  }: { can: InitializedCan; user: TwilioUser; permissionRules: RulesFile },
   skipSearchIndex = false,
 ): Promise<Contact> => {
   const db = await getDbForAccount(accountSid);
@@ -508,7 +540,7 @@ export const addConversationMediaToContact = async (
         additionalPayload: { conversationMediaId: pendingTranscript.id },
       });
     }
-    const applyTransformations = bindApplyTransformations(can, user);
+    const applyTransformations = bindApplyTransformations(can, user, permissionRules);
     const updated = {
       ...contact,
       conversationMedia: [...contact.conversationMedia, ...createdConversationMedia],
@@ -545,7 +577,7 @@ const generalizedSearchContacts =
     count: number;
     contacts: Contact[];
   }> => {
-    const applyTransformations = bindApplyTransformations(can, user);
+    const applyTransformations = bindApplyTransformations(can, user, permissionRules);
     const { limit, offset } = getPaginationElements(query);
 
     const unprocessedResults = await searchQuery(
