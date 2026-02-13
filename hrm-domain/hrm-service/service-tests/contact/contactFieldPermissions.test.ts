@@ -667,7 +667,7 @@ describe('Contact Field Permissions Tests', () => {
         if (expectedFieldsIncluded) {
           for (const fieldPath of expectedFieldsIncluded) {
             const [form, field] = fieldPath.split('.');
-            if (contactData.rawJson[form]?.[field]) {
+            if (field in (contactData.rawJson[form] ?? {})) {
               expect(createdContact.rawJson[form][field]).toBe(
                 contactData.rawJson[form][field],
               );
@@ -679,7 +679,7 @@ describe('Contact Field Permissions Tests', () => {
         if (expectedFieldsExcluded) {
           for (const fieldPath of expectedFieldsExcluded) {
             const [form, field] = fieldPath.split('.');
-            if (contactData.rawJson[form]?.[field]) {
+            if (field in (contactData.rawJson[form] ?? {})) {
               expect(createdContact.rawJson[form]?.[field]).toBeUndefined();
             }
           }
