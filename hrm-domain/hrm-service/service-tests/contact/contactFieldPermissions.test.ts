@@ -1089,6 +1089,231 @@ describe('Contact Field Permissions Tests', () => {
     });
   });
 
+  describe('PATCH /contacts/:id - Field-level permissions on read (response)', () => {
+    const overrideViewPermissions = (permissions: TKConditionsSets<'contactField'>) => {
+      useOpenRules();
+      const rules: Partial<RulesFile> = {
+        viewContactField: permissions,
+      };
+      setRules(rules);
+    };
+
+    it('Should hide fields in PATCH response based on viewContactField permissions', async () => {
+      overrideViewPermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+      ]);
+
+      const patchData = {
+        rawJson: {
+          caseInformation: {
+            actionTaken: 'Updated action',
+          },
+        },
+      };
+
+      const response = await request
+        .patch(`${routeBase}/${testContact.id}`)
+        .set(headers)
+        .send(patchData);
+
+      expect(response.status).toBe(200);
+      // Hidden field should not be present in response
+      expect(response.body.rawJson.caseInformation?.callSummary).toBeUndefined();
+      // Visible field should be present
+      expect(response.body.rawJson.caseInformation.actionTaken).toBe(
+        patchData.rawJson.caseInformation.actionTaken,
+      );
+    });
+  });
+
+  describe('PUT /contacts/:contactId/connectToCase - Field-level permissions on read (response)', () => {
+    const overrideViewPermissions = (permissions: TKConditionsSets<'contactField'>) => {
+      useOpenRules();
+      const rules: Partial<RulesFile> = {
+        viewContactField: permissions,
+      };
+      setRules(rules);
+    };
+
+    it('Should hide fields in connectToCase response based on viewContactField permissions', async () => {
+      overrideViewPermissions([
+        [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
+      ]);
+
+      // First create a case to connect to
+      const caseResponse = await request
+        .post(`/v0/accounts/${accountSid}/cases`)
+        .set(headers)
+        .send({
+          helpline: 'helpline',
+          info: {},
+          status: 'open',
+        });
+
+      const caseId = caseResponse.body.id;
+
+      const response = await request
+        .put(`${routeBase}/${testContact.id}/connectToCase`)
+        .set(headers)
+        .send({ caseId });
+
+      expect(response.status).toBe(200);
+      // Hidden field should not be present
+      expect(response.body.rawJson.childInformation?.firstName).toBeUndefined();
+      // Visible field should be present
+      expect(response.body.rawJson.caseInformation.actionTaken).toBeDefined();
+    });
+  });
+
+  describe('DELETE /contacts/:contactId/connectToCase - Field-level permissions on read (response)', () => {
+    const overrideViewPermissions = (permissions: TKConditionsSets<'contactField'>) => {
+      useOpenRules();
+      const rules: Partial<RulesFile> = {
+        viewContactField: permissions,
+      };
+      setRules(rules);
+    };
+
+    it('Should hide fields in disconnect response based on viewContactField permissions', async () => {
+      // First connect to a case
+      const caseResponse = await request
+        .post(`/v0/accounts/${accountSid}/cases`)
+        .set(headers)
+        .send({
+          helpline: 'helpline',
+          info: {},
+          status: 'open',
+        });
+
+      await request
+        .put(`${routeBase}/${testContact.id}/connectToCase`)
+        .set(headers)
+        .send({ caseId: caseResponse.body.id });
+
+      await finalizeContact(testContact);
+
+      overrideViewPermissions([
+        [{ field: 'rawJson.caseInformation.actionTaken' }, 'isSupervisor'],
+      ]);
+
+      const response = await request
+        .delete(`${routeBase}/${testContact.id}/connectToCase`)
+        .set(headers);
+
+      expect(response.status).toBe(200);
+      // Hidden field should not be present
+      expect(response.body.rawJson.caseInformation?.actionTaken).toBeUndefined();
+      // Visible field should be present
+      expect(response.body.rawJson.childInformation.firstName).toBeDefined();
+    });
+  });
+
+  describe('POST /contacts/:contactId/conversationMedia - Field-level permissions on read (response)', () => {
+    const overrideViewPermissions = (permissions: TKConditionsSets<'contactField'>) => {
+      useOpenRules();
+      const rules: Partial<RulesFile> = {
+        viewContactField: permissions,
+      };
+      setRules(rules);
+    };
+
+    it('Should hide fields in conversationMedia response based on viewContactField permissions', async () => {
+      overrideViewPermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+        [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
+      ]);
+
+      const mediaPayload = [
+        {
+          storeType: 'S3',
+          storeTypeSpecificData: {
+            type: 'recording',
+            location: {
+              bucket: 'test-bucket',
+              key: 'test-key',
+            },
+          },
+        },
+      ];
+
+      const response = await request
+        .post(`${routeBase}/${testContact.id}/conversationMedia`)
+        .set(headers)
+        .send(mediaPayload);
+
+      expect(response.status).toBe(200);
+      // Hidden fields should not be present
+      expect(response.body.rawJson.caseInformation?.callSummary).toBeUndefined();
+      expect(response.body.rawJson.childInformation?.firstName).toBeUndefined();
+      // Visible field should be present
+      expect(response.body.rawJson.caseInformation.actionTaken).toBeDefined();
+      // Media should be added
+      expect(response.body.conversationMedia.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('GET /profiles/:profileId/contacts - Field-level permissions on read (list)', () => {
+    const overrideViewPermissions = (permissions: TKConditionsSets<'contactField'>) => {
+      useOpenRules();
+      const rules: Partial<RulesFile> = {
+        viewContactField: permissions,
+      };
+      setRules(rules);
+    };
+
+    it('Should hide fields in all contacts returned by profile endpoint', async () => {
+      overrideViewPermissions([
+        [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
+      ]);
+
+      // Get the profile ID from the test contact
+      const profileId = testContact.profileId;
+
+      if (!profileId) {
+        // Skip if contact doesn't have a profile
+        return;
+      }
+
+      const response = await request
+        .get(`/v0/accounts/${accountSid}/profiles/${profileId}/contacts`)
+        .set(headers);
+
+      expect(response.status).toBe(200);
+      expect(response.body.contacts).toBeDefined();
+
+      // Check that all contacts in the list have fields filtered
+      response.body.contacts.forEach(contact => {
+        expect(contact.rawJson.caseInformation?.callSummary).toBeUndefined();
+        expect(contact.rawJson.caseInformation.actionTaken).toBeDefined();
+      });
+    });
+
+    it('Should show all fields in contacts list when owner', async () => {
+      overrideViewPermissions([['isOwner']]);
+
+      const profileId = testContact.profileId;
+
+      if (!profileId) {
+        return;
+      }
+
+      const response = await request
+        .get(`/v0/accounts/${accountSid}/profiles/${profileId}/contacts`)
+        .set(headers);
+
+      expect(response.status).toBe(200);
+      expect(response.body.contacts).toBeDefined();
+
+      // All fields should be visible for owner
+      response.body.contacts.forEach(contact => {
+        if (contact.twilioWorkerId === userTwilioWorkerId) {
+          expect(contact.rawJson.caseInformation.callSummary).toBeDefined();
+          expect(contact.rawJson.childInformation.firstName).toBeDefined();
+        }
+      });
+    });
+  });
+
   describe('POST /contacts/search and POST /contacts/generalizedSearch - Field-level permissions on read', () => {
     const overrideViewPermissions = (permissions: TKConditionsSets<'contactField'>) => {
       useOpenRules();
