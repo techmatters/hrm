@@ -913,10 +913,7 @@ describe('Contact Field Permissions Tests', () => {
           [{ field: 'rawJson.caseInformation.callSummary' }, 'isSupervisor'],
           [{ field: 'rawJson.childInformation.firstName' }, 'isSupervisor'],
         ],
-        expectedFieldsVisible: [
-          'caseInformation.actionTaken',
-          'childInformation.city',
-        ],
+        expectedFieldsVisible: ['caseInformation.actionTaken', 'childInformation.city'],
         expectedFieldsHidden: [
           'caseInformation.callSummary',
           'childInformation.firstName',
@@ -967,9 +964,7 @@ describe('Contact Field Permissions Tests', () => {
       }: ReadTestCase) => {
         overrideViewPermissions(viewContactFieldPermissions);
 
-        const response = await request
-          .get(`${routeBase}/${testContact.id}`)
-          .set(headers);
+        const response = await request.get(`${routeBase}/${testContact.id}`).set(headers);
 
         expect(response.status).toBe(200);
 
@@ -1020,9 +1015,7 @@ describe('Contact Field Permissions Tests', () => {
         [{ field: 'rawJson.caseInformation.callSummary' }, { createdHoursAgo: 24 }],
       ]);
 
-      const response = await request
-        .get(`${routeBase}/${testContact.id}`)
-        .set(headers);
+      const response = await request.get(`${routeBase}/${testContact.id}`).set(headers);
 
       expect(response.status).toBe(200);
       // Field should be visible because contact was created within 24 hours
@@ -1037,9 +1030,7 @@ describe('Contact Field Permissions Tests', () => {
         [{ field: 'rawJson.caseInformation.actionTaken' }, 'isSupervisor'],
       ]);
 
-      const response = await request
-        .get(`${routeBase}/${testContact.id}`)
-        .set(headers);
+      const response = await request.get(`${routeBase}/${testContact.id}`).set(headers);
 
       expect(response.status).toBe(200);
       // Hidden fields should not be present
@@ -1126,11 +1117,9 @@ describe('Contact Field Permissions Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.contacts).toBeDefined();
-      
-      const foundContact = response.body.contacts.find(
-        c => c.id === testContact.id,
-      );
-      
+
+      const foundContact = response.body.contacts.find(c => c.id === testContact.id);
+
       if (foundContact) {
         expect(foundContact.rawJson.caseInformation?.callSummary).toBeUndefined();
         expect(foundContact.rawJson.caseInformation.actionTaken).toBe(
@@ -1157,11 +1146,9 @@ describe('Contact Field Permissions Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.contacts).toBeDefined();
-      
-      const foundContact = response.body.contacts.find(
-        c => c.id === testContact.id,
-      );
-      
+
+      const foundContact = response.body.contacts.find(c => c.id === testContact.id);
+
       if (foundContact) {
         expect(foundContact.rawJson.childInformation?.firstName).toBeUndefined();
         expect(foundContact.rawJson.childInformation.city).toBe(
@@ -1185,11 +1172,9 @@ describe('Contact Field Permissions Tests', () => {
         .send(searchBody);
 
       expect(response.status).toBe(200);
-      
-      const foundContact = response.body.contacts.find(
-        c => c.id === testContact.id,
-      );
-      
+
+      const foundContact = response.body.contacts.find(c => c.id === testContact.id);
+
       if (foundContact) {
         expect(foundContact.rawJson.caseInformation.callSummary).toBe(
           testContact.rawJson.caseInformation.callSummary,
