@@ -34,7 +34,6 @@ import {
   createContact,
 } from '@tech-matters/hrm-core/contact/contactService';
 import { headers, useOpenRules } from '../server';
-import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { ALWAYS_CAN, CaseSectionInsert, populateCaseSections } from '../mocks';
 import { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { setupServiceTests } from '../setupServiceTest';
@@ -234,10 +233,7 @@ describe('/cases route', () => {
         accountSid,
         String(createdContact.id),
         String(createdCase.id),
-        {
-          user: newTwilioUser(accountSid, workerSid, []),
-          can: () => true,
-        },
+        ALWAYS_CAN,
         true,
       );
 
@@ -1055,10 +1051,7 @@ describe('/cases route', () => {
         accountSid,
         String(createdContact.id),
         String(createdCase.id),
-        {
-          user: newTwilioUser(accountSid, workerSid, []),
-          can: () => true,
-        },
+        ALWAYS_CAN,
         true,
       );
 
