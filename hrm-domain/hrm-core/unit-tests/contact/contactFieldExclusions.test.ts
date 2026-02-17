@@ -475,11 +475,7 @@ describe('getExcludedFields', () => {
 
     it('should exclude field when nobody is combined with other conditions in AND logic', () => {
       const rules = createMockRules([
-        [
-          { field: 'rawJson.caseInformation.callSummary' as any },
-          'isOwner',
-          'nobody',
-        ],
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isOwner', 'nobody'],
       ]);
       const user = newTwilioUser(accountSid, workerSid, []);
       const getExcluded = getExcludedFields(rules);
