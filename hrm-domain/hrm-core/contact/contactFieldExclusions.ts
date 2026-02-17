@@ -55,6 +55,7 @@ export const getExcludedFields =
         isSupervisor: user.isSupervisor,
         isOwner: isContactOwner(user, contact),
         everyone: true,
+        nobody: false,
         ...appliedTimeBasedConditions,
       };
     };

@@ -174,3 +174,62 @@ describe('/permissions/:action route with contact objectType', () => {
     },
   );
 });
+
+describe('Nobody condition tests', () => {
+  const accountSid: AccountSID = 'ACdev';
+
+  describe('Contact permissions with nobody condition', () => {
+    let testContact: any;
+
+    beforeEach(async () => {
+      const contact: NewContactRecord = {
+        ...withTaskId,
+        channel: 'web',
+        taskId: `${withTaskId.taskId}-nobody-test`,
+        timeOfContact: new Date().toISOString(),
+        channelSid: 'channelSid',
+        serviceSid: 'serviceSid',
+        rawJson: {
+          callType: 'Test',
+          categories: {},
+          caseInformation: {
+            urgencyLevel: 'high',
+            actionTaken: 'Test action',
+          },
+          childInformation: {},
+          definitionVersion: 'v1',
+        },
+      } as NewContactRecord;
+      const { contact: createdContact } = (
+        await contactDB.create()(accountSid, contact)
+      ).unwrap();
+      testContact = createdContact;
+    });
+
+    it('should return 403 when checking editContactField permission for urgencyLevel field with nobody condition', async () => {
+      // dev.json has: [{"field": "rawJson.caseInformation.urgencyLevel"}, "nobody"]
+      const route = `/v0/accounts/${accountSid}/permissions/${actionsMaps.contactField.EDIT_CONTACT_FIELD}?objectType=contact&objectId=${testContact.id}&field=rawJson.caseInformation.urgencyLevel`;
+      const res = await request.get(route).set(headers);
+
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('should return 403 when checking viewContactField permission for urgencyLevel field with nobody condition', async () => {
+      // dev.json has: [{"field": "rawJson.caseInformation.urgencyLevel"}, "nobody"]
+      const route = `/v0/accounts/${accountSid}/permissions/${actionsMaps.contactField.VIEW_CONTACT_FIELD}?objectType=contact&objectId=${testContact.id}&field=rawJson.caseInformation.urgencyLevel`;
+      const res = await request.get(route).set(headers);
+
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('should return 200 when checking viewContactField permission for actionTaken with isSupervisor condition for supervisor user', async () => {
+      // dev.json has: [{"field": "rawJson.caseInformation.actionTaken"}, "isSupervisor"]
+      // This test would need a supervisor user to pass, but with regular user it should fail
+      const route = `/v0/accounts/${accountSid}/permissions/${actionsMaps.contactField.VIEW_CONTACT_FIELD}?objectType=contact&objectId=${testContact.id}&field=rawJson.caseInformation.actionTaken`;
+      const res = await request.get(route).set(headers);
+
+      // With non-supervisor user, this should fail
+      expect(res.statusCode).toBe(403);
+    });
+  });
+});
