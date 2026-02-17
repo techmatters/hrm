@@ -62,7 +62,7 @@ export const isTimeBasedCondition = (c: any): c is TimeBasedCondition => {
   return false;
 };
 
-const userBasedConditions = ['isSupervisor', 'everyone'] as const;
+const userBasedConditions = ['isSupervisor', 'everyone', 'nobody'] as const;
 export type UserBasedCondition = (typeof userBasedConditions)[number];
 
 const isUserBasedCondition = (c: any): c is UserBasedCondition =>

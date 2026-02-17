@@ -28,18 +28,22 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>(
   conditionWhereClauses: ConditionWhereClausesSQL<TKind>,
 ): [clause: string] | [] => {
   type ListCondition = TKCondition<TKind>;
-  const ALL_OR_NOTHING_CONDITIONS: ListCondition[] = ['everyone', 'isSupervisor'];
+  const ALL_OR_NOTHING_CONDITIONS: ListCondition[] = [
+    'everyone',
+    'isSupervisor',
+    'nobody',
+  ];
   type WhereClauseGeneratingCondition = Exclude<
     ListCondition,
     'everyone' | 'isSupervisor'
   >;
   const conditionSetClauses: string[] = [];
   const conditionsThatAllowAll: ListCondition[] = userIsSupervisor
-    ? ALL_OR_NOTHING_CONDITIONS
+    ? ['isSupervisor', 'everyone']
     : ['everyone'];
   const conditionsThatBlockAll: ListCondition[] = userIsSupervisor
-    ? []
-    : ['isSupervisor'];
+    ? ['nobody']
+    : ['isSupervisor', 'nobody'];
   for (const caseListConditionSet of listConditionSets) {
     // Any condition set that has only 'all' conditions, i.e. 'everyone' (or 'isSupervisor' for supervisors)
     // means permissions are open regardless of what other conditions there are, so short circuit

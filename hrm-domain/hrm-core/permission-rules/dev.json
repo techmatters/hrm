@@ -10,8 +10,8 @@
 
   "viewContact": [["everyone"]],
   "editContact": [["isSupervisor"], ["isOwner"]],
-  "viewContactField": [["everyone"]],
-  "editContactField": [["everyone"]],
+  "viewContactField": [[{"field": "rawJson.caseInformation.relationshipToChild"}, "nobody"], [{"field": "rawJson.caseInformation.relationshipToChild"}, "isSupervisor"]],
+  "editContactField": [[{"field": "rawJson.caseInformation.relationshipToChild"}, "nobody"], [{"field": "rawJson.caseInformation.relationshipToChild"}, "nobody"], [{"field": "rawJson.callerInformation.relationshipToChild"}, "nobody"]],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["everyone"]],
   "viewRecording": [["everyone"]],

@@ -20,6 +20,9 @@ import { TKCondition, TimeBasedCondition } from '../rulesMap';
 export type TKindPermissionTarget = Extract<TargetKind, 'case' | 'contact'>;
 
 export type PermissionFilterGenerators<TKind extends TKindPermissionTarget, T> = Record<
-  Exclude<TKCondition<TKind>, 'everyone' | 'isSupervisor' | TimeBasedCondition>,
+  Exclude<
+    TKCondition<TKind>,
+    'everyone' | 'nobody' | 'isSupervisor' | TimeBasedCondition
+  >,
   T | ((condition: TKCondition<TKind>) => T)
 > & { timeBasedCondition: (condition: TimeBasedCondition) => T };
