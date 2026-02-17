@@ -840,3 +840,311 @@ describe('Test different scenarios (PostSurvey)', () => {
     },
   );
 });
+
+// Test 'nobody' condition
+describe('Test nobody condition across all target kinds', () => {
+  describe('Case', () => {
+    each(
+      [
+        {
+          conditionsSets: [['nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody condition alone',
+          caseObj: {
+            status: 'open',
+            info: {},
+            twilioWorkerId: creatorSid,
+            helpline,
+            createdBy: creatorSid,
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, creatorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['isCreator', 'nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody combined with isCreator (user is creator)',
+          caseObj: {
+            status: 'open',
+            info: {},
+            twilioWorkerId: creatorSid,
+            helpline,
+            createdBy: creatorSid,
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, creatorSid, []),
+        },
+        {
+          conditionsSets: [['isSupervisor', 'nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody combined with isSupervisor (user is supervisor)',
+          caseObj: {
+            status: 'open',
+            info: {},
+            twilioWorkerId: creatorSid,
+            helpline,
+            createdBy: workerSid,
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['nobody'], ['isSupervisor']],
+          expectedResult: true,
+          expectedDescription: 'nobody OR isSupervisor (user is supervisor)',
+          caseObj: {
+            status: 'open',
+            info: {},
+            twilioWorkerId: creatorSid,
+            helpline,
+            createdBy: workerSid,
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['nobody'], ['isCreator']],
+          expectedResult: false,
+          expectedDescription: 'nobody OR isCreator (user is not creator)',
+          caseObj: {
+            status: 'open',
+            info: {},
+            twilioWorkerId: creatorSid,
+            helpline,
+            createdBy: creatorSid,
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, notCreatorSid, []),
+        },
+      ].map(addPrettyConditionsSets),
+    ).describe(
+      'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+      ({ conditionsSets, caseObj, user, expectedResult }) => {
+        const rules = buildRules({ case: conditionsSets });
+        const can = initializeCanForRules(rules);
+
+        Object.values(actionsMaps.case).forEach(action =>
+          test(`${action}`, async () => {
+            expect(can(user, action, caseObj)).toBe(expectedResult);
+          }),
+        );
+      },
+    );
+  });
+
+  describe('Contact', () => {
+    each(
+      [
+        {
+          conditionsSets: [['nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody condition alone',
+          contactObj: {
+            accountSid,
+            twilioWorkerId: creatorSid,
+          },
+          user: newTwilioUser(accountSid, creatorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['isOwner', 'nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody combined with isOwner (user is owner)',
+          contactObj: {
+            accountSid,
+            twilioWorkerId: creatorSid,
+          },
+          user: newTwilioUser(accountSid, creatorSid, []),
+        },
+        {
+          conditionsSets: [['isSupervisor', 'nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody combined with isSupervisor (user is supervisor)',
+          contactObj: {
+            accountSid,
+            twilioWorkerId: creatorSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['nobody'], ['isSupervisor']],
+          expectedResult: true,
+          expectedDescription: 'nobody OR isSupervisor (user is supervisor)',
+          contactObj: {
+            accountSid,
+            twilioWorkerId: creatorSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['nobody'], ['isOwner']],
+          expectedResult: false,
+          expectedDescription: 'nobody OR isOwner (user is not owner)',
+          contactObj: {
+            accountSid,
+            twilioWorkerId: creatorSid,
+          },
+          user: newTwilioUser(accountSid, notCreatorSid, []),
+        },
+      ].map(addPrettyConditionsSets),
+    ).describe(
+      'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+      ({ conditionsSets, contactObj, user, expectedResult }) => {
+        const rules = buildRules({ contact: conditionsSets });
+        const can = initializeCanForRules(rules);
+
+        Object.values(actionsMaps.contact).forEach(action =>
+          test(`${action}`, async () => {
+            expect(can(user, action, contactObj)).toBe(expectedResult);
+          }),
+        );
+      },
+    );
+  });
+
+  describe('Profile', () => {
+    each(
+      [
+        {
+          conditionsSets: [['nobody']],
+          expectedDescription: 'nobody condition alone',
+          profileObj: {
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+          expectedResult: false,
+        },
+        {
+          conditionsSets: [['isSupervisor', 'nobody']],
+          expectedDescription: 'nobody combined with isSupervisor (user is supervisor)',
+          profileObj: {
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+          expectedResult: false,
+        },
+        {
+          conditionsSets: [['nobody'], ['isSupervisor']],
+          expectedDescription: 'nobody OR isSupervisor (user is supervisor)',
+          profileObj: {
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+          expectedResult: true,
+        },
+      ].map(addPrettyConditionsSets),
+    ).describe(
+      'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+      ({ conditionsSets, profileObj, user, expectedResult }) => {
+        const rules = buildRules({ profile: conditionsSets });
+        const can = initializeCanForRules(rules);
+
+        Object.values(actionsMaps.profile).forEach(action =>
+          test(`${action}`, async () => {
+            expect(can(user, action, profileObj)).toBe(expectedResult);
+          }),
+        );
+      },
+    );
+  });
+
+  describe('ProfileSection', () => {
+    each(
+      [
+        {
+          conditionsSets: [['nobody']],
+          expectedDescription: 'nobody condition alone',
+          profileSectionObj: {
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+          expectedResult: false,
+        },
+        {
+          conditionsSets: [['isSupervisor', 'nobody']],
+          expectedDescription: 'nobody combined with isSupervisor (user is supervisor)',
+          profileSectionObj: {
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+          expectedResult: false,
+        },
+        {
+          conditionsSets: [['nobody'], ['isSupervisor']],
+          expectedDescription: 'nobody OR isSupervisor (user is supervisor)',
+          profileSectionObj: {
+            accountSid,
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+          expectedResult: true,
+        },
+      ].map(addPrettyConditionsSets),
+    ).describe(
+      'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+      ({ conditionsSets, profileSectionObj, user, expectedResult }) => {
+        const rules = buildRules({ profileSection: conditionsSets });
+        const can = initializeCanForRules(rules);
+
+        Object.values(actionsMaps.profileSection).forEach(action =>
+          test(`${action}`, async () => {
+            expect(can(user, action, profileSectionObj)).toBe(expectedResult);
+          }),
+        );
+      },
+    );
+  });
+
+  describe('PostSurvey', () => {
+    each(
+      [
+        {
+          conditionsSets: [['nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody condition alone',
+          postSurveyObj: {
+            accountSid,
+            taskId: 'task-sid',
+            contactTaskId: 'contact-task-id',
+            data: {},
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['isSupervisor', 'nobody']],
+          expectedResult: false,
+          expectedDescription: 'nobody combined with isSupervisor (user is supervisor)',
+          postSurveyObj: {
+            accountSid,
+            taskId: 'task-sid',
+            contactTaskId: 'contact-task-id',
+            data: {},
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+        },
+        {
+          conditionsSets: [['nobody'], ['isSupervisor']],
+          expectedResult: true,
+          expectedDescription: 'nobody OR isSupervisor (user is supervisor)',
+          postSurveyObj: {
+            accountSid,
+            taskId: 'task-sid',
+            contactTaskId: 'contact-task-id',
+            data: {},
+          },
+          user: newTwilioUser(accountSid, supervisorSid, ['supervisor']),
+        },
+      ].map(addPrettyConditionsSets),
+    ).describe(
+      'Expect $expectedResult when $expectedDescription with $prettyConditionsSets',
+      ({ conditionsSets, postSurveyObj, user, expectedResult }) => {
+        const rules = buildRules({ postSurvey: conditionsSets });
+        const can = initializeCanForRules(rules);
+
+        Object.values(actionsMaps.postSurvey).forEach(action =>
+          test(`${action}`, async () => {
+            expect(can(user, action, postSurveyObj)).toBe(expectedResult);
+          }),
+        );
+      },
+    );
+  });
+});
