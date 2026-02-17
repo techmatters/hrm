@@ -16,6 +16,7 @@
 import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
 import { PassThroughConfig } from './client';
 import createIndex from './createIndex';
+import { newErr, newOk, TResult } from '@tech-matters/types';
 
 export type IndexDocumentExtraParams<T> = {
   id: string;
@@ -24,7 +25,7 @@ export type IndexDocumentExtraParams<T> = {
 };
 
 export type IndexDocumentParams<T> = PassThroughConfig<T> & IndexDocumentExtraParams<T>;
-export type IndexDocumentResponse = IndexResponse;
+export type IndexDocumentResponse = TResult<'IndexDocumentError', IndexResponse>;
 
 export const indexDocument = async <T>({
   client,
@@ -34,19 +35,28 @@ export const indexDocument = async <T>({
   indexConfig,
   autocreate = false,
 }: IndexDocumentParams<T>): Promise<IndexDocumentResponse> => {
-  if (autocreate) {
-    // const exists = await client.indices.exists({ index });
-    // NOTE: above check is already performed in createIndex
-    await createIndex({ client, index, indexConfig });
+  try {
+    if (autocreate) {
+      // const exists = await client.indices.exists({ index });
+      // NOTE: above check is already performed in createIndex
+      await createIndex({ client, index, indexConfig });
+    }
+
+    const convertedDocument = indexConfig.convertToIndexDocument(document, index);
+
+    const response = await client.index({
+      index,
+      id,
+      document: convertedDocument,
+    });
+    return newOk({ data: response });
+  } catch (error) {
+    return newErr({
+      error: 'IndexDocumentError',
+      message: error instanceof Error ? error.message : String(error),
+      extraProperties: { ...(error as any)?.meta, originalError: error },
+    });
   }
-
-  const convertedDocument = indexConfig.convertToIndexDocument(document, index);
-
-  return client.index({
-    index,
-    id,
-    document: convertedDocument,
-  });
 };
 
 export default indexDocument;
