@@ -89,7 +89,6 @@ describe('ContactFieldSpecificCondition validation', () => {
       expect(isContactFieldSpecificCondition(condition)).toBe(false);
     });
 
-
     test('rejects field path with only rawJson prefix', () => {
       const condition = { field: 'rawJson' };
       expect(isContactFieldSpecificCondition(condition)).toBe(false);
