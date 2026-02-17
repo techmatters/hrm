@@ -10,8 +10,8 @@
 
   "viewContact": [["everyone"]],
   "editContact": [["isSupervisor"], ["isOwner"]],
-  "viewContactField": [[{"field": "rawJson.caseInformation.urgencyLevel"}, "nobody"], ["isSupervisor"]],
-  "editContactField": [["nobody"], ["nobody"], ["nobody"]],
+  "viewContactField": [[{"field": "rawJson.caseInformation.urgencyLevel"}, "nobody"], [{"field": "rawJson.caseInformation.actionTaken"}, "isSupervisor"]],
+  "editContactField": [[{"field": "rawJson.caseInformation.urgencyLevel"}, "nobody"], [{"field": "rawJson.caseInformation.actionTaken"}, "nobody"], [{"field": "rawJson.callerInformation.relationshipToChild"}, "nobody"]],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["everyone"]],
   "viewRecording": [["everyone"]],
