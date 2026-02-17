@@ -91,27 +91,8 @@ const isValidContactFieldPath = (field: string): boolean => {
   const pathWithoutPrefix = field.slice(RAW_JSON_PREFIX.length);
   const parts = pathWithoutPrefix.split('.');
 
-  // Must have at least 2 parts: <ContactRawJsonKey>.<fieldPath>
-  if (parts.length < 2) {
-    return false;
-  }
-
-  // Valid keys from ContactRawJson type
-  const validContactRawJsonKeys = [
-    'definitionVersion',
-    'callType',
-    'childInformation',
-    'callerInformation',
-    'categories',
-    'caseInformation',
-    'contactlessTask',
-    'llmSupportedEntries',
-    'hangUpBy',
-    'referrals',
-  ];
-
-  const contactRawJsonKey = parts[0];
-  return validContactRawJsonKeys.includes(contactRawJsonKey);
+  // Must have 2 parts: <ContactRawJsonKey>.<fieldPath>
+  return parts.length === 2;
 };
 
 export const isContactFieldSpecificCondition = (
@@ -225,10 +206,6 @@ type UnsupportedActionConditions = {
 const unsupportedActionConditions: UnsupportedActionConditions = {
   profileSection: {
     CREATE_PROFILE_SECTION: ['sectionType'],
-  },
-  contactField: {
-    EDIT_CONTACT_FIELD: ['field'],
-    VIEW_CONTACT_FIELD: ['field'],
   },
 };
 
