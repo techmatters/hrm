@@ -70,7 +70,7 @@ jobs:
           aws-region: ${{ env.PRIMARY_AWS_REGION }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so repo output will work
-          mask-aws-account-id: 'false'
+          mask-aws-account-id: false
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -125,7 +125,7 @@ jobs:
           aws-region: ${{ matrix.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so env.DOCKER_IMAGE will work
-          mask-aws-account-id: 'false'
+          mask-aws-account-id: false
 
       - name: Download current ECS task definition for the job processor
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-job-processor --query taskDefinition > task-definition-job-processor.json
@@ -175,7 +175,7 @@ jobs:
           aws-region: ${{ matrix.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so env.DOCKER_IMAGE will work
-          mask-aws-account-id: 'false'
+          mask-aws-account-id: false
       - name: Download current ECS task definition for the api service
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-task --query taskDefinition > task-definition.json
 
@@ -224,7 +224,7 @@ jobs:
           aws-region: ${{ matrix.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so env.DOCKER_IMAGE will work
-          mask-aws-account-id: 'false'
+          mask-aws-account-id: false
       - name: Download current ECS task definition for scheduled tasks
         run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-scheduled-task --query taskDefinition > task-definition-hrm-scheduled-task.json
 
@@ -279,7 +279,7 @@ jobs:
           aws-region: ${{ matrix.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so env.DOCKER_IMAGE will work
-          mask-aws-account-id: 'false'
+          mask-aws-account-id: false
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v6 overrides env.AWS_DEFAULT_REGION, so
       # we name our env var PRIMARY_AWS_REGION to avoid that.
