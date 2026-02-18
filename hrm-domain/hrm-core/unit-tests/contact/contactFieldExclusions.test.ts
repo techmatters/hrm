@@ -420,7 +420,7 @@ describe('getExcludedFields', () => {
       });
     });
 
-    it('should exclude field when only field condition is specified (no other conditions)', () => {
+    it('should allow field when only field condition is specified (no other conditions)', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }],
       ]);
@@ -430,14 +430,12 @@ describe('getExcludedFields', () => {
       const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // A condition set with only a field condition will have the field removed,
-      // leaving an empty condition set [], which evaluates to false
-      // So the field will be excluded
-      expect(excludedFields).toEqual({
-        caseInformation: ['callSummary'],
-      });
+      // leaving an empty condition set [], which should be treated as passing
+      // So the field will be allowed (not excluded)
+      expect(excludedFields).toEqual({});
     });
 
-    it('should exclude field when both field-only and field+nobody condition sets exist', () => {
+    it('should allow field when both field-only and field+nobody condition sets exist', () => {
       const rules = createMockRules([
         [{ field: 'rawJson.caseInformation.callSummary' as any }],
         [{ field: 'rawJson.caseInformation.callSummary' as any }, 'nobody'],
@@ -448,12 +446,10 @@ describe('getExcludedFields', () => {
       const excludedFields = getExcluded(mockContact, user, 'editContactField');
 
       // Multiple condition sets use OR logic
-      // First set [field] becomes [] after field removal, which evaluates to false
+      // First set [field] becomes [] after field removal, which should pass
       // Second set [field, nobody] becomes [nobody] after field removal, which evaluates to false
-      // Both OR branches fail, so field is excluded
-      expect(excludedFields).toEqual({
-        caseInformation: ['callSummary'],
-      });
+      // Since one OR branch passes (the first one), field is allowed
+      expect(excludedFields).toEqual({});
     });
 
     it('should exclude field when only nobody condition exists for that field', () => {
