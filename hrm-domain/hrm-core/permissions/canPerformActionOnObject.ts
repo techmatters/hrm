@@ -25,11 +25,6 @@ import {
   isS3StoredConversationMedia,
 } from '../conversation-media/conversationMedia';
 import { TResult, newErr, newOk, HrmAccountId } from '@tech-matters/types';
-import { RulesFile } from './rulesMap';
-
-export const OPEN_VIEW_CONTACT_PERMISSIONS: Pick<RulesFile, 'viewContact'> = {
-  viewContact: [['everyone']],
-};
 
 export const canPerformActionsOnObject = async <T extends TargetKind>({
   hrmAccountId,
@@ -51,6 +46,10 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
       return newErr({
         message: 'invalid actions for objectType',
         error: 'InvalidObjectType',
+        extraProperties: {
+          targetKind,
+          actions,
+        },
       });
     }
 
@@ -62,6 +61,15 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
 
         return newOk({ data: canPerform });
       }
+      case 'contactField': {
+        return newErr({
+          message: 'Not Implemented',
+          error: 'InternalServerError',
+          extraProperties: {
+            errorObject: new Error('Not Implemented'),
+          },
+        });
+      }
       case 'case': {
         const object = await getCaseById(objectId, hrmAccountId, {
           user,
@@ -72,10 +80,22 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
         return newOk({ data: canPerform });
       }
       case 'profile': {
-        throw new Error('Not implemented');
+        return newErr({
+          message: 'Not Implemented',
+          error: 'InternalServerError',
+          extraProperties: {
+            errorObject: new Error('Not Implemented'),
+          },
+        });
       }
       case 'profileSection': {
-        throw new Error('Not implemented');
+        return newErr({
+          message: 'Not Implemented',
+          error: 'InternalServerError',
+          extraProperties: {
+            errorObject: new Error('Not Implemented'),
+          },
+        });
       }
       case 'postSurvey': {
         // Nothing from the target param is being used for postSurvey target kind, we can pass null for now
@@ -87,10 +107,14 @@ export const canPerformActionsOnObject = async <T extends TargetKind>({
         assertExhaustive(targetKind);
       }
     }
-  } catch (error) {
+  } catch (err) {
+    const error = err as Error;
     return newErr({
-      message: (error as Error).message,
+      message: error.message,
       error: 'InternalServerError',
+      extraProperties: {
+        errorObject: error,
+      },
     });
   }
 };
@@ -101,6 +125,7 @@ export const isFilesRelatedAction = (targetKind: TargetKind, action: Actions) =>
       return action === 'viewExternalTranscript' || action === 'viewRecording';
     }
     case 'case':
+    case 'contactField':
     case 'profile':
     case 'profileSection':
     case 'postSurvey': {
@@ -143,6 +168,7 @@ export const isValidFileLocation = async ({
         return newOk({ data: isValid });
       }
       case 'case':
+      case 'contactField':
       case 'profile':
       case 'profileSection':
       case 'postSurvey': {

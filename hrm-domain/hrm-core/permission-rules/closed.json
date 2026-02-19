@@ -10,6 +10,8 @@
 
   "viewContact": [],
   "editContact": [],
+  "viewContactField": [["everyone"]],
+  "editContactField": [["everyone"]],
   "editInProgressContact": [],
   "viewExternalTranscript": [],
   "viewRecording": [],

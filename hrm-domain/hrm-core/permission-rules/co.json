@@ -10,6 +10,8 @@
 
   "viewContact": [["everyone"]],
   "editContact":  [["isSupervisor"],["isOwner"]],
+  "viewContactField": [["everyone"]],
+  "editContactField": [["everyone"]],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["isSupervisor"]],
   "viewRecording": [["isSupervisor"]],

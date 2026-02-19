@@ -81,7 +81,7 @@ export const getTimelinesForCases = async (
   accountSid: CaseRecord['accountSid'],
   userData: {
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
   cases: CaseService[],
 ): Promise<{ case: CaseService; timeline: TimelineActivity<any>[] }[]> => {
@@ -103,7 +103,7 @@ export const getTimelineForCase = async (
   accountSid: CaseService['accountSid'],
   userData: {
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
   cas: CaseService,
 ): Promise<TimelineActivity<any>[]> => {
@@ -275,11 +275,11 @@ const generalizedSearchCases =
     filterParameters: U,
     {
       user,
-      permissions,
+      permissionRules,
     }: {
       can: InitializedCan;
       user: TwilioUser;
-      permissions: RulesFile;
+      permissionRules: RulesFile;
     },
   ): Promise<CaseSearchReturn> => {
     const { filters, helpline, counselor, closedCases } = filterParameters;
@@ -293,7 +293,7 @@ const generalizedSearchCases =
       caseFilters.excludedStatuses.push('closed');
     }
     caseFilters.includeOrphans = caseFilters.includeOrphans ?? closedCases ?? true;
-    const viewCasePermissions = permissions.viewCase as TKConditionsSets<'case'>;
+    const viewCasePermissions = permissionRules.viewCase as TKConditionsSets<'case'>;
 
     const dbResult = await searchQuery(
       user,
@@ -320,7 +320,7 @@ export const getCasesByProfileId = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
 ): Promise<
   TResult<'InternalServerError', Awaited<ReturnType<typeof searchCasesByProfileId>>>
@@ -351,7 +351,7 @@ export const generalisedCasesSearch = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
 ): Promise<TResult<'InternalServerError', CaseSearchReturn>> => {
   try {
@@ -366,9 +366,10 @@ export const generalisedCasesSearch = async (
     const searchFilters = generateCaseSearchFilters({ counselor, dateFrom, dateTo });
     const permissionFilters = generateCasePermissionsFilters({
       user: ctx.user,
-      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
-      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
-      viewCase: ctx.permissions.viewCase as CaseListCondition[][],
+      viewContact: ctx.permissionRules.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissionRules
+        .viewExternalTranscript as ContactListCondition[][],
+      viewCase: ctx.permissionRules.viewCase as CaseListCondition[][],
     });
 
     const client = (

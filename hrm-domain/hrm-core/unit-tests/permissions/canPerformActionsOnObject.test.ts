@@ -39,7 +39,7 @@ afterEach(() => {
 describe('canPerformActionsOnObject', () => {
   each([
     ...Object.keys(actionsMaps)
-      .filter(tk => tk !== 'profile' && tk !== 'profileSection')
+      .filter(tk => !['profile', 'profileSection', 'contactField'].includes(tk))
       .flatMap(targetKind =>
         Object.values(actionsMaps[targetKind]).map(action => ({
           targetKind,
@@ -75,6 +75,15 @@ describe('canPerformActionsOnObject', () => {
       shouldCan: false,
       success: false,
     })),
+    {
+      targetKind: 'contactField',
+      action: 'editContactField',
+      mockedCan: () => {
+        throw new Error('Boom');
+      },
+      shouldCan: false,
+      success: false,
+    },
   ]).test(
     'when targetKind is $targetKind, action $action and should be allowed evaluates to $shouldCan, should result in $expected',
     async ({ targetKind, action, shouldCan, success, mockedCan, shouldAccessDB }) => {

@@ -157,7 +157,7 @@ describe('searchCases', () => {
         {
           can: () => true,
           user: newTwilioUser(accountSid, workerSid, []),
-          permissions: rulesMap.open,
+          permissionRules: rulesMap.open,
         },
       );
 
@@ -241,7 +241,7 @@ describe('search cases permissions', () => {
     const reqData = {
       can,
       user,
-      permissions: canOnlyViewOwnCases ? viewOwnCasesRulesFile : rulesMap.open,
+      permissionRules: canOnlyViewOwnCases ? viewOwnCasesRulesFile : rulesMap.open,
     };
 
     const searchSpy = jest

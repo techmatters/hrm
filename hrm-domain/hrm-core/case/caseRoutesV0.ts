@@ -194,7 +194,7 @@ const newCaseRouter = (isPublic: boolean) => {
       openEndpoint,
       async (req: Request, res: Response, next: NextFunction) => {
         try {
-          const { hrmAccountId, can, user, permissions, query, body } = req;
+          const { hrmAccountId, can, user, permissionRules, query, body } = req;
 
           // TODO: use better validation
           const { limit, offset } = query as { limit: string; offset: string };
@@ -207,7 +207,7 @@ const newCaseRouter = (isPublic: boolean) => {
             {
               can,
               user,
-              permissions,
+              permissionRules,
             },
           );
 

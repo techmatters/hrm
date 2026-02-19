@@ -353,23 +353,29 @@ describe('patchContact', () => {
     await flushPromises();
     expect(publishContactChangeNotificationSpy).toHaveBeenCalled();
     expect(result).toStrictEqual(mockContact);
-    expect(patchSpy).toHaveBeenCalledWith(accountSid, '1234', true, {
-      updatedBy: contactPatcherSid,
-      childInformation: {
-        firstName: 'Charlotte',
-        lastName: 'Ballantyne',
+    expect(patchSpy).toHaveBeenCalledWith(
+      accountSid,
+      '1234',
+      true,
+      {
+        updatedBy: contactPatcherSid,
+        childInformation: {
+          firstName: 'Charlotte',
+          lastName: 'Ballantyne',
+        },
+        callerInformation: {
+          firstName: 'Lorna',
+          lastName: 'Ballantyne',
+        },
+        caseInformation: {
+          some: 'property',
+        },
+        categories: {
+          category: ['subCategory'],
+        },
       },
-      callerInformation: {
-        firstName: 'Lorna',
-        lastName: 'Ballantyne',
-      },
-      caseInformation: {
-        some: 'property',
-      },
-      categories: {
-        category: ['subCategory'],
-      },
-    });
+      {},
+    );
   });
   test('Throws if data layer returns undefined', () => {
     const patchSpy = jest.fn();

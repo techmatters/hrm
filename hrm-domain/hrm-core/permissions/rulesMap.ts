@@ -46,6 +46,7 @@ const zmRules = require('../permission-rules/zm.json');
 const zwRules = require('../permission-rules/zw.json');
 
 import { assertExhaustive } from '@tech-matters/types';
+import type { ContactRawJson } from '@tech-matters/hrm-types';
 import { actionsMaps, Actions, TargetKind, isTargetKind } from './actions';
 import type { ProfileSection } from '../profile/profileDataAccess';
 
@@ -72,6 +73,40 @@ export type ContactSpecificCondition = (typeof contactSpecificConditions)[number
 
 const isContactSpecificCondition = (c: any): c is ContactSpecificCondition =>
   typeof c === 'string' && contactSpecificConditions.includes(c as any);
+
+export type ContactFieldSpecificCondition = {
+  field: `rawJson.${keyof ContactRawJson}.${string}`;
+};
+
+/**
+ * Validates that a field string matches the format rawJson.<validKey>.<fieldPath>
+ * where validKey is one of the keys in ContactRawJson type
+ */
+const isValidContactFieldPath = (field: string): boolean => {
+  const RAW_JSON_PREFIX = 'rawJson.';
+  if (!field.startsWith(RAW_JSON_PREFIX)) {
+    return false;
+  }
+
+  const pathWithoutPrefix = field.slice(RAW_JSON_PREFIX.length);
+  const parts = pathWithoutPrefix.split('.');
+
+  // Must have 2 parts: <ContactRawJsonKey>.<fieldPath>
+  return parts.length === 2;
+};
+
+export const isContactFieldSpecificCondition = (
+  c: any,
+): c is ContactFieldSpecificCondition => {
+  if (typeof c === 'object') {
+    const [[cond, param]] = Object.entries(c);
+    return (
+      cond === 'field' && typeof param === 'string' && isValidContactFieldPath(param)
+    );
+  }
+
+  return false;
+};
 
 const caseSpecificConditions = ['isCreator', 'isCaseOpen', 'isCaseContactOwner'] as const;
 export type CaseSpecificCondition = (typeof caseSpecificConditions)[number];
@@ -102,6 +137,18 @@ type SupportedContactCondition =
 const isSupportedContactCondition = (c: any): c is SupportedContactCondition =>
   isTimeBasedCondition(c) || isUserBasedCondition(c) || isContactSpecificCondition(c);
 
+type SupportedContactFieldCondition =
+  | TimeBasedCondition
+  | UserBasedCondition
+  | ContactSpecificCondition
+  | ContactFieldSpecificCondition;
+
+const isSupportedContactFieldCondition = (c: any): c is SupportedContactFieldCondition =>
+  isTimeBasedCondition(c) ||
+  isUserBasedCondition(c) ||
+  isContactSpecificCondition(c) ||
+  isContactFieldSpecificCondition(c);
+
 type SupportedCaseCondition =
   | TimeBasedCondition
   | UserBasedCondition
@@ -131,6 +178,7 @@ const isSupportedPostSurveyCondition = (c: any): c is SupportedPostSurveyConditi
 // Defines which actions are supported on each TargetKind
 type SupportedTKCondition = {
   contact: SupportedContactCondition;
+  contactField: SupportedContactFieldCondition;
   case: SupportedCaseCondition;
   profile: SupportedProfileCondition;
   profileSection: SupportedProfileSectionCondition;
@@ -142,7 +190,10 @@ export type TKConditionsSet<T extends TargetKind> = TKCondition<T>[];
 export type TKConditionsSets<T extends TargetKind> = TKConditionsSet<T>[];
 
 export type TKAction<T extends TargetKind> = keyof (typeof actionsMaps)[T];
-type ParameterizedCondition = TimeBasedCondition | ProfileSectionSpecificCondition;
+type ParameterizedCondition =
+  | TimeBasedCondition
+  | ProfileSectionSpecificCondition
+  | ContactFieldSpecificCondition;
 type ExtractSupportedConditionKeys<T extends string | ParameterizedCondition> =
   T extends string ? T : keyof T;
 
@@ -155,6 +206,10 @@ type UnsupportedActionConditions = {
 const unsupportedActionConditions: UnsupportedActionConditions = {
   profileSection: {
     CREATE_PROFILE_SECTION: ['sectionType'],
+  },
+  contactField: {
+    EDIT_CONTACT_FIELD: ['field'],
+    VIEW_CONTACT_FIELD: ['field'],
   },
 };
 
@@ -186,6 +241,9 @@ const isTKCondition =
       case 'contact': {
         return isSupportedContactCondition(c);
       }
+      case 'contactField': {
+        return isSupportedContactFieldCondition(c);
+      }
       case 'case': {
         return isSupportedCaseCondition(c);
       }
@@ -206,13 +264,32 @@ const isTKCondition =
 
 const isTKConditionsSet =
   <T extends TargetKind>(kind: TargetKind) =>
-  (cs: any): cs is TKConditionsSet<T> =>
-    cs && Array.isArray(cs) && cs.every(isTKCondition(kind));
+  (cs: any): cs is TKConditionsSet<T> => {
+    if (!cs || !Array.isArray(cs) || !cs.every(isTKCondition(kind))) {
+      return false;
+    }
+
+    // For contactField target kind, ensure condition set doesn't have multiple field conditions
+    if (kind === 'contactField') {
+      const fieldConditions = cs.filter(isContactFieldSpecificCondition);
+      if (fieldConditions.length > 1) {
+        return false;
+      }
+    }
+
+    return true;
+  };
 
 const isTKConditionsSets =
   <T extends TargetKind>(kind: TargetKind) =>
   (css: any): css is TKConditionsSets<T> =>
     css && Array.isArray(css) && css.every(isTKConditionsSet(kind));
+
+// Export for testing
+export const validateContactFieldConditionsSet = (cs: any): boolean =>
+  isTKConditionsSet('contactField')(cs);
+export const validateContactFieldConditionsSets = (css: any): boolean =>
+  isTKConditionsSets('contactField')(css);
 
 export type RulesFile = { [k in Actions]: TKConditionsSets<TargetKind> };
 

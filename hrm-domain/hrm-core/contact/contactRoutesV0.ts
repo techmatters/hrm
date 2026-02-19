@@ -86,7 +86,7 @@ const newContactRouter = (isPublic: boolean) => {
 
     const searchHandler = async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const { hrmAccountId, can, user, permissions, query, body } = req;
+        const { hrmAccountId, can, user, permissionRules, query, body } = req;
 
         // TODO: use better validation
         const { limit, offset } = query as { limit: string; offset: string };
@@ -99,7 +99,7 @@ const newContactRouter = (isPublic: boolean) => {
           {
             can,
             user,
-            permissions,
+            permissionRules,
           },
         );
 
@@ -211,7 +211,7 @@ const newContactRouter = (isPublic: boolean) => {
     validatePatchPayload,
     isPublic ? canPerformEditContactAction : openEndpoint,
     async (req, res) => {
-      const { hrmAccountId, user } = req;
+      const { hrmAccountId, user, permissionRules, permissionCheckContact } = req;
       const { contactId } = req.params;
       const finalize = req.query.finalize === 'true'; // Default to false for backwards compatibility
       try {
@@ -224,6 +224,8 @@ const newContactRouter = (isPublic: boolean) => {
           {
             can: req.can,
             user,
+            permissionRules,
+            permissionCheckContact,
           },
         );
         res.json(contact);

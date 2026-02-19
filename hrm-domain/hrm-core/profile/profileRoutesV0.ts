@@ -120,7 +120,7 @@ profilesRouter.get(
         {
           can: req.can,
           user: req.user,
-          permissions: req.permissions,
+          permissionRules: req.permissionRules,
         },
       );
 
@@ -144,14 +144,14 @@ profilesRouter.get(
   publicEndpoint,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { hrmAccountId, can, user, permissions } = req;
+      const { hrmAccountId, can, user, permissionRules } = req;
       const { profileId } = req.params;
 
       const result = await getCasesByProfileId(
         hrmAccountId,
         parseInt(profileId, 10),
         req.query,
-        { can, user, permissions },
+        { can, user, permissionRules },
       );
 
       console.info(

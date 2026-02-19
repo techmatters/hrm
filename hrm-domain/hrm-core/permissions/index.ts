@@ -21,6 +21,7 @@ import { type RulesFile } from './rulesMap';
 import type { Request, Response, NextFunction } from 'express';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { AccountSID } from '@tech-matters/types';
+import type { Contact } from '@tech-matters/hrm-types';
 
 export { SafeRouter, publicEndpoint } from './safe-router';
 export { type Actions, actionsMaps } from './actions';
@@ -29,8 +30,9 @@ export { rulesMap };
 declare global {
   namespace Express {
     export interface Request {
-      permissions: RulesFile;
+      permissionRules: RulesFile;
       can: InitializedCan;
+      permissionCheckContact?: Contact;
     }
   }
 }
@@ -66,7 +68,7 @@ export const setupPermissions =
       applyPermissions(req, initializeCanForRules(accountRules));
     }
 
-    req.permissions = accountRules;
+    req.permissionRules = accountRules;
     return next();
   };
 
@@ -77,7 +79,7 @@ export type RequestWithPermissions = SafeRouterRequest & {
 export const maxPermissions: {
   user: TwilioUser;
   can: () => boolean;
-  permissions: RulesFile;
+  permissionRules: RulesFile;
 } = {
   can: () => true,
   user: {
@@ -87,5 +89,5 @@ export const maxPermissions: {
     isSupervisor: true,
     isSystemUser: false,
   },
-  permissions: rulesMap.open,
+  permissionRules: rulesMap.open,
 };

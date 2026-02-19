@@ -86,6 +86,7 @@ import {
 } from './contactSearchIndex';
 import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 import { getDbForAccount } from '../dbConnection';
+import { getExcludedFields } from './contactFieldExclusions';
 
 // Re export as is:
 export { Contact } from './contactDataAccess';
@@ -339,7 +340,17 @@ export const patchContact = async (
   finalize: boolean,
   contactId: string,
   { referrals, rawJson, definitionVersion, ...restOfPatch }: PatchPayload,
-  { can, user }: { can: InitializedCan; user: TwilioUser },
+  {
+    can,
+    user,
+    permissionRules,
+    permissionCheckContact,
+  }: {
+    can: InitializedCan;
+    user: TwilioUser;
+    permissionRules: RulesFile;
+    permissionCheckContact: Contact | undefined;
+  },
   skipSearchIndex = false,
 ): Promise<Contact> => {
   const patched = await (
@@ -357,10 +368,11 @@ export const patchContact = async (
         });
       }
     }
-
     if (!definitionVersion) {
-      const contactRecord = await getById(accountSid, parseInt(contactId));
-      definitionVersion = contactRecord.definitionVersion;
+      const contact =
+        permissionCheckContact ??
+        (await getContactById(accountSid, contactId, { can, user }));
+      definitionVersion = contact.definitionVersion;
     }
 
     const res = await initProfile(conn, accountSid, restOfPatch, definitionVersion);
@@ -370,13 +382,28 @@ export const patchContact = async (
 
     const { profileId, identifierId } = res.data;
 
-    const updatedRecord = await patch(conn)(accountSid, contactId, finalize, {
-      updatedBy,
-      ...restOfPatch,
-      ...rawJson,
-      profileId,
-      identifierId,
-    });
+    // No permissionCheckContact means it was accessed on an open endpoint - no excluded fields
+    const excludedFields = permissionCheckContact
+      ? await getExcludedFields(permissionRules)(
+          permissionCheckContact,
+          user,
+          'editContactField',
+        )
+      : {};
+
+    const updatedRecord = await patch(conn)(
+      accountSid,
+      contactId,
+      finalize,
+      {
+        updatedBy,
+        ...restOfPatch,
+        ...rawJson,
+        profileId,
+        identifierId,
+      },
+      excludedFields,
+    );
     if (!updatedRecord) {
       throw new Error(`Contact not found with id ${contactId}`);
     }
@@ -495,11 +522,11 @@ const generalizedSearchContacts =
     {
       can,
       user,
-      permissions,
+      permissionRules,
     }: {
       can: InitializedCan;
       user: TwilioUser;
-      permissions: RulesFile;
+      permissionRules: RulesFile;
     },
   ): Promise<{
     count: number;
@@ -514,7 +541,7 @@ const generalizedSearchContacts =
       limit,
       offset,
       user,
-      permissions.viewContact as TKConditionsSets<'contact'>,
+      permissionRules.viewContact as TKConditionsSets<'contact'>,
     );
     const contacts = unprocessedResults.rows.map(cr =>
       applyTransformations(contactRecordToContact(cr)),
@@ -535,7 +562,7 @@ export const getContactsByProfileId = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
 ): Promise<
   TResult<'InternalServerError', Awaited<ReturnType<typeof searchContactsByProfileId>>>
@@ -572,7 +599,7 @@ export const generalisedContactSearch = async (
   ctx: {
     can: InitializedCan;
     user: TwilioUser;
-    permissions: RulesFile;
+    permissionRules: RulesFile;
   },
 ): Promise<TResult<'InternalServerError', { count: number; contacts: Contact[] }>> => {
   try {
@@ -593,8 +620,9 @@ export const generalisedContactSearch = async (
     });
     const permissionFilters = generateContactPermissionsFilters({
       user: ctx.user,
-      viewContact: ctx.permissions.viewContact as ContactListCondition[][],
-      viewTranscript: ctx.permissions.viewExternalTranscript as ContactListCondition[][],
+      viewContact: ctx.permissionRules.viewContact as ContactListCondition[][],
+      viewTranscript: ctx.permissionRules
+        .viewExternalTranscript as ContactListCondition[][],
       buildParams: { parentPath: '' },
     });
 

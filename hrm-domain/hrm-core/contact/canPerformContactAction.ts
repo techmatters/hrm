@@ -58,6 +58,7 @@ const canPerformActionOnContact = (
           // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
           throw new Error('contact not found');
         }
+        req.permissionCheckContact = contactObj;
         if (contactObj.finalizedAt || action !== actionsMaps.contact.EDIT_CONTACT) {
           if (can(user, action, contactObj)) {
             await permitIfAdditionalValidationPasses(
@@ -71,7 +72,8 @@ const canPerformActionOnContact = (
               `[Permission - BLOCKED] User ${user.workerSid} is not permitted to perform ${action} on contact ${hrmAccountId}/${contactId} - rules failure`,
             );
             if (action === actionsMaps.contact.VIEW_CONTACT) {
-              throw createError(404);
+              // This is a dirty hack that relies on the catch block in the try/catch below to return a 404
+              throw new Error('contact not found');
             } else {
               req.block();
             }
