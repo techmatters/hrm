@@ -22,8 +22,8 @@
   "flagProfile": [["isSupervisor"]],
   "unflagProfile": [["isSupervisor"]],
   "viewProfileSection": [["everyone"]],
-  "createProfileSection": [["isSupervisor"]],
-  "editProfileSection": [["isSupervisor"]],
+  "createProfileSection": [["everyone"]],
+  "editProfileSection": [["everyone"]],
   
   "viewPostSurvey": [["isSupervisor"]],
 

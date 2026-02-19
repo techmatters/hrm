@@ -43,6 +43,7 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
         console.warn(
           `[generalised-search-${indexType}] ${result.error}. Account SID: ${accountSid}, Message ID: ${messageId}.`,
           result.message,
+          result,
         );
         documentsWithErrors.push(resultItem);
         return;

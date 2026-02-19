@@ -14,7 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { type IndexClient, getClient } from '@tech-matters/elasticsearch-client';
+import {
+  type IndexClient,
+  type IndexDocumentResponse,
+  type UpdateDocumentResponse,
+  getClient,
+} from '@tech-matters/elasticsearch-client';
 import {
   type IndexPayload,
   hrmIndexConfiguration,
@@ -24,8 +29,29 @@ import type {
   PayloadsByAccountSid,
   PayloadsByIndex,
 } from './messagesToPayloads';
-import { type HrmAccountId, newErr, newOkFromData, isErr } from '@tech-matters/types';
-import { HrmIndexProcessorError } from '@tech-matters/job-errors';
+import { type HrmAccountId, newErr, isErr } from '@tech-matters/types';
+
+const tryOperationWithRetry = async ({
+  callback,
+  retryCount = 0,
+}: {
+  callback: () => Promise<IndexDocumentResponse> | Promise<UpdateDocumentResponse>;
+  retryCount?: number;
+}) => {
+  const result = await callback();
+  if (isErr(result) && retryCount < 3) {
+    if (
+      result.extraProperties?.statusCode === 409 &&
+      (result.extraProperties.originalError as Error).message?.includes(
+        'version_conflict_engine_exception',
+      )
+    ) {
+      return tryOperationWithRetry({ callback, retryCount: retryCount + 1 });
+    }
+  }
+
+  return result;
+};
 
 const handleIndexPayload =
   ({
@@ -42,47 +68,56 @@ const handleIndexPayload =
     try {
       switch (payloadWithMeta.indexHandler) {
         case 'indexDocument': {
-          const result = await client.indexDocument({
-            id: documentId.toString(),
-            document: payloadWithMeta.payload,
-            autocreate: true,
+          const result = await tryOperationWithRetry({
+            callback: () =>
+              client.indexDocument({
+                id: documentId.toString(),
+                document: payloadWithMeta.payload,
+                autocreate: true,
+              }),
           });
 
           return {
             accountSid,
             indexType,
             messageId,
-            result: newOkFromData(result),
+            result,
           };
         }
         case 'updateDocument': {
-          const result = await client.updateDocument({
-            id: documentId.toString(),
-            document: payloadWithMeta.payload,
-            autocreate: true,
-            docAsUpsert: true,
+          const result = await tryOperationWithRetry({
+            callback: () =>
+              client.updateDocument({
+                id: documentId.toString(),
+                document: payloadWithMeta.payload,
+                autocreate: true,
+                docAsUpsert: true,
+              }),
           });
 
           return {
             accountSid,
             indexType,
             messageId,
-            result: newOkFromData(result),
+            result,
           };
         }
         case 'updateScript': {
-          const result = await client.updateScript({
-            document: payloadWithMeta.payload,
-            id: documentId.toString(),
-            autocreate: true,
-            scriptedUpsert: true,
+          const result = await tryOperationWithRetry({
+            callback: () =>
+              client.updateScript({
+                document: payloadWithMeta.payload,
+                id: documentId.toString(),
+                autocreate: true,
+                scriptedUpsert: true,
+              }),
           });
 
           return {
             accountSid,
             indexType,
             messageId,
-            result: newOkFromData(result),
+            result,
           };
         }
         case 'deleteDocument': {
@@ -106,17 +141,11 @@ const handleIndexPayload =
             accountSid,
             indexType,
             messageId,
-            result: newOkFromData(result),
+            result,
           };
         }
       }
     } catch (err) {
-      console.error(
-        new HrmIndexProcessorError('handleIndexPayload: Failed to process index request'),
-        err,
-        payloadWithMeta,
-      );
-
       return {
         accountSid,
         indexType,
