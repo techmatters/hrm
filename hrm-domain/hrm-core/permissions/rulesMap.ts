@@ -97,7 +97,7 @@ const isValidContactFieldPath = (field: string): boolean => {
   }
 
   // Valid keys from ContactRawJson type
-  const validContactRawJsonKeys = [
+  const validContactRawJsonKeys: (keyof ContactRawJson)[] = [
     'definitionVersion',
     'callType',
     'childInformation',
