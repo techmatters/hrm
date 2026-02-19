@@ -92,14 +92,14 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.PRIMARY_AWS_REGION }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so repo output will work
-          mask-aws-account-id: 'false'
+          mask-aws-account-id: false
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -179,14 +179,14 @@ jobs:
 
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ matrix.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
           # we have to disable that so repo output will work
-          mask-aws-account-id: 'false'
+          mask-aws-account-id: false
 
       # The search and replace is kinda ugly but works. We need to replace the primary region with the region we're deploying to.
       # because lambdas don't support ECR images in different regions. We use cross region replication in ECR to make the image
@@ -215,10 +215,10 @@ jobs:
           done
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
-      # aws-actions/configure-aws-credentials@v5 overrides env.AWS_DEFAULT_REGION, so
+      # aws-actions/configure-aws-credentials@v6 overrides env.AWS_DEFAULT_REGION, so
       # we name our env var PRIMARY_AWS_REGION to avoid that.
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v5
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
