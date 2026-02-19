@@ -73,9 +73,10 @@ export const handleErrors = async (
       if (![200, 201].includes(item.index?.status ?? 0)) {
         console.error(
           new ResourceIndexProcessorError('Error indexing document'),
-          item.index,
+          item.index ?? item.delete,
+          item.index?.error ?? item.delete?.error,
         );
-        addDocumentIdToFailures(item.index!._id!);
+        addDocumentIdToFailures(item.index?._id ?? item.delete?._id ?? '');
       }
     }),
   );

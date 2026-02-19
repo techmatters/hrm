@@ -349,8 +349,8 @@ describe('/profiles', () => {
                     String(contact.id),
                     String(createdCase.id),
                     {
+                      ...ALWAYS_CAN,
                       user: newTwilioUser(contact.accountSid, workerSid, []),
-                      can: () => true,
                     },
                     true,
                   ),

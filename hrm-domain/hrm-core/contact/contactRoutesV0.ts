@@ -40,11 +40,12 @@ const newContactRouter = (isPublic: boolean) => {
   // Public only endpoints
   if (isPublic) {
     contactsRouter.get('/byTaskSid/:taskSid', openEndpoint, async (req, res) => {
-      const { hrmAccountId, user, can } = req;
+      const { hrmAccountId, user, can, permissionRules } = req;
       const { taskSid } = req.params;
       const contact = await getContactByTaskId(hrmAccountId, taskSid, {
         can: req.can,
         user,
+        permissionRules,
       });
       console.info(
         `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Contact read by task sid, taskSid: ${taskSid}`,
@@ -59,7 +60,7 @@ const newContactRouter = (isPublic: boolean) => {
       '/:contactId/connectToCase',
       canDisconnectContact,
       async (req, res) => {
-        const { hrmAccountId, user } = req;
+        const { hrmAccountId, user, permissionRules } = req;
         const { contactId } = req.params;
 
         try {
@@ -70,6 +71,7 @@ const newContactRouter = (isPublic: boolean) => {
             {
               can: req.can,
               user,
+              permissionRules,
             },
           );
           res.json(deleteContact);
@@ -121,7 +123,7 @@ const newContactRouter = (isPublic: boolean) => {
       '/:contactId/conversationMedia',
       openEndpoint,
       async (req, res) => {
-        const { hrmAccountId, user } = req;
+        const { hrmAccountId, user, permissionRules } = req;
         const { contactId } = req.params;
 
         try {
@@ -132,6 +134,7 @@ const newContactRouter = (isPublic: boolean) => {
             {
               can: req.can,
               user,
+              permissionRules,
             },
           );
           res.json(contact);
@@ -170,7 +173,7 @@ const newContactRouter = (isPublic: boolean) => {
     '/:contactId/connectToCase',
     isPublic ? canChangeContactConnection : openEndpoint,
     async (req, res) => {
-      const { hrmAccountId, user } = req;
+      const { hrmAccountId, user, permissionRules } = req;
       const { contactId } = req.params;
       const { caseId } = req.body;
       try {
@@ -181,6 +184,7 @@ const newContactRouter = (isPublic: boolean) => {
           {
             can: req.can,
             user,
+            permissionRules,
           },
         );
         res.json(updatedContact);
@@ -239,7 +243,7 @@ const newContactRouter = (isPublic: boolean) => {
     '/:contactId',
     isPublic ? canPerformViewContactAction : openEndpoint,
     async (req, res) => {
-      const { hrmAccountId, can, user } = req;
+      const { hrmAccountId, can, user, permissionRules } = req;
 
       console.info(
         `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Contact read by task sid, taskSid: ${req.params.contactId}`,
@@ -247,6 +251,7 @@ const newContactRouter = (isPublic: boolean) => {
       const contact = await getContactById(hrmAccountId, req.params.contactId, {
         can: req.can,
         user,
+        permissionRules,
       });
       if (!contact) {
         throw createError(404);

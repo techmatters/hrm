@@ -182,6 +182,11 @@ describe('contactField condition set validation', () => {
   });
 
   describe('Invalid field paths in condition sets', () => {
+    test('rejects condition set with invalid field path', () => {
+      const conditionSet = [{ field: 'rawJson.field1' }, 'isSupervisor'];
+      expect(validateContactFieldConditionsSet(conditionSet)).toBe(false);
+    });
+
     test('rejects condition sets with any invalid field path', () => {
       const conditionsSets = [
         [{ field: 'rawJson.childInformation.field1' }, 'isSupervisor'],

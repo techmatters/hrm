@@ -31,7 +31,7 @@ import {
 
 export const getExcludedFields =
   (permissionRules: RulesFile) =>
-  async (
+  (
     contact: NewContactRecord | Contact,
     user: TwilioUser,
     action: ActionsForTK<'contactField'>,
@@ -55,6 +55,7 @@ export const getExcludedFields =
         isSupervisor: user.isSupervisor,
         isOwner: isContactOwner(user, contact),
         everyone: true,
+        nobody: false,
         ...appliedTimeBasedConditions,
       };
     };
@@ -105,6 +106,13 @@ export const getExcludedFields =
 
     const excludedFields: Record<string, string[]> = {};
     for (const [field, fieldConditionSets] of Object.entries(conditionSetsByField)) {
+      // If any condition set for this field is empty (meaning it only had the field condition),
+      // then that condition set passes, and the field should be allowed (not excluded)
+      const hasEmptyConditionSet = fieldConditionSets.some(cs => cs.length === 0);
+      if (hasEmptyConditionSet) {
+        continue;
+      }
+
       const conditionsState = generateConditionState(fieldConditionSets);
       if (!checkConditionsSets(conditionsState, fieldConditionSets)) {
         const [, formName, fieldName] = field.split('.');
@@ -115,14 +123,14 @@ export const getExcludedFields =
     return excludedFields;
   };
 
-export const removeNonPermittedFieldsFromContact = async (
+export const removeNonPermittedFieldsFromContact = (
   user: TwilioUser,
   permissionRules: RulesFile,
-  contact: NewContactRecord,
+  contact: NewContactRecord | Contact,
   forWriting: boolean,
 ) => {
   // Filter out any fields in the forms that this user isn't permitted to update
-  const writeExclusions = await getExcludedFields(permissionRules)(
+  const writeExclusions = getExcludedFields(permissionRules)(
     contact,
     user,
     forWriting ? 'editContactField' : 'viewContactField',

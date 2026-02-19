@@ -33,21 +33,25 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
   user: TwilioUser;
 }): QueryDslQueryContainer[][] => {
   type ListCondition = TKCondition<TKind>;
-  const ALL_OR_NOTHING_CONDITIONS: ListCondition[] = ['everyone', 'isSupervisor'];
+  const ALL_OR_NOTHING_CONDITIONS: ListCondition[] = [
+    'everyone',
+    'isSupervisor',
+    'nobody',
+  ];
   type WhereClauseGeneratingCondition = Exclude<
     ListCondition,
-    'everyone' | 'isSupervisor'
+    'everyone' | 'isSupervisor' | 'nobody'
   >;
 
   const conditionSetClauses: QueryDslQueryContainer[][] = [];
 
   const conditionsThatAllowAll: ListCondition[] = user.isSupervisor
-    ? ALL_OR_NOTHING_CONDITIONS
+    ? ['everyone', 'isSupervisor']
     : ['everyone'];
 
   const conditionsThatBlockAll: ListCondition[] = user.isSupervisor
-    ? []
-    : ['isSupervisor'];
+    ? ['nobody']
+    : ['isSupervisor', 'nobody'];
 
   for (const caseListConditionSet of listConditionSets) {
     // Any condition set that has only 'all' conditions, i.e. 'everyone' (or 'isSupervisor' for supervisors)

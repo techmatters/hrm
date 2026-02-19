@@ -196,6 +196,7 @@ const setupAllow = <T extends TargetKind>(
             targetCase.precalculatedPermissions?.userOwnsContact,
           ),
           everyone: true,
+          nobody: false,
           ...appliedTimeBasedConditions,
         };
 
@@ -206,6 +207,7 @@ const setupAllow = <T extends TargetKind>(
           isSupervisor: performer.isSupervisor,
           isOwner: isContactOwner(performer, target),
           everyone: true,
+          nobody: false,
           ...appliedTimeBasedConditions,
         };
 
@@ -225,6 +227,7 @@ const setupAllow = <T extends TargetKind>(
           isSupervisor: performer.isSupervisor,
           isOwner: isContactOwner(performer, target),
           everyone: true,
+          nobody: false,
           ...appliedTimeBasedConditions,
           ...appliedSpecificConditions,
         };
@@ -235,6 +238,7 @@ const setupAllow = <T extends TargetKind>(
         const conditionsState: ConditionsState = {
           isSupervisor: performer.isSupervisor,
           everyone: true,
+          nobody: false,
           ...appliedTimeBasedConditions,
         };
 
@@ -254,6 +258,7 @@ const setupAllow = <T extends TargetKind>(
         const conditionsState: ConditionsState = {
           isSupervisor: performer.isSupervisor,
           everyone: true,
+          nobody: false,
           ...appliedTimeBasedConditions,
           ...appliedSpecificConditions,
         };
@@ -264,6 +269,7 @@ const setupAllow = <T extends TargetKind>(
         const conditionsState: ConditionsState = {
           isSupervisor: performer.isSupervisor,
           everyone: true,
+          nobody: false,
           ...appliedTimeBasedConditions,
         };
 

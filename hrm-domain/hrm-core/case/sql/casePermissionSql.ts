@@ -23,7 +23,12 @@ import {
 
 export type CaseListCondition = Extract<
   TKCondition<'case'>,
-  'isCreator' | 'isCaseContactOwner' | 'everyone' | 'isSupervisor' | 'isCaseOpen'
+  | 'isCreator'
+  | 'isCaseContactOwner'
+  | 'everyone'
+  | 'nobody'
+  | 'isSupervisor'
+  | 'isCaseOpen'
 >;
 
 const conditionWhereClauses: ConditionWhereClausesSQL<'case'> = {
