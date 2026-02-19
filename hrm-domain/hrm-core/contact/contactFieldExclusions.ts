@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import type { Contact } from '@tech-matters/hrm-types';
+import type { Contact, NewContactRecord } from '@tech-matters/hrm-types';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { ActionsForTK } from '../permissions/actions';
 import { isContactOwner } from '../permissions/conditionChecks';
@@ -31,7 +31,11 @@ import {
 
 export const getExcludedFields =
   (permissionRules: RulesFile) =>
-  async (contact: Contact, user: TwilioUser, action: ActionsForTK<'contactField'>) => {
+  async (
+    contact: NewContactRecord | Contact,
+    user: TwilioUser,
+    action: ActionsForTK<'contactField'>,
+  ) => {
     const generateConditionState = (
       conditionSets: TKConditionsSets<'contactField'>,
     ): ConditionsState => {
@@ -110,3 +114,27 @@ export const getExcludedFields =
     }
     return excludedFields;
   };
+
+export const removeNonPermittedFieldsFromContact = async (
+  user: TwilioUser,
+  permissionRules: RulesFile,
+  contact: NewContactRecord,
+  forWriting: boolean,
+) => {
+  // Filter out any fields in the forms that this user isn't permitted to update
+  const writeExclusions = await getExcludedFields(permissionRules)(
+    contact,
+    user,
+    forWriting ? 'editContactField' : 'viewContactField',
+  );
+  for (const [exclusionForm, exclusionFields] of Object.entries(writeExclusions)) {
+    for (const exclusionField of exclusionFields) {
+      if (
+        contact.rawJson?.[exclusionForm] &&
+        exclusionField in contact.rawJson[exclusionForm]
+      ) {
+        delete contact.rawJson[exclusionForm][exclusionField];
+      }
+    }
+  }
+};

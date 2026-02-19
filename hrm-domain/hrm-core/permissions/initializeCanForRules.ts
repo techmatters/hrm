@@ -77,7 +77,11 @@ export const applyTimeBasedConditions =
             const conditionMet =
               differenceInHours(
                 ctx.currentTimestamp,
-                parseISO(target.timeOfContact ?? target.createdAt),
+                parseISO(
+                  target.timeOfContact ??
+                    target.createdAt ??
+                    ctx.currentTimestamp.toISOString(),
+                ),
               ) < param;
             console.debug(
               'createdHoursAgo condition:',
@@ -96,7 +100,11 @@ export const applyTimeBasedConditions =
             const conditionMet =
               differenceInDays(
                 ctx.currentTimestamp,
-                parseISO(target.timeOfContact ?? target.createdAt),
+                parseISO(
+                  target.timeOfContact ??
+                    target.createdAt ??
+                    ctx.currentTimestamp.toISOString(),
+                ),
               ) < param;
             console.debug(
               'createdDaysAgo condition:',

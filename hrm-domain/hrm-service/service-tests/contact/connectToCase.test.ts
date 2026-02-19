@@ -30,7 +30,6 @@ import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { headers, setRules } from '../server';
-import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { deleteContactById } from './dbCleanup';
 import { actionsMaps } from '@tech-matters/hrm-core/permissions/index';
 import { TKConditionsSets } from '@tech-matters/hrm-core/permissions/rulesMap';
@@ -85,10 +84,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
       accountSid,
       workerSid,
       <any>contact1,
-      {
-        user: newTwilioUser(accountSid, workerSid, []),
-        can: () => true,
-      },
+      ALWAYS_CAN,
       true,
     );
     createdCase = await caseApi.createCase(case1, accountSid, workerSid, undefined, true);
@@ -103,7 +99,7 @@ describe('/contacts/:contactId/connectToCase route', () => {
       accountSid,
       workerSid,
       <any>contact2,
-      { user: newTwilioUser(accountSid, workerSid, []), can: () => true },
+      ALWAYS_CAN,
       true,
     );
     const caseToBeDeleted = await caseApi.createCase(case1, accountSid, workerSid);

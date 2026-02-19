@@ -156,15 +156,12 @@ const newContactRouter = (isPublic: boolean) => {
       return body.createdBy;
     };
 
-    const { hrmAccountId, user, body } = req;
+    const { hrmAccountId, user, body, permissionRules } = req;
     const contact = await createContact(
       hrmAccountId,
       getCreatedBy({ body, user }),
       body,
-      {
-        can: req.can,
-        user,
-      },
+      { permissionRules, can: req.can, user },
     );
     res.json(contact);
   });
