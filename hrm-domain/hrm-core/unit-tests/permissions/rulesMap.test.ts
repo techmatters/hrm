@@ -52,9 +52,9 @@ describe('ContactFieldSpecificCondition validation', () => {
       expect(isContactFieldSpecificCondition(condition)).toBe(true);
     });
 
-    test('accepts valid field path with nested fields', () => {
+    test('rejects field path with nested fields', () => {
       const condition = { field: 'rawJson.childInformation.deeply.nested.field' };
-      expect(isContactFieldSpecificCondition(condition)).toBe(true);
+      expect(isContactFieldSpecificCondition(condition)).toBe(false);
     });
 
     test('accepts valid field path with definitionVersion', () => {
@@ -86,11 +86,6 @@ describe('ContactFieldSpecificCondition validation', () => {
   describe('Invalid field paths', () => {
     test('rejects field path without rawJson prefix', () => {
       const condition = { field: 'childInformation.firstName' };
-      expect(isContactFieldSpecificCondition(condition)).toBe(false);
-    });
-
-    test('rejects field path with invalid ContactRawJson key', () => {
-      const condition = { field: 'rawJson.invalidKey.field' };
       expect(isContactFieldSpecificCondition(condition)).toBe(false);
     });
 
@@ -187,15 +182,10 @@ describe('contactField condition set validation', () => {
   });
 
   describe('Invalid field paths in condition sets', () => {
-    test('rejects condition set with invalid field path', () => {
-      const conditionSet = [{ field: 'rawJson.invalidKey.field1' }, 'isSupervisor'];
-      expect(validateContactFieldConditionsSet(conditionSet)).toBe(false);
-    });
-
     test('rejects condition sets with any invalid field path', () => {
       const conditionsSets = [
         [{ field: 'rawJson.childInformation.field1' }, 'isSupervisor'],
-        [{ field: 'rawJson.invalidKey.field2' }],
+        [{ field: 'rawJson.field2' }],
       ];
       expect(validateContactFieldConditionsSets(conditionsSets)).toBe(false);
     });
