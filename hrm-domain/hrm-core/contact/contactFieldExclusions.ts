@@ -55,6 +55,7 @@ export const getExcludedFields =
         isSupervisor: user.isSupervisor,
         isOwner: isContactOwner(user, contact),
         everyone: true,
+        nobody: false,
         ...appliedTimeBasedConditions,
       };
     };
@@ -105,6 +106,13 @@ export const getExcludedFields =
 
     const excludedFields: Record<string, string[]> = {};
     for (const [field, fieldConditionSets] of Object.entries(conditionSetsByField)) {
+      // If any condition set for this field is empty (meaning it only had the field condition),
+      // then that condition set passes, and the field should be allowed (not excluded)
+      const hasEmptyConditionSet = fieldConditionSets.some(cs => cs.length === 0);
+      if (hasEmptyConditionSet) {
+        continue;
+      }
+
       const conditionsState = generateConditionState(fieldConditionSets);
       if (!checkConditionsSets(conditionsState, fieldConditionSets)) {
         const [, formName, fieldName] = field.split('.');

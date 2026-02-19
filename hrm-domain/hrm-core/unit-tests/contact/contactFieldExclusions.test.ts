@@ -390,6 +390,134 @@ describe('getExcludedFields', () => {
       });
     });
   });
+
+  describe('Nobody condition', () => {
+    it('should exclude all fields when nobody condition is present in global set', () => {
+      const rules = createMockRules([['nobody']]);
+      const user = newTwilioUser(accountSid, workerSid, []);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // Nobody condition always fails, so global condition fails
+      // But since there are no field-specific rules, all fields are allowed by default
+      expect(excludedFields).toEqual({});
+    });
+
+    it('should exclude field when field-specific condition set has nobody condition', () => {
+      const rules = createMockRules([
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'nobody'],
+      ]);
+      const user = newTwilioUser(accountSid, workerSid, []);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // The condition set [field, nobody] requires BOTH conditions to be true (AND logic)
+      // Since nobody is always false, the condition set fails and the field is excluded
+      expect(excludedFields).toEqual({
+        caseInformation: ['callSummary'],
+      });
+    });
+
+    it('should allow field when only field condition is specified (no other conditions)', () => {
+      const rules = createMockRules([
+        [{ field: 'rawJson.caseInformation.callSummary' as any }],
+      ]);
+      const user = newTwilioUser(accountSid, workerSid, []);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // A condition set with only a field condition will have the field removed,
+      // leaving an empty condition set [], which should be treated as passing
+      // So the field will be allowed (not excluded)
+      expect(excludedFields).toEqual({});
+    });
+
+    it('should allow field when both field-only and field+nobody condition sets exist', () => {
+      const rules = createMockRules([
+        [{ field: 'rawJson.caseInformation.callSummary' as any }],
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'nobody'],
+      ]);
+      const user = newTwilioUser(accountSid, workerSid, []);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // Multiple condition sets use OR logic
+      // First set [field] becomes [] after field removal, which should pass
+      // Second set [field, nobody] becomes [nobody] after field removal, which evaluates to false
+      // Since one OR branch passes (the first one), field is allowed
+      expect(excludedFields).toEqual({});
+    });
+
+    it('should exclude field when only nobody condition exists for that field', () => {
+      const rules = createMockRules([
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'nobody'],
+        [{ field: 'rawJson.caseInformation.actionTaken' as any }, 'isOwner'],
+      ]);
+      const user = newTwilioUser(accountSid, workerSid, []);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // callSummary has [field, nobody] which becomes [nobody], always fails
+      // actionTaken has [field, isOwner] which becomes [isOwner], passes (user is owner)
+      expect(excludedFields).toEqual({
+        caseInformation: ['callSummary'],
+      });
+    });
+
+    it('should exclude field when nobody is combined with other conditions in AND logic', () => {
+      const rules = createMockRules([
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isOwner', 'nobody'],
+      ]);
+      const user = newTwilioUser(accountSid, workerSid, []);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // Even though isOwner is true, nobody is false, so the AND fails
+      expect(excludedFields).toEqual({
+        caseInformation: ['callSummary'],
+      });
+    });
+
+    it('should allow field when there is an alternative condition set without nobody', () => {
+      const rules = createMockRules([
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'nobody'],
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
+      ]);
+      const user = newTwilioUser(accountSid, workerSid, ['supervisor']);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // First condition set [field, nobody] becomes [nobody], fails
+      // Second condition set [field, isSupervisor] becomes [isSupervisor], passes (user is supervisor)
+      // OR logic means field is allowed
+      expect(excludedFields).toEqual({});
+    });
+
+    it('should exclude field when user is not supervisor and nobody is in one condition set', () => {
+      const rules = createMockRules([
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'nobody'],
+        [{ field: 'rawJson.caseInformation.callSummary' as any }, 'isSupervisor'],
+      ]);
+      const user = newTwilioUser(accountSid, workerSid, []);
+      const getExcluded = getExcludedFields(rules);
+
+      const excludedFields = getExcluded(mockContact, user, 'editContactField');
+
+      // First condition set [field, nobody] becomes [nobody], fails
+      // Second condition set [field, isSupervisor] becomes [isSupervisor], fails (user is not supervisor)
+      // Both OR branches fail, so field is excluded
+      expect(excludedFields).toEqual({
+        caseInformation: ['callSummary'],
+      });
+    });
+  });
 });
 
 describe('removeNonPermittedFieldsFromContact - Direct unit tests', () => {
