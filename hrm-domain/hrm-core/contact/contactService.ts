@@ -127,10 +127,6 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
     action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
     transformation: filterExternalTranscripts,
   },
-  {
-    action: actionsMaps.contactField.VIEW_CONTACT_FIELD,
-    transformation: filterExternalTranscripts,
-  },
 ];
 
 export const contactRecordToContact = (record: ContactRecord): Contact => {
