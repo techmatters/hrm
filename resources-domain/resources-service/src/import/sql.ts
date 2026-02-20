@@ -40,7 +40,7 @@ export const generateUpsertSqlFromImportResource = (
       lastUpdated: resourceRecord.lastUpdated,
       deletedAt: resourceRecord.deletedAt || null,
     },
-    ['id', 'name', 'accountSid', 'created', 'lastUpdated'],
+    ['id', 'name', 'accountSid', 'created', 'lastUpdated', 'deletedAt'],
     { schema: 'resources', table: 'Resources' },
   )} 
   ON CONFLICT ("id", "accountSid") 
