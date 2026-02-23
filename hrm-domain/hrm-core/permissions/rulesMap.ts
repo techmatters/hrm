@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { enableContactFieldPermissions } from '../featureFlags';
 
 const openRules = require('../permission-rules/open.json');
 const closedRules = require('../permission-rules/closed.json');
@@ -371,6 +372,10 @@ export const validRulesMap = () =>
         throw new Error(`Error: rules file for ${k} is not a valid RulesFile`);
       }
 
+      if (!enableContactFieldPermissions) {
+        rules.editContactField = [['everyone']];
+        rules.viewContactField = [['everyone']];
+      }
       const validated = validateTKActions(rules);
       if (!isValidTargetKindActions(validated)) {
         const invalidActions = Object.entries(validated)
