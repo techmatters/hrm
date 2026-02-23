@@ -16,6 +16,11 @@
 export const enableConversationsCleanup = /^true$/i.test(
   process.env.ENABLE_CONVERSATIONS_CLEANUP,
 );
+
 export const enableDbUserPerAccount = /^true$/i.test(
   process.env.ENABLE_DB_USER_PER_ACCOUNT,
+);
+
+export const enableContactFieldPermissions = /^true$/i.test(
+  process.env.ENABLE_CONTACT_FIELD_PERMISSIONS,
 );
