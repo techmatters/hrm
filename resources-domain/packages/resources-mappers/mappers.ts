@@ -20,7 +20,7 @@ import type {
   InlineAttributeProperty,
 } from '@tech-matters/resources-types';
 import parseISO from 'date-fns/parseISO';
-import { HrmAccountId } from '@tech-matters/types/HrmAccountId';
+import type { HrmAccountId } from '@tech-matters/types';
 
 /**
  * A mapping context provides information about the current attribute being processed.
