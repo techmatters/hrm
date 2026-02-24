@@ -242,7 +242,7 @@ const mapNode = (
 
 export const transformExternalResourceToApiResource = <T>(
   resourceMapping: MappingNode,
-  accountSid: HrmAccountId,
+  accountSid: FlatResource['accountSid'] & HrmAccountId,
   externalResource: T,
 ): FlatResource => {
   const resource: FlatResource = {
