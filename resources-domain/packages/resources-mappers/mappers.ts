@@ -20,6 +20,7 @@ import type {
   InlineAttributeProperty,
 } from '@tech-matters/resources-types';
 import parseISO from 'date-fns/parseISO';
+import { HrmAccountId } from '@tech-matters/types/HrmAccountId';
 
 /**
  * A mapping context provides information about the current attribute being processed.
@@ -31,6 +32,7 @@ export type FieldMappingContext = {
   captures: Record<string, string>;
   path: string[];
   rootResource: any;
+  accountSid: HrmAccountId;
 };
 
 type ContextConsumerFunc<T> = (context: FieldMappingContext) => T;
