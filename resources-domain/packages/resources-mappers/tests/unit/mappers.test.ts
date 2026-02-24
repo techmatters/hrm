@@ -20,6 +20,7 @@ const baselineContext: FieldMappingContext = {
   captures: {},
   path: [],
   rootResource: {},
+  accountSid: 'ACxx',
 };
 
 describe('substituteCaptureTokens', () => {

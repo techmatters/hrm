@@ -288,8 +288,20 @@ export const USCH_MAPPING_NODE: MappingNode = {
   FeeStructure: translatableAttributeMapping('feeStructure', { language: 'en' }),
   OtherLanguages: attributeMapping('stringAttributes', 'otherLanguages'),
   EnteredOn: attributeMapping('stringAttributes', 'enteredOn'),
-  UpdatedOn: resourceFieldMapping('lastUpdated', ({ currentValue }) =>
-    parse(currentValue, 'M/d/yyyy', new Date()).toISOString(),
+  UpdatedOn: resourceFieldMapping(
+    'lastUpdated',
+    ({ rootResource, currentValue, accountSid }) => {
+      try {
+        return parse(currentValue, 'M/d/yyyy', new Date()).toISOString();
+      } catch (e) {
+        const now = new Date().toISOString();
+        console.warn(
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${rootResource.ResourceID}) invalid lastUpdated value: ${currentValue}, using current date (${now})`,
+          e,
+        );
+        return now;
+      }
+    },
   ),
   ShortDescription: translatableAttributeMapping('shortDescription', { language: 'en' }),
   LastVerifiedOn: attributeMapping('stringAttributes', 'lastVerified/on'),

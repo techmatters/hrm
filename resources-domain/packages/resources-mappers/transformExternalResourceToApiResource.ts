@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { AccountSID } from '@tech-matters/types';
+import type { HrmAccountId } from '@tech-matters/types';
 import type {
   FlatResource,
   InlineAttributeProperty,
@@ -242,7 +242,7 @@ const mapNode = (
 
 export const transformExternalResourceToApiResource = <T>(
   resourceMapping: MappingNode,
-  accountSid: AccountSID,
+  accountSid: FlatResource['accountSid'] & HrmAccountId,
   externalResource: T,
 ): FlatResource => {
   const resource: FlatResource = {
@@ -261,7 +261,7 @@ export const transformExternalResourceToApiResource = <T>(
   return mapNode(
     resourceMapping,
     externalResource,
-    { captures: {}, path: [], rootResource: externalResource },
+    { captures: {}, path: [], rootResource: externalResource, accountSid },
     resource,
   );
 };
