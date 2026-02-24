@@ -44,7 +44,7 @@ export const generateUpsertSqlFromImportResource = (
     { schema: 'resources', table: 'Resources' },
   )} 
   ON CONFLICT ("id", "accountSid") 
-  DO UPDATE SET "name" = EXCLUDED."name", "lastUpdated" = EXCLUDED."lastUpdated"`);
+  DO UPDATE SET "name" = EXCLUDED."name", "lastUpdated" = EXCLUDED."lastUpdated", "deletedAt" = EXCLUDED."deletedAt"`);
 
   const nonTranslatableTables = [
     { property: 'numberAttributes', table: 'ResourceNumberAttributes' },

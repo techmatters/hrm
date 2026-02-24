@@ -621,6 +621,158 @@ describe('POST /import', () => {
     },
   );
 
+  const getResourceDbRecord = async (resourceId: string) =>
+    db.oneOrNone<{ id: string; deletedAt: Date | null }>(
+      `SELECT id, "deletedAt" FROM resources."Resources" WHERE id = $<resourceId> AND "accountSid" = $<accountSid>`,
+      { resourceId, accountSid },
+    );
+
+  const receiveSqsMessages = async (expectedCount: number) => {
+    const received: FlatResource[] = [];
+    while (received.length < expectedCount) {
+      const { Messages } = await sqsClient
+        .receiveMessage({
+          QueueUrl: testQueueUrl.toString(),
+          MaxNumberOfMessages: 10,
+          WaitTimeSeconds: 1,
+        })
+        .promise();
+      if (!Messages?.length) break;
+      received.push(...Messages.map(m => JSON.parse(m.Body ?? '')));
+    }
+    return received;
+  };
+
+  test('New resource with deletedAt - writes deletedAt to DB, GET returns 404, sends message to queue with deletedAt set', async () => {
+    const deletedAt = addSeconds(baselineDate, 60).toISOString();
+    const deletedResource: FlatResource = {
+      ...generateImportResource('100', addSeconds(baselineDate, 30)),
+      deletedAt,
+    };
+    const { body, status } = await internalRequest
+      .post(route)
+      .set(internalHeaders)
+      .send({ importedResources: [deletedResource], batch: newDefaultTestBatch() });
+
+    expect(status).toBe(200);
+    expect(body).toStrictEqual([{ id: 'RESOURCE_100', success: true }]);
+
+    // Deleted resource should not be returned by the GET endpoint
+    const getResponse = await request
+      .get(`/v0/accounts/${accountSid}/resources/resource/RESOURCE_100`)
+      .set(headers);
+    expect(getResponse.status).toBe(404);
+
+    // Verify deletedAt is persisted in the DB
+    const dbRecord = await getResourceDbRecord('RESOURCE_100');
+    expect(dbRecord?.deletedAt?.toISOString()).toBe(deletedAt);
+
+    // Verify the message sent to the queue includes deletedAt
+    const receivedMessages = await receiveSqsMessages(1);
+    expect(receivedMessages).toHaveLength(1);
+    expect(receivedMessages[0]).toStrictEqual({
+      accountSid: deletedResource.accountSid,
+      document: deletedResource,
+      jobType: ResourcesJobType.SEARCH_INDEX,
+    });
+  });
+
+  test('Existing resource updated with deletedAt - updates deletedAt in DB, GET returns 404, sends message to queue with deletedAt set', async () => {
+    // RESOURCE_3 already exists from populateSampleDbResources
+    const deletedAt = addSeconds(baselineDate, 60).toISOString();
+    const deletedResource: FlatResource = {
+      ...generateImportResource('3', addSeconds(baselineDate, 40)),
+      deletedAt,
+    };
+    const { body, status } = await internalRequest
+      .post(route)
+      .set(internalHeaders)
+      .send({ importedResources: [deletedResource], batch: newDefaultTestBatch() });
+
+    expect(status).toBe(200);
+    expect(body).toStrictEqual([{ id: 'RESOURCE_3', success: true }]);
+
+    // Soft-deleted resource should not be returned by the GET endpoint
+    const getResponse = await request
+      .get(`/v0/accounts/${accountSid}/resources/resource/RESOURCE_3`)
+      .set(headers);
+    expect(getResponse.status).toBe(404);
+
+    // Verify deletedAt is persisted in the DB
+    const dbRecord = await getResourceDbRecord('RESOURCE_3');
+    expect(dbRecord?.deletedAt?.toISOString()).toBe(deletedAt);
+
+    // Verify the message sent to the queue includes deletedAt
+    const receivedMessages = await receiveSqsMessages(1);
+    expect(receivedMessages).toHaveLength(1);
+    expect(receivedMessages[0]).toStrictEqual({
+      accountSid: deletedResource.accountSid,
+      document: deletedResource,
+      jobType: ResourcesJobType.SEARCH_INDEX,
+    });
+  });
+
+  test('Mixed batch with deleted and non-deleted resources - handles each correctly', async () => {
+    const deletedAt = addSeconds(baselineDate, 60).toISOString();
+    const deletedResource: FlatResource = {
+      ...generateImportResource('100', addSeconds(baselineDate, 30)),
+      deletedAt,
+    };
+    const nonDeletedResource: FlatResource = generateImportResource(
+      '101',
+      addSeconds(baselineDate, 45),
+    );
+    const { body, status } = await internalRequest
+      .post(route)
+      .set(internalHeaders)
+      .send({
+        importedResources: [deletedResource, nonDeletedResource],
+        batch: newDefaultTestBatch(),
+      });
+
+    expect(status).toBe(200);
+    expect(body).toStrictEqual([
+      { id: 'RESOURCE_100', success: true },
+      { id: 'RESOURCE_101', success: true },
+    ]);
+
+    // Deleted resource should not be returned by GET
+    const deletedGetResponse = await request
+      .get(`/v0/accounts/${accountSid}/resources/resource/RESOURCE_100`)
+      .set(headers);
+    expect(deletedGetResponse.status).toBe(404);
+
+    // Non-deleted resource should be returned by GET
+    const nonDeletedGetResponse = await request
+      .get(`/v0/accounts/${accountSid}/resources/resource/RESOURCE_101`)
+      .set(headers);
+    expect(nonDeletedGetResponse.status).toBe(200);
+
+    // Verify deletedAt is persisted for the deleted resource
+    const deletedDbRecord = await getResourceDbRecord('RESOURCE_100');
+    expect(deletedDbRecord?.deletedAt?.toISOString()).toBe(deletedAt);
+
+    // Verify deletedAt is null for the non-deleted resource
+    const nonDeletedDbRecord = await getResourceDbRecord('RESOURCE_101');
+    expect(nonDeletedDbRecord?.deletedAt).toBeNull();
+
+    // Verify both messages are sent to the queue
+    const receivedMessages = await receiveSqsMessages(2);
+    expect(receivedMessages).toHaveLength(2);
+    expect(receivedMessages).toStrictEqual([
+      {
+        accountSid: deletedResource.accountSid,
+        document: deletedResource,
+        jobType: ResourcesJobType.SEARCH_INDEX,
+      },
+      {
+        accountSid: nonDeletedResource.accountSid,
+        document: nonDeletedResource,
+        jobType: ResourcesJobType.SEARCH_INDEX,
+      },
+    ]);
+  });
+
   test('One malformed resource - rejects whole batch and returns 400', async () => {
     const { id, ...missingIdResource } = generateImportResource('3', baselineDate);
     const batch = newDefaultTestBatch();
