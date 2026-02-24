@@ -201,6 +201,13 @@ describe('Mapping valid sample resources should produce no warnings', () => {
         Inactive: true,
       },
     },
+    {
+      description: 'Resource with valid UpdatedOn date',
+      resource: {
+        ResourceID: 'UPDATED_ON_RESOURCE',
+        UpdatedOn: '3/20/2024',
+      },
+    },
   ];
 
   each(testCases).test('$description has no warnings', ({ resource }) => {
@@ -214,4 +221,55 @@ describe('Mapping valid sample resources should produce no warnings', () => {
       warnSpy.mockRestore();
     }
   });
+});
+
+describe('UpdatedOn field mapping', () => {
+  each([
+    { updatedOn: '1/15/2023', expectedDatePrefix: '2023-01-15T' },
+    { updatedOn: '3/20/2024', expectedDatePrefix: '2024-03-20T' },
+    { updatedOn: '12/31/2022', expectedDatePrefix: '2022-12-31T' },
+  ]).test(
+    "Valid UpdatedOn value '$updatedOn' maps to ISO string starting with '$expectedDatePrefix' and produces no warnings",
+    ({ updatedOn, expectedDatePrefix }) => {
+      const warnSpy = jest.spyOn(console, 'warn');
+      try {
+        const result = transformUschResourceToApiResource('AC000', {
+          ResourceID: TEST_RESOURCE_ID,
+          UpdatedOn: updatedOn,
+        });
+        expect(result.lastUpdated).toMatch(new RegExp(`^${expectedDatePrefix}`));
+        expect(warnSpy).not.toHaveBeenCalled();
+      } finally {
+        warnSpy.mockRestore();
+      }
+    },
+  );
+
+  each([
+    { updatedOn: 'not-a-date' },
+    { updatedOn: 'invalid' },
+    { updatedOn: '2023-01-15' },
+  ]).test(
+    "Invalid UpdatedOn value '$updatedOn' falls back to current date and logs a warning",
+    ({ updatedOn }) => {
+      const warnSpy = jest.spyOn(console, 'warn');
+      try {
+        const beforeTime = new Date();
+        const result = transformUschResourceToApiResource('AC000', {
+          ResourceID: TEST_RESOURCE_ID,
+          UpdatedOn: updatedOn,
+        });
+        const afterTime = new Date();
+        const lastUpdatedDate = new Date(result.lastUpdated);
+        expect(lastUpdatedDate.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
+        expect(lastUpdatedDate.getTime()).toBeLessThanOrEqual(afterTime.getTime());
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(`invalid lastUpdated value: ${updatedOn}`),
+          expect.anything(),
+        );
+      } finally {
+        warnSpy.mockRestore();
+      }
+    },
+  );
 });
