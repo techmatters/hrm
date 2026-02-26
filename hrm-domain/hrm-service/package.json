@@ -72,7 +72,7 @@
     "@types/http-errors": "^2.0.1",
     "@types/lodash": "^4.14.191",
     "@types/supertest": "^2.0.12",
-    "aws-sdk": "^2.1353.0",
+    "aws-sdk": "^2.1693.0",
     "chalk": "^4.0.0",
     "cross-env": "^7.0.3",
     "date-fns": "^2.30.0",
