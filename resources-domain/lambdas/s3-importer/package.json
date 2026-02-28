@@ -12,7 +12,7 @@
     "@tech-matters/resources-mappers": "^1.0.0",
     "@tech-matters/resources-import-producer": "^1.0.0",
     "date-fns": "^2.30.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "csv-parse": "^6.1.0"
   },
   "devDependencies": {
