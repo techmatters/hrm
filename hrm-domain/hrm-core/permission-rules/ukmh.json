@@ -10,7 +10,7 @@
 
   "viewContact": [["isSupervisor"], ["isOwner"]],
   "editContact": [["isSupervisor"], ["isOwner"]],
-  "viewContactField": [["everyone"]],
+  "viewContactField": [[{"field": "rawJson.caseInformation.lastName"}, "isSupervisor"],[{"field": "rawJson.caseInformation.phone1"}, "isSupervisor"], [{"field": "rawJson.caseInformation.contactIdentifier"}, "isSupervisor"], [{"field": "rawJson.caseInformation.ip"}, "isSupervisor"], [{"field": "rawJson.caseInformation.consentForResearchEvaluation"}, "isSupervisor"]],
   "editContactField": [["everyone"]],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["isSupervisor"]],
