@@ -29,7 +29,7 @@ import type {
   PayloadsByAccountSid,
   PayloadsByIndex,
 } from './messagesToPayloads';
-import { type HrmAccountId, newErr, isErr } from '@tech-matters/types';
+import { type HrmAccountId, newErr, isErr, newOk } from '@tech-matters/types';
 
 const tryOperationWithRetry = async ({
   callback,
@@ -135,6 +135,13 @@ const handleIndexPayload =
               'handleIndexPayload: delete operation resulted in 404, ignoring message with id',
               messageId,
             );
+
+            return {
+              accountSid,
+              indexType,
+              messageId,
+              result: newOk({ data: result }), // wrap the error result in a Ok variant
+            };
           }
 
           return {
