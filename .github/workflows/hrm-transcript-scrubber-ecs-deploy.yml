@@ -192,7 +192,7 @@ jobs:
         id: transcript-transcriber-task-definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ steps.task-def-transcript-transcriber.outputs.task-transcriber }}
+          task-definition: ${{ steps.task-def-transcript-transcriber.outputs.task-definition }}
           cluster: ${{ inputs.environment }}-ecs-cluster
 
 
