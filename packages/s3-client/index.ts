@@ -33,7 +33,7 @@ export type DeleteS3ObjectParams = {
 export type GetS3ObjectParams = {
   bucket: string;
   key: string;
-  responseContentType?: ResponseContentType;
+  responseContentType?: string;
 };
 
 export type PutS3ObjectParams = {
