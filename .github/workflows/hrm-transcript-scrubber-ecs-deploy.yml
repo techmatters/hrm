@@ -73,7 +73,7 @@ jobs:
     outputs:
       regions: ${{ steps.generate-output.outputs.regions }}
       docker_image: ${{ steps.generate-output.outputs.docker_image}}
-      transcription_docker_image: ${{ steps.generate-output.outputs.transcription_docker_image}}
+      transcription_docker_image: ${{ steps.generate-transcription-output.outputs.transcription_docker_image}}
 
     steps:
       - name: Checkout
