@@ -82,13 +82,12 @@ const transcribeS3Recording = async (bucket: string, key: string) => {
       },
     }),
   });
-  const responsePayload = await response.json();
+  const responsePayload = (await response.json()) as { processed_text: string };
   console.debug('Response from PrivateAI:', response.status);
   const scrubbedKey = key.replace('voice-recordings', 'scrubbed-transcripts');
   const scrubbedTranscriptJson = JSON.stringify(
     {
-      ...restOfDoc,
-      transcript: { ...transcript, messages: [responsePayload.processed_text] },
+      transcript: { messages: [responsePayload.processed_text] },
     },
     null,
     2,
@@ -221,7 +220,10 @@ export const executeTask = async () => {
     console.info(`Processed ${processedMessages} messages this run`);
   } else {
     console.debug(`Processed test recording.`);
-    const result = await transcribeS3Recording();
+    const result = await transcribeS3Recording(
+      'tl-aselo-docs-as-development',
+      `voice-recordings/ACd8a2e89748318adf6ddff7df6948deaf/RE2c7fee8fc159364d60facdcaf1c2f88d`,
+    );
     console.info(`Processed sample recording successfully.`, result);
   }
 };
