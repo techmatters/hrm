@@ -32,7 +32,9 @@ const LOCAL_PRIVATEAI_TRANSCRIPTION_URI_ENDPOINT = new URL(
 const LOCAL_PRIVATEAI_HEALTH_ENDPOINT = new URL('http://localhost:8080/healthz');
 const MAX_PAI_STARTUP_TIME_MILLIS = 10 * 60 * 1000;
 const MAX_PROCESSING_RUN_TIME_MILLIS = 15 * 60 * 1000;
-const MODE: 'scrubbing' | 'transcription' = process.env.MODE || 'scrubbing';
+const MODE: 'scrubbing' | 'transcription' = (process.env.MODE || 'scrubbing') as
+  | 'scrubbing'
+  | 'transcription';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
