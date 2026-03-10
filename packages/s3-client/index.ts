@@ -33,7 +33,7 @@ export type DeleteS3ObjectParams = {
 export type GetS3ObjectParams = {
   bucket: string;
   key: string;
-  responseContentType?: string;
+  responseContentType?: ResponseContentType;
 };
 
 export type PutS3ObjectParams = {
@@ -160,7 +160,14 @@ export const getS3Object = async (params: GetS3ObjectParams) => {
       responseBody.once('error', (err: any) => reject(err));
       responseBody.on('data', (chunk: Buffer) => responseDataChunks.push(chunk));
       responseBody.once('end', () =>
-        resolve(Buffer.concat(responseDataChunks).toString()),
+        resolve(
+          Buffer.concat(responseDataChunks).toString(
+            ResponseContentType.toLowerCase().startsWith('text/') ||
+              ResponseContentType.toLowerCase().endsWith('/json'),
+          )
+            ? 'utf8'
+            : 'base64',
+        ),
       );
     } catch (err) {
       // Handle the error or throw

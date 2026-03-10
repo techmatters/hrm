@@ -26,9 +26,13 @@ import { ContactJobAttemptResult } from '@tech-matters/types';
 const PENDING_TRANSCRIPT_SQS_QUEUE_URL = process.env.PENDING_TRANSCRIPT_SQS_QUEUE_URL;
 const COMPLETED_TRANSCRIPT_SQS_QUEUE_URL = process.env.COMPLETED_TRANSCRIPT_SQS_QUEUE_URL;
 const LOCAL_PRIVATEAI_URI_ENDPOINT = new URL('http://localhost:8080/process/text');
+const LOCAL_PRIVATEAI_TRANSCRIPTION_URI_ENDPOINT = new URL(
+  'http://localhost:8080/process/base64',
+);
 const LOCAL_PRIVATEAI_HEALTH_ENDPOINT = new URL('http://localhost:8080/healthz');
 const MAX_PAI_STARTUP_TIME_MILLIS = 10 * 60 * 1000;
 const MAX_PROCESSING_RUN_TIME_MILLIS = 15 * 60 * 1000;
+const MODE: 'scrubbing' | 'transcription' = process.env.MODE || 'scrubbing';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -52,6 +56,48 @@ const waitForPrivateAiToBeReady = async () => {
     );
     await delay(5000);
   }
+};
+
+const transcribeS3Recording = async (bucket: string, key: string) => {
+  const recordingS3ObjectText = await getS3Object({
+    bucket,
+    key,
+    responseContentType: 'audio/wav',
+  });
+
+  const response = await fetch(LOCAL_PRIVATEAI_TRANSCRIPTION_URI_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      file: {
+        data: recordingS3ObjectText,
+        contentType: 'audio/wav',
+      },
+      entity_detection: {
+        return_entity: true,
+      },
+    }),
+  });
+  const responsePayload = await response.json();
+  console.debug('Response from PrivateAI:', response.status);
+  const scrubbedKey = key.replace('voice-recordings', 'scrubbed-transcripts');
+  const scrubbedTranscriptJson = JSON.stringify(
+    {
+      ...restOfDoc,
+      transcript: { ...transcript, messages: [responsePayload.processed_text] },
+    },
+    null,
+    2,
+  );
+  console.debug('Saving', scrubbedKey);
+  await putS3Object({
+    bucket,
+    key: scrubbedKey,
+    body: scrubbedTranscriptJson,
+  });
+  return scrubbedKey;
 };
 
 const scrubS3Transcript = async (bucket: string, key: string) => {
@@ -157,19 +203,25 @@ const pollQueue = async (): Promise<boolean> => {
 export const executeTask = async () => {
   const processingLatestFinishTime = Date.now() + MAX_PROCESSING_RUN_TIME_MILLIS;
   await waitForPrivateAiToBeReady();
-  let processedMessages = 0;
-  while (await pollQueue()) {
-    processedMessages++;
-    if (Date.now() > processingLatestFinishTime) {
-      console.warn(
-        `Could not process all the pending messages in the configured window of ${Math.round(
-          MAX_PROCESSING_RUN_TIME_MILLIS / 1000,
-        )} seconds. If this occurs frequently you should look at options to increase the throughput of the scrubbing system.`,
-      );
-      break;
+  if (MODE === 'scrubbing') {
+    let processedMessages = 0;
+    while (await pollQueue()) {
+      processedMessages++;
+      if (Date.now() > processingLatestFinishTime) {
+        console.warn(
+          `Could not process all the pending messages in the configured window of ${Math.round(
+            MAX_PROCESSING_RUN_TIME_MILLIS / 1000,
+          )} seconds. If this occurs frequently you should look at options to increase the throughput of the scrubbing system.`,
+        );
+        break;
+      }
     }
+    console.info(`Processed ${processedMessages} messages this run`);
+  } else {
+    console.debug(`Processed test recording.`);
+    const result = await transcribeS3Recording();
+    console.info(`Processed sample recording successfully.`, result);
   }
-  console.info(`Processed ${processedMessages} messages this run`);
 };
 
 executeTask().catch(console.error);
