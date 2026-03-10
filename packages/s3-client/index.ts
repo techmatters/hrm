@@ -163,10 +163,10 @@ export const getS3Object = async (params: GetS3ObjectParams) => {
         resolve(
           Buffer.concat(responseDataChunks).toString(
             ResponseContentType.toLowerCase().startsWith('text/') ||
-              ResponseContentType.toLowerCase().endsWith('/json'),
-          )
-            ? 'utf8'
-            : 'base64',
+              ResponseContentType.toLowerCase().endsWith('/json')
+              ? 'utf8'
+              : 'base64',
+          ),
         ),
       );
     } catch (err) {
