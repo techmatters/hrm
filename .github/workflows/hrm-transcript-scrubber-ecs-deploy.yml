@@ -73,6 +73,7 @@ jobs:
     outputs:
       regions: ${{ steps.generate-output.outputs.regions }}
       docker_image: ${{ steps.generate-output.outputs.docker_image}}
+      transcription_docker_image: ${{ steps.generate-output.outputs.transcription_docker_image}}
 
     steps:
       - name: Checkout
@@ -126,7 +127,7 @@ jobs:
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
       - id: generate-transcription-output
         run: |
-          echo "transcription_docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "transcription_docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-transcriber-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
