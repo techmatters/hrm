@@ -185,7 +185,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition-transcript-scrubber.json
-          container-name: ${{ inputs.environment }}-hrm-recording-transcriber
+          container-name: ${{ inputs.environment }}-hrm-transcript-scrubber
           image: ${{ env.TRANSCRIPTION_DOCKER_IMAGE }}
 
       - name: Transcriber - Deploy Amazon ECS task definition
