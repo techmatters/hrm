@@ -128,7 +128,7 @@ jobs:
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
       - id: generate-transcription-output
         run: |
-          echo "transcription_docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-transcriber-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "transcription_docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-recording-transcriber-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
