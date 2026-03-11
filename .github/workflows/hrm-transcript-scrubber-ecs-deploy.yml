@@ -61,6 +61,7 @@ on:
 
 env:
   ECR_REPOSITORY: ${{ inputs.environment }}/hrm-transcript-scrubber
+  TRANSCRIPTION_ECR_REPOSITORY: ${{ inputs.environment }}/hrm-recording-transcriber
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
   AWS_REGION: ${{ inputs.region }}
   PRIMARY_AWS_REGION: us-east-1
@@ -73,6 +74,7 @@ jobs:
     outputs:
       regions: ${{ steps.generate-output.outputs.regions }}
       docker_image: ${{ steps.generate-output.outputs.docker_image}}
+      transcription_docker_image: ${{ steps.generate-transcription-output.outputs.transcription_docker_image}}
 
     steps:
       - name: Checkout
@@ -112,9 +114,21 @@ jobs:
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}
           provenance: false
 
+      - name: Build and Push Transcription Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          file: ./hrm-domain/scheduled-tasks/transcript-scrubber/Dockerfile-transcription
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-recording-transcriber-${{ github.sha }}
+          provenance: false
+
       - id: generate-output
         run: |
           echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
+      - id: generate-transcription-output
+        run: |
+          echo "transcription_docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-recording-transcriber-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -129,6 +143,7 @@ jobs:
 
     env:
       DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
+      TRANSCRIPTION_DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.transcription_docker_image }}
 
     steps:
       - name: Download artifacts
@@ -164,6 +179,25 @@ jobs:
         with:
           task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
           cluster: ${{ inputs.environment }}-ecs-cluster
+
+      - name: Transcriber - Download current ECS task definition
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-recording-transcriber --query taskDefinition > task-definition-recording-transcriber.json
+
+      - name: Transcriber - Fill in the new image ID in the Amazon ECS task definition
+        id: task-def-transcript-transcriber
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition-recording-transcriber.json
+          container-name: ${{ inputs.environment }}-hrm-recording-transcriber
+          image: ${{ env.TRANSCRIPTION_DOCKER_IMAGE }}
+
+      - name: Transcriber - Deploy Amazon ECS task definition
+        id: transcript-transcriber-task-definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def-transcript-transcriber.outputs.task-definition }}
+          cluster: ${{ inputs.environment }}-ecs-cluster
+
 
       - name: Update EventBridge target
         run: |
