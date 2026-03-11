@@ -120,7 +120,7 @@ jobs:
           context: ./
           file: ./hrm-domain/scheduled-tasks/transcript-scrubber/Dockerfile-transcription
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-transcriber-${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.TRANSCRIPTION_ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-recording-transcriber-${{ github.sha }}
           provenance: false
 
       - id: generate-output
@@ -180,12 +180,15 @@ jobs:
           task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
           cluster: ${{ inputs.environment }}-ecs-cluster
 
+      - name: Transcriber - Download current ECS task definition
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-recording-transcriber --query taskDefinition > task-definition-recording-transcriber.json
+
       - name: Transcriber - Fill in the new image ID in the Amazon ECS task definition
         id: task-def-transcript-transcriber
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition-transcript-scrubber.json
-          container-name: ${{ inputs.environment }}-hrm-transcript-scrubber
+          task-definition: task-definition-recording-transcriber.json
+          container-name: ${{ inputs.environment }}-hrm-recording-transcriber
           image: ${{ env.TRANSCRIPTION_DOCKER_IMAGE }}
 
       - name: Transcriber - Deploy Amazon ECS task definition
