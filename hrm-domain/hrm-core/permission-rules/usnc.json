@@ -1,5 +1,5 @@
 {
-  "viewCase": [["isSupervisor"], ["isCreator"]],
+  "viewCase": [["everyone"]],
   "closeCase": [["isSupervisor"]],
   "reopenCase": [["isSupervisor"]],
   "caseStatusTransition": [["isSupervisor"]],
