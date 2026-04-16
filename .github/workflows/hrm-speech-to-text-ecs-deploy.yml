@@ -101,8 +101,8 @@ jobs:
         env:
           PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
         run: |
-          touch ./hrm-domain/speech-to-text/proxy-service/licence/license.json
-          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/speech-to-text/proxy-service/licence/license.json
+          touch ./hrm-domain/speech-to-text/limina/licence/license.json
+          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/speech-to-text/limina/licence/license.json
 
         shell: bash
       - name: Log in to Private AI Registry
