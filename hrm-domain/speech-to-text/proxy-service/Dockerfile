@@ -23,8 +23,7 @@ ARG task_dir=hrm-domain/speech-to-text/proxy-service
 COPY packages /tmp/build/packages
 COPY ${task_dir} /tmp/build/${task_dir}
 COPY ${task_dir}/../tsconfig.json /tmp/build/${task_dir}/../tsconfig.json
-# COPY ${task_dir}/../../tsconfig.json /tmp/build/${task_dir}/../../tsconfig.json
-
+COPY ${task_dir}/../../tsconfig.json /tmp/build/${task_dir}/../../tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${task_dir}/tsconfig.build.json /tmp/build/
 
 RUN  cd /tmp/build \
