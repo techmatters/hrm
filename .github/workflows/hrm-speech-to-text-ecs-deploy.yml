@@ -111,7 +111,7 @@ jobs:
       - name: Build and Push proxy-service Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: ./hrm-domain/speech-to-text/proxy-service
+          context: ./
           file: ./hrm-domain/speech-to-text/proxy-service/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:${{ inputs.environment }}-speech-to-text-proxy-${{ github.sha }}
@@ -120,7 +120,7 @@ jobs:
       - name: Build and Push pyannote Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: ./hrm-domain/speech-to-text/pyannote
+          context: ./
           file: ./hrm-domain/speech-to-text/pyannote/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:${{ inputs.environment }}-speech-to-text-pyannote-${{ github.sha }}
@@ -129,7 +129,7 @@ jobs:
       - name: Build and Push limina Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: ./hrm-domain/speech-to-text/limina
+          context: ./
           file: ./hrm-domain/speech-to-text/limina/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:${{ inputs.environment }}-speech-to-text-limina-${{ github.sha }}
