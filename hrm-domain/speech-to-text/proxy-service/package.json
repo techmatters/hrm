@@ -1,5 +1,5 @@
 {
-  "name": "proxy-service",
+  "name": "@tech-matters/stt-proxy-service",
   "version": "1.0.0",
   "description": "Speech-to-text proxy service",
   "scripts": {
