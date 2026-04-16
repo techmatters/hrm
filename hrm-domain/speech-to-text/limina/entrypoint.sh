@@ -12,15 +12,4 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM crprivateaiprod.azurecr.io/deid:4.0.0-cpu
-
-ARG task_dir=hrm-domain/speech-to-text/proxy-service
-
-COPY ${task_dir}/entrypoint.sh /var/task/entrypoint.sh
-COPY ${task_dir}/licence /app/license
-
-WORKDIR /var/task
-
-ENTRYPOINT ["/usr/bin/sh","/var/task/entrypoint.sh"]
-
-EXPOSE 8080
+cd /app && sh ./pai-entrypoint-cpu.sh && exit 0

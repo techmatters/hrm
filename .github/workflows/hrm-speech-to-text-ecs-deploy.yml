@@ -97,6 +97,14 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Add licence
+        env:
+          PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
+        run: |
+          touch ./hrm-domain/speech-to-text/proxy-service/licence/license.json
+          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/speech-to-text/proxy-service/licence/license.json
+
+        shell: bash
       - name: Log in to Private AI Registry
         run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
 

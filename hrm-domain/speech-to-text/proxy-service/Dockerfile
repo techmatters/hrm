@@ -14,22 +14,47 @@
 
 FROM node:22-alpine AS build
 
-WORKDIR /app
+ARG task_dir=hrm-domain/speech-to-text/proxy-service
 
-COPY package*.json ./
-RUN npm ci
+# This is a bit complicated by the need for access to the packages.
+# We must have the full repo context for our docker build so we can
+# copy the root packages so that the file: based
+# dependency in package.json can be resolved
+COPY packages /tmp/build/packages
+COPY ${task_dir} /tmp/build/${task_dir}
+COPY ${task_dir}/../tsconfig.json /tmp/build/${task_dir}/../tsconfig.json
+COPY ${task_dir}/../../tsconfig.json /tmp/build/${task_dir}/../../tsconfig.json
 
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build
+COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${task_dir}/tsconfig.build.json /tmp/build/
+
+RUN  cd /tmp/build \
+    && npm ci -w ${task_dir} -w packages/* --verbose \
+    && npx tsc -b tsconfig.build.json --verbose \
+    && mkdir -p /var/task/${task_dir} \
+    && cp ${task_dir}/dist/*.js /var/task/ \
+    && cp -r packages /var/task/ \
+    && cp -r node_modules /var/task/
+# COPY ${task_dir}/entrypoint.sh /var/task/entrypoint.sh
+# COPY ${task_dir}/licence /app/license
+
+# WORKDIR /app
+
+# COPY package*.json ./
+# RUN npm ci
+
+# COPY tsconfig.json ./
+# COPY src ./src
+# RUN npm run build
 
 FROM node:22-alpine
 
-WORKDIR /app
+# WORKDIR /app
 
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY package.json ./
+COPY --from=build /var/task /var/task
+# COPY --from=build /app/license /app/license
+# COPY --from=build /app/dist ./dist
+# COPY --from=build /app/node_modules ./node_modules
+# COPY package.json ./
 
 EXPOSE 3000
 
