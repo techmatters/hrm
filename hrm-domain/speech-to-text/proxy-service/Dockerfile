@@ -33,31 +33,13 @@ RUN  cd /tmp/build \
     && cp ${task_dir}/dist/*.js /var/task/ \
     && cp -r packages /var/task/ \
     && cp -r node_modules /var/task/
-# COPY ${task_dir}/entrypoint.sh /var/task/entrypoint.sh
-# COPY ${task_dir}/licence /app/license
-
-# WORKDIR /app
-
-# COPY package*.json ./
-# RUN npm ci
-
-# COPY tsconfig.json ./
-# COPY src ./src
-# RUN npm run build
 
 FROM node:22-alpine
 
-# WORKDIR /app
-
 COPY --from=build /var/task /var/task
-# COPY --from=build /app/license /app/license
-# COPY --from=build /app/dist ./dist
-# COPY --from=build /app/node_modules ./node_modules
-# COPY package.json ./
 
 EXPOSE 3000
 
-# HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-#   CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+WORKDIR /var/task
 
 CMD ["node", "dist/index.js"]

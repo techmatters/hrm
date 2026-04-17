@@ -151,7 +151,6 @@ jobs:
     needs: deploy_docker
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
-    permissions: {}
 
     env:
       PROXY_IMAGE: ${{ needs.deploy_docker.outputs.proxy_image }}
@@ -202,7 +201,7 @@ jobs:
           task-definition: ${{ steps.task-def-limina.outputs.task-definition }}
           service: ${{ inputs.environment }}-speech-to-text
           cluster: ${{ inputs.environment }}-speech-to-text-cluster
-          wait-for-service-stability: true
+          # wait-for-service-stability: true
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v6 overrides env.AWS_DEFAULT_REGION, so
