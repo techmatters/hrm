@@ -29,10 +29,11 @@ COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${task_dir}
 RUN  cd /tmp/build \
     && npm ci -w ${task_dir} -w packages/* --verbose \
     && npx tsc -b tsconfig.build.json --verbose \
-    && mkdir -p /var/task/${task_dir} \
-    && cp ${task_dir}/dist/*.js /var/task/ \
-    && cp -r packages /var/task/ \
-    && cp -r node_modules /var/task/
+    && mkdir -p /var/task/dist \
+    && cp ${task_dir}/dist/*.js /var/task/dist/ \
+    && cp -r packages /var/task/dist/ \
+    && cp -r node_modules /var/task/dist/
+
 
 FROM node:22-alpine
 
