@@ -43,4 +43,7 @@ EXPOSE 3000
 
 WORKDIR /var/task
 
+ENV LOCAL_LIMINA_URI="http://localhost:8080"
+ENV LOCAL_PYANNOTE_URI="http://localhost:8081"
+
 CMD ["node", "dist/index.js"]
