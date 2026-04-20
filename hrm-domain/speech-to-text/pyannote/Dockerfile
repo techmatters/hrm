@@ -17,6 +17,13 @@ FROM python:3.12-slim
 ARG HUGGINGFACE_TOKEN=''
 ARG task_dir=hrm-domain/speech-to-text/pyannote
 
+# Install FFmpeg and clean up apt cache to reduce image size
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+# Install pyannote.audio
+RUN pip install --no-cache-dir pyannote.audio
+
 WORKDIR /app
 
 COPY ${task_dir}/requirements.txt ./
@@ -24,6 +31,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ${task_dir}/main.py ./
 
+ENV HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN
 EXPOSE 8081
 
 # HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
