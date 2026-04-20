@@ -43,7 +43,7 @@ export const handler = async ({
   try {
     const result = await fetch(
       new URL(
-        '/proxy/diarization-jobs',
+        '/diarization-jobs',
         process.env.PROXY_SERVICE_URI ?? 'http://localhost:3000',
       ),
       {

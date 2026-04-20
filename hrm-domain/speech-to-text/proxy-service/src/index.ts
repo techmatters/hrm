@@ -17,7 +17,7 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { GetObjectCommand, S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
+import { getNativeS3Client, GetObjectCommand } from '@tech-matters/s3-client';
 import { Readable } from 'stream';
 
 const app = express();
@@ -27,21 +27,9 @@ const AUDIO_DIR = process.env.AUDIO_DIR ?? '/shared/audio';
 const DIARIZATION_DIR = process.env.DIARIZATION_DIR ?? '/shared/diarization';
 const LOCAL_PYANNOTE_URI = process.env.LOCAL_PYANNOTE_URI ?? 'http://localhost:8081';
 const LOCAL_LIMINA_URI = process.env.LOCAL_LIMINA_URI ?? 'http://localhost:8080';
-const LIMINA_API_KEY = process.env.LIMINA_API_KEY ?? '';
+// const LIMINA_API_KEY = process.env.LIMINA_API_KEY ?? '';
 
 app.use(express.json());
-
-const getS3Client = (): S3Client => {
-  const config: S3ClientConfig = {};
-  if (process.env.S3_ENDPOINT) {
-    config.endpoint = process.env.S3_ENDPOINT;
-    config.forcePathStyle = true;
-  }
-  if (process.env.S3_REGION) {
-    config.region = process.env.S3_REGION;
-  }
-  return new S3Client(config);
-};
 
 /**
  * Sanitizes a file name by stripping directory components to prevent path traversal.
@@ -57,7 +45,7 @@ const downloadS3ObjectToFile = async (
   key: string,
   destPath: string,
 ): Promise<void> => {
-  const client = getS3Client();
+  const client = getNativeS3Client();
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
   const response = await client.send(command);
   if (!(response.Body instanceof Readable)) {
@@ -99,7 +87,7 @@ app.get('/proxy/get-s3-object', async (req, res) => {
   }
 });
 
-app.post('/proxy/diarization-jobs', async (req, res) => {
+app.post('/diarization-jobs', async (req, res) => {
   const { fileName, concurrentJobs } = req.body as {
     fileName?: string;
     concurrentJobs?: number;
@@ -146,7 +134,7 @@ app.post('/proxy/diarization-jobs', async (req, res) => {
   }
 });
 
-app.post('/proxy/limina-jobs', async (req, res) => {
+app.post('/transcription-jobs', async (req, res) => {
   const { fileName, concurrentJobs } = req.body as {
     fileName?: string;
     concurrentJobs?: number;
@@ -171,7 +159,7 @@ app.post('/proxy/limina-jobs', async (req, res) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': LIMINA_API_KEY,
+          // 'x-api-key': LIMINA_API_KEY,
         },
         body: JSON.stringify({ file: fileBase64, fileName: safeFileName }),
       });

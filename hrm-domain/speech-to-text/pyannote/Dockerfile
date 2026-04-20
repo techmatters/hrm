@@ -14,6 +14,7 @@
 
 FROM python:3.12-slim
 
+ARG HUGGINGFACE_TOKEN=''
 ARG task_dir=hrm-domain/speech-to-text/pyannote
 
 WORKDIR /app

@@ -42,7 +42,7 @@ export const handler = async ({
   console.info('Running limina transcription jobs', { fileName, concurrentJobs });
   try {
     const result = await fetch(
-      new URL('/proxy/limina-jobs', process.env.PROXY_SERVICE_URI ?? 'http://localhost:3000'),
+      new URL('/limina-jobs', process.env.PROXY_SERVICE_URI ?? 'http://localhost:3000'),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

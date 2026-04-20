@@ -117,6 +117,12 @@ jobs:
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:${{ inputs.environment }}-speech-to-text-proxy-${{ github.sha }}
           provenance: false
 
+      - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
+        uses: 'marvinpinto/action-inject-ssm-secrets@latest'
+        with:
+          ssm_parameter: 'PYANNOTE_READ_TOKEN_GIAN'
+          env_variable_name: 'HUGGINGFACE_TOKEN'
+
       - name: Build and Push pyannote Docker Image
         uses: docker/build-push-action@v7
         with:
@@ -125,6 +131,9 @@ jobs:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:${{ inputs.environment }}-speech-to-text-pyannote-${{ github.sha }}
           provenance: false
+          build-args: |
+            HUGGINGFACE_TOKEN=${{ env.HUGGINGFACE_TOKEN }}
+
 
       - name: Build and Push limina Docker Image
         uses: docker/build-push-action@v7

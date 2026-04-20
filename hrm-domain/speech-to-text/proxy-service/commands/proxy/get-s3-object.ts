@@ -32,12 +32,20 @@ export const builder = {
   },
 };
 
-export const handler = async ({ bucket, fileName }: { bucket: string; fileName: string }) => {
+export const handler = async ({
+  bucket,
+  fileName,
+}: {
+  bucket: string;
+  fileName: string;
+}) => {
   console.info('Downloading S3 object', { bucket, fileName });
   try {
     const result = await fetch(
       new URL(
-        `/proxy/get-s3-object?bucket=${encodeURIComponent(bucket)}&fileName=${encodeURIComponent(fileName)}`,
+        `/get-s3-object?bucket=${encodeURIComponent(
+          bucket,
+        )}&fileName=${encodeURIComponent(fileName)}`,
         process.env.PROXY_SERVICE_URI ?? 'http://localhost:3000',
       ),
     );
