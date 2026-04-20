@@ -13,6 +13,8 @@
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
 import os
+import re
+import threading
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from pyannote.audio import Pipeline
@@ -24,18 +26,31 @@ AUDIO_DIR = os.environ.get("AUDIO_DIR", "/shared/audio")
 HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
 DIARIZATION_MODEL = os.environ.get("DIARIZATION_MODEL", "pyannote/speaker-diarization-3.1")
 
+_SAFE_FILENAME_RE = re.compile(r'^[a-zA-Z0-9._-]+$')
+
 pipeline: Pipeline | None = None
+_pipeline_lock = threading.Lock()
+
+
+def sanitize_filename(filename: str) -> str | None:
+    base = os.path.basename(filename)
+    if not base or not _SAFE_FILENAME_RE.match(base):
+        return None
+    return base
 
 
 def get_pipeline() -> Pipeline:
     global pipeline
     if pipeline is None:
-        pipeline = Pipeline.from_pretrained(
-            DIARIZATION_MODEL,
-            token=HUGGINGFACE_TOKEN,
-        )
-        if torch.cuda.is_available():
-            pipeline.to(torch.device("cuda"))
+        with _pipeline_lock:
+            if pipeline is None:
+                p = Pipeline.from_pretrained(
+                    DIARIZATION_MODEL,
+                    token=HUGGINGFACE_TOKEN,
+                )
+                if torch.cuda.is_available():
+                    p.to(torch.device("cuda"))
+                pipeline = p
     return pipeline
 
 
@@ -50,8 +65,8 @@ def health():
 
 @app.post("/diarize")
 def diarize(request: DiarizeRequest):
-    safe_filename = os.path.basename(request.fileName)
-    if not safe_filename or safe_filename in (".", ".."):
+    safe_filename = sanitize_filename(request.fileName)
+    if not safe_filename:
         raise HTTPException(status_code=400, detail="Invalid fileName")
 
     file_path = os.path.join(AUDIO_DIR, safe_filename)
