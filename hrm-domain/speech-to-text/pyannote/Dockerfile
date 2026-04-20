@@ -14,12 +14,14 @@
 
 FROM python:3.12-slim
 
+ARG task_dir=hrm-domain/speech-to-text/pyannote
+
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY ${task_dir}/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py ./
+COPY ${task_dir}/main.py ./
 
 EXPOSE 8081
 

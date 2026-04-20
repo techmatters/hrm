@@ -46,6 +46,7 @@
     { "path": "hrm-domain/scheduled-tasks/profile-flags-cleanup" },
     { "path": "hrm-domain/scheduled-tasks/transcript-scrubber" },
     { "path": "hrm-domain/scheduled-tasks/generate-ai-training-set" },
+    { "path": "hrm-domain/speech-to-text/proxy-service" },
     { "path": "hrm-domain/hrm-service" },
     { "path": "hrm-domain/integration-tests/transcripts" }
   ]

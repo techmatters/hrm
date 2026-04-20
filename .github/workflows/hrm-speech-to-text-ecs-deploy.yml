@@ -97,13 +97,21 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Add licence
+        env:
+          PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
+        run: |
+          touch ./hrm-domain/speech-to-text/limina/licence/license.json
+          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/speech-to-text/limina/licence/license.json
+
+        shell: bash
       - name: Log in to Private AI Registry
         run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
 
       - name: Build and Push proxy-service Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: ./hrm-domain/speech-to-text/proxy-service
+          context: ./
           file: ./hrm-domain/speech-to-text/proxy-service/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:${{ inputs.environment }}-speech-to-text-proxy-${{ github.sha }}
@@ -112,7 +120,7 @@ jobs:
       - name: Build and Push pyannote Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: ./hrm-domain/speech-to-text/pyannote
+          context: ./
           file: ./hrm-domain/speech-to-text/pyannote/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:${{ inputs.environment }}-speech-to-text-pyannote-${{ github.sha }}
@@ -121,7 +129,7 @@ jobs:
       - name: Build and Push limina Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: ./hrm-domain/speech-to-text/limina
+          context: ./
           file: ./hrm-domain/speech-to-text/limina/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:${{ inputs.environment }}-speech-to-text-limina-${{ github.sha }}
@@ -143,7 +151,6 @@ jobs:
     needs: deploy_docker
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
-    permissions: {}
 
     env:
       PROXY_IMAGE: ${{ needs.deploy_docker.outputs.proxy_image }}
@@ -194,7 +201,7 @@ jobs:
           task-definition: ${{ steps.task-def-limina.outputs.task-definition }}
           service: ${{ inputs.environment }}-speech-to-text
           cluster: ${{ inputs.environment }}-speech-to-text-cluster
-          wait-for-service-stability: true
+          # wait-for-service-stability: true
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v6 overrides env.AWS_DEFAULT_REGION, so

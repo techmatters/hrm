@@ -14,26 +14,39 @@
 
 FROM node:22-alpine AS build
 
-WORKDIR /app
+ARG task_dir=hrm-domain/speech-to-text/proxy-service
 
-COPY package*.json ./
-RUN npm ci
+# This is a bit complicated by the need for access to the packages.
+# We must have the full repo context for our docker build so we can
+# copy the root packages so that the file: based
+# dependency in package.json can be resolved
+COPY packages /tmp/build/packages
+COPY ${task_dir} /tmp/build/${task_dir}
+COPY ${task_dir}/../tsconfig.json /tmp/build/${task_dir}/../tsconfig.json
+# COPY ${task_dir}/../../tsconfig.json /tmp/build/${task_dir}/../../tsconfig.json
+COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${task_dir}/tsconfig.build.json /tmp/build/
 
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build
+RUN  cd /tmp/build \
+    && npm ci -w ${task_dir} -w packages/* --verbose \
+    && npx tsc -b tsconfig.build.json --verbose \
+    && mkdir -p /var/task/dist \
+    && cp ${task_dir}/dist/*.js /var/task/dist/ \
+    && cp -r packages /var/task/dist/ \
+    && cp -r node_modules /var/task/dist/ \
+    # copy commands to run within the container
+    && cp ${task_dir}/package.json /var/task/dist/ \
+    && cp -r ${task_dir}/commands /var/task/dist/
+
 
 FROM node:22-alpine
 
-WORKDIR /app
-
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
-COPY package.json ./
+COPY --from=build /var/task /var/task
 
 EXPOSE 3000
 
-# HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-#   CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+WORKDIR /var/task
+
+ENV LOCAL_LIMINA_URI="http://localhost:8080"
+ENV LOCAL_PYANNOTE_URI="http://localhost:8081"
 
 CMD ["node", "dist/index.js"]
