@@ -20,10 +20,10 @@ export const describe = '';
 export const builder = {};
 
 export const handler = async ({}) => {
-  console.info('Republishing entities');
+  console.info('Testing healthcheck endpoint');
   try {
-    const result = await fetch(new URL(process.env.LOCAL_LIMINA_URI!));
-    console.log(result);
+    const result = await fetch(new URL(`${process.env.LOCAL_LIMINA_URI}/health`));
+    console.log(await result.json());
   } catch (err) {
     console.error(err);
   }
