@@ -21,8 +21,6 @@ ARG task_dir=hrm-domain/speech-to-text/pyannote
 RUN apt-get update && \
     apt-get install -y ffmpeg && \
     rm -rf /var/lib/apt/lists/*
-# Install pyannote.audio
-RUN pip install --no-cache-dir pyannote.audio
 
 WORKDIR /app
 
