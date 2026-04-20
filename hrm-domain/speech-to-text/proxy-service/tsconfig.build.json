@@ -3,6 +3,8 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "packages/types" },
+    { "path": "packages/s3-client" },
     { "path": "hrm-domain/speech-to-text/proxy-service" }
   ]
 }
