@@ -91,9 +91,9 @@ jobs:
             tag_suffix: speech-to-text-limina
 
     outputs:
-      proxy_image: ${{ steps.generate-output.outputs.image }}
-      pyannote_image: ${{ steps.generate-output.outputs.image }}
-      limina_image: ${{ steps.generate-output.outputs.image }}
+      proxy_image: ${{ steps.generate-output.outputs.proxy_image }}
+      pyannote_image: ${{ steps.generate-output.outputs.pyannote_image }}
+      limina_image: ${{ steps.generate-output.outputs.limina_image }}
 
     steps:
       - name: Checkout
@@ -149,7 +149,7 @@ jobs:
       - name: Generate output
         id: generate-output
         run: |
-          echo "image=${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:${{ inputs.environment }}-${{ matrix.tag_suffix }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "${{ matrix.service }}_image=${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:${{ inputs.environment }}-${{ matrix.tag_suffix }}-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
