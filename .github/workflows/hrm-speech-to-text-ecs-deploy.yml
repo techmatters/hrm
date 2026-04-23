@@ -69,15 +69,31 @@ env:
 
 jobs:
   deploy_docker:
-    name: Build Docker Images
+    name: Build Docker Images (${{ matrix.service }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
+    strategy:
+      matrix:
+        include:
+          - service: proxy
+            ecr_repo_env: ECR_REPOSITORY_PROXY
+            dockerfile: ./hrm-domain/speech-to-text/proxy-service/Dockerfile
+            tag_suffix: speech-to-text-proxy
+          - service: pyannote
+            ecr_repo_env: ECR_REPOSITORY_PYANNOTE
+            dockerfile: ./hrm-domain/speech-to-text/pyannote/Dockerfile
+            tag_suffix: speech-to-text-pyannote
+          - service: limina
+            ecr_repo_env: ECR_REPOSITORY_LIMINA
+            dockerfile: ./hrm-domain/speech-to-text/limina/Dockerfile
+            tag_suffix: speech-to-text-limina
+
     outputs:
-      proxy_image: ${{ steps.generate-output.outputs.proxy_image }}
-      pyannote_image: ${{ steps.generate-output.outputs.pyannote_image }}
-      limina_image: ${{ steps.generate-output.outputs.limina_image }}
+      proxy_image: ${{ steps.generate-output.outputs.image }}
+      pyannote_image: ${{ steps.generate-output.outputs.image }}
+      limina_image: ${{ steps.generate-output.outputs.image }}
 
     steps:
       - name: Checkout
@@ -89,71 +105,56 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-          # this plugin sets the AWS account ID to a secret which is not allowed in outputs
-          # we have to disable that so repo output will work
           mask-aws-account-id: false
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Add licence
+      - name: Log in to Private AI Registry
+        run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
+
+      # --- limina-only steps ---
+      - name: Add licence (limina only)
+        if: matrix.service == 'limina'
         env:
           PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
         run: |
           touch ./hrm-domain/speech-to-text/limina/licence/license.json
           echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/speech-to-text/limina/licence/license.json
-
         shell: bash
-      - name: Log in to Private AI Registry
-        run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
 
-      - name: Build and Push proxy-service Docker Image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./
-          file: ./hrm-domain/speech-to-text/proxy-service/Dockerfile
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:${{ inputs.environment }}-speech-to-text-proxy-${{ github.sha }}
-          provenance: false
-
-      - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
+      # --- pyannote-only steps ---
+      - name: Set HUGGINGFACE_TOKEN (pyannote only)
+        if: matrix.service == 'pyannote'
         uses: 'marvinpinto/action-inject-ssm-secrets@latest'
         with:
           ssm_parameter: 'PYANNOTE_READ_TOKEN_GIAN'
           env_variable_name: 'HUGGINGFACE_TOKEN'
 
-      - name: Build and Push pyannote Docker Image
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v7
         with:
           context: ./
-          file: ./hrm-domain/speech-to-text/pyannote/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:${{ inputs.environment }}-speech-to-text-pyannote-${{ github.sha }}
+          tags: >-
+            ${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:live,
+            ${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:latest,
+            ${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:${{ inputs.environment }}-${{ matrix.tag_suffix }}-${{ github.sha }}
           provenance: false
           build-args: |
-            HUGGINGFACE_TOKEN=${{ env.HUGGINGFACE_TOKEN }}
+            ${{ matrix.service == 'pyannote' && format('HUGGINGFACE_TOKEN={0}', env.HUGGINGFACE_TOKEN) || '' }}
 
-
-      - name: Build and Push limina Docker Image
-        uses: docker/build-push-action@v7
-        with:
-          context: ./
-          file: ./hrm-domain/speech-to-text/limina/Dockerfile
-          push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:${{ inputs.environment }}-speech-to-text-limina-${{ github.sha }}
-          provenance: false
-
-      - id: generate-output
+      - name: Generate output
+        id: generate-output
         run: |
-          echo "proxy_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:${{ inputs.environment }}-speech-to-text-proxy-${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "pyannote_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:${{ inputs.environment }}-speech-to-text-pyannote-${{ github.sha }}" >> $GITHUB_OUTPUT
-          echo "limina_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:${{ inputs.environment }}-speech-to-text-limina-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "image=${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:${{ inputs.environment }}-${{ matrix.tag_suffix }}-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: workflow-scripts-artifacts
+          name: workflow-scripts-artifacts-${{ matrix.service }}
           path: .github/workflows/scripts
 
   deploy_ecs:

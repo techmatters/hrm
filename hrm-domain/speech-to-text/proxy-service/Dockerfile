@@ -34,8 +34,8 @@ RUN  cd /tmp/build \
     && cp -r packages /var/task/dist/ \
     && cp -r node_modules /var/task/dist/ \
     # copy commands to run within the container
-    && cp ${task_dir}/package.json /var/task/dist/ \
-    && cp -r ${task_dir}/commands /var/task/dist/
+    # && cp -r ${task_dir}/commands /var/task/dist/ \
+    && cp ${task_dir}/package.json /var/task/dist/ 
 
 
 FROM node:22-alpine
