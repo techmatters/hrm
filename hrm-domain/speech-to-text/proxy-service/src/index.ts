@@ -15,90 +15,18 @@
  */
 
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { Readable } from 'stream';
-import { mapHTTPError, newOk, newErr, isErr } from '@tech-matters/types';
-import { getNativeS3Client, GetObjectCommand } from '@tech-matters/s3-client';
+import { mapHTTPError, isErr } from '@tech-matters/types';
+import { getS3Object, processDiariazationJobs, processTranscriptionJobs } from './core';
 
 const app = express();
 const PORT = 3000;
 
-const AUDIO_DIR = process.env.AUDIO_DIR ?? '/shared/audio';
-const DIARIZATION_DIR = process.env.DIARIZATION_DIR ?? '/shared/diarization';
-const LOCAL_PYANNOTE_URI = process.env.LOCAL_PYANNOTE_URI ?? 'http://localhost:8081';
-const LOCAL_LIMINA_URI = process.env.LOCAL_LIMINA_URI ?? 'http://localhost:8080';
-// const LIMINA_API_KEY = process.env.LIMINA_API_KEY ?? '';
-
 app.use(express.json());
-
-/**
- * Sanitizes a file name by stripping directory components to prevent path traversal.
- * Returns null if the result is empty or invalid.
- */
-const sanitizeFileName = (fileName: string): string | null => {
-  const safe = path.basename(fileName);
-  return safe && safe !== '.' && safe !== '..' ? safe : null;
-};
-
-const downloadS3ObjectToFile = async (
-  bucket: string,
-  key: string,
-  destPath: string,
-): Promise<void> => {
-  const client = getNativeS3Client();
-  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-  const response = await client.send(command);
-  if (!(response.Body instanceof Readable)) {
-    throw new Error('Unexpected S3 response body type');
-  }
-  const body = response.Body;
-  await fs.promises.mkdir(path.dirname(destPath), { recursive: true });
-  await new Promise<void>((resolve, reject) => {
-    const writer = fs.createWriteStream(destPath);
-    body.pipe(writer);
-    writer.on('finish', resolve);
-    writer.on('error', reject);
-    body.on('error', reject);
-  });
-};
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-export const getS3Object = async ({
-  bucket,
-  fileName,
-}: {
-  bucket: string;
-  fileName: string;
-}) => {
-  if (!bucket || !fileName) {
-    return newErr({
-      message: 'bucket and fileName query parameters are required',
-      error: 'InvalidParameter',
-    } as const);
-  }
-  const safeFileName = sanitizeFileName(fileName);
-  if (!safeFileName) {
-    return newErr({
-      message: 'Invalid fileName',
-      error: 'InvalidParameter',
-    } as const);
-  }
-  try {
-    const destPath = path.join(AUDIO_DIR, safeFileName);
-    await downloadS3ObjectToFile(bucket, fileName, destPath);
-    return newOk({ data: { path: destPath, status: 'ok' } });
-  } catch (err) {
-    console.error('Error downloading S3 object:', err);
-    return newErr({
-      message: 'Error downloading S3 object:',
-      error: 'InternalServerError',
-    } as const);
-  }
-};
 app.get('/proxy/get-s3-object', async (req, res) => {
   const { bucket, fileName } = req.query as { bucket?: string; fileName?: string };
   const result = await getS3Object({ fileName, bucket });
@@ -114,63 +42,6 @@ app.get('/proxy/get-s3-object', async (req, res) => {
   res.status(200).json(result.data);
 });
 
-export const processDiariazationJobs = async ({
-  concurrentJobs,
-  fileName,
-}: {
-  fileName: string;
-  concurrentJobs: number;
-}) => {
-  if (!fileName || !concurrentJobs) {
-    return newErr({
-      error: 'InvalidParameter',
-      message: 'fileName and concurrentJobs are required',
-    } as const);
-  }
-  const safeFileName = sanitizeFileName(fileName);
-  if (!safeFileName) {
-    return newErr({
-      error: 'InvalidParameter',
-      message: 'fileName and concurrentJobs are required',
-    } as const);
-  }
-
-  try {
-    const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
-      const startTime = new Date();
-      const response = await fetch(`${LOCAL_PYANNOTE_URI}/diarize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: safeFileName }),
-      });
-      const endTime = new Date();
-      const responseBody = await response.json();
-      const jobResult = {
-        id,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        duration: endTime.getTime() - startTime.getTime(),
-        response: responseBody,
-      };
-      return jobResult;
-    });
-
-    const results = await Promise.all(jobPromises.map(fn => fn()));
-
-    const output = { fileName: safeFileName, jobs: results };
-    await fs.promises.mkdir(DIARIZATION_DIR, { recursive: true });
-    const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}.json`);
-    await fs.promises.writeFile(outputPath, JSON.stringify(output, null, 2));
-
-    return newOk({ data: output });
-  } catch (err) {
-    console.error('Error running diarization jobs:', err);
-    return newErr({
-      error: 'InternalServerError',
-      message: 'Error running diarization jobs',
-    });
-  }
-};
 app.post('/diarization-jobs', async (req, res) => {
   const { fileName, concurrentJobs } = req.body as {
     fileName?: string;
@@ -189,67 +60,6 @@ app.post('/diarization-jobs', async (req, res) => {
   res.status(200).json(result.data);
 });
 
-export const processTranscriptionJobs = async ({
-  concurrentJobs,
-  fileName,
-}: {
-  fileName: string;
-  concurrentJobs: number;
-}) => {
-  if (!fileName || concurrentJobs === undefined) {
-    return newErr({
-      error: 'InvalidParameter',
-      message: 'fileName and concurrentJobs are required',
-    } as const);
-  }
-  const safeFileName = sanitizeFileName(fileName);
-  if (!safeFileName) {
-    return newErr({
-      error: 'InvalidParameter',
-      message: 'Invalid fileName',
-    } as const);
-  }
-  try {
-    const filePath = path.join(AUDIO_DIR, safeFileName);
-    const fileBuffer = await fs.promises.readFile(filePath);
-    const fileBase64 = fileBuffer.toString('base64');
-
-    const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
-      const startTime = new Date();
-      const response = await fetch(`${LOCAL_LIMINA_URI}/process/files/base64`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'x-api-key': LIMINA_API_KEY,
-        },
-        body: JSON.stringify({ file: fileBase64, fileName: safeFileName }),
-      });
-      const endTime = new Date();
-      const responseBody = await response.json();
-
-      const jobResult = {
-        id,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        duration: endTime.getTime() - startTime.getTime(),
-        response: responseBody,
-      };
-      return jobResult;
-    });
-
-    const results = await Promise.all(jobPromises.map(fn => fn()));
-
-    const output = { fileName: safeFileName, jobs: results };
-    await fs.promises.mkdir(DIARIZATION_DIR, { recursive: true });
-    const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}.json`);
-    await fs.promises.writeFile(outputPath, JSON.stringify(output, null, 2));
-
-    return newOk({ data: output });
-  } catch (err) {
-    console.error('Error running limina jobs:', err);
-    return newErr({ error: 'InternalServerError', message: 'Error running limina jobs' });
-  }
-};
 app.post('/transcription-jobs', async (req, res) => {
   const { fileName, concurrentJobs } = req.body as {
     fileName?: string;

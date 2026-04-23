@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { processTranscriptionJobs } from '../..';
+import { processTranscriptionJobs } from '../../core';
 
 export const command = 'limina-jobs';
 export const describe = 'Run concurrent transcription jobs against the limina service';

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { processDiariazationJobs } from '../..';
+import { processDiariazationJobs } from '../../core';
 
 export const command = 'diarization-jobs';
 export const describe = 'Run concurrent diarization jobs against the pyannote service';

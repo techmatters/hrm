@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getS3Object } from '../..';
+import { getS3Object } from '../../core';
 
 export const command = 'get-s3-object';
 export const describe = 'Download a file from an S3 bucket to the local audio folder';
