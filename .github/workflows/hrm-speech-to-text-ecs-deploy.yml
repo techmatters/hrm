@@ -92,8 +92,8 @@ jobs:
 
     outputs:
       proxy_image: ${{ steps.generate-output.outputs.proxy_image }}
-      # pyannote_image: ${{ steps.generate-output.outputs.pyannote_image }}
-      # limina_image: ${{ steps.generate-output.outputs.limina_image }}
+      pyannote_image: ${{ steps.generate-output.outputs.pyannote_image }}
+      limina_image: ${{ steps.generate-output.outputs.limina_image }}
 
     steps:
       - name: Checkout
