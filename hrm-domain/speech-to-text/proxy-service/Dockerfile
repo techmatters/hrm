@@ -30,12 +30,10 @@ RUN  cd /tmp/build \
     && npm ci -w ${task_dir} -w packages/* --verbose \
     && npx tsc -b tsconfig.build.json --verbose \
     && mkdir -p /var/task/dist \
-    && cp ${task_dir}/dist/*.js /var/task/dist/ \
+    && cp -r ${task_dir}/dist/* /var/task/dist/ \
     && cp -r packages /var/task/dist/ \
     && cp -r node_modules /var/task/dist/ \
-    # copy commands to run within the container
-    # && cp -r ${task_dir}/commands /var/task/dist/ \
-    && cp ${task_dir}/package.json /var/task/dist/ 
+    && cp ${task_dir}/package.json /var/task/
 
 
 FROM node:22-alpine
