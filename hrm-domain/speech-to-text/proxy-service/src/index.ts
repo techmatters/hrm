@@ -17,8 +17,9 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { getNativeS3Client, GetObjectCommand } from '@tech-matters/s3-client';
 import { Readable } from 'stream';
+import { mapHTTPError, newOk, newErr, isErr } from '@tech-matters/types';
+import { getNativeS3Client, GetObjectCommand } from '@tech-matters/s3-client';
 
 const app = express();
 const PORT = 3000;
@@ -66,41 +67,74 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/proxy/get-s3-object', async (req, res) => {
-  const { bucket, fileName } = req.query as { bucket?: string; fileName?: string };
+export const getS3Object = async ({
+  bucket,
+  fileName,
+}: {
+  bucket: string;
+  fileName: string;
+}) => {
   if (!bucket || !fileName) {
-    res.status(400).json({ error: 'bucket and fileName query parameters are required' });
-    return;
+    return newErr({
+      message: 'bucket and fileName query parameters are required',
+      error: 'InvalidParameter',
+    } as const);
   }
   const safeFileName = sanitizeFileName(fileName);
   if (!safeFileName) {
-    res.status(400).json({ error: 'Invalid fileName' });
-    return;
+    return newErr({
+      message: 'Invalid fileName',
+      error: 'InvalidParameter',
+    } as const);
   }
   try {
     const destPath = path.join(AUDIO_DIR, safeFileName);
     await downloadS3ObjectToFile(bucket, fileName, destPath);
-    res.json({ status: 'ok', path: destPath });
+    return newOk({ data: { path: destPath, status: 'ok' } });
   } catch (err) {
     console.error('Error downloading S3 object:', err);
-    res.status(500).json({ error: String(err) });
+    return newErr({
+      message: 'Error downloading S3 object:',
+      error: 'InternalServerError',
+    } as const);
   }
+};
+app.get('/proxy/get-s3-object', async (req, res) => {
+  const { bucket, fileName } = req.query as { bucket?: string; fileName?: string };
+  const result = await getS3Object({ fileName, bucket });
+  if (isErr(result)) {
+    const status = mapHTTPError(result, {
+      InvalidParameter: 400,
+      InternalServerError: 500,
+    });
+    res.status(status.statusCode).json({});
+    return;
+  }
+
+  res.status(200).json(result.data);
 });
 
-app.post('/diarization-jobs', async (req, res) => {
-  const { fileName, concurrentJobs } = req.body as {
-    fileName?: string;
-    concurrentJobs?: number;
-  };
-  if (!fileName || concurrentJobs === undefined) {
-    res.status(400).json({ error: 'fileName and concurrentJobs are required' });
-    return;
+export const processDiariazationJobs = async ({
+  concurrentJobs,
+  fileName,
+}: {
+  fileName: string;
+  concurrentJobs: number;
+}) => {
+  if (!fileName || !concurrentJobs) {
+    return newErr({
+      error: 'InvalidParameter',
+      message: 'fileName and concurrentJobs are required',
+    } as const);
   }
   const safeFileName = sanitizeFileName(fileName);
   if (!safeFileName) {
-    res.status(400).json({ error: 'Invalid fileName' });
-    return;
+    return newErr({
+      error: 'InvalidParameter',
+      message: 'fileName and concurrentJobs are required',
+    } as const);
   }
+
   try {
     const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
       const startTime = new Date();
@@ -111,13 +145,14 @@ app.post('/diarization-jobs', async (req, res) => {
       });
       const endTime = new Date();
       const responseBody = await response.json();
-      return {
+      const jobResult = {
         id,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         duration: endTime.getTime() - startTime.getTime(),
         response: responseBody,
       };
+      return jobResult;
     });
 
     const results = await Promise.all(jobPromises.map(fn => fn()));
@@ -127,26 +162,52 @@ app.post('/diarization-jobs', async (req, res) => {
     const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}.json`);
     await fs.promises.writeFile(outputPath, JSON.stringify(output, null, 2));
 
-    res.json(output);
+    return newOk({ data: output });
   } catch (err) {
     console.error('Error running diarization jobs:', err);
-    res.status(500).json({ error: String(err) });
+    return newErr({
+      error: 'InternalServerError',
+      message: 'Error running diarization jobs',
+    });
   }
-});
-
-app.post('/transcription-jobs', async (req, res) => {
+};
+app.post('/diarization-jobs', async (req, res) => {
   const { fileName, concurrentJobs } = req.body as {
     fileName?: string;
     concurrentJobs?: number;
   };
-  if (!fileName || concurrentJobs === undefined) {
-    res.status(400).json({ error: 'fileName and concurrentJobs are required' });
+  const result = await processDiariazationJobs({ fileName, concurrentJobs });
+  if (isErr(result)) {
+    const status = mapHTTPError(result, {
+      InvalidParameter: 400,
+      InternalServerError: 500,
+    });
+    res.status(status.statusCode).json({});
     return;
+  }
+
+  res.status(200).json(result.data);
+});
+
+export const processTranscriptionJobs = async ({
+  concurrentJobs,
+  fileName,
+}: {
+  fileName: string;
+  concurrentJobs: number;
+}) => {
+  if (!fileName || concurrentJobs === undefined) {
+    return newErr({
+      error: 'InvalidParameter',
+      message: 'fileName and concurrentJobs are required',
+    } as const);
   }
   const safeFileName = sanitizeFileName(fileName);
   if (!safeFileName) {
-    res.status(400).json({ error: 'Invalid fileName' });
-    return;
+    return newErr({
+      error: 'InvalidParameter',
+      message: 'Invalid fileName',
+    } as const);
   }
   try {
     const filePath = path.join(AUDIO_DIR, safeFileName);
@@ -165,13 +226,15 @@ app.post('/transcription-jobs', async (req, res) => {
       });
       const endTime = new Date();
       const responseBody = await response.json();
-      return {
+
+      const jobResult = {
         id,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
         duration: endTime.getTime() - startTime.getTime(),
         response: responseBody,
       };
+      return jobResult;
     });
 
     const results = await Promise.all(jobPromises.map(fn => fn()));
@@ -181,11 +244,28 @@ app.post('/transcription-jobs', async (req, res) => {
     const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}.json`);
     await fs.promises.writeFile(outputPath, JSON.stringify(output, null, 2));
 
-    res.json(output);
+    return newOk({ data: output });
   } catch (err) {
     console.error('Error running limina jobs:', err);
-    res.status(500).json({ error: String(err) });
+    return newErr({ error: 'InternalServerError', message: 'Error running limina jobs' });
   }
+};
+app.post('/transcription-jobs', async (req, res) => {
+  const { fileName, concurrentJobs } = req.body as {
+    fileName?: string;
+    concurrentJobs?: number;
+  };
+  const result = await processTranscriptionJobs({ fileName, concurrentJobs });
+  if (isErr(result)) {
+    const status = mapHTTPError(result, {
+      InvalidParameter: 400,
+      InternalServerError: 500,
+    });
+    res.status(status.statusCode).json({});
+    return;
+  }
+
+  res.status(200).json(result.data);
 });
 
 app.listen(PORT, () => {

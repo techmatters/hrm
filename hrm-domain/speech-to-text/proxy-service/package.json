@@ -6,7 +6,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "docker:build": "docker build -t speech-to-text-proxy-service -f Dockerfile .",
-    "commands-cli": "npx tsx commands/cli.ts"
+    "commands-cli": "node dist/commands/cli.js"
   },
   "dependencies": {
     "@tech-matters/s3-client": "^1.0.0",

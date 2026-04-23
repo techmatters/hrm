@@ -14,12 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const command = 'proxy <command>';
-export const desc = 'endpoints for proxy service';
+export const command = 'limina <command>';
+export const desc = 'endpoints for limina';
 export const builder = function (yargs) {
-  return yargs.commandDir('proxy', {
+  return yargs.commandDir('limina', {
     exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
-    extensions: ['ts'],
+    extensions: ['js', 'ts'],
   });
   // .commandDir('common_cmds'); add more
 };

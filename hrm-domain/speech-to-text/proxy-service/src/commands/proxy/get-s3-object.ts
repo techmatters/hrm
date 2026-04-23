@@ -14,42 +14,37 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const command = 'limina-jobs';
-export const describe = 'Run concurrent transcription jobs against the limina service';
+import { getS3Object } from '../..';
+
+export const command = 'get-s3-object';
+export const describe = 'Download a file from an S3 bucket to the local audio folder';
 
 export const builder = {
-  f: {
-    alias: 'fileName',
-    describe: 'Audio file name (must exist in the shared audio folder)',
+  b: {
+    alias: 'bucket',
+    describe: 'S3 bucket name',
     demandOption: true,
     type: 'string',
   },
-  j: {
-    alias: 'concurrentJobs',
-    describe: 'Number of concurrent transcription jobs to run',
+  f: {
+    alias: 'fileName',
+    describe: 'File name (S3 key and local file name)',
     demandOption: true,
-    type: 'number',
+    type: 'string',
   },
 };
 
 export const handler = async ({
+  bucket,
   fileName,
-  concurrentJobs,
 }: {
+  bucket: string;
   fileName: string;
-  concurrentJobs: number;
 }) => {
-  console.info('Running limina transcription jobs', { fileName, concurrentJobs });
+  console.info('Downloading S3 object', { bucket, fileName });
   try {
-    const result = await fetch(
-      new URL('/limina-jobs', process.env.PROXY_SERVICE_URI ?? 'http://localhost:3000'),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, concurrentJobs }),
-      },
-    );
-    console.log(JSON.stringify(await result.json(), null, 2));
+    const result = await getS3Object({ fileName, bucket });
+    console.log(result);
   } catch (err) {
     console.error(err);
   }

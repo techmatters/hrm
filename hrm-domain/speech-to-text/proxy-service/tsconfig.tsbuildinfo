@@ -1,1 +1,1 @@
-{"root":["./src/index.ts"],"version":"5.7.3"}
+{"root":["./src/index.ts","./src/commands/cli.ts","./src/commands/limina.ts","./src/commands/proxy.ts","./src/commands/pyannote.ts","./src/commands/limina/healthcheck.ts","./src/commands/proxy/diarization-jobs.ts","./src/commands/proxy/get-s3-object.ts","./src/commands/proxy/transcription-jobs.ts","./src/commands/pyannote/healthcheck.ts"],"version":"5.7.3"}

@@ -14,8 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const command = 'diarization-jobs';
-export const describe = 'Run concurrent diarization jobs against the pyannote service';
+import { processTranscriptionJobs } from '../..';
+
+export const command = 'limina-jobs';
+export const describe = 'Run concurrent transcription jobs against the limina service';
 
 export const builder = {
   f: {
@@ -26,7 +28,7 @@ export const builder = {
   },
   j: {
     alias: 'concurrentJobs',
-    describe: 'Number of concurrent diarization jobs to run',
+    describe: 'Number of concurrent transcription jobs to run',
     demandOption: true,
     type: 'number',
   },
@@ -39,20 +41,10 @@ export const handler = async ({
   fileName: string;
   concurrentJobs: number;
 }) => {
-  console.info('Running diarization jobs', { fileName, concurrentJobs });
+  console.info('Running limina transcription jobs', { fileName, concurrentJobs });
   try {
-    const result = await fetch(
-      new URL(
-        '/diarization-jobs',
-        process.env.PROXY_SERVICE_URI ?? 'http://localhost:3000',
-      ),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, concurrentJobs }),
-      },
-    );
-    console.log(JSON.stringify(await result.json(), null, 2));
+    const result = await processTranscriptionJobs({ concurrentJobs, fileName });
+    console.log(JSON.stringify(result, null, 2));
   } catch (err) {
     console.error(err);
   }

@@ -14,22 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import yargs from 'yargs';
-
-const main = () => {
-  console.info('Commands CLI');
-  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  yargs
-    .commandDir('.', {
-      exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
-      extensions: ['ts'],
-    })
-    .scriptName('commands-cli')
-    .demandCommand(1, 'Please provide a valid command')
-    .version(false)
-    .wrap(120)
-    .help().argv;
+export const command = 'pyannote <command>';
+export const desc = 'endpoints for pyannote';
+export const builder = function (yargs) {
+  return yargs.commandDir('pyannote', {
+    exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
+    extensions: ['js', 'ts'],
+  });
+  // .commandDir('common_cmds'); add more
 };
-
-main();
+// export const handler = function (argv) {};

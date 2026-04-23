@@ -14,42 +14,37 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const command = 'get-s3-object';
-export const describe = 'Download a file from an S3 bucket to the local audio folder';
+import { processDiariazationJobs } from '../..';
+
+export const command = 'diarization-jobs';
+export const describe = 'Run concurrent diarization jobs against the pyannote service';
 
 export const builder = {
-  b: {
-    alias: 'bucket',
-    describe: 'S3 bucket name',
+  f: {
+    alias: 'fileName',
+    describe: 'Audio file name (must exist in the shared audio folder)',
     demandOption: true,
     type: 'string',
   },
-  f: {
-    alias: 'fileName',
-    describe: 'File name (S3 key and local file name)',
+  j: {
+    alias: 'concurrentJobs',
+    describe: 'Number of concurrent diarization jobs to run',
     demandOption: true,
-    type: 'string',
+    type: 'number',
   },
 };
 
 export const handler = async ({
-  bucket,
   fileName,
+  concurrentJobs,
 }: {
-  bucket: string;
   fileName: string;
+  concurrentJobs: number;
 }) => {
-  console.info('Downloading S3 object', { bucket, fileName });
+  console.info('Running diarization jobs', { fileName, concurrentJobs });
   try {
-    const result = await fetch(
-      new URL(
-        `/get-s3-object?bucket=${encodeURIComponent(
-          bucket,
-        )}&fileName=${encodeURIComponent(fileName)}`,
-        process.env.PROXY_SERVICE_URI ?? 'http://localhost:3000',
-      ),
-    );
-    console.log(await result.json());
+    const result = await processDiariazationJobs({ fileName, concurrentJobs });
+    console.log(JSON.stringify(result, null, 2));
   } catch (err) {
     console.error(err);
   }
