@@ -41,4 +41,5 @@ Assuming https://github.com/techmatters/infrastructure-config/pull/541 is applie
     - ~17s to process 1 job.
     - ~77s to process 4 concurrent jobs.
     - ~154s to process 8 concurrent jobs.
+
     So the througput (RFTx) from this test seems to match the benchmark section from Limina docs (~2.8).

@@ -57,10 +57,9 @@ def get_pipeline() -> Pipeline:
 class DiarizeRequest(BaseModel):
     fileName: str
 
-
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "is_gpu_available": torch.cuda.is_available() }
 
 
 @app.post("/diarize")
