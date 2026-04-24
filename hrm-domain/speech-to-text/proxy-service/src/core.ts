@@ -113,10 +113,11 @@ export const processDiariazationJobs = async ({
   try {
     const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
       const startTime = new Date();
+      const sourcePath = path.join(AUDIO_DIR, safeFileName);
       const response = await fetch(`${LOCAL_PYANNOTE_URI}/diarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: safeFileName }),
+        body: JSON.stringify({ fileName: sourcePath }),
       });
       const endTime = new Date();
       const responseBody = await response.json();

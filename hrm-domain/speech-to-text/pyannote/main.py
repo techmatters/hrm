@@ -22,11 +22,12 @@ import torch
 
 app = FastAPI()
 
-AUDIO_DIR = os.environ.get("AUDIO_DIR", "/shared/audio")
+# AUDIO_DIR = os.environ.get("AUDIO_DIR", "/shared/audio")
+# AUDIO_DIR = "/shared/audio"
 HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
 DIARIZATION_MODEL = os.environ.get("DIARIZATION_MODEL")
 
-_SAFE_FILENAME_RE = re.compile(r'^[a-zA-Z0-9._-]+$')
+_SAFE_FILENAME_RE = re.compile(r"^[a-zA-Z0-9._-]+$")
 
 pipeline: Pipeline | None = None
 _pipeline_lock = threading.Lock()
@@ -69,7 +70,8 @@ def diarize(request: DiarizeRequest):
     if not safe_filename:
         raise HTTPException(status_code=400, detail="Invalid fileName")
 
-    file_path = os.path.join(AUDIO_DIR, safe_filename)
+    # file_path = os.path.join(AUDIO_DIR, safe_filename)
+    file_path = safe_filename
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail=f"File not found: {safe_filename}")
 
