@@ -21,6 +21,7 @@ import { getNativeS3Client, GetObjectCommand } from '@tech-matters/s3-client';
 
 const AUDIO_DIR = process.env.AUDIO_DIR ?? '/shared/audio';
 const DIARIZATION_DIR = process.env.DIARIZATION_DIR ?? '/shared/diarization';
+const TRANSCRIPTION_DIR = process.env.TRANSCRIPTION_DIR ?? '/shared/transcription';
 const LOCAL_PYANNOTE_URI = process.env.LOCAL_PYANNOTE_URI ?? 'http://localhost:8081';
 const LOCAL_LIMINA_URI = process.env.LOCAL_LIMINA_URI ?? 'http://localhost:8080';
 // const LIMINA_API_KEY = process.env.LIMINA_API_KEY ?? '';
@@ -113,31 +114,34 @@ export const processDiariazationJobs = async ({
   try {
     const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
       const startTime = new Date();
-      const sourcePath = path.join(AUDIO_DIR, safeFileName);
       const response = await fetch(`${LOCAL_PYANNOTE_URI}/diarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: sourcePath }),
+        body: JSON.stringify({ fileName: safeFileName }),
       });
       const endTime = new Date();
       const responseBody = await response.json();
+
+      const durationMilis = endTime.getTime() - startTime.getTime();
       const jobResult = {
         id,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        duration: endTime.getTime() - startTime.getTime(),
+        durationMilis,
+        durationSeconds: durationMilis / 1000,
         response: responseBody,
       };
+
+      await fs.promises.mkdir(DIARIZATION_DIR, { recursive: true });
+      const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}-iter-${id}.json`);
+      await fs.promises.writeFile(outputPath, JSON.stringify(jobResult, null, 2));
+
       return jobResult;
     });
 
     const results = await Promise.all(jobPromises.map(fn => fn()));
 
     const output = { fileName: safeFileName, jobs: results };
-    await fs.promises.mkdir(DIARIZATION_DIR, { recursive: true });
-    const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}.json`);
-    await fs.promises.writeFile(outputPath, JSON.stringify(output, null, 2));
-
     return newOk({ data: output });
   } catch (err) {
     console.error('Error running diarization jobs:', err);
@@ -171,7 +175,6 @@ export const processTranscriptionJobs = async ({
   try {
     const filePath = path.join(AUDIO_DIR, safeFileName);
     const fileBase64 = await fs.promises.readFile(filePath, { encoding: 'base64' });
-    // const fileBase64 = fileBuffer.toString('base64');
 
     const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
       const startTime = new Date();
@@ -185,24 +188,29 @@ export const processTranscriptionJobs = async ({
       });
       const endTime = new Date();
       const responseBody = await response.json();
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { processed_file, ...responseBodyRest } = responseBody as any;
 
+      const durationMilis = endTime.getTime() - startTime.getTime();
       const jobResult = {
         id,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        duration: endTime.getTime() - startTime.getTime(),
-        response: responseBody,
+        durationMilis,
+        durationSeconds: durationMilis / 1000,
+        response: responseBodyRest,
       };
+
+      await fs.promises.mkdir(TRANSCRIPTION_DIR, { recursive: true });
+      const outputPath = path.join(TRANSCRIPTION_DIR, `${safeFileName}-iter-${id}.json`);
+      await fs.promises.writeFile(outputPath, JSON.stringify(jobResult, null, 2));
+
       return jobResult;
     });
 
     const results = await Promise.all(jobPromises.map(fn => fn()));
 
     const output = { fileName: safeFileName, jobs: results };
-    await fs.promises.mkdir(DIARIZATION_DIR, { recursive: true });
-    const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}.json`);
-    await fs.promises.writeFile(outputPath, JSON.stringify(output, null, 2));
-
     return newOk({ data: output });
   } catch (err) {
     console.error('Error running limina jobs:', err);

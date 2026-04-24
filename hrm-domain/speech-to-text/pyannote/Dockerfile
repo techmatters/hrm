@@ -31,6 +31,8 @@ COPY ${task_dir}/main.py ./
 
 ENV HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN
 ENV DIARIZATION_MODEL="pyannote/speaker-diarization-3.1"
+ENV AUDIO_DIR="/shared/audio"
+
 EXPOSE 8081
 
 # HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

@@ -46,5 +46,8 @@ WORKDIR /var/task
 
 ENV LOCAL_LIMINA_URI="http://localhost:8080"
 ENV LOCAL_PYANNOTE_URI="http://localhost:8081"
+ENV AUDIO_DIR="/shared/audio"
+ENV DIARIZATION_DIR="/shared/diarization"
+ENV TRANSCRIPTION_DIR="/shared/transcription"
 
 CMD ["node", "dist/index.js"]
