@@ -20,6 +20,7 @@ COPY ${task_dir}/entrypoint.sh /var/task/entrypoint.sh
 COPY ${task_dir}/licence /app/license
 
 WORKDIR /var/task
+ENV PAI_ENABLE_AUDIO="true"
 
 ENTRYPOINT ["/usr/bin/sh","/var/task/entrypoint.sh"]
 

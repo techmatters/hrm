@@ -24,7 +24,7 @@ app = FastAPI()
 
 AUDIO_DIR = os.environ.get("AUDIO_DIR", "/shared/audio")
 HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
-DIARIZATION_MODEL = os.environ.get("DIARIZATION_MODEL", "pyannote/speaker-diarization-3.1")
+DIARIZATION_MODEL = os.environ.get("DIARIZATION_MODEL")
 
 _SAFE_FILENAME_RE = re.compile(r'^[a-zA-Z0-9._-]+$')
 

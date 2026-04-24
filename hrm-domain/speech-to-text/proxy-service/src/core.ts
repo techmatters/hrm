@@ -154,7 +154,7 @@ export const processTranscriptionJobs = async ({
   fileName: string;
   concurrentJobs: number;
 }) => {
-  if (!fileName || concurrentJobs === undefined) {
+  if (!fileName || !concurrentJobs) {
     return newErr({
       error: 'InvalidParameter',
       message: 'fileName and concurrentJobs are required',
@@ -169,8 +169,8 @@ export const processTranscriptionJobs = async ({
   }
   try {
     const filePath = path.join(AUDIO_DIR, safeFileName);
-    const fileBuffer = await fs.promises.readFile(filePath);
-    const fileBase64 = fileBuffer.toString('base64');
+    const fileBase64 = await fs.promises.readFile(filePath, { encoding: 'base64' });
+    // const fileBase64 = fileBuffer.toString('base64');
 
     const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
       const startTime = new Date();
@@ -180,7 +180,7 @@ export const processTranscriptionJobs = async ({
           'Content-Type': 'application/json',
           // 'x-api-key': LIMINA_API_KEY,
         },
-        body: JSON.stringify({ file: fileBase64, fileName: safeFileName }),
+        body: JSON.stringify({ file: { data: fileBase64, content_type: 'audio/wav' } }),
       });
       const endTime = new Date();
       const responseBody = await response.json();

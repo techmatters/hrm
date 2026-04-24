@@ -27,13 +27,13 @@ COPY ${task_dir}/../tsconfig.json /tmp/build/${task_dir}/../tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${task_dir}/tsconfig.build.json /tmp/build/
 
 RUN  cd /tmp/build \
-    && npm ci -w ${task_dir} -w packages/* --verbose \
-    && npx tsc -b tsconfig.build.json --verbose \
-    && mkdir -p /var/task/dist \
-    && cp -r ${task_dir}/dist/* /var/task/dist/ \
-    && cp -r packages /var/task/dist/ \
-    && cp -r node_modules /var/task/dist/ \
-    && cp ${task_dir}/package.json /var/task/
+  && npm ci -w ${task_dir} -w packages/* --verbose \
+  && npx tsc -b tsconfig.build.json --verbose \
+  && mkdir -p /var/task/dist \
+  && cp -r ${task_dir}/dist/* /var/task/dist/ \
+  && cp -r packages /var/task/dist/ \
+  && cp -r node_modules /var/task/dist/ \
+  && cp ${task_dir}/package.json /var/task/
 
 
 FROM node:22-alpine
