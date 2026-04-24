@@ -16,7 +16,7 @@
 
 import { processTranscriptionJobs } from '../../core';
 
-export const command = 'limina-jobs';
+export const command = 'transcription-jobs';
 export const describe = 'Run concurrent transcription jobs against the limina service';
 
 export const builder = {
