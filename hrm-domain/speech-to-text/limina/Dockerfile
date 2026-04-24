@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM crprivateaiprod.azurecr.io/deid:4.0.0-cpu
+FROM crprivateaiprod.azurecr.io/deid:4.0.0-gpu
 
 ARG task_dir=hrm-domain/speech-to-text/limina
 
@@ -20,6 +20,7 @@ COPY ${task_dir}/entrypoint.sh /var/task/entrypoint.sh
 COPY ${task_dir}/licence /app/license
 
 WORKDIR /var/task
+ENV PAI_ENABLE_AUDIO="true"
 
 ENTRYPOINT ["/usr/bin/sh","/var/task/entrypoint.sh"]
 

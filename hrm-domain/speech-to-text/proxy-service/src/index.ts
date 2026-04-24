@@ -15,12 +15,67 @@
  */
 
 import express from 'express';
+import { mapHTTPError, isErr } from '@tech-matters/types';
+import { getS3Object, processDiariazationJobs, processTranscriptionJobs } from './core';
 
 const app = express();
 const PORT = 3000;
 
+app.use(express.json());
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.get('/proxy/get-s3-object', async (req, res) => {
+  const { bucket, fileName } = req.query as { bucket?: string; fileName?: string };
+  const result = await getS3Object({ fileName, bucket });
+  if (isErr(result)) {
+    const status = mapHTTPError(result, {
+      InvalidParameter: 400,
+      InternalServerError: 500,
+    });
+    res.status(status.statusCode).json({});
+    return;
+  }
+
+  res.status(200).json(result.data);
+});
+
+app.post('/diarization-jobs', async (req, res) => {
+  const { fileName, concurrentJobs } = req.body as {
+    fileName?: string;
+    concurrentJobs?: number;
+  };
+  const result = await processDiariazationJobs({ fileName, concurrentJobs });
+  if (isErr(result)) {
+    const status = mapHTTPError(result, {
+      InvalidParameter: 400,
+      InternalServerError: 500,
+    });
+    res.status(status.statusCode).json({});
+    return;
+  }
+
+  res.status(200).json(result.data);
+});
+
+app.post('/transcription-jobs', async (req, res) => {
+  const { fileName, concurrentJobs } = req.body as {
+    fileName?: string;
+    concurrentJobs?: number;
+  };
+  const result = await processTranscriptionJobs({ fileName, concurrentJobs });
+  if (isErr(result)) {
+    const status = mapHTTPError(result, {
+      InvalidParameter: 400,
+      InternalServerError: 500,
+    });
+    res.status(status.statusCode).json({});
+    return;
+  }
+
+  res.status(200).json(result.data);
 });
 
 app.listen(PORT, () => {

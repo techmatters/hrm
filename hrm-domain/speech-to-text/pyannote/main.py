@@ -12,11 +12,75 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-from fastapi import FastAPI
+import os
+import re
+import threading
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from pyannote.audio import Pipeline
+import torch
 
 app = FastAPI()
 
+AUDIO_DIR = os.environ.get("AUDIO_DIR", "/shared/audio")
+HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
+DIARIZATION_MODEL = os.environ.get("DIARIZATION_MODEL")
+
+_SAFE_FILENAME_RE = re.compile(r"^[a-zA-Z0-9._-]+$")
+
+pipeline: Pipeline | None = None
+_pipeline_lock = threading.Lock()
+
+
+def sanitize_filename(filename: str) -> str | None:
+    base = os.path.basename(filename)
+    if not base or not _SAFE_FILENAME_RE.match(base):
+        return None
+    return base
+
+
+def get_pipeline() -> Pipeline:
+    global pipeline
+    if pipeline is None:
+        with _pipeline_lock:
+            if pipeline is None:
+                p = Pipeline.from_pretrained(
+                    DIARIZATION_MODEL,
+                    token=HUGGINGFACE_TOKEN,
+                )
+                if torch.cuda.is_available():
+                    p.to(torch.device("cuda"))
+                pipeline = p
+    return pipeline
+
+
+class DiarizeRequest(BaseModel):
+    fileName: str
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "is_gpu_available": torch.cuda.is_available() }
+
+
+@app.post("/diarize")
+def diarize(request: DiarizeRequest):
+    safe_filename = sanitize_filename(request.fileName)
+    safe_filename = request.fileName
+    if not safe_filename:
+        raise HTTPException(status_code=400, detail="Invalid fileName")
+
+    file_path = os.path.join(AUDIO_DIR, safe_filename)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+
+    try:
+        diarization = get_pipeline()(file_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    segments = [
+        {"start": round(turn.start, 3), "end": round(turn.end, 3), "speaker": speaker}
+        for turn, _, speaker in diarization.itertracks(yield_label=True)
+    ]
+
+    return {"fileName": safe_filename, "segments": segments}
