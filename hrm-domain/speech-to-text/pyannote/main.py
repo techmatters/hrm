@@ -65,7 +65,6 @@ def health():
 @app.post("/diarize")
 def diarize(request: DiarizeRequest):
     safe_filename = sanitize_filename(request.fileName)
-    safe_filename = request.fileName
     if not safe_filename:
         raise HTTPException(status_code=400, detail="Invalid fileName")
 
@@ -83,4 +82,4 @@ def diarize(request: DiarizeRequest):
         for turn, _, speaker in diarization.itertracks(yield_label=True)
     ]
 
-    return {"fileName": safe_filename, "segments": segments}
+    return {"fileName": file_path, "segments": segments}

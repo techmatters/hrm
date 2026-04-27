@@ -42,4 +42,4 @@ Assuming https://github.com/techmatters/infrastructure-config/pull/541 is applie
     - ~77s to process 4 concurrent jobs.
     - ~154s to process 8 concurrent jobs.
 
-    So the througput (RFTx) from this test seems to match the benchmark section from Limina docs (~2.8).
+    So the througput (RFTx) from this test seems to match the benchmark section from Limina docs (~2.8). During this tests, the CPU and memory usage was at ~30%.
