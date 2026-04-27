@@ -62,9 +62,6 @@ on:
         default: 'true'
         type: string
 
-env:
-  PRIMARY_AWS_REGION: ${{ inputs.region }}
-
 jobs:
   deploy:
     name: Update
