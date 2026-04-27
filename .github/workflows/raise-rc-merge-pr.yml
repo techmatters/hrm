@@ -102,13 +102,19 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+      - name: Checkout flex-plugins actions
+        uses: actions/checkout@v6
+        with:
+          repository: techmatters/flex-plugins
+          path: flex-plugins
+          sparse-checkout: .github/actions
       - name: Set GITHUB_ACTIONS_SLACK_BOT_TOKEN
-        uses: "marvinpinto/action-inject-ssm-secrets@latest"
+        uses: ./flex-plugins/.github/actions/inject-ssm-secrets
         with:
           ssm_parameter: "/slack/bot/token/github-actions"
           env_variable_name: "GITHUB_ACTIONS_SLACK_BOT_TOKEN"
       - name: Set ASELO_DEPLOYS_CHANNEL_ID
-        uses: "marvinpinto/action-inject-ssm-secrets@latest"
+        uses: ./flex-plugins/.github/actions/inject-ssm-secrets
         with:
           ssm_parameter: "/slack/channel/aselo-release-deploy/id"
           env_variable_name: "ASELO_RELEASE_DEPLOY_CHANNEL_ID"
