@@ -27,15 +27,13 @@ COPY ${task_dir}/../tsconfig.json /tmp/build/${task_dir}/../tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${task_dir}/tsconfig.build.json /tmp/build/
 
 RUN  cd /tmp/build \
-    && npm ci -w ${task_dir} -w packages/* --verbose \
-    && npx tsc -b tsconfig.build.json --verbose \
-    && mkdir -p /var/task/dist \
-    && cp ${task_dir}/dist/*.js /var/task/dist/ \
-    && cp -r packages /var/task/dist/ \
-    && cp -r node_modules /var/task/dist/ \
-    # copy commands to run within the container
-    && cp ${task_dir}/package.json /var/task/dist/ \
-    && cp -r ${task_dir}/commands /var/task/dist/
+  && npm ci -w ${task_dir} -w packages/* --verbose \
+  && npx tsc -b tsconfig.build.json --verbose \
+  && mkdir -p /var/task/dist \
+  && cp -r ${task_dir}/dist/* /var/task/dist/ \
+  && cp -r packages /var/task/dist/ \
+  && cp -r node_modules /var/task/dist/ \
+  && cp ${task_dir}/package.json /var/task/
 
 
 FROM node:22-alpine
@@ -48,5 +46,8 @@ WORKDIR /var/task
 
 ENV LOCAL_LIMINA_URI="http://localhost:8080"
 ENV LOCAL_PYANNOTE_URI="http://localhost:8081"
+ENV AUDIO_DIR="/shared/audio"
+ENV DIARIZATION_DIR="/shared/diarization"
+ENV TRANSCRIPTION_DIR="/shared/transcription"
 
 CMD ["node", "dist/index.js"]

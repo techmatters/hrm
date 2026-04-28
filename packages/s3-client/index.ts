@@ -25,6 +25,15 @@ import {
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'stream';
 
+export {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+  S3ClientConfig,
+  UploadPartCommand,
+};
+
 export type DeleteS3ObjectParams = {
   bucket: string;
   key: string;

@@ -14,12 +14,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const command = 'pyannote <command>';
-export const desc = 'endpoints for pyannote';
+export const command = 'proxy <command>';
+export const desc = 'endpoints for proxy service';
 export const builder = function (yargs) {
-  return yargs.commandDir('pyannote', {
+  return yargs.commandDir('proxy', {
     exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
-    extensions: ['ts'],
+    extensions: ['js', 'ts'],
   });
   // .commandDir('common_cmds'); add more
 };
