@@ -1,4 +1,10 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 pyannote.audio>=3.3.0
-torch>=2.0.0
+pyannote.audio==3.3.2
+torch==2.6.0
+torchvision==0.21.0
+torchaudio==2.6.0
+lightning==2.4.0
+torchmetrics==1.4.3
+
