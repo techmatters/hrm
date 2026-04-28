@@ -37,9 +37,21 @@ Assuming https://github.com/techmatters/infrastructure-config/pull/541 is applie
 
 ### Results from testing
 - On a `m7i.4xlarge` instance (CPU).
-  - For Limina, concurrency seems to be entirely off. This was using a 71s audio file.
+  - For Limina, concurrency seems to be off (expected).
+  - This was using a 71s audio file.
     - ~17s to process 1 job.
     - ~77s to process 4 concurrent jobs.
     - ~154s to process 8 concurrent jobs.
 
     So the througput (RFTx) from this test seems to match the benchmark section from Limina docs (~2.8). During this tests, the CPU and memory usage was at ~30%.
+- On a `g4dn.4xlarge` instance (GPU).
+  - For Limina, concurrency seems to be off (unexpected).
+  - This was using a 71s audio file.
+    - ~2s to process 1 job.
+    - ~8s to process 4 concurrent jobs.
+    - ~16s to process 8 concurrent jobs.
+  - This was using a 928s audio file.
+    - ~25s to process 1 job.
+    - ~100s to process 4 concurrent jobs.
+
+    Througput (RFTx) from this test seems to match the benchmark section from Limina docs (~23.0). During this tests, the CPU and memory usage was at ~30%.
