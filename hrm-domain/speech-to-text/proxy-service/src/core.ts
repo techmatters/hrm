@@ -217,3 +217,72 @@ export const processTranscriptionJobs = async ({
     return newErr({ error: 'InternalServerError', message: 'Error running limina jobs' });
   }
 };
+
+export const processTranscriptionJobsBatched = async ({
+  concurrentJobs,
+  fileName,
+}: {
+  fileName: string;
+  concurrentJobs: number;
+}) => {
+  if (!fileName || !concurrentJobs) {
+    return newErr({
+      error: 'InvalidParameter',
+      message: 'fileName and concurrentJobs are required',
+    } as const);
+  }
+  const safeFileName = sanitizeFileName(fileName);
+  if (!safeFileName) {
+    return newErr({
+      error: 'InvalidParameter',
+      message: 'Invalid fileName',
+    } as const);
+  }
+  try {
+    const filePath = path.join(AUDIO_DIR, safeFileName);
+    const fileBase64 = await fs.promises.readFile(filePath, { encoding: 'base64' });
+
+    const startTime = new Date();
+
+    const job = Array.from({ length: concurrentJobs }, () => {
+      return fileBase64;
+    });
+
+    const response = await fetch(`${LOCAL_LIMINA_URI}/process/files/base64`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // 'x-api-key': LIMINA_API_KEY,
+      },
+      body: JSON.stringify({
+        file: { data: job, content_type: 'audio/wav', link_batch: true },
+      }),
+    });
+
+    const responseBody = await response.json();
+
+    const endTime = new Date();
+    const durationMilis = endTime.getTime() - startTime.getTime();
+
+    const jobResult = {
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      durationMilis,
+      durationSeconds: durationMilis / 1000,
+      response: responseBody,
+    };
+
+    await fs.promises.mkdir(TRANSCRIPTION_DIR, { recursive: true });
+    const outputPath = path.join(
+      TRANSCRIPTION_DIR,
+      `${safeFileName}-batched-concurrency-${concurrentJobs}.json`,
+    );
+    await fs.promises.writeFile(outputPath, JSON.stringify(jobResult, null, 2));
+
+    const output = { fileName: safeFileName, jobs: jobResult };
+    return newOk({ data: output });
+  } catch (err) {
+    console.error('Error running limina jobs:', err);
+    return newErr({ error: 'InternalServerError', message: 'Error running limina jobs' });
+  }
+};
