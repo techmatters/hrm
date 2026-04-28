@@ -36,6 +36,24 @@ on:
           - eu-west-1
           - ca-central-1
 
+      build_proxy:
+        description: 'Build and push the proxy Docker image. If unchecked, the existing latest/live image in ECR will be reused.'
+        required: false
+        type: boolean
+        default: true
+
+      build_limina:
+        description: 'Build and push the limina Docker image. If unchecked, the existing latest/live image in ECR will be reused.'
+        required: false
+        type: boolean
+        default: false
+
+      build_pyannote:
+        description: 'Build and push the pyannote Docker image. If unchecked, the existing latest/live image in ECR will be reused.'
+        required: false
+        type: boolean
+        default: false
+
   workflow_call:
     secrets:
       AWS_ACCESS_KEY_ID:
@@ -58,6 +76,21 @@ on:
         required: false
         default: 'true'
         type: string
+      build_proxy:
+        description: 'Build and push the proxy Docker image. If false, the existing latest/live image in ECR will be reused.'
+        required: false
+        type: boolean
+        default: true
+      build_limina:
+        description: 'Build and push the limina Docker image. If false, the existing latest/live image in ECR will be reused.'
+        required: false
+        type: boolean
+        default: false
+      build_pyannote:
+        description: 'Build and push the pyannote Docker image. If false, the existing latest/live image in ECR will be reused.'
+        required: false
+        type: boolean
+        default: false
 
 env:
   ECR_REPOSITORY_PROXY: ${{ inputs.environment }}/speech-to-text-proxy-service
@@ -112,11 +145,14 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Log in to Private AI Registry
+        if: >-
+          (matrix.service == 'limina' && inputs.build_limina) ||
+          (matrix.service == 'pyannote' && inputs.build_pyannote)
         run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
 
       # --- limina-only steps ---
       - name: Add licence (limina only)
-        if: matrix.service == 'limina'
+        if: matrix.service == 'limina' && inputs.build_limina
         env:
           PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
         run: |
@@ -126,13 +162,17 @@ jobs:
 
       # --- pyannote-only steps ---
       - name: Set HUGGINGFACE_TOKEN (pyannote only)
-        if: matrix.service == 'pyannote'
+        if: matrix.service == 'pyannote' && inputs.build_pyannote
         uses: 'marvinpinto/action-inject-ssm-secrets@latest'
         with:
           ssm_parameter: 'PYANNOTE_READ_TOKEN_GIAN'
           env_variable_name: 'HUGGINGFACE_TOKEN'
 
       - name: Build and Push Docker Image
+        if: >-
+          (matrix.service == 'proxy' && inputs.build_proxy) ||
+          (matrix.service == 'limina' && inputs.build_limina) ||
+          (matrix.service == 'pyannote' && inputs.build_pyannote)
         uses: docker/build-push-action@v7
         with:
           context: ./
@@ -149,7 +189,11 @@ jobs:
       - name: Generate output
         id: generate-output
         run: |
-          echo "${{ matrix.service }}_image=${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:${{ inputs.environment }}-${{ matrix.tag_suffix }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+          if [[ "${{ (matrix.service == 'proxy' && inputs.build_proxy) || (matrix.service == 'limina' && inputs.build_limina) || (matrix.service == 'pyannote' && inputs.build_pyannote) }}" == "true" ]]; then
+            echo "${{ matrix.service }}_image=${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:${{ inputs.environment }}-${{ matrix.tag_suffix }}-${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "${{ matrix.service }}_image=${{ steps.login-ecr.outputs.registry }}/${{ env[matrix.ecr_repo_env] }}:latest" >> $GITHUB_OUTPUT
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
