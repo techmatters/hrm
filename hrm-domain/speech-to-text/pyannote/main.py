@@ -48,7 +48,8 @@ def get_pipeline() -> Pipeline:
             if pipeline is None:
                 p = Pipeline.from_pretrained(
                     DIARIZATION_MODEL,
-                    token=HUGGINGFACE_TOKEN,
+                    use_auth_token=HUGGINGFACE_TOKEN,
+                    # token=HUGGINGFACE_TOKEN,
                 )
                 if torch.cuda.is_available():
                     p.to(torch.device("cuda"))
@@ -62,7 +63,11 @@ class DiarizeRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "is_gpu_available": torch.cuda.is_available()}
+    return {
+        "status": "ok",
+        "is_gpu_available": torch.cuda.is_available(),
+        "diarization_model": DIARIZATION_MODEL,
+    }
 
 
 @app.post("/diarize")
