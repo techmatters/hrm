@@ -24,7 +24,9 @@ app = FastAPI()
 
 AUDIO_DIR = os.environ.get("AUDIO_DIR", "/shared/audio")
 HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
-DIARIZATION_MODEL = os.environ.get("DIARIZATION_MODEL")
+DIARIZATION_MODEL = os.environ.get(
+    "DIARIZATION_MODEL", "pyannote/speaker-diarization-3.1"
+)
 
 _SAFE_FILENAME_RE = re.compile(r"^[a-zA-Z0-9._-]+$")
 
@@ -57,9 +59,10 @@ def get_pipeline() -> Pipeline:
 class DiarizeRequest(BaseModel):
     fileName: str
 
+
 @app.get("/health")
 def health():
-    return {"status": "ok", "is_gpu_available": torch.cuda.is_available() }
+    return {"status": "ok", "is_gpu_available": torch.cuda.is_available()}
 
 
 @app.post("/diarize")
@@ -77,9 +80,11 @@ def diarize(request: DiarizeRequest):
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    annotation = diarization.speaker_diarization
+
     segments = [
         {"start": round(turn.start, 3), "end": round(turn.end, 3), "speaker": speaker}
-        for turn, _, speaker in diarization.itertracks(yield_label=True)
+        for turn, _, speaker in annotation.itertracks(yield_label=True)
     ]
 
     return {"fileName": file_path, "segments": segments}

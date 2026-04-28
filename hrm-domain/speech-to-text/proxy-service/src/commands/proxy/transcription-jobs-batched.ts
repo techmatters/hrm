@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { processTranscriptionJobs } from '../../core';
+import { processTranscriptionJobsBatched } from '../../core';
 
 export const command = 'transcription-jobs-batched';
 export const describe = 'Run concurrent transcription jobs against the limina service';
@@ -43,7 +43,7 @@ export const handler = async ({
 }) => {
   console.info('Running limina transcription jobs', { fileName, concurrentJobs });
   try {
-    const result = await processTranscriptionJobs({ concurrentJobs, fileName });
+    const result = await processTranscriptionJobsBatched({ concurrentJobs, fileName });
     console.log(JSON.stringify(result, null, 2));
   } catch (err) {
     console.error(err);

@@ -13,7 +13,7 @@
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
 # FROM python:3.12-slim
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
 
 ARG HUGGINGFACE_TOKEN=''
 ARG task_dir=hrm-domain/speech-to-text/pyannote
