@@ -1,9 +1,24 @@
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
-pyannote.audio>=3.3.2
-torch==2.6.0
-torchvision==0.21.0
-torchaudio==2.6.0
-lightning==2.4.0
-torchmetrics==1.4.3
+pyannote.audio>=4.0.4
+torch>=2.10.0
+torchvision>=0.21.0
+torchaudio>=2.10.0
+lightning>=2.4.0
+torchmetrics>=1.9.0
 
+# huggingface_hub                          1.6.0
+# pyannote-audio                           4.0.4
+# pyannote-core                            6.0.1
+# pyannote-database                        6.1.1
+# pyannote-metrics                         4.0.0
+# pyannote-pipeline                        4.0.0
+# pyannoteai-sdk                           0.4.0
+# pytorch-lightning                        2.6.1
+# pytorch-metric-learning                  2.9.0
+# torch                                    2.10.0      2
+# torch-audiomentations                    0.12.0
+# torch_pitch_shift                        1.2.5
+# torchaudio                               2.10.0
+# torchcodec                               0.10.0
+# torchmetrics                             1.9.0

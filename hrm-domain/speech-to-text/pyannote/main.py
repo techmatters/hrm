@@ -48,8 +48,8 @@ def get_pipeline() -> Pipeline:
             if pipeline is None:
                 p = Pipeline.from_pretrained(
                     DIARIZATION_MODEL,
-                    use_auth_token=HUGGINGFACE_TOKEN,
-                    # token=HUGGINGFACE_TOKEN,
+                    token=HUGGINGFACE_TOKEN,
+                    # use_auth_token=HUGGINGFACE_TOKEN,
                 )
                 if torch.cuda.is_available():
                     p.to(torch.device("cuda"))
