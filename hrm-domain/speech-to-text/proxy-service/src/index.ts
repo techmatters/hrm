@@ -16,7 +16,11 @@
 
 import express from 'express';
 import { mapHTTPError, isErr } from '@tech-matters/types';
-import { getS3Object, processDiariazationJobs, processTranscriptionJobs } from './core';
+import {
+  getS3Object,
+  processDiariazationJobsGPU,
+  processTranscriptionJobs,
+} from './core';
 
 const app = express();
 const PORT = 3000;
@@ -42,12 +46,12 @@ app.get('/proxy/get-s3-object', async (req, res) => {
   res.status(200).json(result.data);
 });
 
-app.post('/diarization-jobs', async (req, res) => {
+app.post('/diarization-jobs-gpu', async (req, res) => {
   const { fileName, concurrentJobs } = req.body as {
     fileName?: string;
     concurrentJobs?: number;
   };
-  const result = await processDiariazationJobs({ fileName, concurrentJobs });
+  const result = await processDiariazationJobsGPU({ fileName, concurrentJobs });
   if (isErr(result)) {
     const status = mapHTTPError(result, {
       InvalidParameter: 400,

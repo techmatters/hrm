@@ -14,10 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { processDiariazationJobs } from '../../core';
+import { processDiariazationJobsCPU } from '../../core';
 
-export const command = 'diarization-jobs';
-export const describe = 'Run concurrent diarization jobs against the pyannote service';
+export const command = 'diarization-jobs-cpu';
+export const describe =
+  'Run concurrent diarization jobs against the pyannote service using CPU';
 
 export const builder = {
   f: {
@@ -43,7 +44,7 @@ export const handler = async ({
 }) => {
   console.info('Running diarization jobs', { fileName, concurrentJobs });
   try {
-    const result = await processDiariazationJobs({ fileName, concurrentJobs });
+    const result = await processDiariazationJobsCPU({ fileName, concurrentJobs });
     console.log(JSON.stringify(result, null, 2));
   } catch (err) {
     console.error(err);

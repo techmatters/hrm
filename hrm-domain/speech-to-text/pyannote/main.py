@@ -41,7 +41,7 @@ def sanitize_filename(filename: str) -> str | None:
     return base
 
 
-def get_pipeline() -> Pipeline:
+def get_pipeline(use_gpu: bool) -> Pipeline:
     global pipeline
     if pipeline is None:
         with _pipeline_lock:
@@ -51,7 +51,7 @@ def get_pipeline() -> Pipeline:
                     token=HUGGINGFACE_TOKEN,
                     # use_auth_token=HUGGINGFACE_TOKEN,
                 )
-                if torch.cuda.is_available():
+                if use_gpu and torch.cuda.is_available():
                     p.to(torch.device("cuda"))
                 pipeline = p
     return pipeline
@@ -70,26 +70,42 @@ def health():
     }
 
 
-@app.post("/diarize")
-def diarize(request: DiarizeRequest):
-    safe_filename = sanitize_filename(request.fileName)
-    if not safe_filename:
-        raise HTTPException(status_code=400, detail="Invalid fileName")
+def diarize(use_gpu: bool):
+    def inner_diarize(request: DiarizeRequest):
+        safe_filename = sanitize_filename(request.fileName)
+        if not safe_filename:
+            raise HTTPException(status_code=400, detail="Invalid fileName")
 
-    file_path = os.path.join(AUDIO_DIR, safe_filename)
-    if not os.path.isfile(file_path):
-        raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
+        file_path = os.path.join(AUDIO_DIR, safe_filename)
+        if not os.path.isfile(file_path):
+            raise HTTPException(status_code=404, detail=f"File not found: {file_path}")
 
-    try:
-        diarization = get_pipeline()(file_path)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        try:
+            diarization = get_pipeline(use_gpu)(file_path)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    annotation = diarization.speaker_diarization
+        annotation = diarization.speaker_diarization
 
-    segments = [
-        {"start": round(turn.start, 3), "end": round(turn.end, 3), "speaker": speaker}
-        for turn, _, speaker in annotation.itertracks(yield_label=True)
-    ]
+        segments = [
+            {
+                "start": round(turn.start, 3),
+                "end": round(turn.end, 3),
+                "speaker": speaker,
+            }
+            for turn, _, speaker in annotation.itertracks(yield_label=True)
+        ]
 
-    return {"fileName": file_path, "segments": segments}
+        return {"fileName": file_path, "segments": segments}
+
+    return inner_diarize
+
+
+@app.post("/diarize-gpu")
+def diarize_gpu(request: DiarizeRequest):
+    return diarize(True)(request)
+
+
+@app.post("/diarize-cpu")
+def diarize_cpu(request: DiarizeRequest):
+    return diarize(False)(request)

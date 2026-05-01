@@ -90,67 +90,66 @@ export const getS3Object = async ({
   }
 };
 
-export const processDiariazationJobs = async ({
-  concurrentJobs,
-  fileName,
-}: {
-  fileName: string;
-  concurrentJobs: number;
-}) => {
-  if (!fileName || !concurrentJobs) {
-    return newErr({
-      error: 'InvalidParameter',
-      message: 'fileName and concurrentJobs are required',
-    } as const);
-  }
-  const safeFileName = sanitizeFileName(fileName);
-  if (!safeFileName) {
-    return newErr({
-      error: 'InvalidParameter',
-      message: 'fileName and concurrentJobs are required',
-    } as const);
-  }
+const processDiariazationJobs =
+  (useGPU: boolean) =>
+  async ({ concurrentJobs, fileName }: { fileName: string; concurrentJobs: number }) => {
+    if (!fileName || !concurrentJobs) {
+      return newErr({
+        error: 'InvalidParameter',
+        message: 'fileName and concurrentJobs are required',
+      } as const);
+    }
+    const safeFileName = sanitizeFileName(fileName);
+    if (!safeFileName) {
+      return newErr({
+        error: 'InvalidParameter',
+        message: 'fileName and concurrentJobs are required',
+      } as const);
+    }
 
-  try {
-    const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
-      const startTime = new Date();
-      const response = await fetch(`${LOCAL_PYANNOTE_URI}/diarize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: safeFileName }),
+    try {
+      const jobPromises = Array.from({ length: concurrentJobs }, (_, id) => async () => {
+        const startTime = new Date();
+        const suffix = useGPU ? 'gpu' : 'cpu';
+        const response = await fetch(`${LOCAL_PYANNOTE_URI}/diarize-${suffix}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: safeFileName }),
+        });
+        const endTime = new Date();
+        const responseBody = await response.json();
+
+        const durationMilis = endTime.getTime() - startTime.getTime();
+        const jobResult = {
+          id,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          durationMilis,
+          durationSeconds: durationMilis / 1000,
+          response: responseBody,
+        };
+
+        await fs.promises.mkdir(DIARIZATION_DIR, { recursive: true });
+        const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}-iter-${id}.json`);
+        await fs.promises.writeFile(outputPath, JSON.stringify(jobResult, null, 2));
+
+        return jobResult;
       });
-      const endTime = new Date();
-      const responseBody = await response.json();
 
-      const durationMilis = endTime.getTime() - startTime.getTime();
-      const jobResult = {
-        id,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        durationMilis,
-        durationSeconds: durationMilis / 1000,
-        response: responseBody,
-      };
+      const results = await Promise.all(jobPromises.map(fn => fn()));
 
-      await fs.promises.mkdir(DIARIZATION_DIR, { recursive: true });
-      const outputPath = path.join(DIARIZATION_DIR, `${safeFileName}-iter-${id}.json`);
-      await fs.promises.writeFile(outputPath, JSON.stringify(jobResult, null, 2));
-
-      return jobResult;
-    });
-
-    const results = await Promise.all(jobPromises.map(fn => fn()));
-
-    const output = { fileName: safeFileName, jobs: results };
-    return newOk({ data: output });
-  } catch (err) {
-    console.error('Error running diarization jobs:', err);
-    return newErr({
-      error: 'InternalServerError',
-      message: 'Error running diarization jobs',
-    });
-  }
-};
+      const output = { fileName: safeFileName, jobs: results };
+      return newOk({ data: output });
+    } catch (err) {
+      console.error('Error running diarization jobs:', err);
+      return newErr({
+        error: 'InternalServerError',
+        message: 'Error running diarization jobs',
+      });
+    }
+  };
+export const processDiariazationJobsGPU = processDiariazationJobs(true);
+export const processDiariazationJobsCPU = processDiariazationJobs(false);
 
 export const processTranscriptionJobs = async ({
   concurrentJobs,
