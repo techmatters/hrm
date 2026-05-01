@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-name: 'Deploy Transcript Scrubber to Amazon ECS'
+name: 'Deploy Speech-to-Text Stack to Amazon ECS'
 on:
   workflow_dispatch:
     inputs:
@@ -27,7 +27,7 @@ on:
           - production
 
       region:
-        description: AWS to deploy.
+        description: AWS region to deploy.
         default: us-east-1
         required: true
         type: choice
@@ -60,19 +60,24 @@ on:
         type: string
 
 env:
-  ECR_REPOSITORY: ${{ inputs.environment }}/hrm-transcript-scrubber
+  ECR_REPOSITORY_PROXY: ${{ inputs.environment }}/speech-to-text-proxy-service
+  ECR_REPOSITORY_PYANNOTE: ${{ inputs.environment }}/speech-to-text-pyannote
+  ECR_REPOSITORY_LIMINA: ${{ inputs.environment }}/speech-to-text-limina
   # if anything is set as a secret, it can't be used in outputs. So we need to set it as an env var
   AWS_REGION: ${{ inputs.region }}
   PRIMARY_AWS_REGION: us-east-1
 
 jobs:
   deploy_docker:
-    name: Build Docker Image and Set regions
+    name: Build Docker Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     outputs:
-      regions: ${{ steps.generate-output.outputs.regions }}
-      docker_image: ${{ steps.generate-output.outputs.docker_image}}
+      proxy_image: ${{ steps.generate-output.outputs.proxy_image }}
+      pyannote_image: ${{ steps.generate-output.outputs.pyannote_image }}
+      limina_image: ${{ steps.generate-output.outputs.limina_image }}
 
     steps:
       - name: Checkout
@@ -92,29 +97,41 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Add licence
-        env:
-          PRODUCTION_PRIVATE_AI_LICENCE: ${{ secrets.PRODUCTION_PRIVATE_AI_LICENCE }}
-        run: |
-          touch ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
-          echo "$PRODUCTION_PRIVATE_AI_LICENCE" >> ./hrm-domain/scheduled-tasks/transcript-scrubber/licence/license.json
-        shell: bash
-
       - name: Log in to Private AI Registry
         run: docker login -u ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_USER }} -p ${{ secrets.PRODUCTION_PRIVATE_AI_DOCKER_PASSWORD }} crprivateaiprod.azurecr.io
 
-      - name: Build and Push Docker Image
+      - name: Build and Push proxy-service Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: ./
-          file: ./hrm-domain/scheduled-tasks/transcript-scrubber/Dockerfile
+          context: ./hrm-domain/speech-to-text/proxy-service
+          file: ./hrm-domain/speech-to-text/proxy-service/Dockerfile
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:${{ inputs.environment }}-speech-to-text-proxy-${{ github.sha }}
+          provenance: false
+
+      - name: Build and Push pyannote Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./hrm-domain/speech-to-text/pyannote
+          file: ./hrm-domain/speech-to-text/pyannote/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:${{ inputs.environment }}-speech-to-text-pyannote-${{ github.sha }}
+          provenance: false
+
+      - name: Build and Push limina Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./hrm-domain/speech-to-text/limina
+          file: ./hrm-domain/speech-to-text/limina/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:live,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:latest,${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:${{ inputs.environment }}-speech-to-text-limina-${{ github.sha }}
           provenance: false
 
       - id: generate-output
         run: |
-          echo "docker_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.environment }}-hrm-transcript-scrubber-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "proxy_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PROXY }}:${{ inputs.environment }}-speech-to-text-proxy-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "pyannote_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_PYANNOTE }}:${{ inputs.environment }}-speech-to-text-pyannote-${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "limina_image=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_LIMINA }}:${{ inputs.environment }}-speech-to-text-limina-${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
@@ -126,17 +143,14 @@ jobs:
     needs: deploy_docker
     name: Deploy to Amazon ECS
     runs-on: ubuntu-latest
+    permissions: {}
 
     env:
-      DOCKER_IMAGE: ${{ needs.deploy_docker.outputs.docker_image }}
+      PROXY_IMAGE: ${{ needs.deploy_docker.outputs.proxy_image }}
+      PYANNOTE_IMAGE: ${{ needs.deploy_docker.outputs.pyannote_image }}
+      LIMINA_IMAGE: ${{ needs.deploy_docker.outputs.limina_image }}
 
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v8
-        with:
-          name: workflow-scripts-artifacts
-          path: .github/workflows/scripts
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -144,31 +158,43 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ inputs.region }}
           # this plugin sets the AWS account ID to a secret which is not allowed in outputs
-          # we have to disable that so env.DOCKER_IMAGE will work
+          # we have to disable that so env.*_IMAGE will work
           mask-aws-account-id: false
 
       - name: Download current ECS task definition
-        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-hrm-transcript-scrubber --query taskDefinition > task-definition-transcript-scrubber.json
+        run: aws ecs describe-task-definition --task-definition ${{ inputs.environment }}-speech-to-text --query taskDefinition > task-definition.json
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def-transcript-scrubber
+      - name: Fill in the proxy image in the Amazon ECS task definition
+        id: task-def-proxy
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition-transcript-scrubber.json
-          container-name: ${{ inputs.environment }}-hrm-transcript-scrubber
-          image: ${{ env.DOCKER_IMAGE }}
+          task-definition: task-definition.json
+          container-name: proxy
+          image: ${{ env.PROXY_IMAGE }}
+
+      - name: Fill in the pyannote image in the Amazon ECS task definition
+        id: task-def-pyannote
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-proxy.outputs.task-definition }}
+          container-name: pyannote
+          image: ${{ env.PYANNOTE_IMAGE }}
+
+      - name: Fill in the limina image in the Amazon ECS task definition
+        id: task-def-limina
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def-pyannote.outputs.task-definition }}
+          container-name: limina
+          image: ${{ env.LIMINA_IMAGE }}
 
       - name: Deploy Amazon ECS task definition
-        id: transcript-scrubber-task-definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
-          task-definition: ${{ steps.task-def-transcript-scrubber.outputs.task-definition }}
-          cluster: ${{ inputs.environment }}-ecs-cluster
-
-      - name: Update EventBridge target
-        run: |
-          chmod +x ./.github/workflows/scripts/update-event-bridge-target.sh
-          ./.github/workflows/scripts/update-event-bridge-target.sh "${{ inputs.environment }}-hrm-transcript-scrubber" "${{ steps.transcript-scrubber-task-definition.outputs.task-definition-arn }}"
+          task-definition: ${{ steps.task-def-limina.outputs.task-definition }}
+          service: ${{ inputs.environment }}-speech-to-text
+          cluster: ${{ inputs.environment }}-speech-to-text-cluster
+          wait-for-service-stability: true
 
       # reconfigure AWS credentials to use the default region for SSM Parameter Store.
       # aws-actions/configure-aws-credentials@v6 overrides env.AWS_DEFAULT_REGION, so
@@ -202,19 +228,5 @@ jobs:
           token: ${{ env.GITHUB_ACTIONS_SLACK_BOT_TOKEN }}
           payload: |
             channel: ${{ env.ASELO_DEPLOYS_CHANNEL_ID }}
-            text: '`[HRM Transcript Scrubber]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
+            text: '`[HRM Speech-to-Text]` Deployment of ${{ github.ref_type }} `${{ github.ref_name }}` requested by `${{ github.triggering_actor }}` completed with SHA ${{ github.sha }} to region `${{ inputs.region }}`, environment `${{ inputs.environment }}` :rocket:.'
         if: ${{ inputs.send-slack-message != 'false' }}
-
-#      # Update deployment matrix
-#      - name: Update deployment matrix
-#        id: update-deployment-matrix
-#        uses: techmatters/flex-plugins/.github/actions/deployment-matrix@master
-#        with:
-#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
-#          identifier: ${{ matrix.region }}
-#          environment: ${{ inputs.environment }}
-#          service_repo: 'hrm-transcript-scrubber'
-#          version_tag: ${{ github.ref_name }}
-          
