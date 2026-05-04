@@ -145,11 +145,12 @@ export const addIncidentReportSectionsToAseloCase: ItemProcessor<IncidentReport>
       isErr(result),
     );
     if (errors.length) {
+      const errorLevel = errors.some(e => e.error.level === 'error') ? 'error' : 'warn';
       return newErr({
         message: 'Failed to add responders from incident report to Aselo case',
         error: {
           type: 'AggregateError',
-          level: 'error',
+          level: errorLevel,
           lastUpdated: incidentReportResult.unwrap(),
           errors,
         },
