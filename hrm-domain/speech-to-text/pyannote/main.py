@@ -96,7 +96,7 @@ def diarize(use_gpu: bool):
             for turn, _, speaker in annotation.itertracks(yield_label=True)
         ]
 
-        return {"fileName": file_path, "segments": segments}
+        return {"fileName": file_path, "segments": segments, "use_gpu": use_gpu}
 
     return inner_diarize
 

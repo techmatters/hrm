@@ -1,7 +1,16 @@
 ## This folder contains the code for a PoC running Limina + Pyannote on an ECS machine for call transcript + speaker recognition.
 
+
 ### How to use
 Assuming https://github.com/techmatters/infrastructure-config/pull/541 is applied.
+- [optional] You can connect to the underlying EC2 instance via SSM. This is helpful for debugging.
+  ```
+  aws ssm start-session --target < instance-id > --region us-east-1
+  ```
+    - You can monitor GPU usage with
+      ```
+      nvidia-smi -l 1
+      ```
 - Give yourself enough permissions to run ECS Exec commands.
 - Find `development-speech-to-text-cluster > Services > development-speech-to-text > Tasks` section on ECS console, and select the active task.
   Once you open the active task, click the `connect` button and copy the ECS Exec command given by AWS. You want to connect to the proxy service.
@@ -25,9 +34,14 @@ Assuming https://github.com/techmatters/infrastructure-config/pull/541 is applie
     ```
     File is saved in `AUDIO_DIR` env defined in [proxy-service](./proxy-service/Dockerfile) and [pyannote](./pyannote/Dockerfile) dockerfiles.
   - To run diarization jobs (Pyannote)
-    ```
-    npm run commands-cli proxy diarization-jobs -- -f "sample-1" -j 1
-    ```
+    - GPU
+        ```
+        npm run commands-cli proxy diarization-jobs-gpu -- -f "sample-1" -j 1
+        ```
+    - CPU
+        ```
+        npm run commands-cli proxy diarization-jobs-cpu -- -f "sample-1" -j 1
+        ```
     Diarization results are saved in `DIARIZATION_DIR` env defined in [proxy-service](./proxy-service/Dockerfile) dockerfile.
   - To run transcription jobs (Limina)
     ```
