@@ -179,9 +179,8 @@ export const createJsonSqsServer = () => {
             });
           }
           const handles = new Set(body.Entries.map((e: any) => e.ReceiptHandle));
-          const deleted = body.Entries.filter((e: any) => handles.has(e.ReceiptHandle));
           queue.messages = queue.messages.filter(m => !handles.has(m.ReceiptHandle));
-          return { Successful: deleted.map((e: any) => ({ Id: e.Id })), Failed: [] };
+          return { Successful: body.Entries.map((e: any) => ({ Id: e.Id })), Failed: [] };
         }
         case 'SendMessageBatch': {
           const queueName = getQueueName(body.QueueUrl);
