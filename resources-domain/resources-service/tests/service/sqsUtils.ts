@@ -15,8 +15,6 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { SQS } from 'aws-sdk';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Fastify from 'fastify';
 import { createHash, randomUUID } from 'crypto';
 
@@ -71,12 +69,15 @@ export const createJsonSqsServer = () => {
   app.post('/', async (request, reply) => {
     const target = request.headers['x-amz-target'] as string | undefined;
     if (!target) {
-      return reply.status(400).send({ __type: 'MissingAction', message: 'Missing X-Amz-Target header' });
+      return reply
+        .status(400)
+        .send({ __type: 'MissingAction', message: 'Missing X-Amz-Target header' });
     }
 
     const action = target.split('.').pop()!;
     const body = request.body as Record<string, any>;
-    const host = (request.headers.host as string) ?? `localhost:${process.env.LOCAL_SQS_PORT}`;
+    const host =
+      (request.headers.host as string) ?? `localhost:${process.env.LOCAL_SQS_PORT}`;
 
     reply.header('Content-Type', 'application/x-amz-json-1.0');
 
@@ -203,7 +204,11 @@ export const createJsonSqsServer = () => {
               visibleAfter: 0,
             };
             queue.messages.push(message);
-            return { Id: entry.Id, MessageId: message.MessageId, MD5OfMessageBody: message.MD5OfBody };
+            return {
+              Id: entry.Id,
+              MessageId: message.MessageId,
+              MD5OfMessageBody: message.MD5OfBody,
+            };
           });
           return { Successful: results, Failed: [] };
         }
@@ -220,54 +225,3 @@ export const createJsonSqsServer = () => {
 
   return app;
 };
-
-export const setupTestQueues = (queueNames: string[]) => {
-  const sqsService = createJsonSqsServer();
-  const sqsClient = new SQS({
-    endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
-  });
-  beforeAll(() => sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) }));
-  afterAll(() => sqsService.close());
-  beforeEach(async () => {
-    await Promise.all(
-      queueNames.map(async queueName =>
-        sqsClient
-          .createQueue({
-            QueueName: queueName,
-          })
-          .promise(),
-      ),
-    );
-  });
-  afterEach(async () => {
-    await Promise.allSettled(
-      queueNames.map(async queueName => {
-        try {
-          const resp = await sqsClient
-            .getQueueUrl({
-              QueueName: queueName,
-            })
-            .promise();
-          const testQueueUrl = resp.QueueUrl;
-          await sqsClient
-            .deleteQueue({
-              QueueUrl: testQueueUrl.toString(),
-            })
-            .promise();
-        } catch (err) {
-          console.error(
-            expect.getState().currentTestName,
-            '\nError deleting queue',
-            queueName,
-            err,
-          );
-        }
-      }),
-    );
-  });
-  return {
-    sqsService,
-    sqsClient,
-  };
-};
-
