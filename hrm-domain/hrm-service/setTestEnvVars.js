@@ -36,6 +36,7 @@ process.env.PERMISSIONS_CONFIG_LOCAL_OVERRIDE = JSON.stringify({
   ACusch: 'usch',
   ACuscr: 'uscr',
   ACusnc: 'usnc',
+  ACusnm: 'usnm',
   ACusvc: 'usvc',
   ACza: 'za',
   ACzm: 'zm',

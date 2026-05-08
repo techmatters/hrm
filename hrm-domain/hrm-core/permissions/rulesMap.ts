@@ -40,6 +40,7 @@ const ukmhRules = require('../permission-rules/ukmh.json');
 const uschRules = require('../permission-rules/usch.json');
 const uscrRules = require('../permission-rules/uscr.json');
 const usncRules = require('../permission-rules/usnc.json');
+const usnmRules = require('../permission-rules/usnm.json');
 const usvcRules = require('../permission-rules/usvc.json');
 const thRules = require('../permission-rules/th.json');
 const tzRules = require('../permission-rules/tz.json');
@@ -350,6 +351,7 @@ const rulesMapDef = {
   usch: uschRules,
   uscr: uscrRules,
   usnc: usncRules,
+  usnm: usnmRules,
   usvc: usvcRules,
   za: zaRules,
   zm: zmRules,
