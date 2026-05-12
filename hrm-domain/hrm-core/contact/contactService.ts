@@ -35,6 +35,7 @@ import { getClient } from '@tech-matters/elasticsearch-client';
 import {
   DocumentType,
   HRM_CONTACTS_INDEX_TYPE,
+  hrmIndexConfiguration,
   hrmSearchConfiguration,
 } from '@tech-matters/hrm-search-config';
 
@@ -675,16 +676,38 @@ export const generalisedContactSearch = async (
       })
     ).searchClient(hrmSearchConfiguration);
 
-    const { total, items } = await client.search({
-      searchParameters: {
-        type: DocumentType.Contact,
-        searchTerm,
-        searchFilters,
-        permissionFilters,
-        pagination,
-      },
-    });
+    let searchResult: Awaited<ReturnType<typeof client.search>> = { items: [], total: 0 };
+    try {
+      searchResult = await client.search({
+        searchParameters: {
+          type: DocumentType.Contact,
+          searchTerm,
+          searchFilters,
+          permissionFilters,
+          pagination,
+        },
+      });
+    } catch (err) {
+      // If the error is caused because the index does not exists, create it.
+      if (
+        err.meta?.statusCode === 404 &&
+        (err.message as string)?.includes('index_not_found_exception')
+      ) {
+        (
+          await getClient({
+            accountSid,
+            indexType: HRM_CONTACTS_INDEX_TYPE,
+            ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+          })
+        )
+          .indexClient(hrmIndexConfiguration)
+          .createIndex({});
+      } else {
+        throw err;
+      }
+    }
 
+    const { items, total } = searchResult;
     const contactIds = items.map(item => parseInt(item.id, 10));
 
     const { contacts } = await searchContactsByIds(
