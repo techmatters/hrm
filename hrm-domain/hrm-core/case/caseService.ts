@@ -44,6 +44,7 @@ import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 import {
   DocumentType,
   HRM_CASES_INDEX_TYPE,
+  hrmIndexConfiguration,
   hrmSearchConfiguration,
 } from '@tech-matters/hrm-search-config';
 import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
@@ -392,14 +393,20 @@ export const generalisedCasesSearch = async (
         },
       });
     } catch (err) {
+      // If the error is caused because the index does not exists, create it.
       if (
         err.meta?.statusCode === 404 &&
         (err.message as string)?.includes('index_not_found_exception')
       ) {
-        console.info(
-          `[generalised-search-cases] AccountSid: ${accountSid} - Index missing, returning empty list.`,
-        );
-        return newOk({ data: { count: 0, cases: [] } });
+        (
+          await getClient({
+            accountSid,
+            indexType: HRM_CASES_INDEX_TYPE,
+            ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+          })
+        )
+          .indexClient(hrmIndexConfiguration)
+          .createIndex({});
       } else {
         throw err;
       }

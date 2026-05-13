@@ -35,6 +35,7 @@ import { getClient } from '@tech-matters/elasticsearch-client';
 import {
   DocumentType,
   HRM_CONTACTS_INDEX_TYPE,
+  hrmIndexConfiguration,
   hrmSearchConfiguration,
 } from '@tech-matters/hrm-search-config';
 
@@ -687,14 +688,20 @@ export const generalisedContactSearch = async (
         },
       });
     } catch (err) {
+      // If the error is caused because the index does not exists, create it.
       if (
         err.meta?.statusCode === 404 &&
         (err.message as string)?.includes('index_not_found_exception')
       ) {
-        console.info(
-          `[generalised-search-contacts] AccountSid: ${accountSid} - Index missing, returning empty list.`,
-        );
-        return newOk({ data: { count: 0, contacts: [] } });
+        (
+          await getClient({
+            accountSid,
+            indexType: HRM_CONTACTS_INDEX_TYPE,
+            ssmConfigParameter: process.env.SSM_PARAM_ELASTICSEARCH_CONFIG,
+          })
+        )
+          .indexClient(hrmIndexConfiguration)
+          .createIndex({});
       } else {
         throw err;
       }
