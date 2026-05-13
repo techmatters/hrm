@@ -71,12 +71,15 @@ export const createJsonSqsServer = () => {
   app.post('/', async (request, reply) => {
     const target = request.headers['x-amz-target'] as string | undefined;
     if (!target) {
-      return reply.status(400).send({ __type: 'MissingAction', message: 'Missing X-Amz-Target header' });
+      return reply
+        .status(400)
+        .send({ __type: 'MissingAction', message: 'Missing X-Amz-Target header' });
     }
 
     const action = target.split('.').pop()!;
     const body = request.body as Record<string, any>;
-    const host = (request.headers.host as string) ?? `localhost:${process.env.LOCAL_SQS_PORT}`;
+    const host =
+      (request.headers.host as string) ?? `localhost:${process.env.LOCAL_SQS_PORT}`;
 
     reply.header('Content-Type', 'application/x-amz-json-1.0');
 
@@ -92,7 +95,7 @@ export const createJsonSqsServer = () => {
         case 'GetQueueUrl': {
           const { QueueName } = body;
           if (!queues.has(QueueName)) {
-            return reply.status(400).send({
+            return await reply.status(400).send({
               __type: 'AWS.SimpleQueueService.NonExistentQueue',
               message: 'The specified queue does not exist.',
             });
@@ -108,7 +111,7 @@ export const createJsonSqsServer = () => {
           const queueName = getQueueName(body.QueueUrl);
           const queue = queues.get(queueName);
           if (!queue) {
-            return reply.status(400).send({
+            return await reply.status(400).send({
               __type: 'AWS.SimpleQueueService.NonExistentQueue',
               message: 'The specified queue does not exist.',
             });
@@ -130,7 +133,7 @@ export const createJsonSqsServer = () => {
           const queueName = getQueueName(body.QueueUrl);
           const queue = queues.get(queueName);
           if (!queue) {
-            return reply.status(400).send({
+            return await reply.status(400).send({
               __type: 'AWS.SimpleQueueService.NonExistentQueue',
               message: 'The specified queue does not exist.',
             });
@@ -160,19 +163,21 @@ export const createJsonSqsServer = () => {
           const queueName = getQueueName(body.QueueUrl);
           const queue = queues.get(queueName);
           if (!queue) {
-            return reply.status(400).send({
+            return await reply.status(400).send({
               __type: 'AWS.SimpleQueueService.NonExistentQueue',
               message: 'The specified queue does not exist.',
             });
           }
-          queue.messages = queue.messages.filter(m => m.ReceiptHandle !== body.ReceiptHandle);
+          queue.messages = queue.messages.filter(
+            m => m.ReceiptHandle !== body.ReceiptHandle,
+          );
           return {};
         }
         case 'DeleteMessageBatch': {
           const queueName = getQueueName(body.QueueUrl);
           const queue = queues.get(queueName);
           if (!queue) {
-            return reply.status(400).send({
+            return await reply.status(400).send({
               __type: 'AWS.SimpleQueueService.NonExistentQueue',
               message: 'The specified queue does not exist.',
             });
@@ -185,7 +190,7 @@ export const createJsonSqsServer = () => {
           const queueName = getQueueName(body.QueueUrl);
           const queue = queues.get(queueName);
           if (!queue) {
-            return reply.status(400).send({
+            return await reply.status(400).send({
               __type: 'AWS.SimpleQueueService.NonExistentQueue',
               message: 'The specified queue does not exist.',
             });
@@ -202,12 +207,16 @@ export const createJsonSqsServer = () => {
               visibleAfter: 0,
             };
             queue.messages.push(message);
-            return { Id: entry.Id, MessageId: message.MessageId, MD5OfMessageBody: message.MD5OfBody };
+            return {
+              Id: entry.Id,
+              MessageId: message.MessageId,
+              MD5OfMessageBody: message.MD5OfBody,
+            };
           });
           return { Successful: results, Failed: [] };
         }
         default:
-          return reply.status(400).send({
+          return await reply.status(400).send({
             __type: 'UnsupportedOperation',
             message: `Action ${action} is not supported`,
           });
@@ -269,4 +278,3 @@ export const setupTestQueues = (queueNames: string[]) => {
     sqsClient,
   };
 };
-
