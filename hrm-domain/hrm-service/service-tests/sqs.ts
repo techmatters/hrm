@@ -38,7 +38,12 @@ type Queue = {
  * Escapes special XML characters in a string.
  */
 const xmlEscape = (str: string): string =>
-  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
 /**
  * Parses indexed batch parameters from an SQS Query protocol form body.
@@ -56,6 +61,7 @@ const parseIndexedParams = (
       const dotIndex = rest.indexOf('.');
       if (dotIndex === -1) continue;
       const index = parseInt(rest.slice(0, dotIndex), 10);
+      if (isNaN(index)) continue;
       const field = rest.slice(dotIndex + 1);
       if (!entries[index]) entries[index] = {};
       entries[index][field] = value;
