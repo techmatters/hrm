@@ -317,7 +317,9 @@ export const createJsonSqsServer = () => {
           .status(status)
           .type('application/xml')
           .send(
-            `<ErrorResponse><Error><Code>${xmlEscape(code)}</Code><Message>${xmlEscape(message)}</Message></Error><RequestId>${randomUUID()}</RequestId></ErrorResponse>`,
+            `<ErrorResponse><Error><Code>${xmlEscape(code)}</Code><Message>${xmlEscape(
+              message,
+            )}</Message></Error><RequestId>${randomUUID()}</RequestId></ErrorResponse>`,
           );
 
       try {
@@ -327,7 +329,7 @@ export const createJsonSqsServer = () => {
             if (!queues.has(QueueName)) {
               queues.set(QueueName, { messages: [] });
             }
-            return xmlOk(
+            return await xmlOk(
               'CreateQueue',
               `<QueueUrl>${xmlEscape(buildQueueUrl(host, QueueName))}</QueueUrl>`,
             );
@@ -335,30 +337,30 @@ export const createJsonSqsServer = () => {
           case 'GetQueueUrl': {
             const { QueueName } = body;
             if (!queues.has(QueueName)) {
-              return xmlError(
+              return await xmlError(
                 'AWS.SimpleQueueService.NonExistentQueue',
                 'The specified queue does not exist.',
               );
             }
-            return xmlOk(
+            return await xmlOk(
               'GetQueueUrl',
               `<QueueUrl>${xmlEscape(buildQueueUrl(host, QueueName))}</QueueUrl>`,
             );
           }
           case 'DeleteQueue': {
             queues.delete(getQueueName(body.QueueUrl));
-            return xmlVoid('DeleteQueue');
+            return await xmlVoid('DeleteQueue');
           }
           case 'SendMessage': {
             const queue = queues.get(getQueueName(body.QueueUrl));
             if (!queue) {
-              return xmlError(
+              return await xmlError(
                 'AWS.SimpleQueueService.NonExistentQueue',
                 'The specified queue does not exist.',
               );
             }
             const message = enqueueMessage(queue, body.MessageBody);
-            return xmlOk(
+            return await xmlOk(
               'SendMessage',
               `<MessageId>${message.MessageId}</MessageId><MD5OfMessageBody>${message.MD5OfBody}</MD5OfMessageBody>`,
             );
@@ -366,7 +368,7 @@ export const createJsonSqsServer = () => {
           case 'ReceiveMessage': {
             const queue = queues.get(getQueueName(body.QueueUrl));
             if (!queue) {
-              return xmlError(
+              return await xmlError(
                 'AWS.SimpleQueueService.NonExistentQueue',
                 'The specified queue does not exist.',
               );
@@ -379,20 +381,24 @@ export const createJsonSqsServer = () => {
               parseInt(body.VisibilityTimeout ?? '30', 10) * 1000;
             const picked = pickMessages(queue, maxMessages, visibilityTimeoutMs);
             if (picked.length === 0) {
-              return xmlOk('ReceiveMessage', '');
+              return await xmlOk('ReceiveMessage', '');
             }
             const messagesXml = picked
               .map(
                 m =>
-                  `<Message><MessageId>${m.MessageId}</MessageId><ReceiptHandle>${m.ReceiptHandle}</ReceiptHandle><MD5OfBody>${m.MD5OfBody}</MD5OfBody><Body>${xmlEscape(m.Body)}</Body></Message>`,
+                  `<Message><MessageId>${m.MessageId}</MessageId><ReceiptHandle>${
+                    m.ReceiptHandle
+                  }</ReceiptHandle><MD5OfBody>${m.MD5OfBody}</MD5OfBody><Body>${xmlEscape(
+                    m.Body,
+                  )}</Body></Message>`,
               )
               .join('');
-            return xmlOk('ReceiveMessage', messagesXml);
+            return await xmlOk('ReceiveMessage', messagesXml);
           }
           case 'DeleteMessage': {
             const queue = queues.get(getQueueName(body.QueueUrl));
             if (!queue) {
-              return xmlError(
+              return await xmlError(
                 'AWS.SimpleQueueService.NonExistentQueue',
                 'The specified queue does not exist.',
               );
@@ -400,12 +406,12 @@ export const createJsonSqsServer = () => {
             queue.messages = queue.messages.filter(
               m => m.ReceiptHandle !== body.ReceiptHandle,
             );
-            return xmlVoid('DeleteMessage');
+            return await xmlVoid('DeleteMessage');
           }
           case 'DeleteMessageBatch': {
             const queue = queues.get(getQueueName(body.QueueUrl));
             if (!queue) {
-              return xmlError(
+              return await xmlError(
                 'AWS.SimpleQueueService.NonExistentQueue',
                 'The specified queue does not exist.',
               );
@@ -416,15 +422,17 @@ export const createJsonSqsServer = () => {
             const successXml = entries
               .map(
                 e =>
-                  `<DeleteMessageBatchResultEntry><Id>${xmlEscape(e.Id)}</Id></DeleteMessageBatchResultEntry>`,
+                  `<DeleteMessageBatchResultEntry><Id>${xmlEscape(
+                    e.Id,
+                  )}</Id></DeleteMessageBatchResultEntry>`,
               )
               .join('');
-            return xmlOk('DeleteMessageBatch', successXml);
+            return await xmlOk('DeleteMessageBatch', successXml);
           }
           case 'SendMessageBatch': {
             const queue = queues.get(getQueueName(body.QueueUrl));
             if (!queue) {
-              return xmlError(
+              return await xmlError(
                 'AWS.SimpleQueueService.NonExistentQueue',
                 'The specified queue does not exist.',
               );
@@ -433,20 +441,27 @@ export const createJsonSqsServer = () => {
             const successXml = entries
               .map(entry => {
                 const message = enqueueMessage(queue, entry.MessageBody);
-                return `<SendMessageBatchResultEntry><Id>${xmlEscape(entry.Id)}</Id><MessageId>${message.MessageId}</MessageId><MD5OfMessageBody>${message.MD5OfBody}</MD5OfMessageBody></SendMessageBatchResultEntry>`;
+                return `<SendMessageBatchResultEntry><Id>${xmlEscape(
+                  entry.Id,
+                )}</Id><MessageId>${message.MessageId}</MessageId><MD5OfMessageBody>${
+                  message.MD5OfBody
+                }</MD5OfMessageBody></SendMessageBatchResultEntry>`;
               })
               .join('');
-            return xmlOk('SendMessageBatch', successXml);
+            return await xmlOk('SendMessageBatch', successXml);
           }
           case 'PurgeQueue': {
             const queue = queues.get(getQueueName(body.QueueUrl));
             if (queue) {
               queue.messages = [];
             }
-            return xmlVoid('PurgeQueue');
+            return await xmlVoid('PurgeQueue');
           }
           default:
-            return xmlError('UnsupportedOperation', `Action ${action} is not supported`);
+            return await xmlError(
+              'UnsupportedOperation',
+              `Action ${action} is not supported`,
+            );
         }
       } catch (err: any) {
         return xmlError('ServiceException', err.message, 500);
