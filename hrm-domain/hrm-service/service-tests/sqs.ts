@@ -35,13 +35,42 @@ type Queue = {
 };
 
 /**
- * Creates an in-memory Fastify server that handles the JSON SQS protocol
- * (Content-Type: application/x-amz-json-1.0) used by aws-sdk >= 2.1491.0
- * and @aws-sdk/client-sqs (v3).
- *
- * This replaces sqslite for tests that require JSON protocol support.
- * sqslite only supports the legacy Query protocol (application/x-www-form-urlencoded),
- * which is no longer used by aws-sdk starting from version 2.1491.0.
+ * Escapes special XML characters in a string.
+ */
+const xmlEscape = (str: string): string =>
+  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Parses indexed batch parameters from an SQS Query protocol form body.
+ * E.g. "Prefix.member.1.Id=x&Prefix.member.1.ReceiptHandle=y&..."
+ * becomes [{ Id: 'x', ReceiptHandle: 'y' }, ...]
+ */
+const parseIndexedParams = (
+  params: Record<string, string>,
+  prefix: string,
+): Record<string, string>[] => {
+  const entries: Record<number, Record<string, string>> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (key.startsWith(`${prefix}.member.`)) {
+      const rest = key.slice(`${prefix}.member.`.length);
+      const dotIndex = rest.indexOf('.');
+      if (dotIndex === -1) continue;
+      const index = parseInt(rest.slice(0, dotIndex), 10);
+      const field = rest.slice(dotIndex + 1);
+      if (!entries[index]) entries[index] = {};
+      entries[index][field] = value;
+    }
+  }
+  return Object.keys(entries)
+    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+    .map(k => entries[parseInt(k, 10)]);
+};
+
+/**
+ * Creates an in-memory Fastify server that handles both the JSON SQS protocol
+ * (Content-Type: application/x-amz-json-1.0, used by aws-sdk v2 >= 2.1491.0)
+ * and the Query SQS protocol (Content-Type: application/x-www-form-urlencoded,
+ * used by @aws-sdk/client-sqs v3 <= 3.679.0).
  */
 export const createJsonSqsServer = () => {
   const queues = new Map<string, Queue>();
@@ -54,8 +83,40 @@ export const createJsonSqsServer = () => {
   const buildQueueUrl = (host: string, queueName: string): string =>
     `http://${host}/queues/${queueName}`;
 
+  const enqueueMessage = (queue: Queue, messageBody: string): Message => {
+    const body = String(messageBody);
+    const message: Message = {
+      MessageId: randomUUID(),
+      ReceiptHandle: randomUUID(),
+      Body: body,
+      MD5OfBody: createHash('md5').update(body).digest('hex'),
+      Attributes: {},
+      MessageAttributes: {},
+      visibleAfter: 0,
+    };
+    queue.messages.push(message);
+    return message;
+  };
+
+  const pickMessages = (
+    queue: Queue,
+    maxMessages: number,
+    visibilityTimeoutMs: number,
+  ) => {
+    const now = Date.now();
+    const available = queue.messages.filter(m => m.visibleAfter <= now);
+    const picked = available.slice(0, maxMessages);
+    const newVisibleAfter = now + visibilityTimeoutMs;
+    picked.forEach(m => {
+      m.visibleAfter = newVisibleAfter;
+      m.ReceiptHandle = randomUUID();
+    });
+    return picked;
+  };
+
   const app = Fastify({ logger: false });
 
+  // Parser for JSON protocol (aws-sdk v2 >= 2.1491.0)
   app.addContentTypeParser(
     'application/x-amz-json-1.0',
     { parseAs: 'string' },
@@ -68,162 +129,325 @@ export const createJsonSqsServer = () => {
     },
   );
 
-  app.post('/', async (request, reply) => {
-    const target = request.headers['x-amz-target'] as string | undefined;
-    if (!target) {
-      return reply
-        .status(400)
-        .send({ __type: 'MissingAction', message: 'Missing X-Amz-Target header' });
-    }
+  // Parser for Query protocol (@aws-sdk/client-sqs v3 <= 3.679.0)
+  app.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string' },
+    (_req, body, done) => {
+      const params: Record<string, string> = {};
+      new URLSearchParams(body as string).forEach((value, key) => {
+        params[key] = value;
+      });
+      done(null, params);
+    },
+  );
 
-    const action = target.split('.').pop()!;
+  app.post('/', async (request, reply) => {
+    const contentType = (request.headers['content-type'] as string) ?? '';
     const body = request.body as Record<string, any>;
     const host =
       (request.headers.host as string) ?? `localhost:${process.env.LOCAL_SQS_PORT}`;
 
-    reply.header('Content-Type', 'application/x-amz-json-1.0');
-
-    try {
-      switch (action) {
-        case 'CreateQueue': {
-          const { QueueName } = body;
-          if (!queues.has(QueueName)) {
-            queues.set(QueueName, { messages: [] });
-          }
-          return { QueueUrl: buildQueueUrl(host, QueueName) };
-        }
-        case 'GetQueueUrl': {
-          const { QueueName } = body;
-          if (!queues.has(QueueName)) {
-            return await reply.status(400).send({
-              __type: 'AWS.SimpleQueueService.NonExistentQueue',
-              message: 'The specified queue does not exist.',
-            });
-          }
-          return { QueueUrl: buildQueueUrl(host, QueueName) };
-        }
-        case 'DeleteQueue': {
-          const queueName = getQueueName(body.QueueUrl);
-          queues.delete(queueName);
-          return {};
-        }
-        case 'SendMessage': {
-          const queueName = getQueueName(body.QueueUrl);
-          const queue = queues.get(queueName);
-          if (!queue) {
-            return await reply.status(400).send({
-              __type: 'AWS.SimpleQueueService.NonExistentQueue',
-              message: 'The specified queue does not exist.',
-            });
-          }
-          const messageBody = String(body.MessageBody);
-          const message: Message = {
-            MessageId: randomUUID(),
-            ReceiptHandle: randomUUID(),
-            Body: messageBody,
-            MD5OfBody: createHash('md5').update(messageBody).digest('hex'),
-            Attributes: {},
-            MessageAttributes: body.MessageAttributes ?? {},
-            visibleAfter: 0,
-          };
-          queue.messages.push(message);
-          return { MessageId: message.MessageId, MD5OfMessageBody: message.MD5OfBody };
-        }
-        case 'ReceiveMessage': {
-          const queueName = getQueueName(body.QueueUrl);
-          const queue = queues.get(queueName);
-          if (!queue) {
-            return await reply.status(400).send({
-              __type: 'AWS.SimpleQueueService.NonExistentQueue',
-              message: 'The specified queue does not exist.',
-            });
-          }
-          const now = Date.now();
-          const maxMessages = Math.min(body.MaxNumberOfMessages ?? 1, 10);
-          const visibilityTimeout = (body.VisibilityTimeout ?? 30) * 1000;
-          const available = queue.messages.filter(m => m.visibleAfter <= now);
-          const picked = available.slice(0, maxMessages);
-          const newVisibleAfter = now + visibilityTimeout;
-          picked.forEach(m => {
-            m.visibleAfter = newVisibleAfter;
-            m.ReceiptHandle = randomUUID();
-          });
-          return {
-            Messages: picked.map(m => ({
-              MessageId: m.MessageId,
-              ReceiptHandle: m.ReceiptHandle,
-              MD5OfBody: m.MD5OfBody,
-              Body: m.Body,
-              Attributes: m.Attributes,
-              MessageAttributes: m.MessageAttributes,
-            })),
-          };
-        }
-        case 'DeleteMessage': {
-          const queueName = getQueueName(body.QueueUrl);
-          const queue = queues.get(queueName);
-          if (!queue) {
-            return await reply.status(400).send({
-              __type: 'AWS.SimpleQueueService.NonExistentQueue',
-              message: 'The specified queue does not exist.',
-            });
-          }
-          queue.messages = queue.messages.filter(
-            m => m.ReceiptHandle !== body.ReceiptHandle,
-          );
-          return {};
-        }
-        case 'DeleteMessageBatch': {
-          const queueName = getQueueName(body.QueueUrl);
-          const queue = queues.get(queueName);
-          if (!queue) {
-            return await reply.status(400).send({
-              __type: 'AWS.SimpleQueueService.NonExistentQueue',
-              message: 'The specified queue does not exist.',
-            });
-          }
-          const handles = new Set(body.Entries.map((e: any) => e.ReceiptHandle));
-          queue.messages = queue.messages.filter(m => !handles.has(m.ReceiptHandle));
-          return { Successful: body.Entries.map((e: any) => ({ Id: e.Id })), Failed: [] };
-        }
-        case 'SendMessageBatch': {
-          const queueName = getQueueName(body.QueueUrl);
-          const queue = queues.get(queueName);
-          if (!queue) {
-            return await reply.status(400).send({
-              __type: 'AWS.SimpleQueueService.NonExistentQueue',
-              message: 'The specified queue does not exist.',
-            });
-          }
-          const results = body.Entries.map((entry: any) => {
-            const messageBody = String(entry.MessageBody);
-            const message: Message = {
-              MessageId: randomUUID(),
-              ReceiptHandle: randomUUID(),
-              Body: messageBody,
-              MD5OfBody: createHash('md5').update(messageBody).digest('hex'),
-              Attributes: {},
-              MessageAttributes: entry.MessageAttributes ?? {},
-              visibleAfter: 0,
-            };
-            queue.messages.push(message);
-            return {
-              Id: entry.Id,
-              MessageId: message.MessageId,
-              MD5OfMessageBody: message.MD5OfBody,
-            };
-          });
-          return { Successful: results, Failed: [] };
-        }
-        default:
-          return await reply.status(400).send({
-            __type: 'UnsupportedOperation',
-            message: `Action ${action} is not supported`,
-          });
+    // ---- JSON protocol handler (aws-sdk v2 >= 2.1491.0) ----
+    if (contentType.includes('application/x-amz-json-1.0')) {
+      const target = request.headers['x-amz-target'] as string | undefined;
+      if (!target) {
+        return reply.status(400).send({
+          __type: 'MissingAction',
+          message: 'Missing X-Amz-Target header',
+        });
       }
-    } catch (err: any) {
-      return reply.status(500).send({ __type: 'ServiceException', message: err.message });
+
+      const action = target.split('.').pop()!;
+      reply.header('Content-Type', 'application/x-amz-json-1.0');
+
+      try {
+        switch (action) {
+          case 'CreateQueue': {
+            const { QueueName } = body;
+            if (!queues.has(QueueName)) {
+              queues.set(QueueName, { messages: [] });
+            }
+            return { QueueUrl: buildQueueUrl(host, QueueName) };
+          }
+          case 'GetQueueUrl': {
+            const { QueueName } = body;
+            if (!queues.has(QueueName)) {
+              return await reply.status(400).send({
+                __type: 'AWS.SimpleQueueService.NonExistentQueue',
+                message: 'The specified queue does not exist.',
+              });
+            }
+            return { QueueUrl: buildQueueUrl(host, QueueName) };
+          }
+          case 'DeleteQueue': {
+            queues.delete(getQueueName(body.QueueUrl));
+            return {};
+          }
+          case 'SendMessage': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return await reply.status(400).send({
+                __type: 'AWS.SimpleQueueService.NonExistentQueue',
+                message: 'The specified queue does not exist.',
+              });
+            }
+            const message = enqueueMessage(queue, body.MessageBody);
+            return { MessageId: message.MessageId, MD5OfMessageBody: message.MD5OfBody };
+          }
+          case 'ReceiveMessage': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return await reply.status(400).send({
+                __type: 'AWS.SimpleQueueService.NonExistentQueue',
+                message: 'The specified queue does not exist.',
+              });
+            }
+            const maxMessages = Math.min(body.MaxNumberOfMessages ?? 1, 10);
+            const visibilityTimeoutMs = (body.VisibilityTimeout ?? 30) * 1000;
+            const picked = pickMessages(queue, maxMessages, visibilityTimeoutMs);
+            return {
+              Messages: picked.map(m => ({
+                MessageId: m.MessageId,
+                ReceiptHandle: m.ReceiptHandle,
+                MD5OfBody: m.MD5OfBody,
+                Body: m.Body,
+                Attributes: m.Attributes,
+                MessageAttributes: m.MessageAttributes,
+              })),
+            };
+          }
+          case 'DeleteMessage': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return await reply.status(400).send({
+                __type: 'AWS.SimpleQueueService.NonExistentQueue',
+                message: 'The specified queue does not exist.',
+              });
+            }
+            queue.messages = queue.messages.filter(
+              m => m.ReceiptHandle !== body.ReceiptHandle,
+            );
+            return {};
+          }
+          case 'DeleteMessageBatch': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return await reply.status(400).send({
+                __type: 'AWS.SimpleQueueService.NonExistentQueue',
+                message: 'The specified queue does not exist.',
+              });
+            }
+            const handles = new Set(body.Entries.map((e: any) => e.ReceiptHandle));
+            queue.messages = queue.messages.filter(m => !handles.has(m.ReceiptHandle));
+            return {
+              Successful: body.Entries.map((e: any) => ({ Id: e.Id })),
+              Failed: [],
+            };
+          }
+          case 'SendMessageBatch': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return await reply.status(400).send({
+                __type: 'AWS.SimpleQueueService.NonExistentQueue',
+                message: 'The specified queue does not exist.',
+              });
+            }
+            const results = body.Entries.map((entry: any) => {
+              const message = enqueueMessage(queue, entry.MessageBody);
+              return {
+                Id: entry.Id,
+                MessageId: message.MessageId,
+                MD5OfMessageBody: message.MD5OfBody,
+              };
+            });
+            return { Successful: results, Failed: [] };
+          }
+          default:
+            return await reply.status(400).send({
+              __type: 'UnsupportedOperation',
+              message: `Action ${action} is not supported`,
+            });
+        }
+      } catch (err: any) {
+        return reply
+          .status(500)
+          .send({ __type: 'ServiceException', message: err.message });
+      }
     }
+
+    // ---- Query protocol handler (@aws-sdk/client-sqs v3 <= 3.679.0) ----
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const action = body.Action as string | undefined;
+      if (!action) {
+        return reply
+          .status(400)
+          .type('application/xml')
+          .send(
+            `<ErrorResponse><Error><Code>MissingAction</Code><Message>Missing Action parameter</Message></Error><RequestId>${randomUUID()}</RequestId></ErrorResponse>`,
+          );
+      }
+
+      const ns = 'http://queue.amazonaws.com/doc/2012-11-05/';
+
+      const xmlOk = (responseName: string, inner: string) =>
+        reply
+          .status(200)
+          .type('application/xml')
+          .send(
+            `<${responseName}Response xmlns="${ns}"><${responseName}Result>${inner}</${responseName}Result><ResponseMetadata><RequestId>${randomUUID()}</RequestId></ResponseMetadata></${responseName}Response>`,
+          );
+
+      const xmlVoid = (responseName: string) =>
+        reply
+          .status(200)
+          .type('application/xml')
+          .send(
+            `<${responseName}Response xmlns="${ns}"><ResponseMetadata><RequestId>${randomUUID()}</RequestId></ResponseMetadata></${responseName}Response>`,
+          );
+
+      const xmlError = (code: string, message: string, status = 400) =>
+        reply
+          .status(status)
+          .type('application/xml')
+          .send(
+            `<ErrorResponse><Error><Code>${xmlEscape(code)}</Code><Message>${xmlEscape(message)}</Message></Error><RequestId>${randomUUID()}</RequestId></ErrorResponse>`,
+          );
+
+      try {
+        switch (action) {
+          case 'CreateQueue': {
+            const { QueueName } = body;
+            if (!queues.has(QueueName)) {
+              queues.set(QueueName, { messages: [] });
+            }
+            return xmlOk(
+              'CreateQueue',
+              `<QueueUrl>${xmlEscape(buildQueueUrl(host, QueueName))}</QueueUrl>`,
+            );
+          }
+          case 'GetQueueUrl': {
+            const { QueueName } = body;
+            if (!queues.has(QueueName)) {
+              return xmlError(
+                'AWS.SimpleQueueService.NonExistentQueue',
+                'The specified queue does not exist.',
+              );
+            }
+            return xmlOk(
+              'GetQueueUrl',
+              `<QueueUrl>${xmlEscape(buildQueueUrl(host, QueueName))}</QueueUrl>`,
+            );
+          }
+          case 'DeleteQueue': {
+            queues.delete(getQueueName(body.QueueUrl));
+            return xmlVoid('DeleteQueue');
+          }
+          case 'SendMessage': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return xmlError(
+                'AWS.SimpleQueueService.NonExistentQueue',
+                'The specified queue does not exist.',
+              );
+            }
+            const message = enqueueMessage(queue, body.MessageBody);
+            return xmlOk(
+              'SendMessage',
+              `<MessageId>${message.MessageId}</MessageId><MD5OfMessageBody>${message.MD5OfBody}</MD5OfMessageBody>`,
+            );
+          }
+          case 'ReceiveMessage': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return xmlError(
+                'AWS.SimpleQueueService.NonExistentQueue',
+                'The specified queue does not exist.',
+              );
+            }
+            const maxMessages = Math.min(
+              parseInt(body.MaxNumberOfMessages ?? '1', 10),
+              10,
+            );
+            const visibilityTimeoutMs =
+              parseInt(body.VisibilityTimeout ?? '30', 10) * 1000;
+            const picked = pickMessages(queue, maxMessages, visibilityTimeoutMs);
+            if (picked.length === 0) {
+              return xmlOk('ReceiveMessage', '');
+            }
+            const messagesXml = picked
+              .map(
+                m =>
+                  `<Message><MessageId>${m.MessageId}</MessageId><ReceiptHandle>${m.ReceiptHandle}</ReceiptHandle><MD5OfBody>${m.MD5OfBody}</MD5OfBody><Body>${xmlEscape(m.Body)}</Body></Message>`,
+              )
+              .join('');
+            return xmlOk('ReceiveMessage', messagesXml);
+          }
+          case 'DeleteMessage': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return xmlError(
+                'AWS.SimpleQueueService.NonExistentQueue',
+                'The specified queue does not exist.',
+              );
+            }
+            queue.messages = queue.messages.filter(
+              m => m.ReceiptHandle !== body.ReceiptHandle,
+            );
+            return xmlVoid('DeleteMessage');
+          }
+          case 'DeleteMessageBatch': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return xmlError(
+                'AWS.SimpleQueueService.NonExistentQueue',
+                'The specified queue does not exist.',
+              );
+            }
+            const entries = parseIndexedParams(body, 'DeleteMessageBatchRequestEntry');
+            const handles = new Set(entries.map(e => e.ReceiptHandle));
+            queue.messages = queue.messages.filter(m => !handles.has(m.ReceiptHandle));
+            const successXml = entries
+              .map(
+                e =>
+                  `<DeleteMessageBatchResultEntry><Id>${xmlEscape(e.Id)}</Id></DeleteMessageBatchResultEntry>`,
+              )
+              .join('');
+            return xmlOk('DeleteMessageBatch', successXml);
+          }
+          case 'SendMessageBatch': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (!queue) {
+              return xmlError(
+                'AWS.SimpleQueueService.NonExistentQueue',
+                'The specified queue does not exist.',
+              );
+            }
+            const entries = parseIndexedParams(body, 'SendMessageBatchRequestEntry');
+            const successXml = entries
+              .map(entry => {
+                const message = enqueueMessage(queue, entry.MessageBody);
+                return `<SendMessageBatchResultEntry><Id>${xmlEscape(entry.Id)}</Id><MessageId>${message.MessageId}</MessageId><MD5OfMessageBody>${message.MD5OfBody}</MD5OfMessageBody></SendMessageBatchResultEntry>`;
+              })
+              .join('');
+            return xmlOk('SendMessageBatch', successXml);
+          }
+          case 'PurgeQueue': {
+            const queue = queues.get(getQueueName(body.QueueUrl));
+            if (queue) {
+              queue.messages = [];
+            }
+            return xmlVoid('PurgeQueue');
+          }
+          default:
+            return xmlError('UnsupportedOperation', `Action ${action} is not supported`);
+        }
+      } catch (err: any) {
+        return xmlError('ServiceException', err.message, 500);
+      }
+    }
+
+    return reply.status(415).send({ message: 'Unsupported Media Type' });
   });
 
   return app;
