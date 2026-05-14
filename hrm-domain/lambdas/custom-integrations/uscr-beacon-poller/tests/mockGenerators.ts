@@ -157,6 +157,7 @@ export const generateCompleteCaseReport = (
         ]),
         generateCaseReportTextValueNode('Race/Ethnicity', 'white'),
         generateCaseReportTextValueNode('Language', 'English'),
+        generateCaseReportTextValueNode('Repeat Engagement?', 'Yes'),
       ]),
       generateCaseReportSectionNode('Safety Plan', [
         generateCaseReportTextValueNode('Write Signs Here', 'warning'),

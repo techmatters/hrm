@@ -100,6 +100,7 @@ const caseReportToPehCaseSection = ({
     'Race/Ethnicity': race,
     Language: language,
     'Language Other': languageOther,
+    'Repeat Engagement?': repeatEngagement,
   } = demographics || {};
   const { 'Select Gender': gender } = genderOptions || {};
   return {
@@ -115,6 +116,9 @@ const caseReportToPehCaseSection = ({
         gender,
         race,
         language: languageOther || language,
+        repeatEngagement:
+          typeof repeatEngagement === 'string' &&
+          repeatEngagement.toLowerCase() === 'yes',
       },
     },
   };

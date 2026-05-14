@@ -79,6 +79,7 @@ type RelevantProcessedCaseReportApiPayload = Omit<
     'Race/Ethnicity'?: string | null;
     Language?: string | null;
     'Language Other'?: string | null;
+    'Repeat Engagement?'?: string | null;
   };
   'Safety Plan'?: {
     'Write Signs Here'?: string | null;
