@@ -117,7 +117,8 @@ const caseReportToPehCaseSection = ({
         race,
         language: languageOther || language,
         repeatEngagement:
-          typeof repeatEngagement === string && repeatEngagement.toLowerCase() === 'yes',
+          typeof repeatEngagement === 'string' &&
+          repeatEngagement.toLowerCase() === 'yes',
       },
     },
   };
