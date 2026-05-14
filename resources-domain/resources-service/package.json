@@ -70,7 +70,7 @@
     "@tech-matters/types": "^1.0.0",
     "@tech-matters/service-discovery": "^1.0.0",
     "@tech-matters/resources-types": "^1.0.0",
-    "aws-sdk": "^2.1353.0",
+    "aws-sdk": "^2.1693.0",
     "date-fns": "^2.29.3",
     "dotenv": "^8.6.0",
     "express": "^4.20.0",
