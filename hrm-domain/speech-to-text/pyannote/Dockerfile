@@ -12,14 +12,27 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM python:3.12-slim
+# FROM python:3.12-slim
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
+
+ARG HUGGINGFACE_TOKEN=''
+ARG task_dir=hrm-domain/speech-to-text/pyannote
+
+# Install FFmpeg and clean up apt cache to reduce image size
+RUN apt-get update && \
+  apt-get install -y ffmpeg && \
+  rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY ${task_dir}/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY main.py ./
+COPY ${task_dir}/main.py ./
+
+ENV HUGGINGFACE_TOKEN=$HUGGINGFACE_TOKEN
+ENV DIARIZATION_MODEL="pyannote/speaker-diarization-3.1"
+ENV AUDIO_DIR="/shared/audio"
 
 EXPOSE 8081
 
