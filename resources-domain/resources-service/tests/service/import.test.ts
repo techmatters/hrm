@@ -34,18 +34,17 @@ import each from 'jest-each';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
-import sqslite from 'sqslite';
-
 // TODO: needs to be converted to aws-sdk-v3
 import { SQS } from 'aws-sdk';
 import { mockSsmParameters } from '@tech-matters/testing';
+import { createJsonSqsServer } from './sqsUtils';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);
 const server = getServer();
 const request = getRequest(server);
 
-const sqsService = sqslite({});
+const sqsService = createJsonSqsServer();
 const sqsClient = new SQS({
   endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
 });

@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import sqslite from 'sqslite';
 import { adminHeaders, getInternalServer, getRequest, headers } from './server';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
 import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
@@ -30,6 +29,7 @@ import { SQS } from 'aws-sdk';
 import { db } from '../../src/connection-pool';
 import { mockSsmParameters } from '@tech-matters/testing';
 import { upsertImportedResource } from '../../src/import/importDataAccess';
+import { createJsonSqsServer } from './sqsUtils';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);
@@ -40,7 +40,7 @@ const BASELINE_DATE = parseISO('2020-01-01T00:00:00.000Z');
 
 const ACCOUNT_SIDS: AccountSID[] = range(3).map(accountIdx => `AC${accountIdx}` as const);
 
-const sqsService = sqslite({});
+const sqsService = createJsonSqsServer();
 const sqsClient = new SQS({
   endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
 });
