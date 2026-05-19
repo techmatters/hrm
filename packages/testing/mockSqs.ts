@@ -142,7 +142,9 @@ const xmlVoidResponse = (responseName: string) => ({
 const xmlErrorResponse = (code: string, message: string, statusCode = 400) => ({
   statusCode,
   headers: { 'content-type': 'application/xml' },
-  body: `<ErrorResponse><Error><Code>${xmlEscape(code)}</Code><Message>${xmlEscape(message)}</Message></Error><RequestId>${randomUUID()}</RequestId></ErrorResponse>`,
+  body: `<ErrorResponse><Error><Code>${xmlEscape(code)}</Code><Message>${xmlEscape(
+    message,
+  )}</Message></Error><RequestId>${randomUUID()}</RequestId></ErrorResponse>`,
 });
 
 const jsonResponse = (body: Record<string, unknown>, statusCode = 200) => ({
@@ -311,7 +313,10 @@ export const mockSqs = async (mockttp: Mockttp): Promise<void> => {
           }
           default:
             return jsonResponse(
-              { __type: 'UnsupportedOperation', message: `Action ${action} is not supported` },
+              {
+                __type: 'UnsupportedOperation',
+                message: `Action ${action} is not supported`,
+              },
               400,
             );
         }
@@ -418,10 +423,7 @@ export const mockSqs = async (mockttp: Mockttp): Promise<void> => {
                 'The specified queue does not exist.',
               );
             }
-            const entries = parseIndexedParams(
-              params,
-              'DeleteMessageBatchRequestEntry',
-            );
+            const entries = parseIndexedParams(params, 'DeleteMessageBatchRequestEntry');
             const handles = new Set(entries.map(e => e.ReceiptHandle));
             queue.messages = queue.messages.filter(m => !handles.has(m.ReceiptHandle));
             const successXml = entries
@@ -448,9 +450,7 @@ export const mockSqs = async (mockttp: Mockttp): Promise<void> => {
                 const message = enqueueMessage(queue, entry.MessageBody);
                 return `<SendMessageBatchResultEntry><Id>${xmlEscape(
                   entry.Id,
-                )}</Id><MessageId>${
-                  message.MessageId
-                }</MessageId><MD5OfMessageBody>${
+                )}</Id><MessageId>${message.MessageId}</MessageId><MD5OfMessageBody>${
                   message.MD5OfBody
                 }</MD5OfMessageBody></SendMessageBatchResultEntry>`;
               })
@@ -470,7 +470,10 @@ export const mockSqs = async (mockttp: Mockttp): Promise<void> => {
         }
       }
 
-      return { statusCode: 415, body: JSON.stringify({ message: 'Unsupported Media Type' }) };
+      return {
+        statusCode: 415,
+        body: JSON.stringify({ message: 'Unsupported Media Type' }),
+      };
     });
 };
 
