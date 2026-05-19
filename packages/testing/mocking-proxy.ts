@@ -20,6 +20,18 @@ import { createGlobalProxyAgent } from 'global-agent';
 
 let mockServer: Mockttp;
 
+type StartCallback = (server: Mockttp) => Promise<void>;
+const startCallbacks: StartCallback[] = [];
+
+/**
+ * Register a callback to be invoked every time the mockttp proxy is started
+ * (or restarted). Use this to re-register mockttp handlers that would otherwise
+ * be cleared when the server restarts.
+ */
+export function onMockttpStart(callback: StartCallback): void {
+  startCallbacks.push(callback);
+}
+
 export async function mockttpServer() {
   if (!mockServer) {
     //console.log('CREATING ENDPOINT SERVER');
@@ -57,6 +69,10 @@ export async function start(allowPassThrough = false): Promise<void> {
   // Filter local requests out from proxy to prevent loops.
   global.NO_PROXY = 'localhost*,127.0.*,local.home*,search-development-resources*';
   global.HTTP_PROXY = `http://localhost:${server.port}`;
+  // Re-register any handlers that need to be present after every start/restart.
+  for (const callback of startCallbacks) {
+    await callback(server);
+  }
 }
 
 export async function stop(): Promise<void> {

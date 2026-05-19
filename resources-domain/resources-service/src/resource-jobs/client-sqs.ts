@@ -32,8 +32,13 @@ let sqs: SQS;
 
 export const getSqsClient = () => {
   if (!sqs) {
-    if (process.env.LOCAL_SQS_PORT) {
+    if (process.env.SQS_ENDPOINT) {
       // For testing only
+      sqs = new SQS({
+        endpoint: process.env.SQS_ENDPOINT,
+      });
+    } else if (process.env.LOCAL_SQS_PORT) {
+      // For testing only (legacy)
       sqs = new SQS({
         endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
       });
