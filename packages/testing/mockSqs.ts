@@ -19,7 +19,7 @@ import type { Mockttp } from 'mockttp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { SQS } from 'aws-sdk';
 import { createHash, randomUUID } from 'crypto';
-import { mockttpServer } from './mocking-proxy';
+import { onMockttpStart } from './mocking-proxy';
 
 /**
  * The hostname used by the in-memory SQS mock. The Mockttp proxy intercepts
@@ -46,9 +46,6 @@ type Queue = {
 // Queues are created/deleted via the SQS API, providing test isolation when
 // each test creates its own named queue in beforeEach and deletes it in afterEach.
 const queues = new Map<string, Queue>();
-
-// Guard flag so the Mockttp handler is only registered once per process.
-let handlerRegistered = false;
 
 const getQueueName = (queueUrl: string): string => {
   const parts = queueUrl.split('/');
@@ -167,12 +164,12 @@ const jsonResponse = (body: Record<string, unknown>, statusCode = 200) => ({
  * ('http://mock-sqs') for the application under test to route its SQS calls
  * through this mock.
  *
- * The handler is registered only once per process; subsequent calls are no-ops.
+ * This handler is automatically re-registered on every mockttp proxy restart
+ * (via onMockttpStart). It can also be called directly, e.g. to ensure
+ * registration before the first proxy start in a test that calls mockSqs
+ * before mockingProxy.start().
  */
 export const mockSqs = async (mockttp: Mockttp): Promise<void> => {
-  if (handlerRegistered) return;
-  handlerRegistered = true;
-
   await mockttp
     .forPost(/http:\/\/mock-sqs(.*)/)
     .always()
@@ -481,17 +478,12 @@ export const mockSqs = async (mockttp: Mockttp): Promise<void> => {
  * Sets up Jest lifecycle hooks to create and delete the named SQS queues
  * around each test, using the in-memory Mockttp-based SQS mock.
  *
- * Calls mockSqs() in a beforeAll hook so it is safe to call this helper at
- * module level; the Mockttp handler registration is deferred until Jest starts
- * executing (by which point mockingProxy.start() will already have run).
+ * The SQS handler is registered (and re-registered) automatically via the
+ * onMockttpStart callback whenever mockingProxy.start() is called, so it
+ * remains active even when the proxy is restarted mid-test.
  */
 export const setupTestQueues = (queueNames: string[]) => {
   const sqsClient = new SQS({ endpoint: MOCK_SQS_ENDPOINT });
-
-  beforeAll(async () => {
-    const server = await mockttpServer();
-    await mockSqs(server);
-  });
 
   beforeEach(async () => {
     await Promise.all(
@@ -523,3 +515,9 @@ export const setupTestQueues = (queueNames: string[]) => {
 
   return { sqsClient };
 };
+
+// Register the SQS handler to be re-applied on every mockttp proxy start/restart.
+// This ensures the handler survives proxy restarts that occur inside test bodies.
+onMockttpStart(async server => {
+  await mockSqs(server);
+});
