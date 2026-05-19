@@ -37,7 +37,7 @@ import { generateImportResource as newImportResourceGenerator } from '../mockRes
 // TODO: needs to be converted to aws-sdk-v3
 import { SQS } from 'aws-sdk';
 import { mockSsmParameters } from '@tech-matters/testing';
-import { createJsonSqsServer } from './sqsUtils';
+import { createJsonSqsServer } from '@tech-matters/testing';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);

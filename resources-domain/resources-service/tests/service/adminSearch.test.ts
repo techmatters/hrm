@@ -29,7 +29,7 @@ import { SQS } from 'aws-sdk';
 import { db } from '../../src/connection-pool';
 import { mockSsmParameters } from '@tech-matters/testing';
 import { upsertImportedResource } from '../../src/import/importDataAccess';
-import { createJsonSqsServer } from './sqsUtils';
+import { createJsonSqsServer } from '@tech-matters/testing';
 
 const internalServer = getInternalServer();
 const internalRequest = getRequest(internalServer);

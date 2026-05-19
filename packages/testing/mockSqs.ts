@@ -504,7 +504,7 @@ export const setupTestQueues = (queueNames: string[]) => {
           const testQueueUrl = resp.QueueUrl;
           await sqsClient
             .deleteQueue({
-              QueueUrl: testQueueUrl.toString(),
+              QueueUrl: testQueueUrl!.toString(),
             })
             .promise();
         } catch (err) {
