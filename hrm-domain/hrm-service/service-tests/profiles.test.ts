@@ -201,7 +201,7 @@ describe('/profiles', () => {
           .set(customHeaders || headers);
         expect(response.statusCode).toBe(expectStatus);
         if (expectFunction) {
-          expectFunction(response);
+          await expectFunction(response);
         }
       },
     );
@@ -607,7 +607,7 @@ describe('/profiles', () => {
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, profileFlagId, startTime);
+                await expectFunction(response, profileId, profileFlagId, startTime);
               }
             },
           );
@@ -758,7 +758,7 @@ describe('/profiles', () => {
                 .send(payload);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, payload, startTime);
+                await expectFunction(response, profileId, payload, startTime);
               }
             },
           );
@@ -804,7 +804,7 @@ describe('/profiles', () => {
                 .set(customHeaders || headers);
               expect(response.statusCode).toBe(expectStatus);
               if (expectFunction) {
-                expectFunction(response, profileId, payload);
+                await expectFunction(response, profileId, payload);
               }
             },
           );

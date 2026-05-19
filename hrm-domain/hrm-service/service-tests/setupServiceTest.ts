@@ -31,7 +31,8 @@ import {
 import { clearAllTables } from './dbCleanup';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { WorkerSID } from '@tech-matters/types';
-import { setupTestQueues } from './sqs';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { setupTestQueues } from '@tech-matters/testing';
 import { mockEntitySnsParameters } from './ssm';
 import { workerSid } from './mocks';
 

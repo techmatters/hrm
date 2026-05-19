@@ -15,7 +15,12 @@
  */
 
 import { getInternalServer, getRequest, getServer, headers } from './server';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSqs,
+  mockSuccessfulTwilioAuthentication,
+  MOCK_SQS_ENDPOINT,
+} from '@tech-matters/testing';
 import { db } from '../../src/connection-pool';
 import range from './range';
 import { parseISO, addHours, subHours, addSeconds, subSeconds } from 'date-fns';
@@ -34,8 +39,6 @@ import each from 'jest-each';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
-import sqslite from 'sqslite';
-
 // TODO: needs to be converted to aws-sdk-v3
 import { SQS } from 'aws-sdk';
 import { mockSsmParameters } from '@tech-matters/testing';
@@ -45,10 +48,7 @@ const internalRequest = getRequest(internalServer);
 const server = getServer();
 const request = getRequest(server);
 
-const sqsService = sqslite({});
-const sqsClient = new SQS({
-  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
-});
+const sqsClient = new SQS({ endpoint: MOCK_SQS_ENDPOINT });
 
 let testQueueUrl: URL;
 
@@ -234,8 +234,8 @@ const verifyImportState = async (expectedImportState?: ImportProgress) => {
 
 beforeAll(async () => {
   await mockingProxy.start();
-  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
   const mockttp = await mockingProxy.mockttpServer();
+  await mockSqs(mockttp);
   await mockSuccessfulTwilioAuthentication(workerSid);
   await mockSsmParameters(mockttp, [
     {
@@ -247,12 +247,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () =>
-  Promise.all([
-    mockingProxy.stop(),
-    internalServer.close(),
-    server.close(),
-    sqsService.close(),
-  ]),
+  Promise.all([mockingProxy.stop(), internalServer.close(), server.close()]),
 );
 
 beforeEach(async () => {

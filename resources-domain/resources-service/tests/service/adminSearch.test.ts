@@ -14,10 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import sqslite from 'sqslite';
 import { adminHeaders, getInternalServer, getRequest, headers } from './server';
 import { SearchReindexParams } from '../../src/admin/adminSearchService';
-import { mockingProxy, mockSuccessfulTwilioAuthentication } from '@tech-matters/testing';
+import {
+  mockingProxy,
+  mockSqs,
+  mockSuccessfulTwilioAuthentication,
+  MOCK_SQS_ENDPOINT,
+} from '@tech-matters/testing';
 import { addDays, parseISO, subDays } from 'date-fns';
 import each from 'jest-each';
 import { AccountSID } from '@tech-matters/types';
@@ -40,18 +44,15 @@ const BASELINE_DATE = parseISO('2020-01-01T00:00:00.000Z');
 
 const ACCOUNT_SIDS: AccountSID[] = range(3).map(accountIdx => `AC${accountIdx}` as const);
 
-const sqsService = sqslite({});
-const sqsClient = new SQS({
-  endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
-});
+const sqsClient = new SQS({ endpoint: MOCK_SQS_ENDPOINT });
 
 let testQueueUrl: URL;
 
 beforeAll(async () => {
   await mockingProxy.start();
-  await sqsService.listen({ port: parseInt(process.env.LOCAL_SQS_PORT!) });
-  await mockSuccessfulTwilioAuthentication(WORKER_SID);
   const mockttp = await mockingProxy.mockttpServer();
+  await mockSqs(mockttp);
+  await mockSuccessfulTwilioAuthentication(WORKER_SID);
   await mockSsmParameters(mockttp, [
     {
       pathPattern:
@@ -61,9 +62,7 @@ beforeAll(async () => {
   ]);
 });
 
-afterAll(async () =>
-  Promise.all([mockingProxy.stop(), internalServer.close(), sqsService.close()]),
-);
+afterAll(async () => Promise.all([mockingProxy.stop(), internalServer.close()]));
 
 beforeEach(async () => {
   ACCOUNT_SIDS.forEach(accountSid => {

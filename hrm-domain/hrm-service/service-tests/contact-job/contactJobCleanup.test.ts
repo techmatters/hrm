@@ -37,16 +37,15 @@ import {
 } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { accountSid, contact1, workerSid } from '../mocks';
 import { headers, getRequest, getServer, useOpenRules } from '../server';
+import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { setupTestQueues } from '@tech-matters/testing';
+import { clearAllTables } from '../dbCleanup';
 
 process.env.TWILIO_AUTH_TOKEN = 'mockAuthToken';
 
 useOpenRules();
 const server = getServer();
 const request = getRequest(server);
-
-import type { Contact } from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { clearAllTables } from '../dbCleanup';
-import { setupTestQueues } from '../sqs';
 
 let twilioSpy: jest.SpyInstance;
 

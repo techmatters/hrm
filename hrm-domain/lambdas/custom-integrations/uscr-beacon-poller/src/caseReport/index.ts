@@ -100,6 +100,7 @@ const caseReportToPehCaseSection = ({
     'Race/Ethnicity': race,
     Language: language,
     'Language Other': languageOther,
+    'Repeat Engagement?': repeatEngagement,
   } = demographics || {};
   const { 'Select Gender': gender } = genderOptions || {};
   return {
@@ -115,6 +116,9 @@ const caseReportToPehCaseSection = ({
         gender,
         race,
         language: languageOther || language,
+        repeatEngagement:
+          typeof repeatEngagement === 'string' &&
+          repeatEngagement.toLowerCase() === 'yes',
       },
     },
   };
@@ -266,11 +270,12 @@ export const addCaseReportSectionsToAseloCase: ItemProcessor<
     }
     const errors = (await Promise.all(results)).filter(isErr);
     if (errors.length) {
+      const errorLevel = errors.some(e => e.error.level === 'error') ? 'error' : 'warn';
       return newErr({
         message: 'Failed to add additional sections from case report to Aselo case',
         error: {
           type: 'AggregateError',
-          level: 'error',
+          level: errorLevel,
           lastUpdated: caseReportResult.unwrap(),
           errors,
         },

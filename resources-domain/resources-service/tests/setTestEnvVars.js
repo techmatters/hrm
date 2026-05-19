@@ -16,5 +16,5 @@
 
 process.env.STATIC_KEY_AC000 = 'BBC';
 process.env.STATIC_KEY_SEARCH_REINDEXER = 'Fast';
-process.env.LOCAL_SQS_PORT = '3010';
+process.env.SQS_ENDPOINT = 'http://mock-sqs';
 process.env.AWS_REGION = 'xx-fake-1';
