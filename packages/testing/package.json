@@ -6,11 +6,13 @@
   "license": "AGPL",
   "main": "dist/index.js",
   "dependencies": {
-    "pg-promise": "^11.15.0",
+    "aws-sdk": "1.18.0",
+    "date-fns": "^2.30.0",
     "global-agent": "^3.0.0",
-    "mockttp": "^3.16.0",
     "jest": "^28.1.3",
-    "date-fns": "^2.30.0"
+    "jest-junit": "17.0.0",
+    "mockttp": "^4.4.2",
+    "pg-promise": "^11.15.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

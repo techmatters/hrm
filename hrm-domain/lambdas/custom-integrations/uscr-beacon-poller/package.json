@@ -6,21 +6,23 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
-    "@tech-matters/hrm-types": "^1.0.0"
+    "aws-sdk": "1.18.0",
+    "jest-junit": "17.0.0"
   },
   "devDependencies": {
+    "@tech-matters/hrm-service-test-support": "^1.0.0",
+    "@tech-matters/testing": "^1.0.0",
     "@tsconfig/node22": "^22.0.0",
     "@types/aws-lambda": "^8.10.108",
-    "@tech-matters/testing": "^1.0.0",
-    "@tech-matters/hrm-service-test-support": "^1.0.0",
-    "pg-promise": "11.5.5",
     "cross-env": "^7.0.3",
     "date-fns": "^4.1.0",
     "jest-each": "^29.2.1",
-    "typescript": "^5.7.3",
-    "mockttp": "^3.16.0"
+    "mockttp": "^4.4.2",
+    "pg-promise": "11.5.5",
+    "typescript": "^5.7.3"
   },
   "scripts": {
     "docker:build": "docker build -t uscr-beacon-poller --build-arg lambda_name=uscr-beacon-poller --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../",
