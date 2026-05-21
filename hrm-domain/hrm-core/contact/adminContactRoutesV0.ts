@@ -35,7 +35,7 @@ adminContactsRouter.post(
     if (!manuallyTriggeredNotificationOperations.includes(notifyOperation)) {
       throw createError(404);
     }
-    console.log(`.......${notifyOperation}ing contacts......`, req, res);
+    console.info(`.......${notifyOperation}ing contacts......`, req, res);
 
     const { hrmAccountId } = req;
     const { dateFrom, dateTo } = req.body;

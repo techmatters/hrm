@@ -74,8 +74,12 @@ const processRetrieveTranscriptRecord = async (
   );
 
   if (!authToken || !docsBucketName) {
-    console.log('Missing required SSM params');
-    throw new Error('Missing required SSM params');
+    const missing = [
+      ...(authToken ? ['authToken'] : []),
+      ...(docsBucketName ? ['docsBucketName'] : []),
+    ];
+    console.error('Missing required SSM params:', missing);
+    throw new Error(`Missing required SSM params: ${missing}`);
   }
   const transcript = await exportTranscript({
     authToken,

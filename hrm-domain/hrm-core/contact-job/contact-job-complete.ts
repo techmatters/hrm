@@ -33,10 +33,7 @@ import {
   ContactJobAttemptResult,
   ContactJobType,
 } from '@tech-matters/types';
-import {
-  ContactJobCompleteProcessorError,
-  ContactJobPollerError,
-} from './contact-job-error';
+import { ContactJobPollerError } from './contact-job-error';
 import {
   deleteCompletedContactJobsFromQueue,
   pollCompletedContactJobsFromQueue,
@@ -187,13 +184,8 @@ export const handleFailure = async (
   // emit an error to pick up in metrics since completed queue is our
   // DLQ. These may be duplicates of ContactJobProcessorErrors that have
   // already caused an alarm, but there is a chance of other errors ending up here.
-  console.error(
-    new ContactJobCompleteProcessorError(
-      `process job with id ${jobId} failed`,
-      attemptPayload,
-    ),
-  );
-
+  console.error(`process job with id ${jobId} failed`);
+  console.error(`[SENSITIVE] failed job ${jobId} payload:`, attemptPayload);
   const contactJob = await getContactJobOrFail(completedJob);
   const attemptNumber = getAttemptNumber(completedJob, contactJob);
 
@@ -204,6 +196,9 @@ export const handleFailure = async (
     // This log is used to drive monitoring and alarms. Do not remove or update without reviewing the alarms.
     console.error(
       `${jobType} job abandoned after ${jobMaxAttempts} attempts: ${jobId}, contact ${accountSid}/${contactId}`,
+    );
+    console.error(
+      `[SENSITIVE] Abandoned job ${jobId}, contact ${accountSid}/${contactId} payload:`,
       attemptPayload,
     );
     return completeContactJob({
