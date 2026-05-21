@@ -13,6 +13,7 @@
     "hrm-domain/packages/*",
     "hrm-domain/*",
     "hrm-domain/scheduled-tasks/*",
+    "hrm-domain/speech-to-text/*",
     "hrm-domain/integration-tests/*",
     "resources-domain/lambdas/*",
     "resources-domain/packages/*",
