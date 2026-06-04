@@ -40,9 +40,10 @@ const initialize = () => {
 };
 
 // TODO
-// const cleanup = () => {
-//   clearInterval(intervalId);
-// };
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const cleanup = () => {
+  clearInterval(intervalId);
+};
 
 const hasQuota = (accountSid: AccountSID) => {
   if (!tokensMap.has(accountSid)) {
