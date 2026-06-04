@@ -40,9 +40,9 @@ const initialize = () => {
 };
 
 // TODO
-const cleanup = () => {
-  clearInterval(intervalId);
-};
+// const cleanup = () => {
+//   clearInterval(intervalId);
+// };
 
 const hasQuota = (accountSid: AccountSID) => {
   if (!tokensMap.has(accountSid)) {
