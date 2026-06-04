@@ -22,6 +22,7 @@ import {
   getAuthorizationMiddleware,
 } from '@tech-matters/twilio-worker-auth';
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
+import { getCheckQuotaMiddleware } from '@tech-matters/rate-limiting';
 
 export const setUpHrmRoutes = (
   webServer: Express,
@@ -29,11 +30,13 @@ export const setUpHrmRoutes = (
   rules: Permissions,
 ) => {
   const authorizationMiddleware = getAuthorizationMiddleware(authSecretsLookup);
+  const checkQuotaMiddleware = getCheckQuotaMiddleware();
   HRM_ROUTES.forEach(({ path }) => {
     webServer.use(
       `/v0/accounts/:accountSid${path}`,
       addAccountSidMiddleware,
       authorizationMiddleware,
+      checkQuotaMiddleware,
       setupPermissions(rules),
     );
   });
