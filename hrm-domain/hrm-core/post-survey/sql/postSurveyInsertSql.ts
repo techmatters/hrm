@@ -14,30 +14,34 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { PostSurvey } from '../postSurveyDataAccess';
-import { pgp } from '../../dbConnection';
-
-export const insertPostSurveySql = (postSurvey: PostSurvey) => `
-${pgp.helpers.insert(
-  postSurvey,
-  ['contactTaskId', 'accountSid', 'taskId', 'data', 'createdAt', 'updatedAt'],
-  'PostSurveys',
-)}
+export const INSERT_POST_SURVEY_SQL = `
+WITH inserted AS (
+INTO "PostSurveys"
+SELECT $<taskId>       AS "contactTaskId",
+       $<accountSid>   AS "accountSid",
+       $<taskId>       AS "taskId",
+       $<data>::JSONB AS "data",
+       CURRENT_TIMESTAMP  AS "createdAt",
+       CURRENT_TIMESTAMP  AS "updatedAt"
   RETURNING *
+    )
+SELECT inserted.*, c.id AS "contactId" FROM inserted INNER JOIN "Contacts" AS c ON c.taskId = inserted.taskId
 `;
 
 export const INSERT_POST_SURVEY_FOR_LATEST_CONTACT_WITH_NUMBER = `
-  INSERT INTO "PostSurveys"
-    SELECT 
-        "taskId" AS "contactTaskId",
-        $<accountSid> AS "accountSid",
-        $<taskId> AS "taskId",
-        $<data>::JSONB AS "data", 
-        CURRENT_TIMESTAMP AS "createdAt", 
-        CURRENT_TIMESTAMP AS "updatedAt" 
-    FROM "Contacts" 
-    WHERE "number"=$<number> 
-    ORDER BY "createdAt" DESC 
-    LIMIT 1
+WITH inserted AS (
+INSERT
+INTO "PostSurveys"
+SELECT "taskId"           AS "contactTaskId",
+       $<accountSid>   AS "accountSid",
+       $<taskId>       AS "taskId",
+       $<data>::JSONB AS "data",
+       CURRENT_TIMESTAMP  AS "createdAt",
+       CURRENT_TIMESTAMP  AS "updatedAt"
+FROM "Contacts"
+WHERE "number" = $<number>
+ORDER BY "createdAt" DESC LIMIT 1
   RETURNING *
+    )
+SELECT inserted.*, c.id AS "contactId" FROM inserted INNER JOIN "Contacts" AS c ON c.taskId = inserted.taskId
 `;

@@ -17,7 +17,7 @@
 import { NewPostSurvey, PostSurvey } from '@tech-matters/hrm-types';
 import { SELECT_POST_SURVEYS_BY_CONTACT_TASK } from './sql/postSurveyGetSql';
 import {
-  INSERT_POST_SURVEY_FOR_LATEST_CONTACT_WITH_NUMBER,
+  INSERT_POST_SURVEY_FOR_LATEST_CONTACT_WITH_NUMBER, INSERT_POST_SURVEY_SQL,
   insertPostSurveySql,
 } from './sql/postSurveyInsertSql';
 import { getDbForAccount } from '../dbConnection';
@@ -48,7 +48,6 @@ export const create = async (
   accountSid: string,
   postSurvey: NewPostSurvey | NewPostSurveyFromNumber,
 ): Promise<PostSurvey> => {
-  const now = new Date();
   if (isNewPostSurveyFromNumber(postSurvey)) {
     return (await getDbForAccount(accountSid)).task(async connection =>
       connection.one<PostSurvey>(INSERT_POST_SURVEY_FOR_LATEST_CONTACT_WITH_NUMBER, {
@@ -59,7 +58,7 @@ export const create = async (
   }
   return (await getDbForAccount(accountSid)).task(async connection =>
     connection.one<PostSurvey>(
-      insertPostSurveySql({ ...postSurvey, updatedAt: now, createdAt: now, accountSid }),
+      insertPostSurveySql(INSERT_POST_SURVEY_SQL, { ...postSurvey, accountSid }),
     ),
   );
 };

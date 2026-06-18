@@ -21,7 +21,9 @@ export const SELECT_POST_SURVEYS_BY_CONTACT_TASK = `
     "taskId",
     "data",
     "createdAt",
-    "updatedAt" 
+    "updatedAt", 
+  c."id" AS "contactId"
   FROM "PostSurveys" AS ps
+  INNER JOIN "Contacts" AS c ON c."taskId" = ps."taskId"
   WHERE ps."accountSid" = $<accountSid> AND ps."contactTaskId" = $<contactTaskId>
 `;

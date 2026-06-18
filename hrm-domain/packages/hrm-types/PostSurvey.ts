@@ -24,4 +24,5 @@ export type PostSurvey = NewPostSurvey & {
   id: string;
   createdAt: Date;
   updatedAt: Date;
+  contactId: string;
 };
