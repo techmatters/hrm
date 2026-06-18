@@ -16,10 +16,22 @@
 
 import { NewPostSurvey, PostSurvey } from '@tech-matters/hrm-types';
 import { SELECT_POST_SURVEYS_BY_CONTACT_TASK } from './sql/postSurveyGetSql';
-import { insertPostSurveySql } from './sql/postSurveyInsertSql';
+import {
+  INSERT_POST_SURVEY_FOR_LATEST_CONTACT_WITH_NUMBER,
+  insertPostSurveySql,
+} from './sql/postSurveyInsertSql';
 import { getDbForAccount } from '../dbConnection';
 
 export type { NewPostSurvey, PostSurvey };
+
+export type NewPostSurveyFromNumber = Omit<NewPostSurvey, 'contactTaskId'> & {
+  number: string;
+};
+
+export const isNewPostSurveyFromNumber = (
+  survey: NewPostSurvey | NewPostSurveyFromNumber,
+): survey is NewPostSurveyFromNumber =>
+  Boolean((survey as NewPostSurveyFromNumber).number);
 
 export const filterByContactTaskId = async (
   accountSid: string,
@@ -34,9 +46,17 @@ export const filterByContactTaskId = async (
 
 export const create = async (
   accountSid: string,
-  postSurvey: NewPostSurvey,
+  postSurvey: NewPostSurvey | NewPostSurveyFromNumber,
 ): Promise<PostSurvey> => {
   const now = new Date();
+  if (isNewPostSurveyFromNumber(postSurvey)) {
+    return (await getDbForAccount(accountSid)).task(async connection =>
+      connection.one<PostSurvey>(INSERT_POST_SURVEY_FOR_LATEST_CONTACT_WITH_NUMBER, {
+        ...postSurvey,
+        accountSid,
+      }),
+    );
+  }
   return (await getDbForAccount(accountSid)).task(async connection =>
     connection.one<PostSurvey>(
       insertPostSurveySql({ ...postSurvey, updatedAt: now, createdAt: now, accountSid }),

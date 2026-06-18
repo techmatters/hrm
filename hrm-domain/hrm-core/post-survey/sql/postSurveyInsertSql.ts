@@ -14,16 +14,30 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { NewPostSurvey } from '../postSurveyDataAccess';
+import { PostSurvey } from '../postSurveyDataAccess';
 import { pgp } from '../../dbConnection';
 
-export const insertPostSurveySql = (
-  postSurvey: NewPostSurvey & { accountSid: string; createdAt: Date; updatedAt: Date },
-) => `
+export const insertPostSurveySql = (postSurvey: PostSurvey) => `
 ${pgp.helpers.insert(
   postSurvey,
   ['contactTaskId', 'accountSid', 'taskId', 'data', 'createdAt', 'updatedAt'],
   'PostSurveys',
 )}
+  RETURNING *
+`;
+
+export const INSERT_POST_SURVEY_FOR_LATEST_CONTACT_WITH_NUMBER = `
+  INSERT INTO "PostSurveys"
+    SELECT 
+        "taskId" AS "contactTaskId",
+        $<accountSid> AS "accountSid",
+        $<taskId> AS "taskId",
+        $<data>::JSONB AS "data", 
+        CURRENT_TIMESTAMP AS "createdAt", 
+        CURRENT_TIMESTAMP AS "updatedAt" 
+    FROM "Contacts" 
+    WHERE "number"=$<number> 
+    ORDER BY "createdAt" DESC 
+    LIMIT 1
   RETURNING *
 `;
