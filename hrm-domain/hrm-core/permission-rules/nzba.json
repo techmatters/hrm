@@ -1,12 +1,13 @@
 {
-  "viewCase": [["isSupervisor"], ["isCreator"]],
-  "closeCase": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
+  "viewCase": [["everyone"]],
+  "closeCase": [["isSupervisor"]],
   "reopenCase": [["isSupervisor"]],
-  "caseStatusTransition": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "addCaseSection": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "editCaseSection": [["isSupervisor"]],
-  "editCaseOverview": [["isSupervisor"], ["isCreator", "isCaseOpen"]],
-  "updateCaseContacts": [["isSupervisor"], ["isCaseOpen"]],
+  "caseStatusTransition": [["isSupervisor"], ["everyone", "isCaseOpen"]],
+  "addCaseSection": [["isSupervisor"], ["everyone", "isCaseOpen"]],
+  "editCaseSection": [["isSupervisor"], ["everyone", "isCaseOpen"]],
+  "editCaseOverview": [["isSupervisor"], ["everyone", "isCaseOpen"]],
+  "updateCaseContacts": [["isSupervisor"], ["everyone", "isCaseOpen"]],
+
 
   "viewContact": [["everyone"]],
   "editContact": [["isSupervisor"], ["isOwner"]],
