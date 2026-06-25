@@ -40,6 +40,10 @@ const getSqsConfig = () => {
     return {
       region: 'us-east-1',
       endpoint: convertToEndpoint(process.env.SQS_ENDPOINT),
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'mock-access-key',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'mock-secret-key',
+      },
     };
   }
 
@@ -47,6 +51,10 @@ const getSqsConfig = () => {
     return {
       region: 'us-east-1',
       endpoint: convertToEndpoint(`http://localhost:${process.env.LOCAL_SQS_PORT}`),
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'mock-access-key',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'mock-secret-key',
+      },
     };
   }
 

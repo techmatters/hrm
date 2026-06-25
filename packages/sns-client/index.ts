@@ -33,6 +33,10 @@ const getSnsConfig = (): SNSClientConfig => {
     return {
       region: 'us-east-1',
       endpoint: convertToEndpoint(process.env.SNS_ENDPOINT),
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'mock-access-key',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'mock-secret-key',
+      },
     };
   }
 
@@ -40,6 +44,10 @@ const getSnsConfig = (): SNSClientConfig => {
     return {
       region: 'us-east-1',
       endpoint: convertToEndpoint(`http://localhost:${process.env.LOCAL_SNS_PORT}`),
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'mock-access-key',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'mock-secret-key',
+      },
     };
   }
 
