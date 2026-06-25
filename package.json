@@ -18,6 +18,9 @@
     "resources-domain/packages/*",
     "resources-domain/*"
   ],
+  "overrides": {
+    "basic-ftp": "^5.2.0"
+  },
   "dependencies": {
     "@maildrop/api": "^1.0.27",
     "aws-cdk-lib": "^2.249.0",
