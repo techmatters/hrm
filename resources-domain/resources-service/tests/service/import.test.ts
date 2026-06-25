@@ -267,9 +267,11 @@ beforeEach(async () => {
     })
     .promise();
   testQueueUrl = new URL(QueueUrl!);
+  process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL = testQueueUrl.toString();
 });
 
 afterEach(async () => {
+  delete process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL;
   await sqsClient
     .deleteQueue({
       QueueUrl: testQueueUrl.toString(),
