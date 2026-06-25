@@ -34,7 +34,7 @@ export const waitForExpectedNumberOfSQSMessage = retryable<
     queueUrl,
     attributes: ['ApproximateNumberOfMessages'],
   });
-  const actualNumberOfMessages = parseInt(result.ApproximateNumberOfMessages);
+  const actualNumberOfMessages = parseInt(result.ApproximateNumberOfMessages ?? '0', 10);
   if (actualNumberOfMessages !== expectedNumberOfMessages)
     throw new Error(
       `Expected ${expectedNumberOfMessages} messages, but got ${actualNumberOfMessages}`,

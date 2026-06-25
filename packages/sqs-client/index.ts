@@ -23,6 +23,7 @@ import {
   SQSClient,
   GetQueueAttributesCommand,
   ReceiveMessageCommandOutput,
+  type QueueAttributeName,
 } from '@aws-sdk/client-sqs';
 import { deleteS3Object, getS3Object, putS3Object } from '@tech-matters/s3-client';
 import { randomUUID } from 'node:crypto';
@@ -262,7 +263,10 @@ export const newSqsClient = ({
       return output;
     },
 
-    getQueueAttributes: async (params: { queueUrl: string; attributes: string[] }) => {
+    getQueueAttributes: async (params: {
+      queueUrl: string;
+      attributes: QueueAttributeName[];
+    }) => {
       const { queueUrl: QueueUrl, attributes: AttributeNames } = params;
       const command = new GetQueueAttributesCommand({
         QueueUrl,

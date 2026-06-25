@@ -48,7 +48,7 @@ export const retrieveUnprocessedMessageCount = async (
     queueUrl: importResourcesSqsQueueUrl.toString(),
     attributes: ['ApproximateNumberOfMessages'],
   })) ?? { ApproximateNumberOfMessages: '0' };
-  return parseInt(ApproximateNumberOfMessages);
+  return parseInt(ApproximateNumberOfMessages ?? '0', 10);
 };
 
 export type ResourceMessage = ImportRequestBody & { accountSid: AccountSID };
