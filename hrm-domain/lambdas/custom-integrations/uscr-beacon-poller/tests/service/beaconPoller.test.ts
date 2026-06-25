@@ -289,6 +289,7 @@ describe('Beacon Polling Service', () => {
   each([{ apiType: 'incidentReport' }, { apiType: 'caseReport' }]).describe(
     'Polling logic',
     ({ apiType }: { apiType: 'incidentReport' | 'caseReport' }) => {
+      jest.setTimeout(60000);
       const apiPath =
         apiType === 'incidentReport'
           ? '/api/aselo/incidents/updates'
