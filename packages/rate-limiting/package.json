@@ -1,0 +1,32 @@
+{
+  "name": "@tech-matters/rate-limiting",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/techmatters/hrm.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/techmatters/hrm/issues"
+  },
+  "homepage": "https://github.com/techmatters/hrm#readme",
+  "description": "",
+  "author": "",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/http": "^1.0.0",
+    "@tech-matters/types": "^1.0.0"
+  },
+  "scripts": {
+    "test:unit": "jest tests/unit"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "typescript": "^5.7.3"
+  }
+}
+
