@@ -88,7 +88,33 @@ const publishToSns = async ({
     );
     return await publishSns(publishParameters);
   } catch (err) {
-    console.debug('Error trying to publish message to SNS topic', err, payload);
+    let id: string;
+    if (payload.operation === 'update') {
+      switch (entityType) {
+        case 'contact': {
+          id = (payload as UpsertContactNotificationPayload).contact.id;
+          return;
+        }
+        case 'case': {
+          id = (payload as UpsertCaseNotificationPayload).case.id;
+          return;
+        }
+        case 'profile': {
+          id = (payload as any).profile.id;
+          return;
+        }
+      }
+    }
+    console.debug(
+      'Error trying to publish message to SNS topic',
+      {
+        operation: payload.operation,
+        accountSid: payload.accountSid,
+        ...(id ? { id } : {}),
+      },
+      err,
+    );
+    console.debug('[SENSITIVE] Failed SNS topic complete payload:', payload);
     if (err instanceof SsmParameterNotFound) {
       console.debug(
         `No SNS topic stored in SSM parameter ${getSnsSsmPath(
