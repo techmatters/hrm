@@ -39,6 +39,10 @@ const getSsmConfig = () => {
   if (process.env.SSM_ENDPOINT) {
     ssmConfig.region = 'us-east-1';
     ssmConfig.endpoint = convertToEndpoint(process.env.SSM_ENDPOINT);
+    ssmConfig.credentials = {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'mock-access-key',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'mock-secret-key',
+    };
   }
 
   if (process.env.LOCAL_SSM_PORT) {
@@ -46,6 +50,10 @@ const getSsmConfig = () => {
     ssmConfig.endpoint = convertToEndpoint(
       `http://localhost:${process.env.LOCAL_SSM_PORT}`,
     );
+    ssmConfig.credentials = {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? 'mock-access-key',
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? 'mock-secret-key',
+    };
   }
 
   if (process.env.SSM_REGION) {

@@ -44,11 +44,12 @@ export const publishToImportConsumer =
 export const retrieveUnprocessedMessageCount = async (
   importResourcesSqsQueueUrl: URL,
 ) => {
-  const { ApproximateNumberOfMessages } = (await getQueueAttributes({
-    queueUrl: importResourcesSqsQueueUrl.toString(),
-    attributes: ['ApproximateNumberOfMessages'],
-  })) ?? { ApproximateNumberOfMessages: '0' };
-  return parseInt(ApproximateNumberOfMessages);
+  const { ApproximateNumberOfMessages = '0' } =
+    (await getQueueAttributes({
+      queueUrl: importResourcesSqsQueueUrl.toString(),
+      attributes: ['ApproximateNumberOfMessages'],
+    })) ?? {};
+  return parseInt(ApproximateNumberOfMessages, 10);
 };
 
 export type ResourceMessage = ImportRequestBody & { accountSid: AccountSID };

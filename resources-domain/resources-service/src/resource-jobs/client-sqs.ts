@@ -68,7 +68,9 @@ export const publishToResourcesJob = async ({
 }: PublishToResourcesJobParams): Promise<void> => {
   //TODO: more robust error handling/messaging
   try {
-    const QueueUrl = await getSsmParameter(getJobQueueUrl(), 86400000);
+    const QueueUrl =
+      process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL ||
+      (await getSsmParameter(getJobQueueUrl(), 86400000));
 
     const message: SQS.Types.SendMessageRequest = {
       MessageBody: JSON.stringify(params),

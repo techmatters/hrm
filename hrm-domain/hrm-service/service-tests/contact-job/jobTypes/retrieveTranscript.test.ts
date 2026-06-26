@@ -38,6 +38,7 @@ import { db } from '../../dbConnection';
 import { setupServiceTests } from '../../setupServiceTest';
 import subDays from 'date-fns/subDays';
 import { getById } from '@tech-matters/hrm-core/contact/contactDataAccess';
+import { clearAllTables } from '../../dbCleanup';
 
 const CONTACT_JOB_COMPLETE_SQS_QUEUE = 'mock-completed-contact-jobs';
 const PENDING_RETRIEVE_TRANSCRIPT_JOBS_QUEUE = 'mock-pending-retrieve-transcript-jobs';
@@ -111,6 +112,7 @@ let testContactId: string;
 let singleProcessContactJobsRun: () => Promise<void>;
 
 beforeEach(async () => {
+  await clearAllTables();
   const testContact = await contactApi.createContact(
     accountSid,
     workerSid,
@@ -179,6 +181,7 @@ describe('Contact created', () => {
     await singleProcessContactJobsRun();
     const messageResponse = await receiveSqsMessage({
       queueUrl: pendingRetrieveQueueUrl,
+      maxNumberOfMessages: 10,
     });
     const { Messages: messages } = messageResponse;
     expect(messages).toHaveLength(1);
@@ -188,10 +191,6 @@ describe('Contact created', () => {
     expect(pendingRetrieveTranscriptJob.jobType).toBe(
       ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
     );
-    const secondResponse = await receiveSqsMessage({
-      queueUrl: pendingRetrieveQueueUrl,
-    });
-    expect(secondResponse.Messages).not.toBeDefined();
   });
 
   test('Will not republish if already sent', async () => {
@@ -200,6 +199,7 @@ describe('Contact created', () => {
     await singleProcessContactJobsRun();
     const messageResponse = await receiveSqsMessage({
       queueUrl: pendingRetrieveQueueUrl,
+      maxNumberOfMessages: 10,
     });
     const { Messages: messages } = messageResponse;
     expect(messages).toHaveLength(1);
@@ -209,10 +209,6 @@ describe('Contact created', () => {
     expect(pendingRetrieveTranscriptJob.jobType).toBe(
       ContactJobType.RETRIEVE_CONTACT_TRANSCRIPT,
     );
-    const secondResponse = await receiveSqsMessage({
-      queueUrl: pendingRetrieveQueueUrl,
-    });
-    expect(secondResponse.Messages).not.toBeDefined();
   });
   test('Will republish if previous attempt expires', async () => {
     await singleProcessContactJobsRun();
@@ -223,13 +219,14 @@ describe('Contact created', () => {
     );
     await singleProcessContactJobsRun();
 
-    for (let i = 0; i < 2; i += 1) {
-      const messageResponse = await receiveSqsMessage({
-        queueUrl: pendingRetrieveQueueUrl,
-      });
-      const { Messages: messages } = messageResponse;
-      expect(messages).toHaveLength(1);
-      const pendingRetrieveTranscriptJob = JSON.parse(messages[0].Body);
+    const messageResponse = await receiveSqsMessage({
+      queueUrl: pendingRetrieveQueueUrl,
+      maxNumberOfMessages: 10,
+    });
+    const { Messages: messages } = messageResponse;
+    expect(messages).toHaveLength(2);
+    for (const message of messages) {
+      const pendingRetrieveTranscriptJob = JSON.parse(message.Body);
       console.log('pendingRetrieveTranscriptJob', pendingRetrieveTranscriptJob);
       expect(pendingRetrieveTranscriptJob.contactId).toBe(parseInt(testContactId));
       expect(pendingRetrieveTranscriptJob.jobType).toBe(
