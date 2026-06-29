@@ -75,6 +75,7 @@
     "aws-sdk": "^2.1693.0",
     "chalk": "^4.0.0",
     "cross-env": "^7.0.3",
+    "csv-parse": "^7.0.0",
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "global-agent": "^3.0.0",
