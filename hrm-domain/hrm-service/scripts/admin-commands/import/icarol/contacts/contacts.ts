@@ -24,6 +24,7 @@ import {
   ICarolContactRecord,
   mapContact,
   parseS3Uri,
+  resolveWorkerSid,
   WorkerSidsByName,
 } from './contactMapper';
 
@@ -91,7 +92,7 @@ const buildWorkerSidMap = async ({
       }
     } catch (err) {
       console.warn(
-        `Could not parse attributes for worker ${worker.sid}`,
+        `Could not parse worker attributes JSON for worker ${worker.sid}`,
         err instanceof Error ? err.message : String(err),
       );
     }
@@ -141,7 +142,7 @@ export const handler = async ({ region, environment, accountSid, location }) => 
 
     for (const csvRecord of csvRecords) {
       const workerName = (csvRecord.PhoneWorkerName ?? '').trim();
-      if (workerName && !workerSidsByName.has(workerName)) {
+      if (workerName && !resolveWorkerSid(csvRecord, workerSidsByName)) {
         console.warn(
           `No Twilio worker found for PhoneWorkerName "${workerName}" (call report ${csvRecord.CallReportNum}); contact will not be attributed to a worker`,
         );
