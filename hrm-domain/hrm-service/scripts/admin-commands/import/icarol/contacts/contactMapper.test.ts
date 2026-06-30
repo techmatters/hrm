@@ -15,6 +15,7 @@
  */
 import {
   ICarolContactRecord,
+  calculateConversationDuration,
   mapCategories,
   mapContact,
   parseICarolBoolean,
@@ -167,10 +168,9 @@ describe('mapContact', () => {
     );
 
     expect(rawJson!.childInformation).toEqual({
-      name: 'Jane Doe',
+      friendlyName: 'Jane Doe',
       phone1: '+15555550123',
       state: 'CA',
-      city: 'San Francisco',
       county: 'San Francisco',
       ageRange: '25-34',
       ethnicity: 'Hispanic',
@@ -178,7 +178,7 @@ describe('mapContact', () => {
       militaryStatus: 'Veteran',
       pronouns: 'she/her',
       race: 'White',
-      referralTo988: 'Yes',
+      referral988: 'Yes',
       howDidYouHearAboutTheWarmLine: 'Friend',
     });
   });
@@ -195,10 +195,10 @@ describe('mapContact', () => {
     );
 
     expect(rawJson!.caseInformation).toEqual({
-      callerSatisfied: true,
-      permissionToCallBack: false,
+      wasTheCallerSatisfiedWithTheSupportProvided: true,
+      doWeHaveTheirPermissionToCallBack: false,
       substanceUseLivedExperience: true,
-      typeOfResourceProvided: 'Housing',
+      referrals: 'Housing',
     });
   });
 
@@ -209,13 +209,15 @@ describe('mapContact', () => {
       }),
     );
 
-    expect(rawJson!.caseInformation.callerSatisfied).toBe(false);
+    expect(rawJson!.caseInformation.wasTheCallerSatisfiedWithTheSupportProvided).toBe(
+      false,
+    );
   });
 
   test('omits blank columns rather than populating empty values', () => {
     const { rawJson } = mapContact(buildRecord({ CallerName: 'Jane Doe' }));
 
-    expect(rawJson!.childInformation).toEqual({ name: 'Jane Doe' });
+    expect(rawJson!.childInformation).toEqual({ friendlyName: 'Jane Doe' });
     expect(rawJson!.caseInformation).toEqual({});
   });
 
@@ -233,12 +235,56 @@ describe('mapContact', () => {
     });
   });
 
-  test('sets the call type and falls back to an empty string when absent', () => {
-    expect(
-      mapContact(buildRecord({ 'Call Information - Call Type': 'Crisis' })).rawJson!
-        .callType,
-    ).toBe('Crisis');
-    expect(mapContact(buildRecord()).rawJson!.callType).toBe('');
+  describe('callType', () => {
+    test('maps a "Crisis" call to the data callType and records isCrisis true', () => {
+      const { rawJson } = mapContact(
+        buildRecord({ 'Call Information - Call Type': 'Crisis' }),
+      );
+      expect(rawJson!.callType).toBe('Child calling about self');
+      expect(rawJson!.caseInformation.isCrisis).toBe(true);
+    });
+
+    test('maps a "Non-Crisis" call to the data callType and records isCrisis false', () => {
+      const { rawJson } = mapContact(
+        buildRecord({ 'Call Information - Call Type': 'Non-Crisis' }),
+      );
+      expect(rawJson!.callType).toBe('Child calling about self');
+      expect(rawJson!.caseInformation.isCrisis).toBe(false);
+    });
+
+    test('infers a non-data callType from the boolean flags when call type is empty', () => {
+      expect(mapContact(buildRecord({ WasHangup: 'Yes' })).rawJson!.callType).toBe(
+        'Hang up',
+      );
+      expect(mapContact(buildRecord({ WasSilentCall: 'Yes' })).rawJson!.callType).toBe(
+        'Silent',
+      );
+      expect(mapContact(buildRecord({ WasWrongNumber: 'Yes' })).rawJson!.callType).toBe(
+        'Wrong  Number',
+      );
+      expect(mapContact(buildRecord({ WasPrankCall: 'Yes' })).rawJson!.callType).toBe(
+        'Prank Call',
+      );
+      expect(mapContact(buildRecord({ WasSexCall: 'Yes' })).rawJson!.callType).toBe(
+        'Sexual Gratifier',
+      );
+    });
+
+    test('infers the data callType when WasRealCall is set but call type is empty', () => {
+      expect(mapContact(buildRecord({ WasRealCall: 'Yes' })).rawJson!.callType).toBe(
+        'Child calling about self',
+      );
+    });
+
+    test('does not record isCrisis when inferring from boolean flags', () => {
+      expect(
+        mapContact(buildRecord({ WasHangup: 'Yes' })).rawJson!.caseInformation,
+      ).not.toHaveProperty('isCrisis');
+    });
+
+    test('falls back to an empty callType when nothing is set', () => {
+      expect(mapContact(buildRecord()).rawJson!.callType).toBe('');
+    });
   });
 
   test('builds the task id and marks the contact as a voice channel', () => {
@@ -257,12 +303,52 @@ describe('mapContact', () => {
     ).toBeUndefined();
   });
 
-  test('converts the call length from minutes to seconds', () => {
-    expect(mapContact(buildRecord({ CallLength: '5' })).conversationDuration).toBe(300);
+  test('derives the conversation duration (seconds) from the start and end timestamps', () => {
+    expect(
+      mapContact(
+        buildRecord({
+          CallDateAndTimeStart: '2026-05-06 15:22:00',
+          CallDateAndTimeEnd: '2026-05-06 15:34:00',
+        }),
+      ).conversationDuration,
+    ).toBe(720);
   });
 
-  test('defaults the conversation duration to 0 when the call length is not a number', () => {
-    expect(mapContact(buildRecord({ CallLength: '' })).conversationDuration).toBe(0);
-    expect(mapContact(buildRecord({ CallLength: 'N/A' })).conversationDuration).toBe(0);
+  test('defaults the conversation duration to 0 when timestamps are missing or invalid', () => {
+    expect(
+      mapContact(buildRecord({ CallDateAndTimeStart: '2026-05-06 15:22:00' }))
+        .conversationDuration,
+    ).toBe(0);
+    expect(
+      mapContact(
+        buildRecord({
+          CallDateAndTimeStart: 'not a date',
+          CallDateAndTimeEnd: '2026-05-06 15:34:00',
+        }),
+      ).conversationDuration,
+    ).toBe(0);
+  });
+});
+
+describe('calculateConversationDuration', () => {
+  test('returns the difference between end and start in seconds', () => {
+    expect(
+      calculateConversationDuration('2026-05-06 15:22:00', '2026-05-06 15:34:00'),
+    ).toBe(720);
+  });
+
+  test('returns 0 when either timestamp is missing', () => {
+    expect(calculateConversationDuration('', '2026-05-06 15:34:00')).toBe(0);
+    expect(calculateConversationDuration('2026-05-06 15:22:00', undefined)).toBe(0);
+  });
+
+  test('returns 0 when a timestamp is unparseable', () => {
+    expect(calculateConversationDuration('nope', '2026-05-06 15:34:00')).toBe(0);
+  });
+
+  test('returns 0 when the end is before the start', () => {
+    expect(
+      calculateConversationDuration('2026-05-06 15:34:00', '2026-05-06 15:22:00'),
+    ).toBe(0);
   });
 });

@@ -77,6 +77,28 @@ export const WELLNESS_CATEGORY_MAP: Record<
 };
 
 /**
+ * The Aselo callType value stored for a counselling/"data" contact. Matches the
+ * `callTypes.child` constant used across HRM/flex (Contact.ts `dataCallTypes`).
+ */
+export const DATA_CALL_TYPE = 'Child calling about self';
+
+/**
+ * iCarol records a contact's nature using a set of boolean "Was..." columns. When
+ * the "Call Information - Call Type" field is empty we infer the Aselo callType
+ * from these flags. The values are the labels from the PRN CallTypeButtons form
+ * definition, which is what the Flex UI stores as the callType for a non-data
+ * contact (`callTypes[name] || button.label`).
+ */
+export const CALL_TYPE_FLAG_MAP: [field: string, callType: string][] = [
+  ['WasRealCall', DATA_CALL_TYPE],
+  ['WasSilentCall', 'Silent'],
+  ['WasHangup', 'Hang up'],
+  ['WasWrongNumber', 'Wrong  Number'],
+  ['WasPrankCall', 'Prank Call'],
+  ['WasSexCall', 'Sexual Gratifier'],
+];
+
+/**
  * iCarol stores yes/no answers as the strings "Yes"/"No". Returns undefined for
  * empty/unrecognised values so the field can be omitted from the contact.
  */
@@ -86,6 +108,21 @@ export const parseICarolBoolean = (value: string | undefined): boolean | undefin
   if (normalised === 'yes') return true;
   if (normalised === 'no') return false;
   return undefined;
+};
+
+/**
+ * Computes the conversation duration (in seconds) from the iCarol call start and
+ * end timestamps. Returns 0 when either timestamp is missing or unparseable.
+ */
+export const calculateConversationDuration = (
+  start: string | undefined,
+  end: string | undefined,
+): number => {
+  if (!start || !end) return 0;
+  const startMs = new Date(start).getTime();
+  const endMs = new Date(end).getTime();
+  if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs < startMs) return 0;
+  return Math.round((endMs - startMs) / 1000);
 };
 
 /**
@@ -142,6 +179,36 @@ export const assignIfPresent = (
 };
 
 /**
+ * Determines the Aselo `callType` and, for counselling contacts, whether the call
+ * was a crisis, from the iCarol record.
+ *
+ * - When "Call Information - Call Type" is "Crisis"/"Non-Crisis" the contact is a
+ *   counselling contact, so the callType becomes the data callType ("Child calling
+ *   about self") and an `isCrisis` boolean is recorded under caseInformation.
+ * - When that field is empty, the callType is inferred from the iCarol "Was..."
+ *   boolean flags (e.g. WasHangup, WasSilentCall).
+ * - Any other non-empty value is passed through unchanged.
+ */
+export const mapCallType = (
+  record: ICarolContactRecord,
+): { callType: string; isCrisis?: boolean } => {
+  const rawCallType = (record['Call Information - Call Type'] ?? '').trim();
+  const normalised = rawCallType.toLowerCase();
+
+  if (normalised === 'crisis') return { callType: DATA_CALL_TYPE, isCrisis: true };
+  if (normalised === 'non-crisis' || normalised === 'non crisis') {
+    return { callType: DATA_CALL_TYPE, isCrisis: false };
+  }
+  if (rawCallType) return { callType: rawCallType };
+
+  // Fall back to inferring the callType from the boolean flag columns.
+  const matched = CALL_TYPE_FLAG_MAP.find(
+    ([field]) => parseICarolBoolean(record[field]) === true,
+  );
+  return { callType: matched ? matched[1] : '' };
+};
+
+/**
  * Maps a single iCarol CSV record onto the Aselo contact payload. Per the PRN
  * field mapping spreadsheet, the "Contact > Support Seeker" fields are mapped
  * onto rawJson.childInformation and the "Contact > Summary" fields onto
@@ -150,10 +217,9 @@ export const assignIfPresent = (
 export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecord> => {
   // Contact > Support Seeker -> rawJson.childInformation
   const childInformation: ContactRawJson['childInformation'] = {};
-  assignIfPresent(childInformation, 'name', record.CallerName);
+  assignIfPresent(childInformation, 'friendlyName', record.CallerName);
   assignIfPresent(childInformation, 'phone1', record.PhoneNumberFull);
   assignIfPresent(childInformation, 'state', record.StateProvince);
-  assignIfPresent(childInformation, 'city', record.CityName);
   assignIfPresent(childInformation, 'county', record.CountyName);
   assignIfPresent(
     childInformation,
@@ -175,7 +241,7 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
   assignIfPresent(childInformation, 'race', record['Caller Demographics - Race']);
   assignIfPresent(
     childInformation,
-    'referralTo988',
+    'referral988',
     record['Caller Demographics - 988 referral'],
   );
   assignIfPresent(
@@ -190,7 +256,7 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
   // separate iCarol fields depending on whether it was a crisis call.
   assignIfPresent(
     caseInformation,
-    'callerSatisfied',
+    'wasTheCallerSatisfiedWithTheSupportProvided',
     parseICarolBoolean(
       record['Follow up Outcome - Was the caller satisfied?'] ||
         record['Non-Crisis Response - Was Caller Satisfied?'],
@@ -198,7 +264,7 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
   );
   assignIfPresent(
     caseInformation,
-    'permissionToCallBack',
+    'doWeHaveTheirPermissionToCallBack',
     parseICarolBoolean(record['Incoming Call Information - Do you want a call back']),
   );
   assignIfPresent(
@@ -210,14 +276,13 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
       ],
     ),
   );
-  assignIfPresent(
-    caseInformation,
-    'typeOfResourceProvided',
-    record['Referrals - Type of Resource'],
-  );
+  assignIfPresent(caseInformation, 'referrals', record['Referrals - Type of Resource']);
+
+  const { callType, isCrisis } = mapCallType(record);
+  assignIfPresent(caseInformation, 'isCrisis', isCrisis);
 
   const rawJson: ContactRawJson = {
-    callType: record['Call Information - Call Type'] || '',
+    callType,
     childInformation,
     caseInformation,
     categories: mapCategories(
@@ -227,15 +292,17 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
     ),
   };
 
-  const callLengthMinutes = Number.parseInt(record.CallLength, 10);
-
   return {
     taskId: `WT_iCarol_${record.CallReportNum}`,
     // Imported iCarol contacts are phone calls.
     channel: 'voice',
     timeOfContact: record.CallDateAndTimeStart || undefined,
-    // iCarol records the call length in minutes, Aselo stores it in seconds.
-    conversationDuration: Number.isNaN(callLengthMinutes) ? 0 : callLengthMinutes * 60,
+    // Aselo stores the conversation duration in seconds, derived from the iCarol
+    // call start and end timestamps.
+    conversationDuration: calculateConversationDuration(
+      record.CallDateAndTimeStart,
+      record.CallDateAndTimeEnd,
+    ),
     rawJson,
   };
 };
