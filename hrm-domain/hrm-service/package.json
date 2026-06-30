@@ -17,6 +17,7 @@
     "docker:compose:test:up": "docker compose -f ../../test-support/docker-compose-service-test.yml up -d",
     "docker:compose:test:down": "docker compose -f ../../test-support/docker-compose-service-test.yml down",
     "test": "run-s test:service",
+    "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules AWS_REGION=us-east-1 jest scripts/",
     "test:run:watch": "cross-env AWS_REGION=us-east-1 CI=true TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxxxxx RDS_PASSWORD=postgres jest --maxWorkers=1 --forceExit --watch",
     "test:service": "cross-env POSTGRES_PORT=5433 run-s -c docker:compose:test:up test:service:ci:migrate test:service:run docker:compose:test:down",
     "test:service:run": "cross-env NODE_OPTIONS=--experimental-vm-modules AWS_REGION=us-east-1 SSM_ENDPOINT=http://mock-ssm/ SNS_ENDPOINT=http://mock-sns/ jest --verbose --maxWorkers=1 --forceExit --coverage service-tests",
