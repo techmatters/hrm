@@ -15,11 +15,13 @@
  */
 import {
   ICarolContactRecord,
+  WorkerSidsByName,
   calculateConversationDuration,
   mapCategories,
   mapContact,
   parseICarolBoolean,
   parseS3Uri,
+  resolveWorkerSid,
 } from './contactMapper';
 
 /**
@@ -287,6 +289,55 @@ describe('mapContact', () => {
     });
   });
 
+  describe('worker attribution', () => {
+    const workerSidsByName: WorkerSidsByName = new Map([
+      ['Ada Lovelace', 'WK00000000000000000000000000000001'],
+      ['Alan Turing', 'WK00000000000000000000000000000002'],
+    ]);
+
+    test('attributes the contact to the worker matching PhoneWorkerName', () => {
+      const contact = mapContact(
+        buildRecord({ PhoneWorkerName: 'Ada Lovelace' }),
+        workerSidsByName,
+      );
+
+      expect(contact.twilioWorkerId).toBe('WK00000000000000000000000000000001');
+      expect(contact.createdBy).toBe('WK00000000000000000000000000000001');
+      expect(contact.rawJson!.contactlessTask).toEqual({
+        channel: 'voice',
+        createdOnBehalfOf: 'WK00000000000000000000000000000001',
+      });
+    });
+
+    test('matches PhoneWorkerName ignoring surrounding whitespace', () => {
+      const contact = mapContact(
+        buildRecord({ PhoneWorkerName: '  Alan Turing  ' }),
+        workerSidsByName,
+      );
+
+      expect(contact.twilioWorkerId).toBe('WK00000000000000000000000000000002');
+    });
+
+    test('omits worker attribution when PhoneWorkerName has no matching worker', () => {
+      const contact = mapContact(
+        buildRecord({ PhoneWorkerName: 'Unknown Person' }),
+        workerSidsByName,
+      );
+
+      expect(contact.twilioWorkerId).toBeUndefined();
+      expect(contact.createdBy).toBeUndefined();
+      expect(contact.rawJson!.contactlessTask).toBeUndefined();
+    });
+
+    test('omits worker attribution when no worker lookup is provided', () => {
+      const contact = mapContact(buildRecord({ PhoneWorkerName: 'Ada Lovelace' }));
+
+      expect(contact.twilioWorkerId).toBeUndefined();
+      expect(contact.createdBy).toBeUndefined();
+      expect(contact.rawJson!.contactlessTask).toBeUndefined();
+    });
+  });
+
   test('builds the task id and marks the contact as a voice channel', () => {
     const contact = mapContact(buildRecord({ CallReportNum: '12345' }));
     expect(contact.taskId).toBe('WT_iCarol_12345');
@@ -350,5 +401,47 @@ describe('calculateConversationDuration', () => {
     expect(
       calculateConversationDuration('2026-05-06 15:34:00', '2026-05-06 15:22:00'),
     ).toBe(0);
+  });
+});
+
+describe('resolveWorkerSid', () => {
+  const workerSidsByName: WorkerSidsByName = new Map([
+    ['Ada Lovelace', 'WK00000000000000000000000000000001'],
+  ]);
+
+  test('returns the SID for a matching PhoneWorkerName', () => {
+    expect(
+      resolveWorkerSid(
+        buildRecord({ PhoneWorkerName: 'Ada Lovelace' }),
+        workerSidsByName,
+      ),
+    ).toBe('WK00000000000000000000000000000001');
+  });
+
+  test('trims surrounding whitespace before matching', () => {
+    expect(
+      resolveWorkerSid(
+        buildRecord({ PhoneWorkerName: ' Ada Lovelace ' }),
+        workerSidsByName,
+      ),
+    ).toBe('WK00000000000000000000000000000001');
+  });
+
+  test('returns undefined when there is no matching worker', () => {
+    expect(
+      resolveWorkerSid(buildRecord({ PhoneWorkerName: 'Nobody' }), workerSidsByName),
+    ).toBeUndefined();
+  });
+
+  test('returns undefined when PhoneWorkerName is blank', () => {
+    expect(resolveWorkerSid(buildRecord({ PhoneWorkerName: '' }), workerSidsByName)).toBe(
+      undefined,
+    );
+  });
+
+  test('returns undefined when no lookup is provided', () => {
+    expect(
+      resolveWorkerSid(buildRecord({ PhoneWorkerName: 'Ada Lovelace' })),
+    ).toBeUndefined();
   });
 });

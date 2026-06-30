@@ -14,6 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import type { ContactRawJson, NewContactRecord } from '@tech-matters/hrm-types';
+import type { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
+
+/**
+ * Maps a Twilio worker's full name (as it appears in iCarol's "PhoneWorkerName"
+ * column) to that worker's Twilio SID, so imported contacts can be attributed to
+ * the counsellor that handled the call.
+ */
+export type WorkerSidsByName = Map<string, WorkerSID>;
 
 /**
  * Shape of a single row in an iCarol "CallReports" CSV export. The property
@@ -212,12 +220,34 @@ export const mapCallType = (
 };
 
 /**
+ * Resolves the Twilio worker SID for an iCarol record from its "PhoneWorkerName"
+ * (the counsellor's full name) using the supplied name -> SID lookup. Returns
+ * undefined when the worker name is blank or has no matching Twilio worker.
+ */
+export const resolveWorkerSid = (
+  record: ICarolContactRecord,
+  workerSidsByName?: WorkerSidsByName,
+): WorkerSID | undefined => {
+  const name = (record.PhoneWorkerName ?? '').trim();
+  if (!name || !workerSidsByName) return undefined;
+  return workerSidsByName.get(name);
+};
+
+/**
  * Maps a single iCarol CSV record onto the Aselo contact payload. Per the PRN
  * field mapping spreadsheet, the "Contact > Support Seeker" fields are mapped
  * onto rawJson.childInformation and the "Contact > Summary" fields onto
  * rawJson.caseInformation.
+ *
+ * When the record's "PhoneWorkerName" resolves to a Twilio worker SID (via the
+ * optional name -> SID lookup), the contact is attributed to that counsellor:
+ * the worker SID populates `twilioWorkerId`, `createdBy` and the
+ * `contactlessTask.createdOnBehalfOf` field in rawJson.
  */
-export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecord> => {
+export const mapContact = (
+  record: ICarolContactRecord,
+  workerSidsByName?: WorkerSidsByName,
+): Partial<NewContactRecord> => {
   // Contact > Support Seeker -> rawJson.childInformation
   const childInformation: ContactRawJson['childInformation'] = {};
   assignIfPresent(childInformation, 'friendlyName', record.CallerName);
@@ -284,6 +314,11 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
   const { callType, isCrisis } = mapCallType(record);
   assignIfPresent(caseInformation, 'isCrisis', isCrisis);
 
+  // Attribute the contact to the counsellor that handled the call, looked up by
+  // PhoneWorkerName. Imported iCarol contacts are treated as offline/contactless
+  // contacts, so the worker is also recorded as createdOnBehalfOf.
+  const workerSid = resolveWorkerSid(record, workerSidsByName);
+
   const rawJson: ContactRawJson = {
     callType,
     childInformation,
@@ -294,6 +329,10 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
       ],
     ),
   };
+
+  if (workerSid) {
+    rawJson.contactlessTask = { channel: 'voice', createdOnBehalfOf: workerSid };
+  }
 
   return {
     taskId: `WT_iCarol_${record.CallReportNum}`,
@@ -306,6 +345,12 @@ export const mapContact = (record: ICarolContactRecord): Partial<NewContactRecor
       record.CallDateAndTimeStart,
       record.CallDateAndTimeEnd,
     ),
+    ...(workerSid
+      ? {
+          twilioWorkerId: workerSid,
+          createdBy: workerSid as TwilioUserIdentifier,
+        }
+      : {}),
     rawJson,
   };
 };
