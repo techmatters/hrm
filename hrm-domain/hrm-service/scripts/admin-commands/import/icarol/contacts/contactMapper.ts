@@ -337,7 +337,7 @@ export const mapContact = (
   return {
     taskId: `WT_iCarol_${record.CallReportNum}`,
     // Imported iCarol contacts are phone calls.
-    channel: 'voice',
+    channel: 'default',
     timeOfContact: record.CallDateAndTimeStart || undefined,
     // Aselo stores the conversation duration in seconds, derived from the iCarol
     // call start and end timestamps.
