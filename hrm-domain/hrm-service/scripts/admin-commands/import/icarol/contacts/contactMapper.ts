@@ -93,6 +93,9 @@ export const CALL_TYPE_FLAG_MAP: [field: string, callType: string][] = [
   ['WasRealCall', DATA_CALL_TYPE],
   ['WasSilentCall', 'Silent'],
   ['WasHangup', 'Hang up'],
+  // The double space in 'Wrong  Number' is intentional: it matches the label in
+  // the PRN CallTypeButtons form definition verbatim, so imported contacts store
+  // the same callType value as contacts created through the Flex UI.
   ['WasWrongNumber', 'Wrong  Number'],
   ['WasPrankCall', 'Prank Call'],
   ['WasSexCall', 'Sexual Gratifier'],
