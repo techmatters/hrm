@@ -55,6 +55,12 @@ export const builder = {
     demandOption: true,
     type: 'string',
   },
+  f: {
+    alias: 'fallback-worker-sid',
+    describe: 'Twilio worker SID to use when PhoneWorkerName lookup fails',
+    demandOption: true,
+    type: 'string',
+  },
 };
 
 /**
@@ -100,7 +106,13 @@ const buildWorkerSidMap = async ({
   return workerSidsByName;
 };
 
-export const handler = async ({ region, environment, accountSid, location }) => {
+export const handler = async ({
+  region,
+  environment,
+  accountSid,
+  location,
+  fallbackWorkerSid,
+}) => {
   try {
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
@@ -142,12 +154,20 @@ export const handler = async ({ region, environment, accountSid, location }) => 
 
     for (const csvRecord of csvRecords) {
       const workerName = (csvRecord.PhoneWorkerName ?? '').trim();
-      if (workerName && !resolveWorkerSid(csvRecord, workerSidsByName)) {
+      const resolvedWorkerSid = workerName
+        ? resolveWorkerSid(csvRecord, workerSidsByName)
+        : undefined;
+
+      // If PhoneWorkerName is present but doesn't resolve to a worker, log a
+      // warning and fall back to the default worker SID.
+      const workerSid = resolvedWorkerSid || (fallbackWorkerSid as WorkerSID);
+      if (workerName && !resolvedWorkerSid) {
         console.warn(
-          `No Twilio worker found for PhoneWorkerName "${workerName}" (call report ${csvRecord.CallReportNum}); contact will not be attributed to a worker`,
+          `No Twilio worker found for PhoneWorkerName "${workerName}" (call report ${csvRecord.CallReportNum}); falling back to default worker ${fallbackWorkerSid}`,
         );
       }
-      const contact = mapContact(csvRecord, workerSidsByName);
+
+      const contact = mapContact(csvRecord, workerSid);
       const response = await fetch(url, {
         method: 'POST',
         headers: {

@@ -239,14 +239,13 @@ export const resolveWorkerSid = (
  * onto rawJson.childInformation and the "Contact > Summary" fields onto
  * rawJson.caseInformation.
  *
- * When the record's "PhoneWorkerName" resolves to a Twilio worker SID (via the
- * optional name -> SID lookup), the contact is attributed to that counsellor:
- * the worker SID populates `twilioWorkerId`, `createdBy` and the
- * `contactlessTask.createdOnBehalfOf` field in rawJson.
+ * The contact is attributed to the provided worker SID: the worker SID populates
+ * `twilioWorkerId`, `createdBy` and the `contactlessTask.createdOnBehalfOf`
+ * field in rawJson.
  */
 export const mapContact = (
   record: ICarolContactRecord,
-  workerSidsByName?: WorkerSidsByName,
+  workerSid: WorkerSID,
 ): Partial<NewContactRecord> => {
   // Contact > Support Seeker -> rawJson.childInformation
   const childInformation: ContactRawJson['childInformation'] = {};
@@ -314,11 +313,6 @@ export const mapContact = (
   const { callType, isCrisis } = mapCallType(record);
   assignIfPresent(caseInformation, 'isCrisis', isCrisis);
 
-  // Attribute the contact to the counsellor that handled the call, looked up by
-  // PhoneWorkerName. Imported iCarol contacts are treated as offline/contactless
-  // contacts, so the worker is also recorded as createdOnBehalfOf.
-  const workerSid = resolveWorkerSid(record, workerSidsByName);
-
   const rawJson: ContactRawJson = {
     callType,
     childInformation,
@@ -328,11 +322,8 @@ export const mapContact = (
         'The Eight Dimensions of Wellness - Eight Dimensions of Wellness - Check all that apply'
       ],
     ),
+    contactlessTask: { channel: 'voice', createdOnBehalfOf: workerSid },
   };
-
-  if (workerSid) {
-    rawJson.contactlessTask = { channel: 'voice', createdOnBehalfOf: workerSid };
-  }
 
   return {
     taskId: `WT_iCarol_${record.CallReportNum}`,
@@ -345,12 +336,8 @@ export const mapContact = (
       record.CallDateAndTimeStart,
       record.CallDateAndTimeEnd,
     ),
-    ...(workerSid
-      ? {
-          twilioWorkerId: workerSid,
-          createdBy: workerSid as TwilioUserIdentifier,
-        }
-      : {}),
+    twilioWorkerId: workerSid,
+    createdBy: workerSid as TwilioUserIdentifier,
     rawJson,
   };
 };

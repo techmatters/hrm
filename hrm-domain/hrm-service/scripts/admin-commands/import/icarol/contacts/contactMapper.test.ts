@@ -150,6 +150,8 @@ describe('mapCategories', () => {
 });
 
 describe('mapContact', () => {
+  const defaultWorkerSid = 'WK00000000000000000000000000000099';
+
   test('maps support seeker fields onto childInformation', () => {
     const { rawJson } = mapContact(
       buildRecord({
@@ -167,6 +169,7 @@ describe('mapContact', () => {
         'Caller Demographics - 988 referral': 'Yes',
         'Incoming Call Information - How did you hear about the Warmline?': 'Friend',
       }),
+      defaultWorkerSid,
     );
 
     expect(rawJson!.childInformation).toEqual({
@@ -194,6 +197,7 @@ describe('mapContact', () => {
           'Yes',
         'Referrals - Type of Resource': 'Housing',
       }),
+      defaultWorkerSid,
     );
 
     expect(rawJson!.caseInformation).toEqual({
@@ -209,6 +213,7 @@ describe('mapContact', () => {
       buildRecord({
         'Non-Crisis Response - Was Caller Satisfied?': 'No',
       }),
+      defaultWorkerSid,
     );
 
     expect(rawJson!.caseInformation.wasTheCallerSatisfiedWithTheSupportProvided).toBe(
@@ -217,7 +222,10 @@ describe('mapContact', () => {
   });
 
   test('omits blank columns rather than populating empty values', () => {
-    const { rawJson } = mapContact(buildRecord({ CallerName: 'Jane Doe' }));
+    const { rawJson } = mapContact(
+      buildRecord({ CallerName: 'Jane Doe' }),
+      defaultWorkerSid,
+    );
 
     expect(rawJson!.childInformation).toEqual({ friendlyName: 'Jane Doe' });
     expect(rawJson!.caseInformation).toEqual({});
@@ -229,6 +237,7 @@ describe('mapContact', () => {
         'The Eight Dimensions of Wellness - Eight Dimensions of Wellness - Check all that apply':
           'Financial;Physical',
       }),
+      defaultWorkerSid,
     );
 
     expect(rawJson!.categories).toEqual({
@@ -241,6 +250,7 @@ describe('mapContact', () => {
     test('maps a "Crisis" call to the data callType and records isCrisis true', () => {
       const { rawJson } = mapContact(
         buildRecord({ 'Call Information - Call Type': 'Crisis' }),
+        defaultWorkerSid,
       );
       expect(rawJson!.callType).toBe('Child calling about self');
       expect(rawJson!.caseInformation.isCrisis).toBe(true);
@@ -249,108 +259,83 @@ describe('mapContact', () => {
     test('maps a "Non-Crisis" call to the data callType and records isCrisis false', () => {
       const { rawJson } = mapContact(
         buildRecord({ 'Call Information - Call Type': 'Non-Crisis' }),
+        defaultWorkerSid,
       );
       expect(rawJson!.callType).toBe('Child calling about self');
       expect(rawJson!.caseInformation.isCrisis).toBe(false);
     });
 
     test('infers a non-data callType from the boolean flags when call type is empty', () => {
-      expect(mapContact(buildRecord({ WasHangup: 'Yes' })).rawJson!.callType).toBe(
-        'Hang up',
-      );
-      expect(mapContact(buildRecord({ WasSilentCall: 'Yes' })).rawJson!.callType).toBe(
-        'Silent',
-      );
-      expect(mapContact(buildRecord({ WasWrongNumber: 'Yes' })).rawJson!.callType).toBe(
-        'Wrong  Number',
-      );
-      expect(mapContact(buildRecord({ WasPrankCall: 'Yes' })).rawJson!.callType).toBe(
-        'Prank Call',
-      );
-      expect(mapContact(buildRecord({ WasSexCall: 'Yes' })).rawJson!.callType).toBe(
-        'Sexual Gratifier',
-      );
+      expect(
+        mapContact(buildRecord({ WasHangup: 'Yes' }), defaultWorkerSid).rawJson!.callType,
+      ).toBe('Hang up');
+      expect(
+        mapContact(buildRecord({ WasSilentCall: 'Yes' }), defaultWorkerSid).rawJson!
+          .callType,
+      ).toBe('Silent');
+      expect(
+        mapContact(buildRecord({ WasWrongNumber: 'Yes' }), defaultWorkerSid).rawJson!
+          .callType,
+      ).toBe('Wrong  Number');
+      expect(
+        mapContact(buildRecord({ WasPrankCall: 'Yes' }), defaultWorkerSid).rawJson!
+          .callType,
+      ).toBe('Prank Call');
+      expect(
+        mapContact(buildRecord({ WasSexCall: 'Yes' }), defaultWorkerSid).rawJson!
+          .callType,
+      ).toBe('Sexual Gratifier');
     });
 
     test('infers the data callType when WasRealCall is set but call type is empty', () => {
-      expect(mapContact(buildRecord({ WasRealCall: 'Yes' })).rawJson!.callType).toBe(
-        'Child calling about self',
-      );
+      expect(
+        mapContact(buildRecord({ WasRealCall: 'Yes' }), defaultWorkerSid).rawJson!
+          .callType,
+      ).toBe('Child calling about self');
     });
 
     test('does not record isCrisis when inferring from boolean flags', () => {
       expect(
-        mapContact(buildRecord({ WasHangup: 'Yes' })).rawJson!.caseInformation,
+        mapContact(buildRecord({ WasHangup: 'Yes' }), defaultWorkerSid).rawJson!
+          .caseInformation,
       ).not.toHaveProperty('isCrisis');
     });
 
     test('falls back to an empty callType when nothing is set', () => {
-      expect(mapContact(buildRecord()).rawJson!.callType).toBe('');
+      expect(mapContact(buildRecord(), defaultWorkerSid).rawJson!.callType).toBe('');
     });
   });
 
   describe('worker attribution', () => {
-    const workerSidsByName: WorkerSidsByName = new Map([
-      ['Ada Lovelace', 'WK00000000000000000000000000000001'],
-      ['Alan Turing', 'WK00000000000000000000000000000002'],
-    ]);
+    test('attributes the contact to the provided worker SID', () => {
+      const workerSid = 'WK00000000000000000000000000000001';
+      const contact = mapContact(buildRecord(), workerSid);
 
-    test('attributes the contact to the worker matching PhoneWorkerName', () => {
-      const contact = mapContact(
-        buildRecord({ PhoneWorkerName: 'Ada Lovelace' }),
-        workerSidsByName,
-      );
-
-      expect(contact.twilioWorkerId).toBe('WK00000000000000000000000000000001');
-      expect(contact.createdBy).toBe('WK00000000000000000000000000000001');
+      expect(contact.twilioWorkerId).toBe(workerSid);
+      expect(contact.createdBy).toBe(workerSid);
       expect(contact.rawJson!.contactlessTask).toEqual({
         channel: 'voice',
-        createdOnBehalfOf: 'WK00000000000000000000000000000001',
+        createdOnBehalfOf: workerSid,
       });
-    });
-
-    test('matches PhoneWorkerName ignoring surrounding whitespace', () => {
-      const contact = mapContact(
-        buildRecord({ PhoneWorkerName: '  Alan Turing  ' }),
-        workerSidsByName,
-      );
-
-      expect(contact.twilioWorkerId).toBe('WK00000000000000000000000000000002');
-    });
-
-    test('omits worker attribution when PhoneWorkerName has no matching worker', () => {
-      const contact = mapContact(
-        buildRecord({ PhoneWorkerName: 'Unknown Person' }),
-        workerSidsByName,
-      );
-
-      expect(contact.twilioWorkerId).toBeUndefined();
-      expect(contact.createdBy).toBeUndefined();
-      expect(contact.rawJson!.contactlessTask).toBeUndefined();
-    });
-
-    test('omits worker attribution when no worker lookup is provided', () => {
-      const contact = mapContact(buildRecord({ PhoneWorkerName: 'Ada Lovelace' }));
-
-      expect(contact.twilioWorkerId).toBeUndefined();
-      expect(contact.createdBy).toBeUndefined();
-      expect(contact.rawJson!.contactlessTask).toBeUndefined();
     });
   });
 
   test('builds the task id and marks the contact as a voice channel', () => {
-    const contact = mapContact(buildRecord({ CallReportNum: '12345' }));
+    const contact = mapContact(buildRecord({ CallReportNum: '12345' }), defaultWorkerSid);
     expect(contact.taskId).toBe('WT_iCarol_12345');
-    expect(contact.channel).toBe('voice');
+    expect(contact.channel).toBe('default');
   });
 
   test('passes through the time of contact, using undefined when blank', () => {
     expect(
-      mapContact(buildRecord({ CallDateAndTimeStart: '2024-01-01T00:00:00Z' }))
-        .timeOfContact,
+      mapContact(
+        buildRecord({ CallDateAndTimeStart: '2024-01-01T00:00:00Z' }),
+        defaultWorkerSid,
+      ).timeOfContact,
     ).toBe('2024-01-01T00:00:00Z');
     expect(
-      mapContact(buildRecord({ CallDateAndTimeStart: '' })).timeOfContact,
+      mapContact(buildRecord({ CallDateAndTimeStart: '' }), defaultWorkerSid)
+        .timeOfContact,
     ).toBeUndefined();
   });
 
@@ -361,14 +346,17 @@ describe('mapContact', () => {
           CallDateAndTimeStart: '2026-05-06 15:22:00',
           CallDateAndTimeEnd: '2026-05-06 15:34:00',
         }),
+        defaultWorkerSid,
       ).conversationDuration,
     ).toBe(720);
   });
 
   test('defaults the conversation duration to 0 when timestamps are missing or invalid', () => {
     expect(
-      mapContact(buildRecord({ CallDateAndTimeStart: '2026-05-06 15:22:00' }))
-        .conversationDuration,
+      mapContact(
+        buildRecord({ CallDateAndTimeStart: '2026-05-06 15:22:00' }),
+        defaultWorkerSid,
+      ).conversationDuration,
     ).toBe(0);
     expect(
       mapContact(
@@ -376,6 +364,7 @@ describe('mapContact', () => {
           CallDateAndTimeStart: 'not a date',
           CallDateAndTimeEnd: '2026-05-06 15:34:00',
         }),
+        defaultWorkerSid,
       ).conversationDuration,
     ).toBe(0);
   });
