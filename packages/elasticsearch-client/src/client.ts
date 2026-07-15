@@ -34,7 +34,7 @@ import getAccountSid from './getAccountSid';
 import { search, SearchExtraParams } from './search';
 import { suggest, SuggestExtraParams } from './suggest';
 import { IndexConfiguration, SearchConfiguration } from './config';
-import { IndicesRefreshResponse } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import deleteDocument, {
   DeleteDocumentExtraParams,
   DeleteDocumentResponse,
@@ -108,7 +108,7 @@ export type IndexClient<T> = {
   updateDocument: (args: UpdateDocumentExtraParams<T>) => Promise<UpdateDocumentResponse>;
   updateScript: (args: UpdateScriptExtraParams<T>) => Promise<UpdateDocumentResponse>;
   deleteDocument: (args: DeleteDocumentExtraParams) => Promise<DeleteDocumentResponse>;
-  refreshIndex: () => Promise<IndicesRefreshResponse>;
+  refreshIndex: () => Promise<estypes.IndicesRefreshResponse>;
   executeBulk: (args: ExecuteBulkExtraParams<T>) => Promise<ExecuteBulkResponse>;
   createIndex: (args: CreateIndexExtraParams) => Promise<CreateIndexResponse>;
   deleteIndex: () => Promise<DeleteIndexResponse>;

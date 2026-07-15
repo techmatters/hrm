@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { SuggestParameters } from '@tech-matters/elasticsearch-client';
 import {
   getMappingFieldNamesByType,
@@ -25,8 +25,8 @@ import {
 // makes it a bit tricky to do that right now.
 export const generateSuggestQuery =
   (mappings: ResourceIndexDocumentMappings) =>
-  ({ prefix, size }: SuggestParameters): SearchSuggester => {
-    const suggestQuery: SearchSuggester = {};
+  ({ prefix, size }: SuggestParameters): estypes.SearchSuggester => {
+    const suggestQuery: estypes.SearchSuggester = {};
 
     getMappingFieldNamesByType(mappings)('completion').forEach((fieldName: string) => {
       suggestQuery[fieldName] = {

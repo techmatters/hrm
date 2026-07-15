@@ -23,7 +23,7 @@
  * see: https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html
  */
 
-import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import {
   convertMappingFieldsToProperties,
   ResourceIndexDocumentMappings,
@@ -35,7 +35,7 @@ import {
  */
 export const getCreateIndexParams =
   (mappings: ResourceIndexDocumentMappings) =>
-  (index: string): IndicesCreateRequest => {
+  (index: string): estypes.IndicesCreateRequest => {
     const { languageFields } = mappings;
 
     return {

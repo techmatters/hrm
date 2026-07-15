@@ -16,12 +16,12 @@
 
 import { isTimeBasedCondition, type TKCondition } from '../rulesMap';
 import type { PermissionFilterGenerators, TKindPermissionTarget } from './types';
-import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { FILTER_ALL_CLAUSE } from '@tech-matters/hrm-search-config';
 
 export type ConditionWhereClausesES<TKind extends TKindPermissionTarget> =
-  PermissionFilterGenerators<TKind, QueryDslQueryContainer>;
+  PermissionFilterGenerators<TKind, estypes.QueryDslQueryContainer>;
 
 export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
   conditionWhereClauses,
@@ -31,7 +31,7 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
   listConditionSets: TKCondition<TKind>[][];
   conditionWhereClauses: ConditionWhereClausesES<TKind>;
   user: TwilioUser;
-}): QueryDslQueryContainer[][] => {
+}): estypes.QueryDslQueryContainer[][] => {
   type ListCondition = TKCondition<TKind>;
   const ALL_OR_NOTHING_CONDITIONS: ListCondition[] = [
     'everyone',
@@ -43,7 +43,7 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
     'everyone' | 'isSupervisor' | 'nobody'
   >;
 
-  const conditionSetClauses: QueryDslQueryContainer[][] = [];
+  const conditionSetClauses: estypes.QueryDslQueryContainer[][] = [];
 
   const conditionsThatAllowAll: ListCondition[] = user.isSupervisor
     ? ['everyone', 'isSupervisor']
@@ -80,7 +80,7 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
       ) as WhereClauseGeneratingCondition[];
 
     if (relevantConditions.length) {
-      const conditionClauses: QueryDslQueryContainer[] = relevantConditions.map(
+      const conditionClauses: estypes.QueryDslQueryContainer[] = relevantConditions.map(
         condition => {
           if (isTimeBasedCondition(condition)) {
             return conditionWhereClauses.timeBasedCondition(condition);

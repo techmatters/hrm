@@ -14,10 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  QueryDslQueryContainer,
-  SearchSuggester,
-} from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { SuggestParameters } from '@tech-matters/elasticsearch-client';
 
 export type FilterValue = boolean | number | string | Date | string[];
@@ -46,7 +43,7 @@ type RangeFilterMapping = {
 type CustomFilterMapping = {
   type: 'custom';
   targetField?: string;
-  filterGenerator: (value: FilterValue) => QueryDslQueryContainer;
+  filterGenerator: (value: FilterValue) => estypes.QueryDslQueryContainer;
 };
 
 type FilterMapping = TermFilterMapping | RangeFilterMapping | CustomFilterMapping;
@@ -54,7 +51,9 @@ type FilterMapping = TermFilterMapping | RangeFilterMapping | CustomFilterMappin
 export type ResourcesSearchConfiguration = {
   searchFieldBoosts: Record<string, number>;
   filterMappings: Record<string, FilterMapping>;
-  generateSuggestQuery?: (suggestParameters: SuggestParameters) => SearchSuggester;
+  generateSuggestQuery?: (
+    suggestParameters: SuggestParameters,
+  ) => estypes.SearchSuggester;
 };
 
 export const getQuerySearchFields = (

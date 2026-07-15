@@ -13,14 +13,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import {
-  SearchRequest as ESSearchRequest,
-  SearchTotalHits as ESSearchTotalHits,
-} from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { Client } from '@elastic/elasticsearch';
 import { SearchConfiguration } from './config';
 
-export type SearchQuery = ESSearchRequest;
+export type SearchQuery = estypes.SearchRequest;
 
 export type SearchExtraParams<T> = {
   searchParameters: T;
@@ -43,7 +40,7 @@ export type SearchResponse = {
   items: SearchResponseItem[];
 };
 
-type SearchTotalHits = ESSearchTotalHits;
+type SearchTotalHits = estypes.SearchTotalHits;
 
 /**
  * f track_total_hits is false, Elasticsearch returns an approximate count of the total
@@ -88,7 +85,7 @@ export const search = async <T>({
     total,
     items: hits.hits.map(hit => ({
       id: hit._id,
-      name: hit.fields?.name,
+      name: hit.fields?.name || '',
       highlights: hit.highlight,
     })),
   };

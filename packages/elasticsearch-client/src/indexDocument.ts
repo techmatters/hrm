@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { IndexResponse } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { PassThroughConfig } from './client';
 import createIndex from './createIndex';
 import { newErr, newOk, TResult } from '@tech-matters/types';
@@ -25,7 +25,7 @@ export type IndexDocumentExtraParams<T> = {
 };
 
 export type IndexDocumentParams<T> = PassThroughConfig<T> & IndexDocumentExtraParams<T>;
-export type IndexDocumentResponse = TResult<'IndexDocumentError', IndexResponse>;
+export type IndexDocumentResponse = TResult<'IndexDocumentError', estypes.IndexResponse>;
 
 export const indexDocument = async <T>({
   client,

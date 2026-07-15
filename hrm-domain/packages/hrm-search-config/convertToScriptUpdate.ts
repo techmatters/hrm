@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import type { Script } from '@elastic/elasticsearch/lib/api/types';
+import type { estypes } from '@elastic/elasticsearch';
 import { CreateIndexConvertedDocument } from '@tech-matters/elasticsearch-client';
 import { DeleteContactMessage, IndexPayload, IndexPayloadContact } from './payload';
 import {
@@ -27,7 +27,7 @@ const convertContactToCaseScriptUpdate = (
   payload: IndexPayloadContact | DeleteContactMessage,
 ): {
   documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
-  scriptUpdate: Script;
+  scriptUpdate: estypes.Script;
 } => {
   switch (payload.operation) {
     case 'create':
@@ -42,7 +42,7 @@ const convertContactToCaseScriptUpdate = (
         contacts: [contactDocument],
       };
 
-      const scriptUpdate: Script = {
+      const scriptUpdate: estypes.Script = {
         source: `
           def replaceContact(Map newContact, Map _source) {
             if (_source.containsKey('contacts') && _source.contacts != null) {
@@ -65,7 +65,7 @@ const convertContactToCaseScriptUpdate = (
     case 'delete': {
       // Compatibility with old messages that don't have a message.id field, can be removed once HRM v1.26.0 is deployed
       const contactId = payload.id ?? (payload as any).contact?.id;
-      const scriptUpdate: Script = {
+      const scriptUpdate: estypes.Script = {
         source:
           'def removeContact(String contactId, List contacts) { contacts.removeIf(contact -> contact.id == contactId); } removeContact(params.contactId, ctx._source.contacts);',
         params: {
@@ -82,7 +82,7 @@ const convertToCaseScriptUpdate = (
   payload: IndexPayload,
 ): {
   documentUpdate: CreateIndexConvertedDocument<CaseDocument>;
-  scriptUpdate: Script;
+  scriptUpdate: estypes.Script;
 } => {
   if (payload.entityType === 'contact') {
     return convertContactToCaseScriptUpdate(payload);
@@ -98,7 +98,7 @@ export const convertToScriptUpdate = (
   indexName: string,
 ): {
   documentUpdate: CreateIndexConvertedDocument<ContactDocument | CaseDocument>;
-  scriptUpdate: Script;
+  scriptUpdate: estypes.Script;
 } => {
   if (indexName.endsWith(HRM_CASES_INDEX_TYPE)) {
     return convertToCaseScriptUpdate(payload);

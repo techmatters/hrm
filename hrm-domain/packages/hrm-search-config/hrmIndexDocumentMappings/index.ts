@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { MappingProperty } from '@elastic/elasticsearch/lib/api/types';
+import type { estypes } from '@elastic/elasticsearch';
 import {
   caseMapping,
   casePathToContacts,
@@ -30,28 +30,29 @@ export {
   casePathToSections,
 } from './mappings';
 
-export type MappingToDocument<T extends NonNullable<Record<string, MappingProperty>>> =
-  Partial<{
-    [k in keyof T]: k extends string
-      ? T[k]['type'] extends 'keyword'
-        ? string | null
-        : T[k]['type'] extends 'text'
-        ? string | null
-        : T[k]['type'] extends 'integer'
-        ? number | null
-        : T[k]['type'] extends 'boolean'
-        ? boolean | null
-        : T[k]['type'] extends 'date'
-        ? string | null
-        : T[k]['type'] extends 'nested'
-        ? T[k] extends {
-            properties: Record<string, MappingProperty>;
-          }
-          ? MappingToDocument<T[k]['properties']>[] | null
-          : never
-        : never // forbid non-used types to force proper implementation
-      : never;
-  }>;
+export type MappingToDocument<
+  T extends NonNullable<Record<string, estypes.MappingProperty>>,
+> = Partial<{
+  [k in keyof T]: k extends string
+    ? T[k]['type'] extends 'keyword'
+      ? string | null
+      : T[k]['type'] extends 'text'
+      ? string | null
+      : T[k]['type'] extends 'integer'
+      ? number | null
+      : T[k]['type'] extends 'boolean'
+      ? boolean | null
+      : T[k]['type'] extends 'date'
+      ? string | null
+      : T[k]['type'] extends 'nested'
+      ? T[k] extends {
+          properties: Record<string, estypes.MappingProperty>;
+        }
+        ? MappingToDocument<T[k]['properties']>[] | null
+        : never
+      : never // forbid non-used types to force proper implementation
+    : never;
+}>;
 
 export type ContactDocument = MappingToDocument<typeof contactMapping>;
 export type CaseSectionDocument = MappingToDocument<typeof caseSectionMapping>;

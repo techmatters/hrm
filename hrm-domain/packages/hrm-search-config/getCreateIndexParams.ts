@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
+import type { estypes } from '@elastic/elasticsearch';
 
 import {
   caseMapping,
@@ -23,7 +23,7 @@ import {
   isHrmContactsIndex,
 } from './hrmIndexDocumentMappings';
 
-const getCreateHrmContactsIndexParams = (index: string): IndicesCreateRequest => {
+const getCreateHrmContactsIndexParams = (index: string): estypes.IndicesCreateRequest => {
   return {
     index,
     // settings: {
@@ -42,7 +42,7 @@ const getCreateHrmContactsIndexParams = (index: string): IndicesCreateRequest =>
   };
 };
 
-const getCreateHrmCaseIndexParams = (index: string): IndicesCreateRequest => {
+const getCreateHrmCaseIndexParams = (index: string): estypes.IndicesCreateRequest => {
   return {
     index,
     // settings: {
@@ -65,7 +65,7 @@ const getCreateHrmCaseIndexParams = (index: string): IndicesCreateRequest => {
  * This function is used to make a request to create the resources search index in ES.
  * @param index
  */
-export const getCreateIndexParams = (index: string): IndicesCreateRequest => {
+export const getCreateIndexParams = (index: string): estypes.IndicesCreateRequest => {
   if (isHrmContactsIndex(index)) {
     return getCreateHrmContactsIndexParams(index);
   }

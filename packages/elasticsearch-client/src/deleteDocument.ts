@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { DeleteResponse } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { PassThroughConfig } from './client';
 import { newErr, newOk, TResult } from '@tech-matters/types';
 
@@ -22,7 +22,10 @@ export type DeleteDocumentExtraParams = {
 };
 
 export type DeleteDocumentParams<T> = PassThroughConfig<T> & DeleteDocumentExtraParams;
-export type DeleteDocumentResponse = TResult<'DeleteDocumentError', DeleteResponse>;
+export type DeleteDocumentResponse = TResult<
+  'DeleteDocumentError',
+  estypes.DeleteResponse
+>;
 
 export const deleteDocument = async <T>({
   client,

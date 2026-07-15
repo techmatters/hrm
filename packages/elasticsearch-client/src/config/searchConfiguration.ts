@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SearchSuggester } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { SuggestParameters } from '../suggest';
 import { SearchQuery } from '../search';
 
@@ -23,5 +23,7 @@ export type SearchConfiguration<T> = {
     index: string;
     searchParameters: T;
   }) => SearchQuery;
-  generateSuggestQuery?: (suggestParameters: SuggestParameters) => SearchSuggester;
+  generateSuggestQuery?: (
+    suggestParameters: SuggestParameters,
+  ) => estypes.SearchSuggester;
 };

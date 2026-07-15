@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import type { estypes } from '@elastic/elasticsearch';
 import type { SearchQuery } from '@tech-matters/elasticsearch-client';
 import {
   DocumentType,
@@ -35,7 +35,7 @@ const BOOST_FACTORS = {
 };
 const MIN_SCORE = 0.1;
 
-export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
+export const FILTER_ALL_CLAUSE: estypes.QueryDslQueryContainer[][] = [
   [
     {
       bool: {
@@ -45,7 +45,7 @@ export const FILTER_ALL_CLAUSE: QueryDslQueryContainer[][] = [
   ],
 ];
 
-export const MATCH_ALL_CLAUSE: QueryDslQueryContainer[] = [
+export const MATCH_ALL_CLAUSE: estypes.QueryDslQueryContainer[] = [
   {
     match_all: {},
   },
@@ -139,7 +139,7 @@ const getSimpleQueryStringFields = <TDoc extends DocumentType>(
 /** Utility function that creates a filter based on a more human-readable representation */
 export const generateESQuery = <TDoc extends DocumentType>(
   p: DocumentTypeQueryParams[TDoc],
-): QueryDslQueryContainer => {
+): estypes.QueryDslQueryContainer => {
   switch (p.type) {
     case 'term': {
       return {
@@ -208,10 +208,10 @@ type SearchPagination = {
 type SearchParametersContact = {
   type: DocumentType.Contact;
   searchTerm: string;
-  searchFilters: QueryDslQueryContainer[];
+  searchFilters: estypes.QueryDslQueryContainer[];
   permissionFilters: {
-    contactFilters: QueryDslQueryContainer[][];
-    transcriptFilters: QueryDslQueryContainer[][];
+    contactFilters: estypes.QueryDslQueryContainer[][];
+    transcriptFilters: estypes.QueryDslQueryContainer[][];
   };
 } & SearchPagination;
 
@@ -230,7 +230,7 @@ const generateQueryFromSearchTerms = <TDoc extends DocumentType>({
   documentType: TDoc;
   fields: SimpleQueryStringFields<TDoc>;
   parentPath?: string;
-}): QueryDslQueryContainer => {
+}): estypes.QueryDslQueryContainer => {
   const query = generateESQuery(
     queryWrapper({
       documentType,
@@ -250,13 +250,13 @@ const generateTranscriptQueriesFromFilters = ({
   buildParams = { parentPath: '' },
   queryWrapper = p => p,
 }: {
-  transcriptFilters: QueryDslQueryContainer[][];
+  transcriptFilters: estypes.QueryDslQueryContainer[][];
   searchParameters: SearchParametersContact;
   buildParams?: { parentPath: string };
   queryWrapper?: (
     p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
-}): QueryDslQueryContainer[] => {
+}): estypes.QueryDslQueryContainer[] => {
   const query = generateQueryFromSearchTerms({
     documentType: DocumentType.Contact,
     fields: [{ field: 'transcript', boost: BOOST_FACTORS.transcript }],
@@ -285,7 +285,7 @@ const generateContactNumberQueries = ({
   queryWrapper?: (
     p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
-}): QueryDslQueryContainer[] => {
+}): estypes.QueryDslQueryContainer[] => {
   const terms = searchParameters.searchTerm.split(' ');
 
   const numericTerms = (searchParameters.searchTerm.match(/[\d\s\-]{8,}/g) || []) // find sequences of 8 consecutive numbers, maybe separed by spaces or dashes
@@ -328,7 +328,7 @@ const generateContactsQueriesFromFilters = ({
   queryWrapper?: (
     p: DocumentTypeQueryParams[DocumentType],
   ) => DocumentTypeQueryParams[DocumentType];
-}): QueryDslQueryContainer[] => {
+}): estypes.QueryDslQueryContainer[] => {
   const { searchFilters, permissionFilters } = searchParameters;
 
   if (searchParameters.searchTerm.length === 0) {
@@ -423,11 +423,11 @@ const generateContactsQuery = ({
 type SearchParametersCases = {
   type: DocumentType.Case;
   searchTerm: string;
-  searchFilters: QueryDslQueryContainer[];
+  searchFilters: estypes.QueryDslQueryContainer[];
   permissionFilters: {
-    contactFilters: QueryDslQueryContainer[][];
-    transcriptFilters: QueryDslQueryContainer[][];
-    caseFilters: QueryDslQueryContainer[][];
+    contactFilters: estypes.QueryDslQueryContainer[][];
+    transcriptFilters: estypes.QueryDslQueryContainer[][];
+    caseFilters: estypes.QueryDslQueryContainer[][];
   };
 } & SearchPagination;
 
@@ -435,7 +435,7 @@ const generateCasesQueriesFromFilters = ({
   searchParameters,
 }: {
   searchParameters: SearchParametersCases;
-}): QueryDslQueryContainer[] => {
+}): estypes.QueryDslQueryContainer[] => {
   const { searchFilters, permissionFilters } = searchParameters;
 
   if (searchParameters.searchTerm.length === 0) {
