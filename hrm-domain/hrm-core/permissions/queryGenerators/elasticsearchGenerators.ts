@@ -16,12 +16,14 @@
 
 import { isTimeBasedCondition, type TKCondition } from '../rulesMap';
 import type { PermissionFilterGenerators, TKindPermissionTarget } from './types';
-import { estypes } from '@elastic/elasticsearch';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { FILTER_ALL_CLAUSE } from '@tech-matters/hrm-search-config';
+import {
+  QueryDslQueryContainer,
+  FILTER_ALL_CLAUSE,
+} from '@tech-matters/hrm-search-config';
 
 export type ConditionWhereClausesES<TKind extends TKindPermissionTarget> =
-  PermissionFilterGenerators<TKind, estypes.QueryDslQueryContainer>;
+  PermissionFilterGenerators<TKind, QueryDslQueryContainer>;
 
 export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
   conditionWhereClauses,
@@ -31,7 +33,7 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
   listConditionSets: TKCondition<TKind>[][];
   conditionWhereClauses: ConditionWhereClausesES<TKind>;
   user: TwilioUser;
-}): estypes.QueryDslQueryContainer[][] => {
+}): QueryDslQueryContainer[][] => {
   type ListCondition = TKCondition<TKind>;
   const ALL_OR_NOTHING_CONDITIONS: ListCondition[] = [
     'everyone',
@@ -43,7 +45,7 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
     'everyone' | 'isSupervisor' | 'nobody'
   >;
 
-  const conditionSetClauses: estypes.QueryDslQueryContainer[][] = [];
+  const conditionSetClauses: QueryDslQueryContainer[][] = [];
 
   const conditionsThatAllowAll: ListCondition[] = user.isSupervisor
     ? ['everyone', 'isSupervisor']
@@ -80,7 +82,7 @@ export const listPermissionWhereClause = <TKind extends TKindPermissionTarget>({
       ) as WhereClauseGeneratingCondition[];
 
     if (relevantConditions.length) {
-      const conditionClauses: estypes.QueryDslQueryContainer[] = relevantConditions.map(
+      const conditionClauses: QueryDslQueryContainer[] = relevantConditions.map(
         condition => {
           if (isTimeBasedCondition(condition)) {
             return conditionWhereClauses.timeBasedCondition(condition);

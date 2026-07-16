@@ -84,7 +84,7 @@ export const search = async <T>({
   return {
     total,
     items: hits.hits.map(hit => ({
-      id: hit._id,
+      id: hit._id!,
       name: hit.fields?.name || '',
       highlights: hit.highlight,
     })),

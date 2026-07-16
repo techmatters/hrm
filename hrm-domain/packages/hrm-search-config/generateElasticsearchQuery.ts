@@ -136,6 +136,7 @@ const getSimpleQueryStringFields = <TDoc extends DocumentType>(
   return p.fields.map(f => `${prefix}${String(f.field)}${f.boost ? `^${f.boost}` : ''}`);
 };
 
+export type QueryDslQueryContainer = estypes.QueryDslQueryContainer;
 /** Utility function that creates a filter based on a more human-readable representation */
 export const generateESQuery = <TDoc extends DocumentType>(
   p: DocumentTypeQueryParams[TDoc],
