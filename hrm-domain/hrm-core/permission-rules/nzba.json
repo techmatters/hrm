@@ -10,21 +10,21 @@
 
 
   "viewContact": [["everyone"]],
-  "editContact": [["isSupervisor"], ["isOwner"]],
+  "editContact": [["everyone"]],
   "viewContactField": [["everyone"]],
   "editContactField": [["everyone"]],
-  "editInProgressContact": [["isSupervisor"], ["isOwner"]],
+  "editInProgressContact": [["everyone"]],
   "viewExternalTranscript": [["everyone"]],
   "viewRecording": [["everyone"]],
-  "addContactToCase": [["isSupervisor"], ["isOwner"]],
+  "addContactToCase": [["everyone"]],
   "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
   
   "viewProfile": [["everyone"]],
   "flagProfile": [["isSupervisor"]],
   "unflagProfile": [["isSupervisor"]],
-  "viewProfileSection": [["everyone", { "sectionType": "summary" }], ["isSupervisor"]],
-  "createProfileSection": [["isSupervisor"]],
-  "editProfileSection": [["isSupervisor"]],
+  "viewProfileSection": [["everyone"]],
+  "createProfileSection": [["everyone"]],
+  "editProfileSection": [["everyone"]],
   
   "viewPostSurvey": [["isSupervisor"]],
 
