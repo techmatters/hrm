@@ -15,8 +15,8 @@
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["isSupervisor"]],
   "viewRecording": [["isSupervisor"]],
-  "addContactToCase": [["isSupervisor"], ["isOwner"]],
-  "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
+  "addContactToCase": [],
+  "removeContactFromCase": [],
   
   "viewProfile": [["everyone"]],
   "flagProfile": [["isSupervisor"]],
