@@ -7,7 +7,7 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "lib": ["es2023"],
+    "lib": ["es2023", "WebWorker"],
     "strict": false,
     "declaration": true,
     "resolveJsonModule": true

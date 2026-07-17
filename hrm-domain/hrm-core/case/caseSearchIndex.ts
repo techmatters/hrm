@@ -17,6 +17,7 @@
 import {
   DocumentType,
   DocumentTypeQueryParams,
+  QueryDslQueryContainer,
   casePathToContacts,
   generateESFilter,
 } from '@tech-matters/hrm-search-config';
@@ -72,7 +73,7 @@ export const generateCaseSearchFilters = (p: {
   counselor?: string;
   dateFrom?: string;
   dateTo?: string;
-}) => buildSearchFilters(p).map(generateESFilter);
+}): QueryDslQueryContainer[] => buildSearchFilters(p).map(generateESFilter);
 
 const buildPermissionFilter = (p: DocumentTypeQueryParams[DocumentType.Case]) =>
   generateESFilter(p);
@@ -169,7 +170,11 @@ export const generateCasePermissionsFilters = ({
   viewTranscript: ContactListCondition[][];
   viewCase: CaseListCondition[][];
   user: TwilioUser;
-}) => {
+}): {
+  contactFilters: QueryDslQueryContainer[][];
+  transcriptFilters: QueryDslQueryContainer[][];
+  caseFilters: QueryDslQueryContainer[][];
+} => {
   const { contactFilters, transcriptFilters } = generateContactPermissionsFilters({
     buildParams: { parentPath: casePathToContacts },
     user,

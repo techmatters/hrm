@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { BulkRequest, BulkResponse } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { PassThroughConfig } from './client';
 import createIndex from './createIndex';
 
@@ -38,7 +38,7 @@ export type ExecuteBulkExtraParams<T> = {
 
 export type ExecuteBulkParams<T> = PassThroughConfig<T> & ExecuteBulkExtraParams<T>;
 
-export type ExecuteBulkResponse = BulkResponse;
+export type ExecuteBulkResponse = estypes.BulkResponse;
 
 export const executeBulk = async <T>({
   client,
@@ -53,8 +53,8 @@ export const executeBulk = async <T>({
     await createIndex({ client, index, indexConfig });
   }
 
-  const body: BulkRequest['operations'] = documents.flatMap(
-    (documentItem): BulkRequest['operations'] => {
+  const body: estypes.BulkRequest['operations'] = documents.flatMap(
+    (documentItem): estypes.BulkRequest['operations'] => {
       if (documentItem.action === 'delete') {
         return [{ delete: { _index: index, _id: documentItem.id } }];
       } else {

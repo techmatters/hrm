@@ -16,9 +16,11 @@
 
 import { isTimeBasedCondition, type TKCondition } from '../rulesMap';
 import type { PermissionFilterGenerators, TKindPermissionTarget } from './types';
-import type { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { FILTER_ALL_CLAUSE } from '@tech-matters/hrm-search-config';
+import {
+  QueryDslQueryContainer,
+  FILTER_ALL_CLAUSE,
+} from '@tech-matters/hrm-search-config';
 
 export type ConditionWhereClausesES<TKind extends TKindPermissionTarget> =
   PermissionFilterGenerators<TKind, QueryDslQueryContainer>;

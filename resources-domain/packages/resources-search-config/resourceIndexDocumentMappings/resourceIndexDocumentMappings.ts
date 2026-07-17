@@ -14,12 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type {
-  PropertyName,
-  MappingKeywordProperty,
-  MappingProperty,
-  MappingTextProperty,
-} from '@elastic/elasticsearch/lib/api/types';
+import type { estypes } from '@elastic/elasticsearch';
 import type { ReferrableResourceAttribute } from '@tech-matters/resources-types';
 
 export type MappingFieldType =
@@ -51,7 +46,7 @@ export type MappingField = {
   ) => boolean | string | number;
 };
 
-export type ResourceLanguageField = Record<PropertyName, MappingProperty>;
+export type ResourceLanguageField = Record<estypes.PropertyName, estypes.MappingProperty>;
 
 export type ResourceIndexDocumentMappings = {
   highBoostGlobalFields: string[];
@@ -116,8 +111,14 @@ export const getMappingFieldNamesByType =
 
 const convertStringMappingFieldToProperty =
   (mappings: ResourceIndexDocumentMappings) =>
-  (key: string, property: MappingProperty, propConfig: MappingField): MappingProperty => {
-    const stringProperty = property as MappingTextProperty | MappingKeywordProperty;
+  (
+    key: string,
+    property: estypes.MappingProperty,
+    propConfig: MappingField,
+  ): estypes.MappingProperty => {
+    const stringProperty = property as
+      | estypes.MappingTextProperty
+      | estypes.MappingKeywordProperty;
 
     stringProperty.copy_to = isHighBoostGlobalField(mappings, key)
       ? ['high_boost_global']
@@ -131,16 +132,16 @@ const convertStringMappingFieldToProperty =
       stringProperty.copy_to = [...stringProperty.copy_to, ...propConfig.copyTo];
     }
 
-    return stringProperty as MappingProperty;
+    return stringProperty as estypes.MappingProperty;
   };
 
 export const convertMappingFieldsToProperties = (
   mappings: ResourceIndexDocumentMappings,
-): Record<string, MappingProperty> => {
-  const properties: Record<string, MappingProperty> = {};
+): Record<string, estypes.MappingProperty> => {
+  const properties: Record<string, estypes.MappingProperty> = {};
 
   Object.entries(mappings.mappingFields).forEach(([key, propConfig]) => {
-    let property: MappingProperty = {};
+    let property: estypes.MappingProperty = {};
 
     if (isStringField(propConfig.type)) {
       property = convertStringMappingFieldToProperty(mappings)(key, property, propConfig);

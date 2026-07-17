@@ -15,7 +15,7 @@
  */
 
 import { Client } from '@elastic/elasticsearch';
-import { SearchCompletionSuggestOption } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 
 export type SuggestParameters = {
   prefix: string;
@@ -64,7 +64,7 @@ export const suggest = async ({
   }
 
   Object.entries(res.suggest).forEach(([key, value]) => {
-    const options = value[0].options as SearchCompletionSuggestOption[];
+    const options = value[0].options as estypes.SearchCompletionSuggestOption[];
     suggestions[key] = options.map(option => ({
       text: option.text,
       score: option._score!,

@@ -56,6 +56,7 @@ export const hrmIndexConfiguration: IndexConfiguration<IndexPayload> = {
 };
 
 export {
+  QueryDslQueryContainer,
   generateESQuery as generateESFilter,
   DocumentTypeQueryParams,
   FILTER_ALL_CLAUSE,

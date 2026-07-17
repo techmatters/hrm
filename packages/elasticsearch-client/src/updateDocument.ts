@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { UpdateResponse } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { PassThroughConfig } from './client';
 import createIndex from './createIndex';
 import { newErr, newOk, TResult } from '@tech-matters/types';
@@ -25,7 +25,10 @@ export type UpdateDocumentExtraParams<T> = UpdateParams<T> & {
 };
 
 export type UpdateDocumentParams<T> = PassThroughConfig<T> & UpdateDocumentExtraParams<T>;
-export type UpdateDocumentResponse = TResult<'UpdateDocumentError', UpdateResponse>;
+export type UpdateDocumentResponse = TResult<
+  'UpdateDocumentError',
+  estypes.UpdateResponse
+>;
 
 export const updateDocument = async <T>({
   client,

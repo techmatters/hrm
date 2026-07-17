@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { SearchQuery } from '@tech-matters/elasticsearch-client';
 import {
   FilterValue,
@@ -64,8 +64,8 @@ const generateFilters = (
   searchConfiguration: ResourcesSearchConfiguration,
   filters: SearchParameters['filters'],
 ): {
-  filterClauses: QueryDslQueryContainer[];
-  filterSearchClause?: QueryDslQueryContainer;
+  filterClauses: estypes.QueryDslQueryContainer[];
+  filterSearchClause?: estypes.QueryDslQueryContainer;
 } => {
   // TODO: should we validate request filters against the index config?
   // Currently doesn't support:
@@ -74,7 +74,7 @@ const generateFilters = (
   // - range filters with multiple clauses
   // Implement as required!
 
-  const filterClauses: QueryDslQueryContainer[] = [];
+  const filterClauses: estypes.QueryDslQueryContainer[] = [];
   const filtersAsSearchTerms: string[] = [];
   Object.entries(filters ?? {}).forEach(([key, value]) => {
     const mapping = searchConfiguration.filterMappings[key];
@@ -144,7 +144,7 @@ export const generateElasticsearchQuery =
   (searchConfiguration: ResourcesSearchConfiguration) =>
   ({ index, searchParameters }: SearchGenerateElasticsearchQueryParams): SearchQuery => {
     const { q, filters, pagination } = searchParameters;
-    const queryClauses: QueryDslQueryContainer[] = [
+    const queryClauses: estypes.QueryDslQueryContainer[] = [
       q
         ? {
             simple_query_string: {
@@ -156,7 +156,7 @@ export const generateElasticsearchQuery =
             match_all: {},
           },
     ];
-    const filterPart: { filter?: QueryDslQueryContainer[] } = {};
+    const filterPart: { filter?: estypes.QueryDslQueryContainer[] } = {};
 
     if (filters) {
       const { filterClauses, filterSearchClause } = generateFilters(

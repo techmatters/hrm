@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { IndicesDeleteResponse } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { PassThroughConfig } from './client';
 
 export type DeleteIndexParams = PassThroughConfig<any>;
-export type DeleteIndexResponse = IndicesDeleteResponse | void;
+export type DeleteIndexResponse = estypes.IndicesDeleteResponse | void;
 
 export const deleteIndex = async ({
   client,

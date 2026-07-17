@@ -18,8 +18,7 @@ import type {
   FlatResource,
   ReferrableResourceAttribute,
 } from '@tech-matters/resources-types/Resources';
-import { IndicesCreateRequest } from '@elastic/elasticsearch/lib/api/types';
-import type { MappingProperty, PropertyName } from '@elastic/elasticsearch/lib/api/types';
+import type { estypes } from '@elastic/elasticsearch';
 
 import {
   CreateIndexConvertedDocument,
@@ -47,7 +46,7 @@ export type ResourceIndexDocumentMappings = {
   mappingFields: {
     [key: string]: MappingField;
   };
-  languageFields: Record<PropertyName, MappingProperty>;
+  languageFields: Record<estypes.PropertyName, estypes.MappingProperty>;
 };
 
 export type FieldAndMapping = {
@@ -215,7 +214,7 @@ export const resourceIndexConfiguration: IndexConfiguration<FlatResource> = {
     console.debug('Indexing document: ', doc);
     return doc;
   },
-  getCreateIndexParams: (index: string): IndicesCreateRequest => {
+  getCreateIndexParams: (index: string): estypes.IndicesCreateRequest => {
     const { languageFields } = resourceIndexDocumentMappings;
     return {
       index,

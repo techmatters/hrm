@@ -17,6 +17,7 @@
 import {
   DocumentType,
   DocumentTypeQueryParams,
+  QueryDslQueryContainer,
   generateESFilter,
 } from '@tech-matters/hrm-search-config';
 import {
@@ -77,7 +78,7 @@ export const generateContactSearchFilters = (p: {
   dateFrom?: string;
   dateTo?: string;
   onlyDataContacts?: boolean;
-}) => buildSearchFilters(p).map(generateESFilter);
+}): QueryDslQueryContainer[] => buildSearchFilters(p).map(generateESFilter);
 
 export type ContactListCondition = Extract<
   TKCondition<'contact'>,
@@ -174,7 +175,10 @@ export const generateContactPermissionsFilters = ({
   queryWrapper?: (
     p: DocumentTypeQueryParams[DocumentType.Contact],
   ) => DocumentTypeQueryParams[DocumentType];
-}) => ({
+}): {
+  contactFilters: QueryDslQueryContainer[][];
+  transcriptFilters: QueryDslQueryContainer[][];
+} => ({
   contactFilters: listContactsPermissionClause({
     listConditionSets: viewContact,
     user,

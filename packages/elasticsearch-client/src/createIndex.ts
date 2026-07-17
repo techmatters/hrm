@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { IndicesCreateResponse } from '@elastic/elasticsearch/lib/api/types';
+import { estypes } from '@elastic/elasticsearch';
 import { PassThroughConfig } from './client';
 
 export type CreateIndexExtraParams = {
@@ -21,7 +21,7 @@ export type CreateIndexExtraParams = {
 };
 
 export type CreateIndexParams = PassThroughConfig<any> & CreateIndexExtraParams;
-export type CreateIndexResponse = IndicesCreateResponse | void;
+export type CreateIndexResponse = estypes.IndicesCreateResponse | void;
 
 export const createIndex = async ({
   client,
