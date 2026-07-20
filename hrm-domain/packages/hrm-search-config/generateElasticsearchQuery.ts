@@ -401,9 +401,12 @@ const generateContactsQuery = ({
 
   return {
     index,
-    highlight: {
-      fields: { '*': {} },
-    },
+    // TODO: cases have grown past the highlight default limit.
+    // - We need to either increase index.highlight.max_analyzed_offset. This solution would make queries slower.
+    // - Switch to the Fast Vector Highlighter (fvh). This is a structural fix that involces reindexing all data.
+    // highlight: {
+    //   fields: { '*': {} },
+    // },
     sort:
       searchParameters.searchTerm.length === 0
         ? [{ timeOfContact: 'desc' }]
