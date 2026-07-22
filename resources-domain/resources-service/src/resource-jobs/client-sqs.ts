@@ -14,8 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// TODO: needs to be converted to aws-sdk-v3
-import { SQS } from 'aws-sdk';
+import { SQSClient, SendMessageCommand, SendMessageRequest } from '@aws-sdk/client-sqs';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { publishSns } from '@tech-matters/sns-client';
 
@@ -28,22 +27,22 @@ import {
 
 const RETRY_COUNT = 4;
 
-let sqs: SQS;
+let sqs: SQSClient;
 
 export const getSqsClient = () => {
   if (!sqs) {
     if (process.env.SQS_ENDPOINT) {
       // For testing only
-      sqs = new SQS({
+      sqs = new SQSClient({
         endpoint: process.env.SQS_ENDPOINT,
       });
     } else if (process.env.LOCAL_SQS_PORT) {
       // For testing only (legacy)
-      sqs = new SQS({
+      sqs = new SQSClient({
         endpoint: `http://localhost:${process.env.LOCAL_SQS_PORT}`,
       });
     } else {
-      sqs = new SQS();
+      sqs = new SQSClient();
     }
   }
   return sqs;
@@ -72,7 +71,7 @@ export const publishToResourcesJob = async ({
       process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL ||
       (await getSsmParameter(getJobQueueUrl(), 86400000));
 
-    const message: SQS.Types.SendMessageRequest = {
+    const message: SendMessageRequest = {
       MessageBody: JSON.stringify(params),
       QueueUrl,
     };
@@ -81,7 +80,7 @@ export const publishToResourcesJob = async ({
       message.MessageGroupId = messageGroupId;
     }
 
-    await getSqsClient().sendMessage(message).promise();
+    await getSqsClient().send(new SendMessageCommand(message));
   } catch (err) {
     if (retryCount < RETRY_COUNT) {
       console.error('Failed to publish to resources job. Retrying...', err);

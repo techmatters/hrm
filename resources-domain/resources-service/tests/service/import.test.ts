@@ -39,8 +39,12 @@ import each from 'jest-each';
 import { AssertionError } from 'assert';
 import { UpsertImportedResourceResult } from '../../src/import/importDataAccess';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
-// TODO: needs to be converted to aws-sdk-v3
-import { SQS } from 'aws-sdk';
+import {
+  CreateQueueCommand,
+  DeleteQueueCommand,
+  ReceiveMessageCommand,
+  SQSClient,
+} from '@aws-sdk/client-sqs';
 import { mockSsmParameters } from '@tech-matters/testing';
 
 const internalServer = getInternalServer();
@@ -48,7 +52,7 @@ const internalRequest = getRequest(internalServer);
 const server = getServer();
 const request = getRequest(server);
 
-const sqsClient = new SQS({ endpoint: MOCK_SQS_ENDPOINT });
+const sqsClient = new SQSClient({ endpoint: MOCK_SQS_ENDPOINT });
 
 let testQueueUrl: URL;
 
@@ -261,22 +265,22 @@ beforeEach(async () => {
   await populateSampleDbReferenceValues(5, 3);
   await populateSampleDbResources(5);
 
-  const { QueueUrl } = await sqsClient
-    .createQueue({
+  const { QueueUrl } = await sqsClient.send(
+    new CreateQueueCommand({
       QueueName: `test-hrm-resources-search-index-pending`,
-    })
-    .promise();
+    }),
+  );
   testQueueUrl = new URL(QueueUrl!);
   process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL = testQueueUrl.toString();
 });
 
 afterEach(async () => {
   delete process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL;
-  await sqsClient
-    .deleteQueue({
+  await sqsClient.send(
+    new DeleteQueueCommand({
       QueueUrl: testQueueUrl.toString(),
-    })
-    .promise();
+    }),
+  );
 });
 
 const timeSequenceFromDate = (date: Date, sequence = 0): TimeSequence =>
@@ -569,13 +573,13 @@ describe('POST /import', () => {
 
       const receivedMessages: FlatResource[] = [];
       while (receivedMessages.length <= importedResources.length) {
-        const { Messages } = await sqsClient
-          .receiveMessage({
+        const { Messages } = await sqsClient.send(
+          new ReceiveMessageCommand({
             QueueUrl: testQueueUrl.toString(),
             MaxNumberOfMessages: 10,
             WaitTimeSeconds: 0.5,
-          })
-          .promise();
+          }),
+        );
         if (!Messages?.length) {
           break;
         }
@@ -627,13 +631,13 @@ describe('POST /import', () => {
   const receiveSqsMessages = async (expectedCount: number) => {
     const received: FlatResource[] = [];
     while (received.length < expectedCount) {
-      const { Messages } = await sqsClient
-        .receiveMessage({
+      const { Messages } = await sqsClient.send(
+        new ReceiveMessageCommand({
           QueueUrl: testQueueUrl.toString(),
           MaxNumberOfMessages: 10,
           WaitTimeSeconds: 1,
-        })
-        .promise();
+        }),
+      );
       if (!Messages?.length) break;
       received.push(...Messages.map(m => JSON.parse(m.Body ?? '')));
     }
