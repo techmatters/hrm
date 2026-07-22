@@ -14,8 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-// TODO: needs to be converted to aws-sdk-v3
-import { ECS, EC2, STS } from 'aws-sdk';
+import { DescribeTasksCommand, ECSClient, ListTasksCommand } from '@aws-sdk/client-ecs';
+import { EC2Client, DescribeNetworkInterfacesCommand } from '@aws-sdk/client-ec2';
+import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 /**
@@ -30,11 +31,11 @@ const findTaskPrivateIp = async ({
   environment: string;
   credentials: { accessKeyId: string; secretAccessKey: string; sessionToken: string };
 }) => {
-  const ecs = new ECS({
+  const ecs = new ECSClient({
     credentials,
     region,
   });
-  const ec2 = new EC2({
+  const ec2 = new EC2Client({
     credentials,
     region,
   });
@@ -42,13 +43,13 @@ const findTaskPrivateIp = async ({
   const cluster = `${environment}-ecs-cluster`;
   const serviceName = `${environment}-ecs-service`;
 
-  const tasks = await ecs.listTasks({ cluster, serviceName }).promise();
+  const tasks = await ecs.send(new ListTasksCommand({ cluster, serviceName }));
   const taskArns = tasks.taskArns ?? [];
   const describeParams = {
     cluster: cluster,
     tasks: taskArns,
   };
-  const taskData = await ecs.describeTasks(describeParams).promise();
+  const taskData = await ecs.send(new DescribeTasksCommand(describeParams));
   const task = taskData!.tasks![0];
   if (!task) {
     throw new Error(`No task found for service ${serviceName}`);
@@ -66,9 +67,9 @@ const findTaskPrivateIp = async ({
   const describeNetworkInterfacesParams = {
     NetworkInterfaceIds: [networkInterfaceId],
   };
-  const networkInterfaceDescription = await ec2
-    .describeNetworkInterfaces(describeNetworkInterfacesParams)
-    .promise();
+  const networkInterfaceDescription = await ec2.send(
+    new DescribeNetworkInterfacesCommand(describeNetworkInterfacesParams),
+  );
 
   if (!networkInterfaceDescription.NetworkInterfaces) {
     throw new Error(`Could not find network interfaces with network interface IDid task`);
@@ -99,12 +100,12 @@ export const getHRMInternalEndpointAccess = async ({
     RoleSessionName: string;
   };
 }) => {
-  const sts = new STS();
-  const { Credentials } = await sts.assumeRole(assumeRoleParams).promise();
+  const sts = new STSClient();
+  const { Credentials } = await sts.send(new AssumeRoleCommand(assumeRoleParams));
   const credentials = {
-    accessKeyId: Credentials!.AccessKeyId,
-    secretAccessKey: Credentials!.SecretAccessKey,
-    sessionToken: Credentials!.SessionToken,
+    accessKeyId: Credentials!.AccessKeyId!,
+    secretAccessKey: Credentials!.SecretAccessKey!,
+    sessionToken: Credentials!.SessionToken!,
   };
 
   const privateIpAddress = await findTaskPrivateIp({
