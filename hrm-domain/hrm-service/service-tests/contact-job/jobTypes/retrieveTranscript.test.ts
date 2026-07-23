@@ -15,6 +15,7 @@
  */
 
 import { setInterval } from 'timers';
+import { GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../../mocks';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
@@ -155,9 +156,7 @@ describe('Contact created', () => {
     expect(originalContact.conversationMedia.length).toBe(1);
     verifyPendingConversationMedia(originalContact, S3ContactMediaType.TRANSCRIPT);
     pendingRetrieveQueueUrl = (
-      await sqsClient
-        .getQueueUrl({ QueueName: PENDING_RETRIEVE_TRANSCRIPT_JOBS_QUEUE })
-        .promise()
+      await sqsClient.send(new GetQueueUrlCommand({ QueueName: PENDING_RETRIEVE_TRANSCRIPT_JOBS_QUEUE }))
     ).QueueUrl;
   });
 
@@ -241,7 +240,7 @@ describe('Retrieve transcript job complete', () => {
 
   beforeEach(async () => {
     completedQueueUrl = (
-      await sqsClient.getQueueUrl({ QueueName: CONTACT_JOB_COMPLETE_SQS_QUEUE }).promise()
+      await sqsClient.send(new GetQueueUrlCommand({ QueueName: CONTACT_JOB_COMPLETE_SQS_QUEUE }))
     ).QueueUrl;
   });
 
@@ -283,12 +282,12 @@ describe('Retrieve transcript job complete', () => {
       attemptResult: ContactJobAttemptResult.SUCCESS,
     };
 
-    await sqsClient
-      .sendMessage({
+    await sqsClient.send(
+      new SendMessageCommand({
         QueueUrl: completedQueueUrl,
         MessageBody: JSON.stringify(message),
-      })
-      .promise();
+      }),
+    );
 
     await singleProcessContactJobsRun();
 
