@@ -118,33 +118,6 @@ const newContactRouter = (isPublic: boolean) => {
     // Endpoint used for generalized search powered by ElasticSearch
     contactsRouter.post('/search', openEndpoint, searchHandler);
     contactsRouter.post('/generalizedSearch', openEndpoint, searchHandler);
-
-    contactsRouter.post(
-      '/:contactId/conversationMedia',
-      openEndpoint,
-      async (req, res) => {
-        const { hrmAccountId, user, permissionRules } = req;
-        const { contactId } = req.params;
-
-        try {
-          const contact = await addConversationMediaToContact(
-            hrmAccountId,
-            contactId,
-            req.body,
-            {
-              can: req.can,
-              user,
-              permissionRules,
-            },
-          );
-          res.json(contact);
-        } catch (err) {
-          if (err.message.toLowerCase().includes('contact not found')) {
-            throw createError(404);
-          } else throw err;
-        }
-      },
-    );
   }
 
   // example: curl -XPOST -H'Content-Type: application/json' localhost:3000/contacts -d'{"hi": 2}'
@@ -237,6 +210,29 @@ const newContactRouter = (isPublic: boolean) => {
       }
     },
   );
+
+  contactsRouter.post('/:contactId/conversationMedia', openEndpoint, async (req, res) => {
+    const { hrmAccountId, user, permissionRules } = req;
+    const { contactId } = req.params;
+
+    try {
+      const contact = await addConversationMediaToContact(
+        hrmAccountId,
+        contactId,
+        req.body,
+        {
+          can: req.can,
+          user,
+          permissionRules,
+        },
+      );
+      res.json(contact);
+    } catch (err) {
+      if (err.message.toLowerCase().includes('contact not found')) {
+        throw createError(404);
+      } else throw err;
+    }
+  });
 
   // WARNING: this endpoint MUST be the last one in this router, because it will be used if none of the above regex matches the path
   contactsRouter.get(
