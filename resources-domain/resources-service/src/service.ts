@@ -23,6 +23,7 @@ import {
   adminAuthorizationMiddleware,
   type AuthSecretsLookup,
 } from '@tech-matters/twilio-worker-auth';
+import { getCheckQuotaMiddleware } from '@tech-matters/rate-limiting';
 import { adminApiV0, apiV0, internalApiV0 } from './routes';
 
 type ResourceServiceCreationOptions = Required<{
@@ -35,10 +36,12 @@ export const configureService = ({
   authSecretsLookup,
 }: ResourceServiceCreationOptions) => {
   const authorizationMiddleware = getAuthorizationMiddleware(authSecretsLookup);
+  const checkQuotaMiddleware = getCheckQuotaMiddleware();
   webServer.use(
     '/v0/accounts/:accountSid/resources',
     addAccountSidMiddleware,
     authorizationMiddleware,
+    checkQuotaMiddleware,
     apiV0(),
   );
   return webServer;
