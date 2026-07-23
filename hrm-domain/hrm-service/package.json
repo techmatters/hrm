@@ -62,6 +62,7 @@
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-sqs": "^3.1094.0",
     "@tech-matters/database-connect": "^1.0.0",
     "@tech-matters/sqs-client": "^1.0.0",
     "@tech-matters/testing": "^1.0.0",

@@ -150,7 +150,9 @@ describe('Scrub job complete', () => {
       'mock-transcript-path',
     );
     completedQueueUrl = (
-      await sqsClient.send(new GetQueueUrlCommand({ QueueName: CONTACT_JOB_COMPLETE_SQS_QUEUE }))
+      await sqsClient.send(
+        new GetQueueUrlCommand({ QueueName: CONTACT_JOB_COMPLETE_SQS_QUEUE }),
+      )
     ).QueueUrl;
   });
 
@@ -313,10 +315,14 @@ describe('Retrieve transcript job complete', () => {
 
   beforeEach(async () => {
     completedQueueUrl = (
-      await sqsClient.send(new GetQueueUrlCommand({ QueueName: CONTACT_JOB_COMPLETE_SQS_QUEUE }))
+      await sqsClient.send(
+        new GetQueueUrlCommand({ QueueName: CONTACT_JOB_COMPLETE_SQS_QUEUE }),
+      )
     ).QueueUrl;
     pendingScrubQueueUrl = (
-      await sqsClient.send(new GetQueueUrlCommand({ QueueName: PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE }))
+      await sqsClient.send(
+        new GetQueueUrlCommand({ QueueName: PENDING_SCRUB_TRANSCRIPT_JOBS_QUEUE }),
+      )
     ).QueueUrl;
   });
 
