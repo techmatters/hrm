@@ -16,8 +16,12 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import type { Mockttp } from 'mockttp';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { SQS } from 'aws-sdk';
+import {
+  CreateQueueCommand,
+  DeleteQueueCommand,
+  GetQueueUrlCommand,
+  SQSClient,
+} from '@aws-sdk/client-sqs';
 import { createHash, randomUUID } from 'crypto';
 import { onMockttpStart } from './mocking-proxy';
 
@@ -483,12 +487,12 @@ export const mockSqs = async (mockttp: Mockttp): Promise<void> => {
  * remains active even when the proxy is restarted mid-test.
  */
 export const setupTestQueues = (queueNames: string[]) => {
-  const sqsClient = new SQS({ endpoint: MOCK_SQS_ENDPOINT });
+  const sqsClient = new SQSClient({ endpoint: MOCK_SQS_ENDPOINT });
 
   beforeEach(async () => {
     await Promise.all(
       queueNames.map(queueName =>
-        sqsClient.createQueue({ QueueName: queueName }).promise(),
+        sqsClient.send(new CreateQueueCommand({ QueueName: queueName })),
       ),
     );
   });
@@ -497,10 +501,12 @@ export const setupTestQueues = (queueNames: string[]) => {
     await Promise.allSettled(
       queueNames.map(async queueName => {
         try {
-          const { QueueUrl } = await sqsClient
-            .getQueueUrl({ QueueName: queueName })
-            .promise();
-          await sqsClient.deleteQueue({ QueueUrl: QueueUrl!.toString() }).promise();
+          const { QueueUrl } = await sqsClient.send(
+            new GetQueueUrlCommand({ QueueName: queueName }),
+          );
+          await sqsClient.send(
+            new DeleteQueueCommand({ QueueUrl: QueueUrl!.toString() }),
+          );
         } catch (err) {
           console.error(
             expect.getState().currentTestName,
