@@ -100,7 +100,9 @@ export const getHRMInternalEndpointAccess = async ({
     RoleSessionName: string;
   };
 }) => {
-  const sts = new STSClient();
+  const sts = new STSClient({
+    region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION,
+  });
   const { Credentials } = await sts.send(new AssumeRoleCommand(assumeRoleParams));
   const credentials = {
     accessKeyId: Credentials!.AccessKeyId!,
