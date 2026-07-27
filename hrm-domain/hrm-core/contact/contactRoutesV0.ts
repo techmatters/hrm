@@ -246,7 +246,7 @@ const newContactRouter = (isPublic: boolean) => {
       const { hrmAccountId, can, user, permissionRules } = req;
 
       console.info(
-        `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Contact read by task sid, taskSid: ${req.params.contactId}`,
+        `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Contact read by id: ${req.params.contactId}`,
       );
       const contact = await getContactById(hrmAccountId, req.params.contactId, {
         can: req.can,
