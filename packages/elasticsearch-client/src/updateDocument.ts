@@ -99,6 +99,7 @@ export const updateScript = async <T>({
       script: scriptUpdate,
       upsert: documentUpdate,
       scripted_upsert: scriptedUpsert,
+      retry_on_conflict: 5,
     });
 
     return newOk({ data: response });
