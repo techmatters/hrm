@@ -19,7 +19,7 @@ import {
   RESOURCE_INDEX_TYPE,
   getResourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
-import { STS } from 'aws-sdk';
+import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
 
 const shortCode = process.argv[2] || 'as';
 const timestamp = new Date().getTime();
@@ -28,17 +28,14 @@ const assumeRoleParams = {
   RoleSessionName: `resource-admin-cli-${timestamp}`,
 };
 
-const sts = new STS();
-sts
-  .assumeRole(assumeRoleParams)
-  .promise()
-  .then(({ Credentials }) => {
-    process.env.AWS_ACCESS_KEY_ID = Credentials!.AccessKeyId;
-    process.env.AWS_SECRET_ACCESS_KEY = Credentials!.SecretAccessKey;
-    process.env.AWS_SESSION_TOKEN = Credentials!.SessionToken;
+const sts = new STSClient();
+sts.send(new AssumeRoleCommand(assumeRoleParams)).then(({ Credentials }) => {
+  process.env.AWS_ACCESS_KEY_ID = Credentials!.AccessKeyId;
+  process.env.AWS_SECRET_ACCESS_KEY = Credentials!.SecretAccessKey;
+  process.env.AWS_SESSION_TOKEN = Credentials!.SessionToken;
 
-    getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
-      const resourceIndexConfiguration = getResourceIndexConfiguration(shortCode);
-      return client.indexClient(resourceIndexConfiguration).deleteIndex();
-    });
+  getClient({ shortCode, indexType: RESOURCE_INDEX_TYPE }).then(client => {
+    const resourceIndexConfiguration = getResourceIndexConfiguration(shortCode);
+    return client.indexClient(resourceIndexConfiguration).deleteIndex();
   });
+});

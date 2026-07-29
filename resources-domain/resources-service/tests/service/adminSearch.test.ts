@@ -29,8 +29,12 @@ import { FlatResource, ResourcesJobType } from '@tech-matters/resources-types';
 import { generateImportResource as newImportResourceGenerator } from '../mockResources';
 import range from './range';
 
-// TODO: needs to be converted to aws-sdk-v3
-import { SQS } from 'aws-sdk';
+import {
+  CreateQueueCommand,
+  DeleteQueueCommand,
+  ReceiveMessageCommand,
+  SQSClient,
+} from '@aws-sdk/client-sqs';
 import { db } from '../../src/connection-pool';
 import { mockSsmParameters } from '@tech-matters/testing';
 import { upsertImportedResource } from '../../src/import/importDataAccess';
@@ -44,7 +48,7 @@ const BASELINE_DATE = parseISO('2020-01-01T00:00:00.000Z');
 
 const ACCOUNT_SIDS: AccountSID[] = range(3).map(accountIdx => `AC${accountIdx}` as const);
 
-const sqsClient = new SQS({ endpoint: MOCK_SQS_ENDPOINT });
+const sqsClient = new SQSClient({ endpoint: MOCK_SQS_ENDPOINT });
 
 let testQueueUrl: URL;
 
@@ -69,22 +73,22 @@ beforeEach(async () => {
     process.env[`STATIC_KEY_${accountSid}`] = 'BBC';
   });
 
-  const { QueueUrl } = await sqsClient
-    .createQueue({
+  const { QueueUrl } = await sqsClient.send(
+    new CreateQueueCommand({
       QueueName: `test-hrm-resources-search-index-pending`,
-    })
-    .promise();
+    }),
+  );
   testQueueUrl = new URL(QueueUrl!);
   process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL = testQueueUrl.toString();
 });
 
 afterEach(async () => {
   delete process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL;
-  await sqsClient
-    .deleteQueue({
+  await sqsClient.send(
+    new DeleteQueueCommand({
       QueueUrl: testQueueUrl.toString(),
-    })
-    .promise();
+    }),
+  );
 });
 
 describe('POST /search/reindex', () => {
@@ -268,13 +272,13 @@ describe('POST /search/reindex', () => {
         .expect(200);
       const receivedMessages: FlatResource[] = [];
       while (receivedMessages.length <= expectedResourcesPublished.length) {
-        const { Messages } = await sqsClient
-          .receiveMessage({
+        const { Messages } = await sqsClient.send(
+          new ReceiveMessageCommand({
             QueueUrl: testQueueUrl.toString(),
             MaxNumberOfMessages: 10,
             WaitTimeSeconds: 0.5,
-          })
-          .promise();
+          }),
+        );
         if (!Messages?.length) {
           break;
         }
@@ -319,13 +323,13 @@ describe('POST /search/reindex', () => {
       resourceIds: ['RESOURCE_1', 'RESOURCE_3', 'RESOURCE_5'],
     };
     await internalRequest.post(route).set(adminHeaders).send(requestBody).expect(400);
-    const { Messages } = await sqsClient
-      .receiveMessage({
+    const { Messages } = await sqsClient.send(
+      new ReceiveMessageCommand({
         QueueUrl: testQueueUrl.toString(),
         MaxNumberOfMessages: 10,
         WaitTimeSeconds: 0.5,
-      })
-      .promise();
+      }),
+    );
     expect(Messages?.length ?? 0).toEqual(0);
   });
 });
