@@ -167,13 +167,8 @@ export const publishEntityChangeNotification = async ({
 
   // TODO: This is a temporary fix to prevent race conditions on case updates trigger due to contact updates. I.e. two contacts with same caseId can cause a version conflict race condition and updates are missed.
   //       When the time comes to introduce profiles search, this won't work anymore.
-  //       A better long term fix would be to
-  //       - Introduce intermediate Lambda "splitter".
-  //       - Introduce 3 queues, -contacts -cases and -profiles.
-  //       - Splitter lambda creates multiple messages from a single contact event, for the corresponding queues.
-  //       - Consumer receives messages from the 3 queues, race conditions are prevented by messageGroupId on target document.
-  //       This will preserve the current "notify on event" system in HRM
-  //       while reflecting more accurately how a single event updates multiple indices in ES.
+  //       A better long term fix is suggested in https://github.com/techmatters/hrm/pull/1116
+  //
   // const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
   const messageGroupId =
     entityType === 'contact' && entity.caseId
