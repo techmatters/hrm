@@ -15,9 +15,9 @@
   "editContactField": [["everyone"]],
   "editInProgressContact": [["everyone"]],
   "viewExternalTranscript": [["everyone"]],
-  "viewRecording": [["everyone"]],
+  "viewRecording": [["isSupervisor"]],
   "addContactToCase": [["everyone"]],
-  "removeContactFromCase": [["isSupervisor"], ["isOwner"]],
+  "removeContactFromCase": [["everyone"]],
   
   "viewProfile": [["everyone"]],
   "flagProfile": [["isSupervisor"]],
