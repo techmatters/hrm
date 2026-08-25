@@ -10,9 +10,9 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
-    "@tech-matters/types": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
-    "twilio": "^6.0.2"
+    "@tech-matters/types": "^1.0.0",
+    "twilio": "^6.1.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
