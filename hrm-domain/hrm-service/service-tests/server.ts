@@ -90,6 +90,11 @@ export const basicHeaders = {
   Authorization: `Basic BBC`,
 };
 
+export const adminHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Basic VCS`,
+};
+
 export type ApiTestSuiteParameters = {
   request: SuperAgentTest;
   requestDescription: 'PUBLIC' | 'INTERNAL';
