@@ -22,9 +22,16 @@ import {
 import type { Request, Response, NextFunction } from 'express';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { renotifyCasesStream } from './caseNotifyService';
+import * as caseApi from './caseService';
 import createError from 'http-errors';
 
 const adminCasesRouter = SafeRouter();
+
+adminCasesRouter.post('/', publicEndpoint, async (req, res) => {
+  const { hrmAccountId, user } = req;
+  const createdCase = await caseApi.createCase(req.body, hrmAccountId, user.workerSid);
+  res.json(createdCase);
+});
 
 // admin POST endpoint to renotify cases. req body has accountSid, dateFrom, dateTo
 adminCasesRouter.post(
