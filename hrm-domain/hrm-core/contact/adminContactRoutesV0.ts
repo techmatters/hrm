@@ -21,9 +21,46 @@ import {
 } from '@tech-matters/hrm-types';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
+import { connectContactToCase, createContact } from './contactService';
 import createError from 'http-errors';
 
 const adminContactsRouter = SafeRouter();
+
+// example: curl -XPOST -H'Content-Type: application/json' localhost:3000/admin/v0/accounts/ACxxx/contacts -d'{"createdBy": "system", ...}'
+adminContactsRouter.post('/', publicEndpoint, async (req: Request, res: Response) => {
+  const { hrmAccountId, user, body, permissionRules } = req;
+  const contact = await createContact(hrmAccountId, body.createdBy, body, {
+    permissionRules,
+    can: req.can,
+    user,
+  });
+  res.json(contact);
+});
+
+adminContactsRouter.put(
+  '/:contactId/connectToCase',
+  publicEndpoint,
+  async (req: Request, res: Response) => {
+    const { hrmAccountId, user, permissionRules } = req;
+    const { contactId } = req.params;
+    const { caseId } = req.body;
+    try {
+      const updatedContact = await connectContactToCase(hrmAccountId, contactId, caseId, {
+        can: req.can,
+        user,
+        permissionRules,
+      });
+      res.json(updatedContact);
+    } catch (err) {
+      if (
+        err.message.toLowerCase().includes('violates foreign key constraint') ||
+        err.message.toLowerCase().includes('contact not found')
+      ) {
+        throw createError(404);
+      } else throw err;
+    }
+  },
+);
 
 // admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
 adminContactsRouter.post(

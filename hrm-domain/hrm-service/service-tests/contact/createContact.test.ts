@@ -33,7 +33,7 @@ import {
 import '../case/caseValidation';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { selectSingleContactByTaskId } from '@tech-matters/hrm-core/contact/sql/contact-get-sql';
-import { basicHeaders, headers } from '../server';
+import { adminHeaders, basicHeaders, headers } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import * as profilesDB from '@tech-matters/hrm-core/profile/profileDataAccess';
 import * as profilesService from '@tech-matters/hrm-core/profile/profileService';
@@ -60,6 +60,12 @@ each([
     route: `/internal/v0/accounts/${accountSid}/contacts`,
     testHeaders: basicHeaders,
     description: 'internal route',
+  },
+  {
+    testRequest: internalRequest,
+    route: `/admin/v0/accounts/${accountSid}/contacts`,
+    testHeaders: adminHeaders,
+    description: 'admin route',
   },
 ]).describe('POST /contacts $description', ({ testRequest, route, testHeaders }) => {
   test('should return 401', async () => {
