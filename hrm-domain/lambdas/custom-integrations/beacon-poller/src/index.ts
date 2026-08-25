@@ -34,7 +34,11 @@ import { createIncidentReportProcessor } from './incidentReport';
 import { BEACON_API_KEY_HEADER } from './config';
 import { readApiInChunks } from './apiChunkReader';
 import { createCaseReportProcessor } from './caseReport';
-import { getCachedParameters, getSsmParameter, loadSsmCache } from '@tech-matters/ssm-cache';
+import {
+  getCachedParameters,
+  getSsmParameter,
+  loadSsmCache,
+} from '@tech-matters/ssm-cache';
 
 const environment = process.env.NODE_ENV!;
 
@@ -62,8 +66,12 @@ export const handler = async ({
   const apiKeyParams = getCachedParameters(beaconApiKeyParamRegex);
   const baseUrlParams = getCachedParameters(beaconBaseUrlParamRegex);
 
-  const helplinesWithApiKey = new Set(Object.keys(apiKeyParams).map(helplineFromParamPath));
-  const helplinesWithBaseUrl = new Set(Object.keys(baseUrlParams).map(helplineFromParamPath));
+  const helplinesWithApiKey = new Set(
+    Object.keys(apiKeyParams).map(helplineFromParamPath),
+  );
+  const helplinesWithBaseUrl = new Set(
+    Object.keys(baseUrlParams).map(helplineFromParamPath),
+  );
 
   const allHelplines = new Set([...helplinesWithApiKey, ...helplinesWithBaseUrl]);
 
@@ -73,20 +81,32 @@ export const handler = async ({
 
     if (!hasApiKey || !hasBaseUrl) {
       console.warn(
-        `[beacon-poller] Helpline '${helplineShortCode}' has ${hasApiKey ? 'beacon_api_key' : 'beacon_base_url'} configured but is missing ${hasApiKey ? 'beacon_base_url' : 'beacon_api_key'}. Skipping.`,
+        `[beacon-poller] Helpline '${helplineShortCode}' has ${
+          hasApiKey ? 'beacon_api_key' : 'beacon_base_url'
+        } configured but is missing ${
+          hasApiKey ? 'beacon_base_url' : 'beacon_api_key'
+        }. Skipping.`,
       );
       continue;
     }
 
-    const beaconApiKey = apiKeyParams[`/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`];
-    const beaconBaseUrl = baseUrlParams[`/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`];
+    const beaconApiKey =
+      apiKeyParams[
+        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`
+      ];
+    const beaconBaseUrl =
+      baseUrlParams[
+        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`
+      ];
 
     let accountSid: string;
     try {
       accountSid = await getSsmParameter(accountSidParamPath(helplineShortCode));
     } catch {
       console.warn(
-        `[beacon-poller] Could not look up account SID for helpline '${helplineShortCode}' from SSM path ${accountSidParamPath(helplineShortCode)}. Skipping.`,
+        `[beacon-poller] Could not look up account SID for helpline '${helplineShortCode}' from SSM path ${accountSidParamPath(
+          helplineShortCode,
+        )}. Skipping.`,
       );
       continue;
     }

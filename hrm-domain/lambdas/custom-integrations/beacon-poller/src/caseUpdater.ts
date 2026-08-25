@@ -180,10 +180,14 @@ export const addDependentSectionToAseloCase =
     accountSid: string,
   ) =>
   async (item: TInput) => {
-    const res = await addSectionToAseloCase(sectionType, (input: TInput) => ({
-      ...inputToSectionMapper(input),
-      lastUpdated: '',
-    }), accountSid)(item, '_');
+    const res = await addSectionToAseloCase(
+      sectionType,
+      (input: TInput) => ({
+        ...inputToSectionMapper(input),
+        lastUpdated: '',
+      }),
+      accountSid,
+    )(item, '_');
     if (isOk(res)) {
       return newOkFromData<void>(undefined);
     } else {
@@ -253,5 +257,8 @@ export const updateAseloCaseOverview = async (
   accountSid: string,
 ) => updateAseloCase(caseId, patch, 'overview', accountSid);
 
-export const updateAseloCaseStatus = async (caseId: string, status: string, accountSid: string) =>
-  updateAseloCase(caseId, { status }, 'status', accountSid);
+export const updateAseloCaseStatus = async (
+  caseId: string,
+  status: string,
+  accountSid: string,
+) => updateAseloCase(caseId, { status }, 'status', accountSid);

@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isErr, newErr } from '@tech-matters/types';
+import { isErr } from '@tech-matters/types';
 import { validatePayload } from './validation';
 import * as hrmService from './hrm-service';
 import * as beaconService from './beacon-service';

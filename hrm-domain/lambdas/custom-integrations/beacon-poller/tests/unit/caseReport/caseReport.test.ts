@@ -59,7 +59,7 @@ export const verifyUpdateStatusRequest = (caseId: string, expectedStatus: string
   expect(parsedJson).toStrictEqual({ status: expectedStatus });
 };
 
-describe('addCaseReportSectionsToAseloCase', () => {
+describe('createCaseReportProcessor', () => {
   const addCaseReportSectionsToAseloCase = createCaseReportProcessor(process.env.ACCOUNT_SID!);
   const caseReportWithCoreSection = generateCaseReport({
     id: 1234,

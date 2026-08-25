@@ -107,17 +107,16 @@ export const incidentReportToCaseSection = ({
   };
 };
 
-export const createIncidentReportProcessor = (accountSid: string): ItemProcessor<IncidentReport> => {
+export const createIncidentReportProcessor = (
+  accountSid: string,
+): ItemProcessor<IncidentReport> => {
   const addIncidentReportSectionToAseloCase = addSectionToAseloCase(
     'incidentReport',
     incidentReportToCaseSection,
     accountSid,
   );
 
-  return async (
-    incidentReport: IncidentReport,
-    lastSeen: string,
-  ) => {
+  return async (incidentReport: IncidentReport, lastSeen: string) => {
     const incidentReportResult = await addIncidentReportSectionToAseloCase(
       incidentReport,
       lastSeen,
@@ -140,10 +139,14 @@ export const createIncidentReportProcessor = (accountSid: string): ItemProcessor
           addResponderToAseloCase(responder),
         ),
       ]);
-      const overviewPatchResult = await updateAseloCaseOverview(incidentReport.case_id!, {
-        operatingArea: incidentReport.class,
-        priority: incidentReport.priority,
-      }, accountSid);
+      const overviewPatchResult = await updateAseloCaseOverview(
+        incidentReport.case_id!,
+        {
+          operatingArea: incidentReport.class,
+          priority: incidentReport.priority,
+        },
+        accountSid,
+      );
       const errors = [...responderResults, overviewPatchResult].filter(result =>
         isErr(result),
       );

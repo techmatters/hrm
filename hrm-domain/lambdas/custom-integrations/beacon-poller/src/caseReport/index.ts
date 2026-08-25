@@ -198,7 +198,9 @@ const caseReportToSudSurveyCaseSection = ({
   };
 };
 
-export const createCaseReportProcessor = (accountSid: string): ItemProcessor<RawCaseReportApiPayload> => {
+export const createCaseReportProcessor = (
+  accountSid: string,
+): ItemProcessor<RawCaseReportApiPayload> => {
   const addCaseReportSectionToAseloCase = addSectionToAseloCase(
     'caseReport',
     caseReportToCaseReportCaseSection,
@@ -220,10 +222,7 @@ export const createCaseReportProcessor = (accountSid: string): ItemProcessor<Raw
     accountSid,
   );
 
-  return async (
-    rawCaseReport: RawCaseReportApiPayload,
-    lastSeen: string,
-  ) => {
+  return async (rawCaseReport: RawCaseReportApiPayload, lastSeen: string) => {
     const caseReport = restructureApiContent(rawCaseReport);
     const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, lastSeen);
     if (isOk(caseReportResult)) {
@@ -248,7 +247,9 @@ export const createCaseReportProcessor = (accountSid: string): ItemProcessor<Raw
       const status = caseReport['Next Action']?.['Case Status'];
 
       if (caseReport.case_id && status) {
-        if (BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP]) {
+        if (
+          BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP]
+        ) {
           const caseStatusUpdateResult = await updateAseloCaseStatus(
             caseReport.case_id,
             BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP],

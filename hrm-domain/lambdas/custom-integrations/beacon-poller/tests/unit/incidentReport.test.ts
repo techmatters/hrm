@@ -166,7 +166,7 @@ describe('incidentReportToCaseSection', () => {
   });
 });
 
-describe('addIncidentReportSectionsToAseloCase', () => {
+describe('createIncidentReportProcessor', () => {
   const addIncidentReportSectionsToAseloCase = createIncidentReportProcessor(process.env.ACCOUNT_SID!);
   beforeEach(() => {
     jest.clearAllMocks();
