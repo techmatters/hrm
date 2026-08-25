@@ -17,42 +17,13 @@
 import { newErr, newOk } from '@tech-matters/types';
 import { CaseService } from '@tech-matters/hrm-types';
 
-export const validateEnvironment = () => {
-  const environment = process.env.NODE_ENV;
-  if (!environment) {
-    return newErr({
-      error: 'Environment validation failed',
-      message: 'NODE_ENV variable missing',
-    });
-  }
-
-  const hrmInternalUrl = process.env.INTERNAL_HRM_URL;
-  if (!hrmInternalUrl) {
-    return newErr({
-      error: 'Environment validation failed',
-      message: 'HRM_BASE_URL variable missing',
-    });
-  }
-
-  return newOk({ data: { environment, baseUrl: hrmInternalUrl } });
-};
-
 export const validatePayload = ({
-  accountSid,
   casePayload,
   contactId,
 }: {
-  accountSid?: string;
   casePayload?: Partial<CaseService>;
   contactId?: string;
 }) => {
-  if (!accountSid) {
-    return newErr({
-      error: 'Payload validation failed',
-      message: 'accountSid parameter missing',
-    });
-  }
-
   if (!casePayload) {
     return newErr({
       error: 'Payload validation failed',
@@ -67,23 +38,5 @@ export const validatePayload = ({
     });
   }
 
-  return newOk({ data: { accountSid, casePayload, contactId } });
-};
-
-export const validateHeaders = (headers: { authorization?: string } | undefined) => {
-  if (!headers) {
-    return newErr({
-      error: 'Headers validation failed',
-      message: 'no headers provided',
-    });
-  }
-
-  if (!headers.authorization) {
-    return newErr({
-      error: 'Headers validation failed',
-      message: 'no authorization header provided',
-    });
-  }
-
-  return newOk({ data: { authToken: headers.authorization } });
+  return newOk({ data: { casePayload, contactId } });
 };

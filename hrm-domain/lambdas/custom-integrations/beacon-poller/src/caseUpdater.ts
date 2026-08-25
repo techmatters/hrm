@@ -22,7 +22,6 @@ import {
   newOkFromData,
   SuccessResult,
 } from '@tech-matters/types';
-import { accountSid } from './config';
 
 const hrmHeaders = {
   Authorization: `Basic ${process.env.STATIC_KEY}`,
@@ -66,6 +65,7 @@ export const addSectionToAseloCase =
       caseId: string;
       lastUpdated: string;
     },
+    accountSid: string,
   ): ItemProcessor<TInput> =>
   async (
     inputData: TInput,
@@ -177,12 +177,13 @@ export const addDependentSectionToAseloCase =
       section: NewCaseSection;
       caseId: string;
     },
+    accountSid: string,
   ) =>
   async (item: TInput) => {
     const res = await addSectionToAseloCase(sectionType, (input: TInput) => ({
       ...inputToSectionMapper(input),
       lastUpdated: '',
-    }))(item, '_');
+    }), accountSid)(item, '_');
     if (isOk(res)) {
       return newOkFromData<void>(undefined);
     } else {
@@ -195,6 +196,7 @@ const updateAseloCase = async (
   caseId: string,
   patch: { status: string } | { operatingArea: string; priority: string },
   caseDescendentPath: string,
+  accountSid: string,
 ): Promise<
   | ErrorResult<{
       type: 'CaseNotFound';
@@ -248,7 +250,8 @@ const updateAseloCase = async (
 export const updateAseloCaseOverview = async (
   caseId: string,
   patch: { operatingArea: string; priority: string },
-) => updateAseloCase(caseId, patch, 'overview');
+  accountSid: string,
+) => updateAseloCase(caseId, patch, 'overview', accountSid);
 
-export const updateAseloCaseStatus = async (caseId: string, status: string) =>
-  updateAseloCase(caseId, { status }, 'status');
+export const updateAseloCaseStatus = async (caseId: string, status: string, accountSid: string) =>
+  updateAseloCase(caseId, { status }, 'status', accountSid);

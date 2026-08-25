@@ -107,56 +107,60 @@ export const incidentReportToCaseSection = ({
   };
 };
 
-const addIncidentReportSectionToAseloCase = addSectionToAseloCase(
-  'incidentReport',
-  incidentReportToCaseSection,
-);
-
-export const addIncidentReportSectionsToAseloCase: ItemProcessor<IncidentReport> = async (
-  incidentReport: IncidentReport,
-  lastSeen: string,
-) => {
-  const incidentReportResult = await addIncidentReportSectionToAseloCase(
-    incidentReport,
-    lastSeen,
+export const createIncidentReportProcessor = (accountSid: string): ItemProcessor<IncidentReport> => {
+  const addIncidentReportSectionToAseloCase = addSectionToAseloCase(
+    'incidentReport',
+    incidentReportToCaseSection,
+    accountSid,
   );
 
-  if (isOk(incidentReportResult)) {
-    const addResponderToAseloCase = addDependentSectionToAseloCase(
-      'assignedResponder',
-      (responder: Responder) =>
-        responderToCaseSection(
-          incidentReport.case_id!,
-          incidentReport.id,
-          responder,
-          lastSeen,
-        ),
+  return async (
+    incidentReport: IncidentReport,
+    lastSeen: string,
+  ) => {
+    const incidentReportResult = await addIncidentReportSectionToAseloCase(
+      incidentReport,
+      lastSeen,
     );
-    const responderResults = await Promise.all([
-      ...(incidentReport.responders ?? []).map(responder =>
-        addResponderToAseloCase(responder),
-      ),
-    ]);
-    const overviewPatchResult = await updateAseloCaseOverview(incidentReport.case_id!, {
-      operatingArea: incidentReport.class,
-      priority: incidentReport.priority,
-    });
-    const errors = [...responderResults, overviewPatchResult].filter(result =>
-      isErr(result),
-    );
-    if (errors.length) {
-      const errorLevel = errors.some(e => e.error.level === 'error') ? 'error' : 'warn';
-      return newErr({
-        message: 'Failed to add responders from incident report to Aselo case',
-        error: {
-          type: 'AggregateError',
-          level: errorLevel,
-          lastUpdated: incidentReportResult.unwrap(),
-          errors,
-        },
-      });
-    }
-  }
 
-  return incidentReportResult;
+    if (isOk(incidentReportResult)) {
+      const addResponderToAseloCase = addDependentSectionToAseloCase(
+        'assignedResponder',
+        (responder: Responder) =>
+          responderToCaseSection(
+            incidentReport.case_id!,
+            incidentReport.id,
+            responder,
+            lastSeen,
+          ),
+        accountSid,
+      );
+      const responderResults = await Promise.all([
+        ...(incidentReport.responders ?? []).map(responder =>
+          addResponderToAseloCase(responder),
+        ),
+      ]);
+      const overviewPatchResult = await updateAseloCaseOverview(incidentReport.case_id!, {
+        operatingArea: incidentReport.class,
+        priority: incidentReport.priority,
+      }, accountSid);
+      const errors = [...responderResults, overviewPatchResult].filter(result =>
+        isErr(result),
+      );
+      if (errors.length) {
+        const errorLevel = errors.some(e => e.error.level === 'error') ? 'error' : 'warn';
+        return newErr({
+          message: 'Failed to add responders from incident report to Aselo case',
+          error: {
+            type: 'AggregateError',
+            level: errorLevel,
+            lastUpdated: incidentReportResult.unwrap(),
+            errors,
+          },
+        });
+      }
+    }
+
+    return incidentReportResult;
+  };
 };

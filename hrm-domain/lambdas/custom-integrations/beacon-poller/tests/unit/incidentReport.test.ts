@@ -15,7 +15,7 @@
  */
 
 import {
-  addIncidentReportSectionsToAseloCase,
+  createIncidentReportProcessor,
   incidentReportToCaseSection,
 } from '../../src/incidentReport';
 import { generateIncidentReport } from '../mockGenerators';
@@ -167,6 +167,7 @@ describe('incidentReportToCaseSection', () => {
 });
 
 describe('addIncidentReportSectionsToAseloCase', () => {
+  const addIncidentReportSectionsToAseloCase = createIncidentReportProcessor(process.env.ACCOUNT_SID!);
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetch.mockResolvedValue({

@@ -21,7 +21,7 @@ import {
   generateCaseReportTextValueNode,
   generateCompleteCaseReport,
 } from '../../mockGenerators';
-import { addCaseReportSectionsToAseloCase } from '../../../src/caseReport';
+import { createCaseReportProcessor } from '../../../src/caseReport';
 import '@tech-matters/testing';
 import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
@@ -60,6 +60,7 @@ export const verifyUpdateStatusRequest = (caseId: string, expectedStatus: string
 };
 
 describe('addCaseReportSectionsToAseloCase', () => {
+  const addCaseReportSectionsToAseloCase = createCaseReportProcessor(process.env.ACCOUNT_SID!);
   const caseReportWithCoreSection = generateCaseReport({
     id: 1234,
     case_id: '5678',

@@ -18,7 +18,7 @@ import { addHours } from 'date-fns/addHours';
 import { subDays } from 'date-fns/subDays';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import { CaseSectionRecord } from '@tech-matters/hrm-types';
-import { putSsmParameter } from '@tech-matters/ssm-cache';
+import { putSsmParameter, ssmCache } from '@tech-matters/ssm-cache';
 import { clearAllTables } from '@tech-matters/hrm-service-test-support';
 import each from 'jest-each';
 
@@ -39,6 +39,7 @@ import {
 } from '../../src/caseReport/apiPayload';
 
 const ACCOUNT_SID = 'ACservicetest';
+const HELPLINE_SHORT_CODE = 'uscr';
 const BEACON_RESPONSE_HEADERS = {
   'Content-Type': 'application/json',
 };
@@ -51,13 +52,21 @@ process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CASE_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CONSECUTIVE_API_CALLS = '5';
 const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
-const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_incident_report_seen`;
-const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_case_report_seen`;
+const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/${ACCOUNT_SID}/beacon/latest_incident_report_seen`;
+const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/${ACCOUNT_SID}/beacon/latest_case_report_seen`;
 
 type CaseOverviewPatch = { priority: string; operatingArea: string };
 
 export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
   await mockSsmParameters(mockttp, [
+    {
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_api_key`,
+      valueGenerator: () => process.env.BEACON_API_KEY!,
+    },
+    {
+      name: `/${process.env.NODE_ENV}/twilio/${HELPLINE_SHORT_CODE}/account_sid`,
+      valueGenerator: () => ACCOUNT_SID,
+    },
     {
       name: LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
       valueGenerator: () => '',
@@ -182,7 +191,13 @@ export const mockBeacon = async <TItem>(
   apiPath: string,
   responses: TItem[][],
 ): Promise<MockedEndpoint> => {
-  process.env.BEACON_BASE_URL = `http://127.0.0.1:${mockttp.port}/mock-beacon`;
+  const beaconBaseUrl = `http://127.0.0.1:${mockttp.port}/mock-beacon`;
+  process.env.BEACON_BASE_URL = beaconBaseUrl;
+  await putSsmParameter(
+    `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_base_url`,
+    beaconBaseUrl,
+    { overwrite: true },
+  );
   console.debug(
     `Mocking beacon endpoint: GET ${process.env.BEACON_BASE_URL}${apiPath} to respond with ${responses.length} responses`,
   );
@@ -272,6 +287,9 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  // Clear the SSM cache so loadSsmCache re-scans parameters on each test run
+  ssmCache.values = {};
+  ssmCache.expiryDate = undefined;
   await clearAllTables(db);
   await putSsmParameter(
     LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,

@@ -6,10 +6,8 @@
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/http" },
-    { "path": "packages/twilio-worker-auth" },
-    { "path": "lambdas/packages/alb-handler" },
     { "path": "lambdas/packages/hrm-authentication" },
     { "path": "hrm-domain/packages/hrm-types" },
-    { "path": "hrm-domain/lambdas/custom-integrations/uscr-dispatcher" }
+    { "path": "hrm-domain/lambdas/custom-integrations/beacon-dispatcher" }
   ]
 }
