@@ -137,15 +137,44 @@ type CaseWithLegacySections = CaseService & {
   connectedContacts: Contact[];
 };
 
-export const publishEntityChangeNotification = async (
-  accountSid: HrmAccountId,
-  entityType: 'contact' | 'case' | 'profile',
-  entity: Contact | CaseWithLegacySections | ProfileWithRelationships,
-  operation: NotificationOperation,
-) => {
+type EntityPayload =
+  | {
+      entityType: 'contact';
+      entity: Contact;
+    }
+  | {
+      entityType: 'case';
+      entity: CaseWithLegacySections;
+    }
+  | {
+      entityType: 'profile';
+      entity: ProfileWithRelationships;
+    };
+
+export const publishEntityChangeNotification = async ({
+  entityType,
+  accountSid,
+  entity,
+  operation,
+}: {
+  accountSid: HrmAccountId;
+  entityType: 'contact' | 'case' | 'profile';
+  entity: Contact | CaseWithLegacySections | ProfileWithRelationships;
+  operation: NotificationOperation;
+} & EntityPayload) => {
   // eslint-disable-next-line @typescript-eslint/dot-notation
   delete entity['totalCount'];
-  const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
+
+  // TODO: This is a temporary fix to prevent race conditions on case updates trigger due to contact updates. I.e. two contacts with same caseId can cause a version conflict race condition and updates are missed.
+  //       When the time comes to introduce profiles search, this won't work anymore.
+  //       A better long term fix is suggested in https://github.com/techmatters/hrm/pull/1116
+  //
+  // const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
+  const messageGroupId =
+    entityType === 'contact' && entity.caseId
+      ? `${accountSid}-'case'-${entity.caseId}`
+      : `${accountSid}-${entityType}-${entity.id}`;
+
   let publishResponse: { MessageId?: string };
   if (operation === 'delete') {
     publishResponse = await publishToSns({
@@ -185,7 +214,12 @@ export const publishContactChangeNotification = async ({
       contact.updatedAt ?? contact.createdAt
     }/${operation})`,
   );
-  return publishEntityChangeNotification(accountSid, 'contact', contact, operation);
+  return publishEntityChangeNotification({
+    accountSid,
+    entityType: 'contact',
+    entity: contact,
+    operation,
+  });
 };
 
 export const publishCaseChangeNotification = async ({
@@ -208,16 +242,16 @@ export const publishCaseChangeNotification = async ({
       caseObj.updatedAt ?? caseObj.createdAt
     }/${operation})`,
   );
-  return publishEntityChangeNotification(
+  return publishEntityChangeNotification({
     accountSid,
-    'case',
-    {
+    entityType: 'case',
+    entity: {
       ...caseObj,
       sections: timelineToLegacySections(timeline),
       connectedContacts: timelineToLegacyConnectedContacts(timeline),
     },
     operation,
-  );
+  });
 };
 
 export const publishProfileChangeNotification = async ({
@@ -238,5 +272,10 @@ export const publishProfileChangeNotification = async ({
       profile.updatedAt ?? profile.createdAt
     }/${operation})`,
   );
-  return publishEntityChangeNotification(accountSid, 'profile', profile, operation);
+  return publishEntityChangeNotification({
+    accountSid,
+    entityType: 'profile',
+    entity: profile,
+    operation,
+  });
 };

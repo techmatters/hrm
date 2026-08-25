@@ -36,7 +36,12 @@ const doProfileChangeNotification =
           : await getProfileById()(accountSid, profileOrId, true);
       if (profile) {
         console.debug('Broadcasting profile', JSON.stringify(profile, null, 2));
-        await publishEntityChangeNotification(accountSid, 'profile', profile, operation);
+        await publishEntityChangeNotification({
+          accountSid,
+          entityType: 'profile',
+          entity: profile,
+          operation,
+        });
       } else {
         console.error(
           `Profile ${profileOrId} (${accountSid}) not found to broadcast despite successfully updating data on it.`,
