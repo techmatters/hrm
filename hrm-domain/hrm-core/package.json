@@ -51,7 +51,7 @@
     "pg-hstore": "^2.3.4",
     "pg-promise": "^11.15.0",
     "pg-query-stream": "^4.7.0",
-    "twilio": "^6.0.2",
+    "twilio": "^6.1.0",
     "twilio-flex-token-validator": "^1.5.5"
   },
   "devDependencies": {
