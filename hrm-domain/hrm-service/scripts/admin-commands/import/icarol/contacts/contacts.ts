@@ -152,6 +152,18 @@ export const handler = async ({
       trim: true,
     });
 
+    // A repeat submission for the same taskId returns the existing contact
+    // instead of creating a duplicate; new-vs-already-imported is inferred by
+    // comparing each contact's createdAt to when this run started.
+    // No lookup-by-taskId endpoint was added for this: it would give the admin
+    // key read access to arbitrary existing contact data, which isn't needed
+    // since duplicate handling is already covered server-side.
+    const CLOCK_SKEW_BUFFER_MS = 10_000;
+    const runStartedAt = new Date(Date.now() - CLOCK_SKEW_BUFFER_MS);
+    let newCount = 0;
+    let alreadyImportedCount = 0;
+    let failedCount = 0;
+
     for (const csvRecord of csvRecords) {
       const workerName = (csvRecord.PhoneWorkerName ?? '').trim();
       const resolvedWorkerSid = workerName
@@ -177,15 +189,26 @@ export const handler = async ({
         body: JSON.stringify(contact),
       });
       if (!response.ok) {
+        failedCount++;
         console.error(
           `Failed to submit request for call report ${csvRecord.CallReportNum} (status: ${
             response.statusText
           }): ${await response.text()}`,
         );
+        continue;
+      }
+
+      const createdContact = await response.json();
+      if (new Date(createdContact.createdAt) >= runStartedAt) {
+        newCount++;
+      } else {
+        alreadyImportedCount++;
       }
     }
 
-    console.info(`Imported ${csvRecords.length} contact(s) from ${location}`);
+    console.info(
+      `Imported ${newCount} new contact(s), skipped ${alreadyImportedCount} already-imported, ${failedCount} failed, out of ${csvRecords.length} total from ${location}`,
+    );
   } catch (err) {
     console.error(
       `Failed to import contacts from ${location} into account ${accountSid} (${region} ${environment})`,
