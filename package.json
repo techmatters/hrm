@@ -35,7 +35,6 @@
     "@tsconfig/node22": "^22.0.0",
     "@types/aws-lambda": "^8.10.119",
     "@types/jest": "^26.0.24",
-    "@types/ms": "^2.1.0",
     "@types/node": "^22.13.5",
     "@types/redis": "^4.0.10",
     "@types/ws": "8.5.4",
