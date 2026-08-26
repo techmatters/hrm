@@ -14,55 +14,101 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { isErr } from '@tech-matters/types';
+import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
 import { validatePayload } from './validation';
 import * as hrmService from './hrm-service';
 import * as beaconService from './beacon-service';
 import * as mapping from './mapping';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import { CaseService } from '@tech-matters/hrm-types';
+import {
+  handleAlbEvent,
+  AlbHandlerEvent,
+  AlbHandlerResult,
+} from '@tech-matters/alb-handler';
+import { twilioTokenValidator } from '@tech-matters/twilio-worker-auth';
 
-export type BeaconDispatcherEvent = {
-  helplineShortCode: string;
-  casePayload?: Partial<CaseService>;
-  contactId?: string;
-};
+type DispatcherError =
+  | 'ValidationError'
+  | 'AuthenticationError'
+  | 'BeaconServiceError'
+  | 'HrmServiceError';
 
-export const handler = async (event: BeaconDispatcherEvent) => {
+const postHandler = async (
+  event: AlbHandlerEvent,
+): Promise<TResult<DispatcherError, void>> => {
   const environment = process.env.NODE_ENV;
   if (!environment) {
     const message = 'NODE_ENV variable missing';
     console.error(message);
-    throw new Error(message);
+    return newErr({ error: 'ValidationError', message });
   }
 
   const hrmInternalUrl = process.env.INTERNAL_HRM_URL;
   if (!hrmInternalUrl) {
     const message = 'INTERNAL_HRM_URL variable missing';
     console.error(message);
-    throw new Error(message);
+    return newErr({ error: 'ValidationError', message });
   }
 
-  const { helplineShortCode } = event;
-  if (!helplineShortCode) {
-    const message = 'helplineShortCode parameter missing from event';
+  // Extract accountSid from the last segment of the path
+  const pathSegments = event.path.split('/').filter(Boolean);
+  const accountSid = pathSegments[pathSegments.length - 1];
+  if (!accountSid) {
+    const message = 'accountSid missing from request path';
     console.error(message);
-    throw new Error(message);
+    return newErr({ error: 'ValidationError', message });
+  }
+
+  // Validate Twilio worker token
+  const authHeader = event.headers?.authorization || event.headers?.Authorization;
+  const token = authHeader?.replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return newErr({
+      error: 'AuthenticationError',
+      message: 'Missing Authorization header',
+    });
+  }
+
+  const authToken = await getSsmParameter(
+    `/${environment}/twilio/${accountSid}/auth_token`,
+  );
+  const tokenValidationResult = await twilioTokenValidator({
+    accountSid,
+    authToken,
+    token,
+  });
+  if (isErr(tokenValidationResult)) {
+    return newErr({
+      error: 'AuthenticationError',
+      message: tokenValidationResult.message,
+    });
+  }
+
+  // Parse request body
+  let body: any;
+  try {
+    body = JSON.parse(event.body ?? '{}');
+  } catch {
+    return newErr({ error: 'ValidationError', message: 'Invalid JSON body' });
+  }
+
+  const { helplineShortCode } = body;
+  if (!helplineShortCode) {
+    const message = 'helplineShortCode parameter missing from request body';
+    console.error(message);
+    return newErr({ error: 'ValidationError', message });
   }
 
   const payloadResult = validatePayload({
-    casePayload: event.casePayload,
-    contactId: event.contactId,
+    casePayload: body.casePayload,
+    contactId: body.contactId,
   });
   if (isErr(payloadResult)) {
     const message = `${JSON.stringify(payloadResult.error)} ${payloadResult.message}`;
     console.error(message);
-    throw new Error(message);
+    return newErr({ error: 'ValidationError', message });
   }
 
-  const accountSid = await getSsmParameter(
-    `/${environment}/twilio/${helplineShortCode}/account_sid`,
-  );
   const staticKey = await getSsmParameter(
     `/${environment}/twilio/${accountSid}/static_key`,
   );
@@ -80,7 +126,7 @@ export const handler = async (event: BeaconDispatcherEvent) => {
   if (isErr(createCaseResult)) {
     const message = JSON.stringify(createCaseResult.error) + createCaseResult.message;
     console.error(message);
-    throw new Error(message);
+    return newErr({ error: 'HrmServiceError', message });
   }
 
   const { contact, caseObj, sections } = createCaseResult.data;
@@ -88,7 +134,7 @@ export const handler = async (event: BeaconDispatcherEvent) => {
   // Case already contains a corresponding case entry section, we asume the incident has been created but something went wrong updating HRM. Poller will eventually bring consitency to this case
   if (hrmService.wasPendingIncidentCreated(sections.sections)) {
     console.info('case already has associated incident');
-    return;
+    return newOk({ data: undefined });
   }
 
   const incidentParams = mapping.toCreateIncident({
@@ -108,7 +154,7 @@ export const handler = async (event: BeaconDispatcherEvent) => {
     const message =
       JSON.stringify(createIncidentResult.error) + createIncidentResult.message;
     console.error(message);
-    throw new Error(message);
+    return newErr({ error: 'BeaconServiceError', message });
   }
 
   console.debug(JSON.stringify(createIncidentResult));
@@ -126,10 +172,24 @@ export const handler = async (event: BeaconDispatcherEvent) => {
     const message =
       JSON.stringify(updateSectionResult.error) + updateSectionResult.message;
     console.error(message);
-    throw new Error(message);
+    return newErr({ error: 'HrmServiceError', message });
   }
 
   console.info(
     `new incident reported, incident id ${createIncidentResult.data.pending_incident.id}, case id ${caseObj.id}`,
   );
+  return newOk({ data: undefined });
+};
+
+export const handler = async (event: AlbHandlerEvent): Promise<AlbHandlerResult> => {
+  return handleAlbEvent({
+    event,
+    methodHandlers: { POST: postHandler },
+    mapError: {
+      ValidationError: 400,
+      AuthenticationError: 401,
+      BeaconServiceError: 500,
+      HrmServiceError: 500,
+    },
+  });
 };

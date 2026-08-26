@@ -52,8 +52,8 @@ process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CASE_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CONSECUTIVE_API_CALLS = '5';
 const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
-const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/${ACCOUNT_SID}/beacon/latest_incident_report_seen`;
-const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/${ACCOUNT_SID}/beacon/latest_case_report_seen`;
+const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/latest_incident_report_seen`;
+const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/latest_case_report_seen`;
 
 type CaseOverviewPatch = { priority: string; operatingArea: string };
 

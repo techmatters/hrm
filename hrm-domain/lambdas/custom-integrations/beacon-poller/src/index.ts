@@ -113,8 +113,8 @@ export const handler = async ({
 
     const beaconHeaders = { [BEACON_API_KEY_HEADER]: beaconApiKey };
 
-    const lastIncidentReportUpdateSeenSsmKey = `/${environment}/hrm/custom-integration/${helplineShortCode}/${accountSid}/beacon/latest_incident_report_seen`;
-    const lastCaseReportUpdateSeenSsmKey = `/${environment}/hrm/custom-integration/${helplineShortCode}/${accountSid}/beacon/latest_case_report_seen`;
+    const lastIncidentReportUpdateSeenSsmKey = `/${environment}/hrm/custom-integration/beacon/${accountSid}/latest_incident_report_seen`;
+    const lastCaseReportUpdateSeenSsmKey = `/${environment}/hrm/custom-integration/beacon/${accountSid}/latest_case_report_seen`;
 
     const API_POLL_CONFIGS = {
       caseReport: {
