@@ -167,7 +167,9 @@ describe('incidentReportToCaseSection', () => {
 });
 
 describe('createIncidentReportProcessor', () => {
-  const addIncidentReportSectionsToAseloCase = createIncidentReportProcessor(process.env.ACCOUNT_SID!);
+  const addIncidentReportSectionsToAseloCase = createIncidentReportProcessor(
+    process.env.ACCOUNT_SID!,
+  );
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetch.mockResolvedValue({

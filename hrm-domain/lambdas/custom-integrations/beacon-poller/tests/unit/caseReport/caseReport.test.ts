@@ -60,7 +60,9 @@ export const verifyUpdateStatusRequest = (caseId: string, expectedStatus: string
 };
 
 describe('createCaseReportProcessor', () => {
-  const addCaseReportSectionsToAseloCase = createCaseReportProcessor(process.env.ACCOUNT_SID!);
+  const addCaseReportSectionsToAseloCase = createCaseReportProcessor(
+    process.env.ACCOUNT_SID!,
+  );
   const caseReportWithCoreSection = generateCaseReport({
     id: 1234,
     case_id: '5678',
