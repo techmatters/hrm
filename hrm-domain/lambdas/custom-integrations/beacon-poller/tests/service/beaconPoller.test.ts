@@ -196,7 +196,7 @@ export const mockBeacon = async <TItem>(
   await putSsmParameter(
     `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_base_url`,
     beaconBaseUrl,
-    { overwrite: true },
+    { overwrite: true, cacheValue: false },
   );
   console.debug(
     `Mocking beacon endpoint: GET ${process.env.BEACON_BASE_URL}${apiPath} to respond with ${responses.length} responses`,
@@ -278,12 +278,12 @@ afterAll(async () => {
 
 beforeAll(async () => {
   await mockingProxy.start();
+  await mockLastUpdateSeenParameter(await mockingProxy.mockttpServer());
   mockedBeaconEndpoint = await mockBeacon(
     await mockingProxy.mockttpServer(),
     'incidentReport',
     [],
   );
-  await mockLastUpdateSeenParameter(await mockingProxy.mockttpServer());
 });
 
 beforeEach(async () => {
@@ -294,12 +294,12 @@ beforeEach(async () => {
   await putSsmParameter(
     LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
     subDays(BASELINE_DATE, 1).toISOString(),
-    { overwrite: true },
+    { overwrite: true, cacheValue: false },
   );
   await putSsmParameter(
     LAST_CASE_REPORT_SEEN_PARAMETER_NAME,
     subDays(BASELINE_DATE, 1).toISOString(),
-    { overwrite: true },
+    { overwrite: true, cacheValue: false },
   );
 });
 
