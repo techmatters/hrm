@@ -190,25 +190,26 @@ export const assignIfPresent = (
 };
 
 /**
- * Determines the Aselo `callType` and, for counselling contacts, whether the call
- * was a crisis, from the iCarol record.
+ * Determines the Aselo `callType` from the iCarol record.
  *
  * - When "Call Information - Call Type" is "Crisis"/"Non-Crisis" the contact is a
  *   counselling contact, so the callType becomes the data callType ("Child calling
- *   about self") and an `isCrisis` boolean is recorded under caseInformation.
+ *   about self"). Crisis/Non-Crisis itself is not recorded anywhere else on the
+ *   contact.
  * - When that field is empty, the callType is inferred from the iCarol "Was..."
  *   boolean flags (e.g. WasHangup, WasSilentCall).
  * - Any other non-empty value is passed through unchanged.
  */
-export const mapCallType = (
-  record: ICarolContactRecord,
-): { callType: string; isCrisis?: boolean } => {
+export const mapCallType = (record: ICarolContactRecord): { callType: string } => {
   const rawCallType = (record['Call Information - Call Type'] ?? '').trim();
   const normalised = rawCallType.toLowerCase();
 
-  if (normalised === 'crisis') return { callType: DATA_CALL_TYPE, isCrisis: true };
-  if (normalised === 'non-crisis' || normalised === 'non crisis') {
-    return { callType: DATA_CALL_TYPE, isCrisis: false };
+  if (
+    normalised === 'crisis' ||
+    normalised === 'non-crisis' ||
+    normalised === 'non crisis'
+  ) {
+    return { callType: DATA_CALL_TYPE };
   }
   if (rawCallType) return { callType: rawCallType };
 
@@ -310,8 +311,7 @@ export const mapContact = (
   );
   assignIfPresent(caseInformation, 'referrals', record['Referrals - Type of Resource']);
 
-  const { callType, isCrisis } = mapCallType(record);
-  assignIfPresent(caseInformation, 'isCrisis', isCrisis);
+  const { callType } = mapCallType(record);
 
   const rawJson: ContactRawJson = {
     callType,

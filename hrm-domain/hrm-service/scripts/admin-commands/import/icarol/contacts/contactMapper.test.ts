@@ -247,22 +247,22 @@ describe('mapContact', () => {
   });
 
   describe('callType', () => {
-    test('maps a "Crisis" call to the data callType and records isCrisis true', () => {
+    test('maps a "Crisis" call to the data callType', () => {
       const { rawJson } = mapContact(
         buildRecord({ 'Call Information - Call Type': 'Crisis' }),
         defaultWorkerSid,
       );
       expect(rawJson!.callType).toBe('Child calling about self');
-      expect(rawJson!.caseInformation.isCrisis).toBe(true);
+      expect(rawJson!.caseInformation).not.toHaveProperty('isCrisis');
     });
 
-    test('maps a "Non-Crisis" call to the data callType and records isCrisis false', () => {
+    test('maps a "Non-Crisis" call to the data callType', () => {
       const { rawJson } = mapContact(
         buildRecord({ 'Call Information - Call Type': 'Non-Crisis' }),
         defaultWorkerSid,
       );
       expect(rawJson!.callType).toBe('Child calling about self');
-      expect(rawJson!.caseInformation.isCrisis).toBe(false);
+      expect(rawJson!.caseInformation).not.toHaveProperty('isCrisis');
     });
 
     test('infers a non-data callType from the boolean flags when call type is empty', () => {
@@ -292,13 +292,6 @@ describe('mapContact', () => {
         mapContact(buildRecord({ WasRealCall: 'Yes' }), defaultWorkerSid).rawJson!
           .callType,
       ).toBe('Child calling about self');
-    });
-
-    test('does not record isCrisis when inferring from boolean flags', () => {
-      expect(
-        mapContact(buildRecord({ WasHangup: 'Yes' }), defaultWorkerSid).rawJson!
-          .caseInformation,
-      ).not.toHaveProperty('isCrisis');
     });
 
     test('falls back to an empty callType when nothing is set', () => {
