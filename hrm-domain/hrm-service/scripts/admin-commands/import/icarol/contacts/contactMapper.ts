@@ -110,6 +110,52 @@ export const CALL_TYPE_FLAG_MAP: [field: string, callType: string][] = [
 ];
 
 /**
+ * iCarol -> Aselo value translations, keyed by childInformation field name and
+ * normalized (trimmed, lowercased) iCarol value. Values not listed here
+ * already match an Aselo option verbatim.
+ */
+export const DEMOGRAPHIC_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+  ethnicity: {
+    'non hispanic/non latino': 'Not Hispanic or Latino',
+  },
+  gender: {
+    'did not ask/did not disclose': 'Refused to Disclose',
+  },
+  pronouns: {
+    'he/him/his': 'He/Him/His',
+    'she/her/hers': 'She/Her/Hers',
+    'they/them': 'They/Them/Theirs',
+    other: 'Other',
+  },
+  race: {
+    caucasian: 'White',
+    'african american': 'Black/African American',
+    other: 'Other',
+  },
+  militaryStatus: {
+    active: 'Active Duty',
+  },
+  howDidYouHearAboutTheWarmLine: {
+    // Source value has a trailing space and lowercase "line"; trim/lowercase handles both.
+    'another warm/crisis line': 'Another Warm/Crisis Line',
+  },
+};
+
+/**
+ * Translates a raw iCarol value into its Aselo equivalent. Blank/missing
+ * returns undefined so the field is omitted; an unrecognized value passes
+ * through unchanged (trimmed).
+ */
+export const translateDemographicValue = (
+  field: string,
+  rawValue: string | undefined,
+): string | undefined => {
+  const trimmed = (rawValue ?? '').trim();
+  if (!trimmed) return undefined;
+  return DEMOGRAPHIC_VALUE_TRANSLATIONS[field]?.[trimmed.toLowerCase()] ?? trimmed;
+};
+
+/**
  * iCarol stores yes/no answers as the strings "Yes"/"No". Returns undefined for
  * empty/unrecognised values so the field can be omitted from the contact.
  */
@@ -254,24 +300,41 @@ export const mapContact = (
   assignIfPresent(childInformation, 'phone1', record.PhoneNumberFull);
   assignIfPresent(childInformation, 'state', record.StateProvince);
   assignIfPresent(childInformation, 'county', record.CountyName);
+  // Demographic and Warmline-source fields are translated -- see
+  // translateDemographicValue.
   assignIfPresent(
     childInformation,
     'ageRange',
-    record['Caller Demographics - Age Range'],
+    translateDemographicValue('ageRange', record['Caller Demographics - Age Range']),
   );
   assignIfPresent(
     childInformation,
     'ethnicity',
-    record['Caller Demographics - Ethnicity'],
+    translateDemographicValue('ethnicity', record['Caller Demographics - Ethnicity']),
   );
-  assignIfPresent(childInformation, 'gender', record['Caller Demographics - Gender']);
+  assignIfPresent(
+    childInformation,
+    'gender',
+    translateDemographicValue('gender', record['Caller Demographics - Gender']),
+  );
   assignIfPresent(
     childInformation,
     'militaryStatus',
-    record['Caller Demographics - Military Status'],
+    translateDemographicValue(
+      'militaryStatus',
+      record['Caller Demographics - Military Status'],
+    ),
   );
-  assignIfPresent(childInformation, 'pronouns', record['Caller Demographics - Pronouns']);
-  assignIfPresent(childInformation, 'race', record['Caller Demographics - Race']);
+  assignIfPresent(
+    childInformation,
+    'pronouns',
+    translateDemographicValue('pronouns', record['Caller Demographics - Pronouns']),
+  );
+  assignIfPresent(
+    childInformation,
+    'race',
+    translateDemographicValue('race', record['Caller Demographics - Race']),
+  );
   assignIfPresent(
     childInformation,
     'referral988',
@@ -280,7 +343,10 @@ export const mapContact = (
   assignIfPresent(
     childInformation,
     'howDidYouHearAboutTheWarmLine',
-    record['Incoming Call Information - How did you hear about the Warmline?'],
+    translateDemographicValue(
+      'howDidYouHearAboutTheWarmLine',
+      record['Incoming Call Information - How did you hear about the Warmline?'],
+    ),
   );
 
   // Contact > Summary -> rawJson.caseInformation

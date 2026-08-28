@@ -22,6 +22,7 @@ import {
   parseICarolBoolean,
   parseS3Uri,
   resolveWorkerSid,
+  translateDemographicValue,
 } from './contactMapper';
 
 /**
@@ -149,6 +150,44 @@ describe('mapCategories', () => {
   });
 });
 
+describe('translateDemographicValue', () => {
+  test.each([undefined, '', '   '])(
+    'returns undefined for blank/missing value "%s"',
+    value => {
+      expect(translateDemographicValue('race', value)).toBeUndefined();
+    },
+  );
+
+  test('passes through a value with no matching translation, trimmed', () => {
+    expect(translateDemographicValue('gender', ' Non-binary ')).toBe('Non-binary');
+  });
+
+  test.each([
+    ['ethnicity', 'Non Hispanic/Non Latino', 'Not Hispanic or Latino'],
+    ['gender', 'Did not ask/Did not disclose', 'Refused to Disclose'],
+    ['pronouns', 'He/him/his', 'He/Him/His'],
+    ['pronouns', 'She/her/hers', 'She/Her/Hers'],
+    ['pronouns', 'They/them', 'They/Them/Theirs'],
+    ['pronouns', 'other', 'Other'],
+    ['race', 'Caucasian', 'White'],
+    ['race', 'African American', 'Black/African American'],
+    ['race', 'other', 'Other'],
+    ['militaryStatus', 'Active', 'Active Duty'],
+    [
+      'howDidYouHearAboutTheWarmLine',
+      // iCarol's real value: lowercase "line", trailing space.
+      'Another Warm/Crisis line ',
+      'Another Warm/Crisis Line',
+    ],
+  ])('translates %s value "%s" to "%s"', (field, rawValue, expected) => {
+    expect(translateDemographicValue(field, rawValue)).toBe(expected);
+  });
+
+  test('matches translations case-insensitively', () => {
+    expect(translateDemographicValue('race', 'CAUCASIAN')).toBe('White');
+  });
+});
+
 describe('mapContact', () => {
   const defaultWorkerSid = 'WK00000000000000000000000000000099';
 
@@ -188,6 +227,26 @@ describe('mapContact', () => {
     });
   });
 
+  test('translates demographic values that need a value-level fix, not just a field mapping', () => {
+    const { rawJson } = mapContact(
+      buildRecord({
+        'Caller Demographics - Ethnicity': 'Non Hispanic/Non Latino',
+        'Caller Demographics - Race': 'Caucasian',
+        'Caller Demographics - Military Status': 'Active',
+        'Incoming Call Information - How did you hear about the Warmline?':
+          'Another Warm/Crisis line ',
+      }),
+      defaultWorkerSid,
+    );
+
+    expect(rawJson!.childInformation).toMatchObject({
+      ethnicity: 'Not Hispanic or Latino',
+      race: 'White',
+      militaryStatus: 'Active Duty',
+      howDidYouHearAboutTheWarmLine: 'Another Warm/Crisis Line',
+    });
+  });
+
   test('maps summary fields onto caseInformation, coercing Yes/No to booleans', () => {
     const { rawJson } = mapContact(
       buildRecord({
@@ -221,7 +280,7 @@ describe('mapContact', () => {
     );
   });
 
-  test('omits blank columns rather than populating empty values', () => {
+  test('omits blank columns, including demographic fields with no source value', () => {
     const { rawJson } = mapContact(
       buildRecord({ CallerName: 'Jane Doe' }),
       defaultWorkerSid,
