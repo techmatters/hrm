@@ -392,7 +392,8 @@ export const mapContact = (
   };
 
   return {
-    taskId: `WT_iCarol_${record.CallReportNum}`,
+    taskId: `TK_legacy_${record.CallReportNum}`,
+    definitionVersion: 'usnc-v1',
     // Imported iCarol contacts are phone calls.
     channel: 'default',
     timeOfContact: record.CallDateAndTimeStart || undefined,

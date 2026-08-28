@@ -191,6 +191,11 @@ describe('translateDemographicValue', () => {
 describe('mapContact', () => {
   const defaultWorkerSid = 'WK00000000000000000000000000000099';
 
+  test('sets definitionVersion to usnc-v1, required by createContact', () => {
+    const contact = mapContact(buildRecord({}), defaultWorkerSid);
+    expect(contact.definitionVersion).toEqual('usnc-v1');
+  });
+
   test('maps support seeker fields onto childInformation', () => {
     const { rawJson } = mapContact(
       buildRecord({
@@ -374,7 +379,7 @@ describe('mapContact', () => {
 
   test('builds the task id and marks the contact as a voice channel', () => {
     const contact = mapContact(buildRecord({ CallReportNum: '12345' }), defaultWorkerSid);
-    expect(contact.taskId).toBe('WT_iCarol_12345');
+    expect(contact.taskId).toBe('TK_legacy_12345');
     expect(contact.channel).toBe('default');
   });
 
