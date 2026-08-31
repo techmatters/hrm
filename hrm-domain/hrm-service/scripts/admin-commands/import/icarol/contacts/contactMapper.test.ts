@@ -15,12 +15,16 @@
  */
 import {
   ICarolContactRecord,
+  SyntheticWorkerRegistry,
   WorkerSidsByName,
+  buildLegacyWorkerSid,
   calculateConversationDuration,
   mapCategories,
   mapContact,
+  normalizeWorkerName,
   parseICarolBoolean,
   parseS3Uri,
+  registerSyntheticWorker,
   resolveWorkerSid,
   splitMultiselectValue,
   translateDemographicValue,
@@ -518,5 +522,90 @@ describe('resolveWorkerSid', () => {
     expect(
       resolveWorkerSid(buildRecord({ PhoneWorkerName: 'Ada Lovelace' })),
     ).toBeUndefined();
+  });
+
+  test.each([
+    'ada lovelace',
+    'ADA LOVELACE',
+    'Ada  Lovelace',
+    'Ada, Lovelace',
+    'Ada. Lovelace.',
+  ])('falls back to a normalised match for "%s"', name => {
+    expect(
+      resolveWorkerSid(buildRecord({ PhoneWorkerName: name }), workerSidsByName),
+    ).toBe('WK00000000000000000000000000000001');
+  });
+
+  test('returns undefined, not a guess, when two different workers normalise to the same name', () => {
+    const ambiguousMap: WorkerSidsByName = new Map([
+      ['Ada Lovelace', 'WK00000000000000000000000000000001'],
+      ['ada lovelace', 'WK00000000000000000000000000000002'],
+    ]);
+    expect(
+      resolveWorkerSid(buildRecord({ PhoneWorkerName: 'ADA LOVELACE' }), ambiguousMap),
+    ).toBeUndefined();
+  });
+});
+
+describe('normalizeWorkerName', () => {
+  test.each([
+    ['Ada Lovelace', 'ada lovelace'],
+    [' Ada  Lovelace ', 'ada lovelace'],
+    ['Ada, Lovelace', 'ada lovelace'],
+    ['Grace M. Hopper', 'grace m hopper'],
+  ])('normalises "%s" to "%s"', (input, expected) => {
+    expect(normalizeWorkerName(input)).toBe(expected);
+  });
+});
+
+describe('buildLegacyWorkerSid', () => {
+  test('sanitises a name into a deterministic, non-Twilio-shaped identifier', () => {
+    expect(buildLegacyWorkerSid('Grace M. Hopper')).toBe('LEGACY_Grace_M_Hopper');
+  });
+
+  test('produces the same identifier for the same name on repeated calls', () => {
+    expect(buildLegacyWorkerSid('Grace M. Hopper')).toBe(
+      buildLegacyWorkerSid('Grace M. Hopper'),
+    );
+  });
+
+  test('produces different identifiers for different names', () => {
+    expect(buildLegacyWorkerSid('Grace Hopper')).not.toBe(
+      buildLegacyWorkerSid('Katherine Johnson'),
+    );
+  });
+});
+
+describe('registerSyntheticWorker', () => {
+  test('reports "new" the first time a synthetic ID is used', () => {
+    const registry: SyntheticWorkerRegistry = new Map();
+    expect(
+      registerSyntheticWorker(registry, 'LEGACY_Grace_Hopper', 'Grace Hopper'),
+    ).toEqual({
+      status: 'new',
+    });
+  });
+
+  test('reports "seen" for the same name reusing the same synthetic ID', () => {
+    const registry: SyntheticWorkerRegistry = new Map([
+      ['LEGACY_Grace_Hopper', 'Grace Hopper'],
+    ]);
+    expect(
+      registerSyntheticWorker(registry, 'LEGACY_Grace_Hopper', 'Grace Hopper'),
+    ).toEqual({
+      status: 'seen',
+    });
+  });
+
+  test('reports "collision" when a different name sanitises to the same synthetic ID', () => {
+    const registry: SyntheticWorkerRegistry = new Map([
+      ['LEGACY_Grace_Hopper', 'Grace Hopper'],
+    ]);
+    expect(
+      registerSyntheticWorker(registry, 'LEGACY_Grace_Hopper', 'Grace-Hopper'),
+    ).toEqual({
+      status: 'collision',
+      previousName: 'Grace Hopper',
+    });
   });
 });

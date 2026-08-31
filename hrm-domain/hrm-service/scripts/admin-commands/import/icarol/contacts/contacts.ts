@@ -21,10 +21,13 @@ import { getClient } from '@tech-matters/twilio-client';
 import type { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { getAdminV0URL } from '../../../../hrmInternalConfig';
 import {
+  buildLegacyWorkerSid,
   ICarolContactRecord,
   mapContact,
   parseS3Uri,
+  registerSyntheticWorker,
   resolveWorkerSid,
+  SyntheticWorkerRegistry,
   WorkerSidsByName,
 } from './contactMapper';
 
@@ -57,7 +60,7 @@ export const builder = {
   },
   f: {
     alias: 'fallback-worker-sid',
-    describe: 'Twilio worker SID to use when PhoneWorkerName lookup fails',
+    describe: 'Twilio worker SID to use when PhoneWorkerName is blank',
     demandOption: true,
     type: 'string',
   },
@@ -164,19 +167,45 @@ export const handler = async ({
     let alreadyImportedCount = 0;
     let failedCount = 0;
 
+    // A name that doesn't resolve to a real Twilio worker gets its own
+    // synthetic ID rather than sharing one placeholder with every other
+    // unmatched name; this tracks which name each synthetic ID belongs to,
+    // so a sanitisation collision between two different names is caught
+    // rather than silently merged.
+    const legacyWorkerRegistry: SyntheticWorkerRegistry = new Map();
+
     for (const csvRecord of csvRecords) {
       const workerName = (csvRecord.PhoneWorkerName ?? '').trim();
       const resolvedWorkerSid = workerName
         ? resolveWorkerSid(csvRecord, workerSidsByName)
         : undefined;
 
-      // If PhoneWorkerName is present but doesn't resolve to a worker, log a
-      // warning and fall back to the default worker SID.
-      const workerSid = resolvedWorkerSid || (fallbackWorkerSid as WorkerSID);
-      if (workerName && !resolvedWorkerSid) {
-        console.warn(
-          `No Twilio worker found for PhoneWorkerName "${workerName}" (call report ${csvRecord.CallReportNum}); falling back to default worker ${fallbackWorkerSid}`,
+      let workerSid: WorkerSID;
+      if (resolvedWorkerSid) {
+        workerSid = resolvedWorkerSid;
+      } else if (workerName) {
+        // Present but unmatched, even after the conservative normalised
+        // match in resolveWorkerSid: attribute to a synthetic per-name ID
+        // instead of the single shared fallback.
+        const sanitizedId = buildLegacyWorkerSid(workerName);
+        workerSid = sanitizedId;
+        const result = registerSyntheticWorker(
+          legacyWorkerRegistry,
+          sanitizedId,
+          workerName,
         );
+        if (result.status === 'new') {
+          console.warn(
+            `No Twilio worker found for PhoneWorkerName "${workerName}" (call report ${csvRecord.CallReportNum}); attributing to synthetic worker ${sanitizedId}`,
+          );
+        } else if (result.status === 'collision') {
+          console.warn(
+            `Synthetic worker ID ${sanitizedId} collides for two different names: "${result.previousName}" and "${workerName}" (call report ${csvRecord.CallReportNum})`,
+          );
+        }
+      } else {
+        // No name recorded at all: nothing to build a synthetic ID from.
+        workerSid = fallbackWorkerSid as WorkerSID;
       }
 
       const contact = mapContact(csvRecord, workerSid);

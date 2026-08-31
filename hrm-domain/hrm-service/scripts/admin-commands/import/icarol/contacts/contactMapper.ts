@@ -277,9 +277,21 @@ export const mapCallType = (record: ICarolContactRecord): { callType: string } =
 };
 
 /**
+ * Normalises a worker name for conservative, non-exact comparison: trims,
+ * lowercases, drops periods/commas, and collapses repeated whitespace. Does
+ * not attempt typo-tolerant matching -- a name that's merely formatted
+ * differently should match; a genuinely different name should not.
+ */
+export const normalizeWorkerName = (name: string): string =>
+  name.trim().toLowerCase().replace(/[.,]/g, '').replace(/\s+/g, ' ');
+
+/**
  * Resolves the Twilio worker SID for an iCarol record from its "PhoneWorkerName"
- * (the counsellor's full name) using the supplied name -> SID lookup. Returns
- * undefined when the worker name is blank or has no matching Twilio worker.
+ * (the counsellor's full name) using the supplied name -> SID lookup. Tries an
+ * exact match first, then a conservative normalised match. If more than one
+ * real worker normalises to the same name, that's treated as no match rather
+ * than guessed at. Returns undefined when the worker name is blank, there's no
+ * lookup available, or nothing matches.
  */
 export const resolveWorkerSid = (
   record: ICarolContactRecord,
@@ -287,7 +299,59 @@ export const resolveWorkerSid = (
 ): WorkerSID | undefined => {
   const name = (record.PhoneWorkerName ?? '').trim();
   if (!name || !workerSidsByName) return undefined;
-  return workerSidsByName.get(name);
+
+  const exactMatch = workerSidsByName.get(name);
+  if (exactMatch) return exactMatch;
+
+  const normalizedTarget = normalizeWorkerName(name);
+  const normalizedMatches = new Set<WorkerSID>();
+  for (const [candidateName, sid] of workerSidsByName) {
+    if (normalizeWorkerName(candidateName) === normalizedTarget) {
+      normalizedMatches.add(sid);
+    }
+  }
+  return normalizedMatches.size === 1 ? [...normalizedMatches][0] : undefined;
+};
+
+/**
+ * Builds a deterministic, obviously-synthetic worker identifier for a
+ * departed/unmatched counsellor name, so distinct historical names stay
+ * distinguishable rather than collapsing into one shared placeholder. The
+ * same name always produces the same identifier.
+ */
+export const buildLegacyWorkerSid = (name: string): WorkerSID =>
+  `LEGACY_${name.trim().replace(/[^a-zA-Z0-9]+/g, '_')}` as WorkerSID;
+
+/**
+ * Tracks which original name each synthetic worker ID was first built for,
+ * so a sanitisation collision between two different real names can be
+ * detected instead of silently merging them.
+ */
+export type SyntheticWorkerRegistry = Map<string, string>;
+
+export type SyntheticWorkerLookupResult =
+  | { status: 'new' }
+  | { status: 'seen' }
+  | { status: 'collision'; previousName: string };
+
+/**
+ * Records a synthetic worker ID's use for a given original name, reporting
+ * whether this is the first time it's been seen, a repeat of the same name,
+ * or a collision with a different name that sanitised to the same ID.
+ */
+export const registerSyntheticWorker = (
+  registry: SyntheticWorkerRegistry,
+  sanitizedId: string,
+  originalName: string,
+): SyntheticWorkerLookupResult => {
+  const previousName = registry.get(sanitizedId);
+  if (previousName === undefined) {
+    registry.set(sanitizedId, originalName);
+    return { status: 'new' };
+  }
+  return previousName === originalName
+    ? { status: 'seen' }
+    : { status: 'collision', previousName };
 };
 
 /**
