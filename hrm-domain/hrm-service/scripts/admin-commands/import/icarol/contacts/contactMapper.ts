@@ -68,7 +68,7 @@ export type ICarolContactRecord = {
 /**
  * Each of the iCarol "eight dimensions of wellness" maps onto a single Aselo
  * category with an "Unspecified/Other" subcategory. Keyed by the (normalised)
- * iCarol dimension name. Mapping taken from the PRN field mapping spreadsheet.
+ * iCarol dimension name.
  */
 export const WELLNESS_CATEGORY_MAP: Record<
   string,
@@ -93,7 +93,7 @@ export const DATA_CALL_TYPE = 'Child calling about self';
 /**
  * iCarol records a contact's nature using a set of boolean "Was..." columns. When
  * the "Call Information - Call Type" field is empty we infer the Aselo callType
- * from these flags. The values are the labels from the PRN CallTypeButtons form
+ * from these flags. The values are the labels from the usnc CallTypeButtons form
  * definition, which is what the Flex UI stores as the callType for a non-data
  * contact (`callTypes[name] || button.label`).
  */
@@ -102,7 +102,7 @@ export const CALL_TYPE_FLAG_MAP: [field: string, callType: string][] = [
   ['WasSilentCall', 'Silent'],
   ['WasHangup', 'Hang up'],
   // The double space in 'Wrong  Number' is intentional: it matches the label in
-  // the PRN CallTypeButtons form definition verbatim, so imported contacts store
+  // the usnc CallTypeButtons form definition verbatim, so imported contacts store
   // the same callType value as contacts created through the Flex UI.
   ['WasWrongNumber', 'Wrong  Number'],
   ['WasPrankCall', 'Prank Call'],
@@ -355,10 +355,9 @@ export const registerSyntheticWorker = (
 };
 
 /**
- * Maps a single iCarol CSV record onto the Aselo contact payload. Per the PRN
- * field mapping spreadsheet, the "Contact > Support Seeker" fields are mapped
- * onto rawJson.childInformation and the "Contact > Summary" fields onto
- * rawJson.caseInformation.
+ * Maps a single iCarol CSV record onto the Aselo contact payload. The
+ * "Contact > Support Seeker" fields are mapped onto rawJson.childInformation
+ * and the "Contact > Summary" fields onto rawJson.caseInformation.
  *
  * The contact is attributed to the provided worker SID: the worker SID populates
  * `twilioWorkerId`, `createdBy` and the `contactlessTask.createdOnBehalfOf`
