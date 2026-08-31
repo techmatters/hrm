@@ -33,6 +33,9 @@ type DispatcherError =
   | 'BeaconServiceError'
   | 'HrmServiceError';
 
+const EXTRACT_HELPLINE_CODE_FROM_PATH =
+  /.*custom-integrations\/beacon\/dispatcher\/(?<helplineCode>[A-Za-z0-9]+)/g;
+
 const postHandler = async (
   event: AlbHandlerEvent,
 ): Promise<TResult<DispatcherError, void>> => {
@@ -51,14 +54,28 @@ const postHandler = async (
   }
 
   // Extract accountSid from the last segment of the path
-  const pathSegments = event.path.split('/').filter(Boolean);
-  const accountSid = pathSegments[pathSegments.length - 1];
-  if (!accountSid) {
-    const message = 'accountSid missing from request path';
-    console.error(message);
-    return newErr({ error: 'ValidationError', message });
+  const pathMatch = event.path.match(EXTRACT_HELPLINE_CODE_FROM_PATH);
+  const helplineCode = pathMatch?.groups?.helplineCode;
+
+  // Parse request body
+  let body: any;
+  try {
+    body = JSON.parse(event.body ?? '{}');
+  } catch {
+    return newErr({ error: 'ValidationError', message: 'Invalid JSON body' });
   }
 
+  // Legacy API didn't provide a short code and put the account SID in the body. New API has the short code in the path and no account sid
+  const accountSid = helplineCode
+    ? await getSsmParameter(
+        `/${environment}/twilio/${helplineCode.toUpperCase()}/account_sid`,
+      )
+    : body.accountSid;
+
+  const payloadResult = validatePayload({
+    casePayload: body.casePayload,
+    contactId: body.contactId,
+  });
   // Validate Twilio worker token
   const authHeader = event.headers?.authorization || event.headers?.Authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
@@ -84,25 +101,6 @@ const postHandler = async (
     });
   }
 
-  // Parse request body
-  let body: any;
-  try {
-    body = JSON.parse(event.body ?? '{}');
-  } catch {
-    return newErr({ error: 'ValidationError', message: 'Invalid JSON body' });
-  }
-
-  const { helplineShortCode } = body;
-  if (!helplineShortCode) {
-    const message = 'helplineShortCode parameter missing from request body';
-    console.error(message);
-    return newErr({ error: 'ValidationError', message });
-  }
-
-  const payloadResult = validatePayload({
-    casePayload: body.casePayload,
-    contactId: body.contactId,
-  });
   if (isErr(payloadResult)) {
     const message = `${JSON.stringify(payloadResult.error)} ${payloadResult.message}`;
     console.error(message);
@@ -131,7 +129,7 @@ const postHandler = async (
 
   const { contact, caseObj, sections } = createCaseResult.data;
 
-  // Case already contains a corresponding case entry section, we asume the incident has been created but something went wrong updating HRM. Poller will eventually bring consitency to this case
+  // Case already contains a corresponding case entry section, we assume the incident has been created but something went wrong updating HRM. Poller will eventually bring consistency to this case
   if (hrmService.wasPendingIncidentCreated(sections.sections)) {
     console.info('case already has associated incident');
     return newOk({ data: undefined });
@@ -147,7 +145,7 @@ const postHandler = async (
   // Case does not contains a corresponding case entry section, we assume the incident was never reported (this can only happen if Beacon responded with an error)
   const createIncidentResult = await beaconService.createIncident({
     environment,
-    helplineShortCode,
+    helplineShortCode: helplineCode?.toLowerCase() ?? 'uscr', // Legacy API only looked for creds under USCR
     incidentParams,
   });
   if (isErr(createIncidentResult)) {
