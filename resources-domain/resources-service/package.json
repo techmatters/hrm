@@ -14,7 +14,6 @@
     "mockttp": "^3.16.0",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.5.2",
-    "sqslite": "^2.1.1",
     "tsx": "^3.12.6",
     "typescript": "^5.7.3",
     "umzug": "^3.2.1",
