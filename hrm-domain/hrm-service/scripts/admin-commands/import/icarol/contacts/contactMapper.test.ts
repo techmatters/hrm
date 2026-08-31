@@ -22,6 +22,7 @@ import {
   parseICarolBoolean,
   parseS3Uri,
   resolveWorkerSid,
+  splitMultiselectValue,
   translateDemographicValue,
 } from './contactMapper';
 
@@ -85,6 +86,28 @@ describe('parseICarolBoolean', () => {
       expect(parseICarolBoolean(input)).toBeUndefined();
     },
   );
+});
+
+describe('splitMultiselectValue', () => {
+  test.each([undefined, '', '   '])('returns an empty array for "%s"', input => {
+    expect(splitMultiselectValue(input)).toEqual([]);
+  });
+
+  test('returns a single-element array for one value', () => {
+    expect(splitMultiselectValue('988')).toEqual(['988']);
+  });
+
+  test('splits and trims a semicolon-separated value', () => {
+    expect(splitMultiselectValue('988; FindHelp ;Warmline.org')).toEqual([
+      '988',
+      'FindHelp',
+      'Warmline.org',
+    ]);
+  });
+
+  test('drops empty segments from stray/trailing semicolons', () => {
+    expect(splitMultiselectValue('988;; FindHelp;')).toEqual(['988', 'FindHelp']);
+  });
 });
 
 describe('parseS3Uri', () => {
@@ -259,7 +282,7 @@ describe('mapContact', () => {
         'Incoming Call Information - Do you want a call back': 'No',
         'Incoming Call Information - Have you been directly impacted by substance use?':
           'Yes',
-        'Referrals - Type of Resource': 'Housing',
+        'Referrals - Type of Resource': '988; FindHelp',
       }),
       defaultWorkerSid,
     );
@@ -268,8 +291,14 @@ describe('mapContact', () => {
       wasTheCallerSatisfiedWithTheSupportProvided: true,
       doWeHaveTheirPermissionToCallBack: false,
       substanceUseLivedExperience: true,
-      referrals: 'Housing',
+      referrals: ['988', 'FindHelp'],
     });
+  });
+
+  test('omits referrals entirely when the source value is blank', () => {
+    const { rawJson } = mapContact(buildRecord({}), defaultWorkerSid);
+
+    expect(rawJson!.caseInformation).not.toHaveProperty('referrals');
   });
 
   test('falls back to the non-crisis satisfaction field when the follow up field is blank', () => {

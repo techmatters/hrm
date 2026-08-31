@@ -168,6 +168,16 @@ export const parseICarolBoolean = (value: string | undefined): boolean | undefin
 };
 
 /**
+ * Splits a semicolon-separated iCarol multiselect value into its individual,
+ * trimmed values, dropping empty segments.
+ */
+export const splitMultiselectValue = (rawValue: string | undefined): string[] =>
+  (rawValue ?? '')
+    .split(';')
+    .map(part => part.trim())
+    .filter(Boolean);
+
+/**
  * Computes the conversation duration (in seconds) from the iCarol call start and
  * end timestamps. Returns 0 when either timestamp is missing or unparseable.
  */
@@ -375,7 +385,12 @@ export const mapContact = (
       ],
     ),
   );
-  assignIfPresent(caseInformation, 'referrals', record['Referrals - Type of Resource']);
+  // "referrals" is a multiselect field: Aselo expects an array of the
+  // selected options, not the raw semicolon-joined string.
+  const referrals = splitMultiselectValue(record['Referrals - Type of Resource']);
+  if (referrals.length > 0) {
+    (caseInformation as Record<string, unknown>).referrals = referrals;
+  }
 
   const { callType } = mapCallType(record);
 
