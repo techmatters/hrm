@@ -30,6 +30,22 @@ import {
   SyntheticWorkerRegistry,
   WorkerSidsByName,
 } from './contactMapper';
+import {
+  findUnknownColumns,
+  findUnknownValueTokens,
+  formatValueWarnings,
+  recordUnknownValue,
+  ValueWarningRegistry,
+} from './fieldValidation';
+import {
+  KNOWN_CALL_REPORT_COLUMNS,
+  KNOWN_FIELD_VALUES,
+  MULTISELECT_VALUE_FIELDS,
+} from './usncFieldRegistry';
+
+// Only one config exists so far; this lets a future migration point at its
+// own registry without an entry-point code change.
+const SUPPORTED_MIGRATION_CONFIGS = ['usnc'];
 
 export const command = 'contacts';
 export const describe = 'Import contacts from iCarol csv export(s)';
@@ -62,6 +78,12 @@ export const builder = {
     alias: 'fallback-worker-sid',
     describe: 'Twilio worker SID to use when PhoneWorkerName is blank',
     demandOption: true,
+    type: 'string',
+  },
+  m: {
+    alias: 'migration-config',
+    describe: 'Which field/value registry to validate against',
+    default: 'usnc',
     type: 'string',
   },
 };
@@ -115,7 +137,16 @@ export const handler = async ({
   accountSid,
   location,
   fallbackWorkerSid,
+  migrationConfig,
 }) => {
+  if (!SUPPORTED_MIGRATION_CONFIGS.includes(migrationConfig)) {
+    throw new Error(
+      `Unsupported migration config "${migrationConfig}"; supported: ${SUPPORTED_MIGRATION_CONFIGS.join(
+        ', ',
+      )}`,
+    );
+  }
+
   try {
     const timestamp = new Date().getTime();
     const assumeRoleParams = {
@@ -131,16 +162,13 @@ export const handler = async ({
 
     const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts');
 
-    // Look up the account's Twilio workers so contacts can be attributed to the
-    // counsellor named in the iCarol "PhoneWorkerName" column.
+    // For attributing contacts to the counsellor named in "PhoneWorkerName".
     const workerSidsByName = await buildWorkerSidMap({
       environment,
       accountSid: accountSid as HrmAccountId,
     });
 
-    // Load the CSV file from S3 and parse it into typed record objects.
-    // iCarol exports prefix the CSV with a title row and a blank row before the
-    // header row, so parsing begins at line 3.
+    // iCarol exports prefix a title row and a blank row, so parsing begins at line 3.
     const { bucket, key } = parseS3Uri(location);
     const csvContent = await getS3Object({
       bucket,
@@ -155,23 +183,29 @@ export const handler = async ({
       trim: true,
     });
 
-    // A repeat submission for the same taskId returns the existing contact
-    // instead of creating a duplicate; new-vs-already-imported is inferred by
-    // comparing each contact's createdAt to when this run started.
-    // No lookup-by-taskId endpoint was added for this: it would give the admin
-    // key read access to arbitrary existing contact data, which isn't needed
-    // since duplicate handling is already covered server-side.
+    // Schema-drift check: warn about any column this registry hasn't classified.
+    if (csvRecords.length > 0) {
+      const unknownColumns = findUnknownColumns(
+        Object.keys(csvRecords[0]),
+        KNOWN_CALL_REPORT_COLUMNS,
+      );
+      if (unknownColumns.length > 0) {
+        console.warn(
+          `Unclassified column(s) in this export: ${unknownColumns.join(', ')}`,
+        );
+      }
+    }
+    const valueWarnings: ValueWarningRegistry = new Map();
+
+    // A repeat submission returns the existing contact; new-vs-already-imported
+    // is inferred by comparing createdAt to when this run started.
     const CLOCK_SKEW_BUFFER_MS = 10_000;
     const runStartedAt = new Date(Date.now() - CLOCK_SKEW_BUFFER_MS);
     let newCount = 0;
     let alreadyImportedCount = 0;
     let failedCount = 0;
 
-    // A name that doesn't resolve to a real Twilio worker gets its own
-    // synthetic ID rather than sharing one placeholder with every other
-    // unmatched name; this tracks which name each synthetic ID belongs to,
-    // so a sanitisation collision between two different names is caught
-    // rather than silently merged.
+    // Tracks which name each synthetic worker ID belongs to, to catch collisions.
     const legacyWorkerRegistry: SyntheticWorkerRegistry = new Map();
 
     for (const csvRecord of csvRecords) {
@@ -184,9 +218,7 @@ export const handler = async ({
       if (resolvedWorkerSid) {
         workerSid = resolvedWorkerSid;
       } else if (workerName) {
-        // Present but unmatched, even after the conservative normalised
-        // match in resolveWorkerSid: attribute to a synthetic per-name ID
-        // instead of the single shared fallback.
+        // Present but unmatched: attribute to a synthetic per-name ID instead.
         const sanitizedId = buildLegacyWorkerSid(workerName);
         workerSid = sanitizedId;
         const result = registerSyntheticWorker(
@@ -206,6 +238,19 @@ export const handler = async ({
       } else {
         // No name recorded at all: nothing to build a synthetic ID from.
         workerSid = fallbackWorkerSid as WorkerSID;
+      }
+
+      for (const field of Object.keys(KNOWN_FIELD_VALUES)) {
+        const rawValue = (csvRecord[field] ?? '').trim();
+        if (!rawValue) continue;
+        for (const unknownToken of findUnknownValueTokens(
+          field,
+          rawValue,
+          KNOWN_FIELD_VALUES,
+          MULTISELECT_VALUE_FIELDS,
+        )) {
+          recordUnknownValue(valueWarnings, field, unknownToken, csvRecord.CallReportNum);
+        }
       }
 
       const contact = mapContact(csvRecord, workerSid);
@@ -238,6 +283,7 @@ export const handler = async ({
     console.info(
       `Imported ${newCount} new contact(s), skipped ${alreadyImportedCount} already-imported, ${failedCount} failed, out of ${csvRecords.length} total from ${location}`,
     );
+    formatValueWarnings(valueWarnings).forEach(warning => console.warn(warning));
   } catch (err) {
     console.error(
       `Failed to import contacts from ${location} into account ${accountSid} (${region} ${environment})`,
