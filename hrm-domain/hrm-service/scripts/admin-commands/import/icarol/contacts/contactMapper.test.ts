@@ -395,6 +395,27 @@ describe('mapContact', () => {
     test('falls back to an empty callType when nothing is set', () => {
       expect(mapContact(buildRecord(), defaultWorkerSid).rawJson!.callType).toBe('');
     });
+
+    test('maps the compound call type value to the new, unmapped label', () => {
+      expect(
+        mapContact(
+          buildRecord({
+            'Call Information - Call Type':
+              'Prank Call/Hang-up Call/Wrong Number/Voicemail',
+          }),
+          defaultWorkerSid,
+        ).rawJson!.callType,
+      ).toBe('Prank Call/Hang-up Call/Wrong Number/Voicemail - Legacy');
+    });
+
+    test('passes through any other unrecognised call type value unchanged', () => {
+      expect(
+        mapContact(
+          buildRecord({ 'Call Information - Call Type': 'Some Other Value' }),
+          defaultWorkerSid,
+        ).rawJson!.callType,
+      ).toBe('Some Other Value');
+    });
   });
 
   describe('worker attribution', () => {

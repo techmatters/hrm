@@ -110,11 +110,17 @@ export const CALL_TYPE_FLAG_MAP: [field: string, callType: string][] = [
 ];
 
 /**
- * iCarol -> Aselo value translations, keyed by childInformation field name and
- * normalized (trimmed, lowercased) iCarol value. Values not listed here
- * already match an Aselo option verbatim.
+ * iCarol -> Aselo value translations, keyed by field name and normalized
+ * (trimmed, lowercased) iCarol value. Values not listed here already match
+ * an Aselo option verbatim.
  */
 export const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+  // Never added to the real CallTypeButtons form on purpose; safe since callType
+  // renders as plain text everywhere, with no lookup against the button list.
+  callType: {
+    'prank call/hang-up call/wrong number/voicemail':
+      'Prank Call/Hang-up Call/Wrong Number/Voicemail - Legacy',
+  },
   ethnicity: {
     'non hispanic/non latino': 'Not Hispanic or Latino',
   },
@@ -254,7 +260,8 @@ export const assignIfPresent = (
  *   contact.
  * - When that field is empty, the callType is inferred from the iCarol "Was..."
  *   boolean flags (e.g. WasHangup, WasSilentCall).
- * - Any other non-empty value is passed through unchanged.
+ * - Any other non-empty value is translated via FIELD_VALUE_TRANSLATIONS if a
+ *   translation exists, otherwise passed through unchanged.
  */
 export const mapCallType = (record: ICarolContactRecord): { callType: string } => {
   const rawCallType = (record['Call Information - Call Type'] ?? '').trim();
@@ -267,7 +274,9 @@ export const mapCallType = (record: ICarolContactRecord): { callType: string } =
   ) {
     return { callType: DATA_CALL_TYPE };
   }
-  if (rawCallType) return { callType: rawCallType };
+  if (rawCallType) {
+    return { callType: translateFieldValue('callType', rawCallType) ?? rawCallType };
+  }
 
   // Fall back to inferring the callType from the boolean flag columns.
   const matched = CALL_TYPE_FLAG_MAP.find(
