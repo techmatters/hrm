@@ -8,6 +8,7 @@
     { "path": "packages/http" },
     { "path": "lambdas/packages/hrm-authentication" },
     { "path": "hrm-domain/packages/hrm-types" },
+    { "path": "lambdas/packages/alb-handler" },
     { "path": "hrm-domain/lambdas/custom-integrations/beacon-dispatcher" }
   ]
 }

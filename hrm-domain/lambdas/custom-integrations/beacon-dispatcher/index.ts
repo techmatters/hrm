@@ -76,6 +76,12 @@ const postHandler = async (
     casePayload: body.casePayload,
     contactId: body.contactId,
   });
+
+  if (isErr(payloadResult)) {
+    const message = `${JSON.stringify(payloadResult.error)} ${payloadResult.message}`;
+    console.error(message);
+    return newErr({ error: 'ValidationError', message });
+  }
   // Validate Twilio worker token
   const authHeader = event.headers?.authorization || event.headers?.Authorization;
   const token = authHeader?.replace(/^Bearer\s+/i, '');
@@ -99,12 +105,6 @@ const postHandler = async (
       error: 'AuthenticationError',
       message: tokenValidationResult.message,
     });
-  }
-
-  if (isErr(payloadResult)) {
-    const message = `${JSON.stringify(payloadResult.error)} ${payloadResult.message}`;
-    console.error(message);
-    return newErr({ error: 'ValidationError', message });
   }
 
   const staticKey = await getSsmParameter(
