@@ -247,6 +247,7 @@ describe('mapContact', () => {
       friendlyName: 'Jane Doe',
       phone1: '+15555550123',
       state: 'CA',
+      city: 'San Francisco',
       county: 'San Francisco',
       ageRange: '25-34',
       ethnicity: 'Hispanic',

@@ -380,6 +380,8 @@ export const mapContact = (
     'state',
     translateFieldValue('state', record.StateProvince),
   );
+  // No form field exists for city; the value is stored but not shown in any view.
+  assignIfPresent(childInformation, 'city', record.CityName);
   assignIfPresent(
     childInformation,
     'county',
