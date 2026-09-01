@@ -114,7 +114,7 @@ export const CALL_TYPE_FLAG_MAP: [field: string, callType: string][] = [
  * normalized (trimmed, lowercased) iCarol value. Values not listed here
  * already match an Aselo option verbatim.
  */
-export const DEMOGRAPHIC_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
+export const FIELD_VALUE_TRANSLATIONS: Record<string, Record<string, string>> = {
   ethnicity: {
     'non hispanic/non latino': 'Not Hispanic or Latino',
   },
@@ -146,13 +146,13 @@ export const DEMOGRAPHIC_VALUE_TRANSLATIONS: Record<string, Record<string, strin
  * returns undefined so the field is omitted; an unrecognized value passes
  * through unchanged (trimmed).
  */
-export const translateDemographicValue = (
+export const translateFieldValue = (
   field: string,
   rawValue: string | undefined,
 ): string | undefined => {
   const trimmed = (rawValue ?? '').trim();
   if (!trimmed) return undefined;
-  return DEMOGRAPHIC_VALUE_TRANSLATIONS[field]?.[trimmed.toLowerCase()] ?? trimmed;
+  return FIELD_VALUE_TRANSLATIONS[field]?.[trimmed.toLowerCase()] ?? trimmed;
 };
 
 /**
@@ -370,30 +370,42 @@ export const mapContact = (
   // Contact > Support Seeker -> rawJson.childInformation
   const childInformation: ContactRawJson['childInformation'] = {};
   assignIfPresent(childInformation, 'friendlyName', record.CallerName);
-  assignIfPresent(childInformation, 'phone1', record.PhoneNumberFull);
-  assignIfPresent(childInformation, 'state', record.StateProvince);
-  assignIfPresent(childInformation, 'county', record.CountyName);
+  assignIfPresent(
+    childInformation,
+    'phone1',
+    translateFieldValue('phone1', record.PhoneNumberFull),
+  );
+  assignIfPresent(
+    childInformation,
+    'state',
+    translateFieldValue('state', record.StateProvince),
+  );
+  assignIfPresent(
+    childInformation,
+    'county',
+    translateFieldValue('county', record.CountyName),
+  );
   // Demographic and Warmline-source fields are translated -- see
-  // translateDemographicValue.
+  // translateFieldValue.
   assignIfPresent(
     childInformation,
     'ageRange',
-    translateDemographicValue('ageRange', record['Caller Demographics - Age Range']),
+    translateFieldValue('ageRange', record['Caller Demographics - Age Range']),
   );
   assignIfPresent(
     childInformation,
     'ethnicity',
-    translateDemographicValue('ethnicity', record['Caller Demographics - Ethnicity']),
+    translateFieldValue('ethnicity', record['Caller Demographics - Ethnicity']),
   );
   assignIfPresent(
     childInformation,
     'gender',
-    translateDemographicValue('gender', record['Caller Demographics - Gender']),
+    translateFieldValue('gender', record['Caller Demographics - Gender']),
   );
   assignIfPresent(
     childInformation,
     'militaryStatus',
-    translateDemographicValue(
+    translateFieldValue(
       'militaryStatus',
       record['Caller Demographics - Military Status'],
     ),
@@ -401,12 +413,12 @@ export const mapContact = (
   assignIfPresent(
     childInformation,
     'pronouns',
-    translateDemographicValue('pronouns', record['Caller Demographics - Pronouns']),
+    translateFieldValue('pronouns', record['Caller Demographics - Pronouns']),
   );
   assignIfPresent(
     childInformation,
     'race',
-    translateDemographicValue('race', record['Caller Demographics - Race']),
+    translateFieldValue('race', record['Caller Demographics - Race']),
   );
   assignIfPresent(
     childInformation,
@@ -416,7 +428,7 @@ export const mapContact = (
   assignIfPresent(
     childInformation,
     'howDidYouHearAboutTheWarmLine',
-    translateDemographicValue(
+    translateFieldValue(
       'howDidYouHearAboutTheWarmLine',
       record['Incoming Call Information - How did you hear about the Warmline?'],
     ),

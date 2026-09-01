@@ -27,7 +27,7 @@ import {
   registerSyntheticWorker,
   resolveWorkerSid,
   splitMultiselectValue,
-  translateDemographicValue,
+  translateFieldValue,
 } from './contactMapper';
 
 /**
@@ -177,16 +177,16 @@ describe('mapCategories', () => {
   });
 });
 
-describe('translateDemographicValue', () => {
+describe('translateFieldValue', () => {
   test.each([undefined, '', '   '])(
     'returns undefined for blank/missing value "%s"',
     value => {
-      expect(translateDemographicValue('race', value)).toBeUndefined();
+      expect(translateFieldValue('race', value)).toBeUndefined();
     },
   );
 
   test('passes through a value with no matching translation, trimmed', () => {
-    expect(translateDemographicValue('gender', ' Non-binary ')).toBe('Non-binary');
+    expect(translateFieldValue('gender', ' Non-binary ')).toBe('Non-binary');
   });
 
   test.each([
@@ -207,11 +207,11 @@ describe('translateDemographicValue', () => {
       'Another Warm/Crisis Line',
     ],
   ])('translates %s value "%s" to "%s"', (field, rawValue, expected) => {
-    expect(translateDemographicValue(field, rawValue)).toBe(expected);
+    expect(translateFieldValue(field, rawValue)).toBe(expected);
   });
 
   test('matches translations case-insensitively', () => {
-    expect(translateDemographicValue('race', 'CAUCASIAN')).toBe('White');
+    expect(translateFieldValue('race', 'CAUCASIAN')).toBe('White');
   });
 });
 
