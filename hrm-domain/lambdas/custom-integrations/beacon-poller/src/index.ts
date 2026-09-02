@@ -62,11 +62,12 @@ export const handler = async ({
         `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`,
       ),
     ])) as [AccountSID, string, string];
-  } catch {
+  } catch (err) {
     console.error(
       `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${accountSidParamPath(
         helplineShortCode,
       )}. Abandoning run.`,
+      err,
     );
     return -1;
   }
