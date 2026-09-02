@@ -97,6 +97,12 @@ export const builder = {
       'Identifier for this run, used to name the audit log. Auto-generated if omitted.',
     type: 'string',
   },
+  d: {
+    alias: 'dry-run',
+    describe: 'Validate and map records without creating contacts',
+    default: false,
+    type: 'boolean',
+  },
 };
 
 /**
@@ -150,6 +156,7 @@ export const handler = async ({
   fallbackWorkerSid,
   migrationConfig,
   runId: providedRunId,
+  dryRun,
 }) => {
   // Only validates against a one-item allowlist for now; doesn't yet
   // dispatch to a different registry per config.
@@ -220,6 +227,7 @@ export const handler = async ({
     let newCount = 0;
     let alreadyImportedCount = 0;
     let failedCount = 0;
+    let wouldImportCount = 0;
     const auditLogEntries: AuditLogEntry[] = [];
 
     // Tracks which name each synthetic worker ID belongs to, to catch collisions.
@@ -275,6 +283,21 @@ export const handler = async ({
       }
 
       const contact = mapContact(csvRecord, workerSid);
+
+      if (dryRun) {
+        wouldImportCount++;
+        auditLogEntries.push(
+          buildAuditLogEntry({
+            runId,
+            callReportNum: csvRecord.CallReportNum,
+            timestamp: new Date(),
+            outcome: 'dry-run',
+            valueWarnings: recordValueWarnings,
+          }),
+        );
+        continue;
+      }
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -327,12 +350,22 @@ export const handler = async ({
       );
     }
 
-    console.info(
-      `Imported ${newCount} new contact(s), skipped ${alreadyImportedCount} already-imported, ${failedCount} failed, out of ${csvRecords.length} total from ${location}`,
-    );
+    if (dryRun) {
+      console.info(
+        `DRY RUN: would attempt ${wouldImportCount} contact(s), out of ${csvRecords.length} total from ${location}. No contacts were created.`,
+      );
+    } else {
+      console.info(
+        `Imported ${newCount} new contact(s), skipped ${alreadyImportedCount} already-imported, ${failedCount} failed, out of ${csvRecords.length} total from ${location}`,
+      );
+    }
     formatValueWarnings(valueWarnings).forEach(warning => console.warn(warning));
 
-    const auditLogKey = `icarol-import-audit-logs/${runId}.jsonl`;
+    // Written for dry runs too, under a distinct key: the whole point of a
+    // dry run is a reviewable artifact of what a real run would do.
+    const auditLogKey = `icarol-import-audit-logs/${runId}${
+      dryRun ? '-dry-run' : ''
+    }.jsonl`;
     try {
       await putS3Object({
         bucket,
@@ -346,6 +379,10 @@ export const handler = async ({
         `Failed to write audit log to s3://${bucket}/${auditLogKey}`,
         err instanceof Error ? err.message : String(err),
       );
+    }
+
+    if (dryRun) {
+      return;
     }
   } catch (err) {
     console.error(
