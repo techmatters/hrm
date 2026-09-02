@@ -40,7 +40,7 @@ import type { AccountSID } from '@tech-matters/types';
 const environment = process.env.NODE_ENV!;
 
 const accountSidParamPath = (helplineShortCode: string): string =>
-  `/${environment}/twilio/${helplineShortCode}/account_sid`;
+  `/${environment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`;
 
 export const handler = async ({
   apiType,
@@ -56,10 +56,10 @@ export const handler = async ({
     [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
       getSsmParameter(accountSidParamPath(helplineShortCode)),
       getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`,
+        `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_base_url`,
       ),
       getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`,
+        `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_api_key`,
       ),
     ])) as [AccountSID, string, string];
   } catch (err) {
