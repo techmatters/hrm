@@ -38,7 +38,17 @@ const EXTRACT_HELPLINE_CODE_FROM_PATH =
 
 const postHandler = async (
   event: AlbHandlerEvent,
-): Promise<TResult<DispatcherError, void>> => {
+): Promise<
+  TResult<
+    DispatcherError,
+    {
+      caseId: string;
+      incidentId?: number;
+      pendingIncidentId: number;
+      status: 'exists' | 'success';
+    }
+  >
+> => {
   const environment = process.env.NODE_ENV;
   if (!environment) {
     const message = 'NODE_ENV variable missing';
@@ -130,9 +140,16 @@ const postHandler = async (
   const { contact, caseObj, sections } = createCaseResult.data;
 
   // Case already contains a corresponding case entry section, we assume the incident has been created but something went wrong updating HRM. Poller will eventually bring consistency to this case
-  if (hrmService.wasPendingIncidentCreated(sections.sections)) {
+  const existingIncident = hrmService.existingPendingIncident(sections.sections);
+  if (existingIncident) {
     console.info('case already has associated incident');
-    return newOk({ data: undefined });
+    return newOk({
+      data: {
+        status: 'exists',
+        caseId: caseObj.id,
+        pendingIncidentId: existingIncident.incidentId,
+      },
+    });
   }
 
   const incidentParams = mapping.toCreateIncident({
@@ -173,10 +190,26 @@ const postHandler = async (
     return newErr({ error: 'HrmServiceError', message });
   }
 
+  const {
+    pending_incident: { id: pendingIncidentId },
+    incident: { id: incidentId },
+    status,
+  } = createIncidentResult.unwrap();
   console.info(
-    `new incident reported, incident id ${createIncidentResult.data.pending_incident.id}, case id ${caseObj.id}`,
+    `${
+      status === 'success' ? 'new incident reported' : 'incident already exists'
+    }, incident id ${createIncidentResult.data.pending_incident.id}, case id ${
+      caseObj.id
+    }`,
   );
-  return newOk({ data: undefined });
+  return newOk({
+    data: {
+      caseId: caseObj.id,
+      pendingIncidentId,
+      incidentId,
+      status,
+    },
+  });
 };
 
 export const handler = async (event: AlbHandlerEvent): Promise<AlbHandlerResult> => {
