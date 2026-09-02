@@ -15,7 +15,7 @@
  */
 import { parse } from 'csv-parse/sync';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getS3Object } from '@tech-matters/s3-client';
+import { getS3Object, putS3Object } from '@tech-matters/s3-client';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { getClient } from '@tech-matters/twilio-client';
 import type { HrmAccountId, WorkerSID } from '@tech-matters/types';
@@ -42,6 +42,12 @@ import {
   KNOWN_FIELD_VALUES,
   MULTISELECT_VALUE_FIELDS,
 } from './usncFieldRegistry';
+import {
+  AuditLogEntry,
+  buildAuditLogEntry,
+  buildRunId,
+  formatAuditLogLines,
+} from './runAudit';
 
 // Only one config exists so far; this lets a future migration point at its
 // own registry without an entry-point code change.
@@ -84,6 +90,11 @@ export const builder = {
     alias: 'migration-config',
     describe: 'Which field/value registry to validate against',
     default: 'usnc',
+    type: 'string',
+  },
+  'run-id': {
+    describe:
+      'Identifier for this run, used to name the audit log. Auto-generated if omitted.',
     type: 'string',
   },
 };
@@ -138,6 +149,7 @@ export const handler = async ({
   location,
   fallbackWorkerSid,
   migrationConfig,
+  runId: providedRunId,
 }) => {
   // Only validates against a one-item allowlist for now; doesn't yet
   // dispatch to a different registry per config.
@@ -204,9 +216,11 @@ export const handler = async ({
     // lookup-by-taskId check: the server's unique constraint already dedupes.
     const CLOCK_SKEW_BUFFER_MS = 10_000;
     const runStartedAt = new Date(Date.now() - CLOCK_SKEW_BUFFER_MS);
+    const runId = providedRunId || buildRunId(runStartedAt);
     let newCount = 0;
     let alreadyImportedCount = 0;
     let failedCount = 0;
+    const auditLogEntries: AuditLogEntry[] = [];
 
     // Tracks which name each synthetic worker ID belongs to, to catch collisions.
     const legacyWorkerRegistry: SyntheticWorkerRegistry = new Map();
@@ -218,12 +232,14 @@ export const handler = async ({
         : undefined;
 
       let workerSid: WorkerSID;
+      let usedSyntheticWorker = false;
       if (resolvedWorkerSid) {
         workerSid = resolvedWorkerSid;
       } else if (workerName) {
         // Present but unmatched: attribute to a synthetic per-name ID instead.
         const sanitizedId = buildLegacyWorkerSid(workerName);
         workerSid = sanitizedId;
+        usedSyntheticWorker = true;
         const result = registerSyntheticWorker(
           legacyWorkerRegistry,
           sanitizedId,
@@ -243,6 +259,7 @@ export const handler = async ({
         workerSid = fallbackWorkerSid as WorkerSID;
       }
 
+      const recordValueWarnings: string[] = [];
       for (const field of Object.keys(KNOWN_FIELD_VALUES)) {
         const rawValue = (csvRecord[field] ?? '').trim();
         if (!rawValue) continue;
@@ -253,6 +270,7 @@ export const handler = async ({
           MULTISELECT_VALUE_FIELDS,
         )) {
           recordUnknownValue(valueWarnings, field, unknownToken, csvRecord.CallReportNum);
+          recordValueWarnings.push(`${field}: ${unknownToken}`);
         }
       }
 
@@ -267,26 +285,68 @@ export const handler = async ({
       });
       if (!response.ok) {
         failedCount++;
+        // No submitted field values ever appear in this error body (no schema
+        // validator on this path; DB error detail is never surfaced), except
+        // stack traces if INCLUDE_ERROR_IN_RESPONSE=true on the target env.
+        const failureReason = `HTTP ${response.status} ${
+          response.statusText
+        }: ${await response.text()}`;
         console.error(
-          `Failed to submit request for call report ${csvRecord.CallReportNum} (status: ${
-            response.statusText
-          }): ${await response.text()}`,
+          `Failed to submit request for call report ${csvRecord.CallReportNum}: ${failureReason}`,
+        );
+        auditLogEntries.push(
+          buildAuditLogEntry({
+            runId,
+            callReportNum: csvRecord.CallReportNum,
+            timestamp: new Date(),
+            outcome: 'failed',
+            failureReason,
+            valueWarnings: recordValueWarnings,
+            usedSyntheticWorker,
+          }),
         );
         continue;
       }
 
       const createdContact = await response.json();
-      if (new Date(createdContact.createdAt) >= runStartedAt) {
+      const isNew = new Date(createdContact.createdAt) >= runStartedAt;
+      if (isNew) {
         newCount++;
       } else {
         alreadyImportedCount++;
       }
+      auditLogEntries.push(
+        buildAuditLogEntry({
+          runId,
+          callReportNum: csvRecord.CallReportNum,
+          timestamp: new Date(),
+          outcome: isNew ? 'created' : 'already-imported',
+          valueWarnings: recordValueWarnings,
+          usedSyntheticWorker,
+        }),
+      );
     }
 
     console.info(
       `Imported ${newCount} new contact(s), skipped ${alreadyImportedCount} already-imported, ${failedCount} failed, out of ${csvRecords.length} total from ${location}`,
     );
     formatValueWarnings(valueWarnings).forEach(warning => console.warn(warning));
+
+    const auditLogKey = `icarol-import-audit-logs/${runId}.jsonl`;
+    try {
+      await putS3Object({
+        bucket,
+        key: auditLogKey,
+        body: formatAuditLogLines(auditLogEntries),
+        contentType: 'application/x-ndjson',
+      });
+      console.info(`Audit log written to s3://${bucket}/${auditLogKey}`);
+    } catch (err) {
+      console.error(
+        `Failed to write audit log to s3://${bucket}/${auditLogKey}`,
+        err instanceof Error ? err.message : String(err),
+      );
+    }
   } catch (err) {
     console.error(
       `Failed to import contacts from ${location} into account ${accountSid} (${region} ${environment})`,
