@@ -103,6 +103,11 @@ export const builder = {
     default: false,
     type: 'boolean',
   },
+  'skip-reindex': {
+    describe: 'Do not trigger an Elasticsearch reindex after this run',
+    default: false,
+    type: 'boolean',
+  },
 };
 
 /**
@@ -157,6 +162,7 @@ export const handler = async ({
   migrationConfig,
   runId: providedRunId,
   dryRun,
+  skipReindex,
 }) => {
   // Only validates against a one-item allowlist for now; doesn't yet
   // dispatch to a different registry per config.
@@ -349,6 +355,7 @@ export const handler = async ({
         }),
       );
     }
+    const runEndedAt = new Date();
 
     if (dryRun) {
       console.info(
@@ -383,6 +390,43 @@ export const handler = async ({
 
     if (dryRun) {
       return;
+    }
+
+    if (skipReindex) {
+      console.info('Skipping reindex (--skip-reindex).');
+    } else if (newCount > 0) {
+      const reindexUrl = getAdminV0URL(
+        internalResourcesUrl,
+        accountSid,
+        '/contacts/reindex',
+      );
+      try {
+        const reindexResponse = await fetch(reindexUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${authKey}`,
+          },
+          body: JSON.stringify({
+            dateFrom: runStartedAt.toISOString(),
+            dateTo: runEndedAt.toISOString(),
+          }),
+        });
+        if (!reindexResponse.ok) {
+          console.error(
+            `Reindex request failed (status: ${
+              reindexResponse.statusText
+            }): ${await reindexResponse.text()}`,
+          );
+        } else {
+          console.info(`Requested a reindex of run ${runId}'s new contacts.`);
+        }
+      } catch (err) {
+        console.error(
+          `Failed to request a reindex of run ${runId}'s new contacts`,
+          err instanceof Error ? err.message : String(err),
+        );
+      }
     }
   } catch (err) {
     console.error(
