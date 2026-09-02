@@ -84,7 +84,6 @@
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.4.1",
     "sequelize-mock": "^0.10.2",
-    "sqslite": "^2.1.1",
     "supertest": "^4.0.2",
     "typescript": "^5.7.3",
     "umzug": "^3.0.0",
