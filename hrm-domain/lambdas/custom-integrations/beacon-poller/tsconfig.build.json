@@ -5,6 +5,7 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
+    { "path": "hrm-domain/packages/hrm-types" },
     { "path": "hrm-domain/lambdas/custom-integrations/beacon-poller" }
   ]
 }
