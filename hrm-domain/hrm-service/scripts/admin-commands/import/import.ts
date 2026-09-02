@@ -15,7 +15,7 @@
  */
 
 export const command = 'import <command>';
-export const desc = 'admin endpoints for profiles flags';
+export const desc = 'data import commands';
 export const builder = function (yargs) {
   return yargs.commandDir('import', {
     exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'

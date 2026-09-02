@@ -15,7 +15,7 @@
  */
 
 export const command = 'icarol <command>';
-export const desc = 'admin endpoints for profiles flags';
+export const desc = 'iCarol data migration commands';
 export const builder = function (yargs) {
   return yargs.commandDir('icarol', {
     exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'

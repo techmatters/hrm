@@ -181,6 +181,8 @@ export const KNOWN_FIELD_VALUES: Readonly<Record<string, ReadonlySet<string>>> =
   'Call Information - Call Type': new Set([
     'Crisis',
     'Non-Crisis',
+    // mapCallType also accepts the space variant as a synonym of 'Non-Crisis'.
+    'Non Crisis',
     'Prank Call/Hang-up Call/Wrong Number/Voicemail',
   ]),
   'Referrals - Type of Resource': new Set([

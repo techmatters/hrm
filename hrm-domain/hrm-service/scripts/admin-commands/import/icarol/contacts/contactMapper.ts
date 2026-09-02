@@ -396,8 +396,7 @@ export const mapContact = (
     'county',
     translateFieldValue('county', record.CountyName),
   );
-  // Demographic and Warmline-source fields are translated -- see
-  // translateFieldValue.
+  // Demographic and Warmline-source fields are translated below.
   assignIfPresent(
     childInformation,
     'ageRange',

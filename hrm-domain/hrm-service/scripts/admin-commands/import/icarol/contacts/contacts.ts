@@ -139,6 +139,8 @@ export const handler = async ({
   fallbackWorkerSid,
   migrationConfig,
 }) => {
+  // Only validates against a one-item allowlist for now; doesn't yet
+  // dispatch to a different registry per config.
   if (!SUPPORTED_MIGRATION_CONFIGS.includes(migrationConfig)) {
     throw new Error(
       `Unsupported migration config "${migrationConfig}"; supported: ${SUPPORTED_MIGRATION_CONFIGS.join(
@@ -198,7 +200,8 @@ export const handler = async ({
     const valueWarnings: ValueWarningRegistry = new Map();
 
     // A repeat submission returns the existing contact; new-vs-already-imported
-    // is inferred by comparing createdAt to when this run started.
+    // is inferred by comparing createdAt to when this run started. No separate
+    // lookup-by-taskId check: the server's unique constraint already dedupes.
     const CLOCK_SKEW_BUFFER_MS = 10_000;
     const runStartedAt = new Date(Date.now() - CLOCK_SKEW_BUFFER_MS);
     let newCount = 0;
