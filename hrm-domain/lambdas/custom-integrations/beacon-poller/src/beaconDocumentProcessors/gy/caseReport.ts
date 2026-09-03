@@ -17,7 +17,7 @@
 
 import { BeaconDocumentProcessor, NewCaseSectionInfo } from '../../types';
 import { addSectionToAseloCase, updateAseloCaseStatus } from '../../caseUpdater';
-import { isErr, isOk, newErr } from '@tech-matters/types/dist/index';
+import { isErr, isOk, newErr } from '@tech-matters/types';
 import { CaseReportContentNode } from '../extractContentNodeValues';
 
 type RelevantRawCaseReportApiPayload = {
