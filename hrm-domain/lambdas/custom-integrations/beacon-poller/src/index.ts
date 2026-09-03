@@ -76,7 +76,7 @@ export const handler = async ({
   const configDefaults = {
     headers: beaconHeaders,
     lastUpdateSeenSsmKey,
-    maxItemsInChunk: parseInt(process.env.MAX_CASE_REPORTS_PER_CALL || '1000'),
+    maxItemsInChunk: parseInt((apiType === 'incidentReport' ? process.env.MAX_INCIDENT_REPORTS_PER_CALL : process.env.MAX_CASE_REPORTS_PER_CALL) || '1000'),
     maxChunksToRead: parseInt(process.env.MAX_CONSECUTIVE_API_CALLS || '10'),
     itemProcessor: createBeaconDocumentProcessor(helplineShortCode, apiType, accountSid),
   };
