@@ -15,12 +15,12 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ItemProcessor, NewCaseSectionInfo } from '../types';
+import { BeaconDocumentProcessor, NewCaseSectionInfo } from '../../../types';
 import {
   addDependentSectionToAseloCase,
   addSectionToAseloCase,
   updateAseloCaseStatus,
-} from '../caseUpdater';
+} from '../../../caseUpdater';
 import { ErrorResult, isErr, isOk, newErr, SuccessResult } from '@tech-matters/types';
 import {
   ProcessedCaseReportApiPayload,
@@ -200,7 +200,7 @@ const caseReportToSudSurveyCaseSection = ({
 
 export const createCaseReportProcessor = (
   accountSid: string,
-): ItemProcessor<RawCaseReportApiPayload> => {
+): BeaconDocumentProcessor<RawCaseReportApiPayload> => {
   const addCaseReportSectionToAseloCase = addSectionToAseloCase(
     'caseReport',
     caseReportToCaseReportCaseSection,
