@@ -18,7 +18,6 @@ import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
 import { validatePayload } from './validation';
 import * as hrmService from './hrm-service';
 import * as beaconService from './beacon-service';
-import * as mapping from './mapping';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import {
   handleAlbEvent,
@@ -26,6 +25,7 @@ import {
   AlbHandlerResult,
 } from '@tech-matters/alb-handler';
 import { twilioTokenValidator } from '@tech-matters/twilio-worker-auth';
+import { newCreateIncidentMapper } from './mapping';
 
 type DispatcherError =
   | 'ValidationError'
@@ -152,7 +152,7 @@ const postHandler = async (
     });
   }
 
-  const incidentParams = mapping.toCreateIncident({
+  const incidentParams = newCreateIncidentMapper(helplineCode)({
     caseObj: caseObj,
     contact,
   });

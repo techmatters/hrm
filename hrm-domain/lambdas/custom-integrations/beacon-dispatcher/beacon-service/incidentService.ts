@@ -39,22 +39,6 @@ type CreateIncidentResponse = {
 export type CreateIncidentParams = {
   contact_id: string;
   case_id: number;
-  caller_name: string;
-  caller_number: string;
-  description: string;
-  address: string;
-  category: string;
-  priority: string;
-  requestor_call_back: boolean;
-  person_demographics: {
-    first_name: string;
-    last_name: string;
-    nick_name: string;
-    age: string;
-    gender: string;
-    race: string;
-  };
-  is_officer_on_standby: boolean;
 };
 
 export const createIncident = async ({
