@@ -19,7 +19,7 @@ import { getS3Object, putS3Object } from '@tech-matters/s3-client';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { getClient } from '@tech-matters/twilio-client';
 import type { HrmAccountId, WorkerSID } from '@tech-matters/types';
-import { getAdminV0URL } from '../../../../hrmInternalConfig';
+import { getAdminV0URL } from '../../../hrmInternalConfig';
 import {
   buildLegacyWorkerSid,
   ICarolContactRecord,
@@ -29,25 +29,25 @@ import {
   resolveWorkerSid,
   SyntheticWorkerRegistry,
   WorkerSidsByName,
-} from './contactMapper';
+} from './contacts/contactMapper';
 import {
   findUnknownColumns,
   findUnknownValueTokens,
   formatValueWarnings,
   recordUnknownValue,
   ValueWarningRegistry,
-} from './fieldValidation';
+} from './contacts/fieldValidation';
 import {
   KNOWN_CALL_REPORT_COLUMNS,
   KNOWN_FIELD_VALUES,
   MULTISELECT_VALUE_FIELDS,
-} from './usncFieldRegistry';
+} from './contacts/usncFieldRegistry';
 import {
   AuditLogEntry,
   buildAuditLogEntry,
   buildRunId,
   formatAuditLogLines,
-} from './runAudit';
+} from './contacts/runAudit';
 
 // Only one config exists so far; this lets a future migration point at its
 // own registry without an entry-point code change.
