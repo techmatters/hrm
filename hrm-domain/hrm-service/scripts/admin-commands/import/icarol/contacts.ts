@@ -14,9 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { parse } from 'csv-parse/sync';
+import {
+  STSClient,
+  AssumeRoleCommand,
+  GetCallerIdentityCommand,
+} from '@aws-sdk/client-sts';
+import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
-import { getS3Object, putS3Object } from '@tech-matters/s3-client';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { getClient } from '@tech-matters/twilio-client';
 import type { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { getAdminV0URL } from '../../../hrmInternalConfig';
@@ -110,26 +115,61 @@ export const builder = {
   },
 };
 
+// TODO: update role name if it's renamed/rescoped in Terraform.
+const TWILIO_IAC_SERVICE_CONFIG_MANAGER_ROLE_NAME = 'twilio-iac-service-config-manager';
+
+const assumeRoleCredentials = async (
+  region: string,
+  assumeRoleParams: { RoleArn: string; RoleSessionName: string },
+) => {
+  const sts = new STSClient({ region });
+  const { Credentials } = await sts.send(new AssumeRoleCommand(assumeRoleParams));
+  return {
+    accessKeyId: Credentials!.AccessKeyId!,
+    secretAccessKey: Credentials!.SecretAccessKey!,
+    sessionToken: Credentials!.SessionToken!,
+  };
+};
+
+const getTwilioConfigSsmClient = async (region: string): Promise<SSMClient> => {
+  const sts = new STSClient({ region });
+  const { Account: accountId } = await sts.send(new GetCallerIdentityCommand({}));
+  const credentials = await assumeRoleCredentials(region, {
+    RoleArn: `arn:aws:iam::${accountId}:role/${TWILIO_IAC_SERVICE_CONFIG_MANAGER_ROLE_NAME}`,
+    RoleSessionName: `hrm-admin-cli-worker-sid-lookup-${Date.now()}`,
+  });
+  return new SSMClient({ region, credentials });
+};
+
 /**
  * Builds an in-memory lookup of Twilio worker full name -> worker SID for the
  * given account, so imported iCarol contacts can be attributed to the counsellor
  * recorded in the "PhoneWorkerName" column.
  *
- * Modelled on the Flex `populateCounselors` lambda: it lists the workers in the
- * account's TaskRouter workspace and reads each worker's `full_name` attribute.
- * The Twilio auth token and workspace SID are read from our SSM parameter store.
+ * Modelled on the Flex `populateCounselors` lambda; reads the Twilio auth token
+ * and workspace SID via one specific, explicitly assumed role.
  */
 const buildWorkerSidMap = async ({
+  region,
   environment,
   accountSid,
 }: {
+  region: string;
   environment: string;
   accountSid: HrmAccountId;
 }): Promise<WorkerSidsByName> => {
-  const authToken = await getSsmParameter(
+  const ssm = await getTwilioConfigSsmClient(region);
+  const getTwilioSsmParameter = async (name: string): Promise<string> => {
+    const { Parameter } = await ssm.send(
+      new GetParameterCommand({ Name: name, WithDecryption: true }),
+    );
+    return Parameter?.Value ?? '';
+  };
+
+  const authToken = await getTwilioSsmParameter(
     `/${environment}/twilio/${accountSid}/auth_token`,
   );
-  const workspaceSid = await getSsmParameter(
+  const workspaceSid = await getTwilioSsmParameter(
     `/${environment}/twilio/${accountSid}/workspace_sid`,
   );
 
@@ -188,20 +228,29 @@ export const handler = async ({
     });
 
     const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts');
+    const s3 = new S3Client({
+      region,
+      credentials: await assumeRoleCredentials(region, assumeRoleParams),
+    });
 
     // For attributing contacts to the counsellor named in "PhoneWorkerName".
     const workerSidsByName = await buildWorkerSidMap({
+      region,
       environment,
       accountSid: accountSid as HrmAccountId,
     });
 
     // iCarol exports prefix a title row and a blank row, so parsing begins at line 3.
     const { bucket, key } = parseS3Uri(location);
-    const csvContent = await getS3Object({
-      bucket,
-      key,
-      responseContentType: 'text/csv',
-    });
+    const csvContent = await (
+      await s3.send(
+        new GetObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          ResponseContentType: 'text/csv',
+        }),
+      )
+    ).Body!.transformToString();
     const csvRecords: ICarolContactRecord[] = parse(csvContent, {
       columns: true,
       from_line: 3,
@@ -374,12 +423,14 @@ export const handler = async ({
       dryRun ? '-dry-run' : ''
     }.jsonl`;
     try {
-      await putS3Object({
-        bucket,
-        key: auditLogKey,
-        body: formatAuditLogLines(auditLogEntries),
-        contentType: 'application/x-ndjson',
-      });
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          Key: auditLogKey,
+          Body: formatAuditLogLines(auditLogEntries),
+          ContentType: 'application/x-ndjson',
+        }),
+      );
       console.info(`Audit log written to s3://${bucket}/${auditLogKey}`);
     } catch (err) {
       console.error(
