@@ -29,14 +29,14 @@ import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
-import { headers, setRules } from '../server';
+import { adminHeaders, headers, setRules } from '../server';
 import { deleteContactById } from './dbCleanup';
 import { actionsMaps } from '@tech-matters/hrm-core/permissions/index';
 import { TKConditionsSets } from '@tech-matters/hrm-core/permissions/rulesMap';
 import each from 'jest-each';
 import { setupServiceTests } from '../setupServiceTest';
 
-const { request } = setupServiceTests();
+const { request, internalRequest } = setupServiceTests();
 
 const route = `/v0/accounts/${accountSid}/contacts`;
 
@@ -125,6 +125,8 @@ describe('/contacts/:contactId/connectToCase route', () => {
 
   describe('PUT', () => {
     const subRoute = contactId => `${route}/${contactId}/connectToCase`;
+    const adminSubRoute = contactId =>
+      `/admin/v0/accounts/${accountSid}/contacts/${contactId}/connectToCase`;
 
     test('should return 401', async () => {
       const response = await request.put(subRoute(existingContactId)).send({});
@@ -143,6 +145,17 @@ describe('/contacts/:contactId/connectToCase route', () => {
       expect(response.body.caseId).toBe(existingCaseId);
 
       // Test the association
+      expect(response.body.csamReports).toHaveLength(0);
+    });
+
+    test('admin route should return 200', async () => {
+      const response = await internalRequest
+        .put(adminSubRoute(existingContactId))
+        .set(adminHeaders)
+        .send({ caseId: existingCaseId });
+
+      expect(response.status).toBe(200);
+      expect(response.body.caseId).toBe(existingCaseId);
       expect(response.body.csamReports).toHaveLength(0);
     });
 

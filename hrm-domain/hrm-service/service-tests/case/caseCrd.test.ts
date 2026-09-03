@@ -21,7 +21,7 @@ import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
 
 import * as mocks from '../mocks';
-import { headers } from '../server';
+import { adminHeaders, headers } from '../server';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { ALWAYS_CAN } from '../mocks';
 import { casePopulated } from '../mocks';
@@ -29,7 +29,7 @@ import { setupServiceTests } from '../setupServiceTest';
 
 const { case1, case2, accountSid, workerSid } = mocks;
 
-const { request } = setupServiceTests(workerSid);
+const { request, internalRequest } = setupServiceTests(workerSid);
 
 describe('/cases route', () => {
   const route = `/v0/accounts/${accountSid}/cases`;
@@ -70,6 +70,20 @@ describe('/cases route', () => {
       // Check the DB is actually updated
       const fromDb = await caseApi.getCase(response.body.id, accountSid, ALWAYS_CAN);
       expect(fromDb).toStrictEqual(expected);
+    });
+
+    test('admin route should return 200, attributed to the system user', async () => {
+      const adminRoute = `/admin/v0/accounts/${accountSid}/cases`;
+      const response = await internalRequest
+        .post(adminRoute)
+        .set(adminHeaders)
+        .send({ ...case1, label: 'Created case' });
+
+      expect(response.status).toBe(200);
+      // createCase ignores body.createdBy; always uses the authenticated user's workerSid
+      expect(response.body).toStrictEqual({ ...expected, createdBy: 'system' });
+      const fromDb = await caseApi.getCase(response.body.id, accountSid, ALWAYS_CAN);
+      expect(fromDb).toStrictEqual({ ...expected, createdBy: 'system' });
     });
   });
 

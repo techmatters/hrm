@@ -53,6 +53,7 @@ process.env.PERMISSIONS_CONFIG_LOCAL_OVERRIDE = JSON.stringify({
 });
 
 process.env.STATIC_KEY_ACCOUNT_SID = 'BBC';
+process.env.STATIC_KEY_ADMIN_HRM = 'VCS';
 
 process.env.INCLUDE_ERROR_IN_RESPONSE = 'true';
 
