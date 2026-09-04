@@ -19,42 +19,16 @@ import { newErr, newOk } from '@tech-matters/types';
 
 export type PendingIncident = {
   id: number;
-  case_id: number;
-  contact_id: string;
-  description: string;
-  address: string;
-  category_id: number;
-  incident_class_id: number;
-  status: string;
-  caller_name: string;
-  caller_number: string;
-  created_at: string;
-  updated_at: string;
 };
+
 type CreateIncidentResponse = {
   pending_incident: PendingIncident;
-  incident: any;
+  incident: { id: number };
 } & ({ status: 'success' } | { status: 'exists'; message: string });
 
 export type CreateIncidentParams = {
   contact_id: string;
   case_id: number;
-  caller_name: string;
-  caller_number: string;
-  description: string;
-  address: string;
-  category: string;
-  priority: string;
-  requestor_call_back: boolean;
-  person_demographics: {
-    first_name: string;
-    last_name: string;
-    nick_name: string;
-    age: string;
-    gender: string;
-    race: string;
-  };
-  is_officer_on_standby: boolean;
 };
 
 export const createIncident = async ({

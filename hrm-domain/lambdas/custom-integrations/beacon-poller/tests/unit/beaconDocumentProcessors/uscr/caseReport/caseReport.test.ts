@@ -20,13 +20,13 @@ import {
   generateCaseReportSectionNode,
   generateCaseReportTextValueNode,
   generateCompleteCaseReport,
-} from '../../mockGenerators';
-import { createCaseReportProcessor } from '../../../src/caseReport';
+} from '../../../../mockGenerators';
+import { createCaseReportProcessor } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport';
 import '@tech-matters/testing';
-import { isErr, isOk } from '@tech-matters/types';
+import { isErr, isOk } from '@tech-matters/types/dist/index';
 import { AssertionError } from 'node:assert';
-import { verifyAddSectionRequest } from '../verifyAddSectionRequest';
-import { RawCaseReportApiPayload } from '../../../src/caseReport/apiPayload';
+import { verifyAddSectionRequest } from '../../../verifyAddSectionRequest';
+import { RawCaseReportApiPayload } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 

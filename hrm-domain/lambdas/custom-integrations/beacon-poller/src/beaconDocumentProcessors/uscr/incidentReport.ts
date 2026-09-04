@@ -14,14 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ItemProcessor, NewCaseSectionInfo } from './types';
+import { BeaconDocumentProcessor, NewCaseSectionInfo } from '../../types';
 import {
   addDependentSectionToAseloCase,
   addSectionToAseloCase,
   updateAseloCaseOverview,
-} from './caseUpdater';
-import { isErr, isOk, newErr } from '@tech-matters/types';
-import { Responder, responderToCaseSection } from './responder';
+} from '../../caseUpdater';
+import { isErr, isOk, newErr } from '@tech-matters/types/dist/index';
+import { Responder, responderToCaseSection } from '../../responder';
 
 export type IncidentReport = {
   id: number;
@@ -109,7 +109,7 @@ export const incidentReportToCaseSection = ({
 
 export const createIncidentReportProcessor = (
   accountSid: string,
-): ItemProcessor<IncidentReport> => {
+): BeaconDocumentProcessor<IncidentReport> => {
   const addIncidentReportSectionToAseloCase = addSectionToAseloCase(
     'incidentReport',
     incidentReportToCaseSection,
