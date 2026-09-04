@@ -198,9 +198,7 @@ const postHandler = async (
   console.info(
     `${
       status === 'success' ? 'new incident reported' : 'incident already exists'
-    }, incident id ${createIncidentResult.data.pending_incident.id}, case id ${
-      caseObj.id
-    }`,
+    }, incident id ${pendingIncidentId}, case id ${caseObj.id}`,
   );
   return newOk({
     data: {
