@@ -1,5 +1,5 @@
 {
-  "name": "@tech-matters/uscr-dispatcher",
+  "name": "@tech-matters/beacon-dispatcher",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -19,6 +19,6 @@
     "typescript": "^5.7.3"
   },
   "scripts": {
-    "docker:build": "docker build -t uscr-dispatcher --build-arg lambda_name=uscr-dispatcher --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"
+    "docker:build": "docker build -t beacon-dispatcher --build-arg lambda_name=beacon-dispatcher --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../"
   }
 }

@@ -18,7 +18,7 @@ import { addHours } from 'date-fns/addHours';
 import { subDays } from 'date-fns/subDays';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import { CaseSectionRecord } from '@tech-matters/hrm-types';
-import { putSsmParameter } from '@tech-matters/ssm-cache';
+import { putSsmParameter, ssmCache } from '@tech-matters/ssm-cache';
 import { clearAllTables } from '@tech-matters/hrm-service-test-support';
 import each from 'jest-each';
 
@@ -39,6 +39,7 @@ import {
 } from '../../src/caseReport/apiPayload';
 
 const ACCOUNT_SID = 'ACservicetest';
+const HELPLINE_SHORT_CODE = 'xx';
 const BEACON_RESPONSE_HEADERS = {
   'Content-Type': 'application/json',
 };
@@ -51,13 +52,23 @@ process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CASE_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CONSECUTIVE_API_CALLS = '5';
 const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
-const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_incident_report_seen`;
-const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/uscr/${ACCOUNT_SID}/beacon/latest_case_report_seen`;
+const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/latest_incident_report_seen`;
+const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/latest_case_report_seen`;
 
 type CaseOverviewPatch = { priority: string; operatingArea: string };
 
 export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
   await mockSsmParameters(mockttp, [
+    {
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_api_key`,
+      valueGenerator: () => process.env.BEACON_API_KEY!,
+    },
+    {
+      name: `/${
+        process.env.NODE_ENV
+      }/twilio/${HELPLINE_SHORT_CODE.toUpperCase()}/account_sid`,
+      valueGenerator: () => ACCOUNT_SID,
+    },
     {
       name: LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
       valueGenerator: () => '',
@@ -182,7 +193,13 @@ export const mockBeacon = async <TItem>(
   apiPath: string,
   responses: TItem[][],
 ): Promise<MockedEndpoint> => {
-  process.env.BEACON_BASE_URL = `http://127.0.0.1:${mockttp.port}/mock-beacon`;
+  const beaconBaseUrl = `http://127.0.0.1:${mockttp.port}/mock-beacon`;
+  process.env.BEACON_BASE_URL = beaconBaseUrl;
+  await putSsmParameter(
+    `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_base_url`,
+    beaconBaseUrl,
+    { overwrite: true, cacheValue: false },
+  );
   console.debug(
     `Mocking beacon endpoint: GET ${process.env.BEACON_BASE_URL}${apiPath} to respond with ${responses.length} responses`,
   );
@@ -263,25 +280,28 @@ afterAll(async () => {
 
 beforeAll(async () => {
   await mockingProxy.start();
+  await mockLastUpdateSeenParameter(await mockingProxy.mockttpServer());
   mockedBeaconEndpoint = await mockBeacon(
     await mockingProxy.mockttpServer(),
     'incidentReport',
     [],
   );
-  await mockLastUpdateSeenParameter(await mockingProxy.mockttpServer());
 });
 
 beforeEach(async () => {
+  // Clear the SSM cache so loadSsmCache re-scans parameters on each test run
+  ssmCache.values = {};
+  ssmCache.expiryDate = undefined;
   await clearAllTables(db);
   await putSsmParameter(
     LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
     subDays(BASELINE_DATE, 1).toISOString(),
-    { overwrite: true },
+    { overwrite: true, cacheValue: false },
   );
   await putSsmParameter(
     LAST_CASE_REPORT_SEEN_PARAMETER_NAME,
     subDays(BASELINE_DATE, 1).toISOString(),
-    { overwrite: true },
+    { overwrite: true, cacheValue: false },
   );
 });
 
@@ -309,7 +329,7 @@ describe('Beacon Polling Service', () => {
             [generateCaseReports(4, 1, caseIds)],
           );
         }
-        await handler({ apiType });
+        await handler({ apiType, helplineShortCode: 'xx' });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
 
@@ -337,7 +357,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ apiType });
+        await handler({ apiType, helplineShortCode: 'xx' });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(3);
 
@@ -374,7 +394,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ apiType });
+        await handler({ apiType, helplineShortCode: 'xx' });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(5);
       });
@@ -426,7 +446,7 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport' });
+        await handler({ apiType: 'incidentReport', helplineShortCode: 'xx' });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -453,7 +473,7 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport' });
+        await handler({ apiType: 'incidentReport', helplineShortCode: 'xx' });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -495,7 +515,7 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport' });
+        await handler({ apiType: 'incidentReport', helplineShortCode: 'xx' });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -531,7 +551,7 @@ describe('Beacon Polling Service', () => {
           ],
         );
         // Act
-        await handler({ apiType: 'incidentReport' });
+        await handler({ apiType: 'incidentReport', helplineShortCode: 'xx' });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -606,7 +626,7 @@ describe('Beacon Polling Service', () => {
           [caseReports],
         );
         // Act
-        await handler({ apiType: 'caseReport' });
+        await handler({ apiType: 'caseReport', helplineShortCode: 'xx' });
         // Assert
         await verifyCaseReportsForCase(caseIds[0], [caseReports[0]]);
         await verifyCaseReportsForCase(caseIds[1], [caseReports[1]]);

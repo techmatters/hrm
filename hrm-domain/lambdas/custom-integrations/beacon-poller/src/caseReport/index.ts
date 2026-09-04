@@ -198,89 +198,94 @@ const caseReportToSudSurveyCaseSection = ({
   };
 };
 
-const addCaseReportSectionToAseloCase = addSectionToAseloCase(
-  'caseReport',
-  caseReportToCaseReportCaseSection,
-);
-const addPehSectionToAseloCase = addDependentSectionToAseloCase(
-  'personExperiencingHomelessness',
-  caseReportToPehCaseSection,
-);
-const addSafetyPlanSectionToAseloCase = addDependentSectionToAseloCase(
-  'safetyPlan',
-  caseReportToSafetyPlanCaseSection,
-);
-const addSudSurveySectionToAseloCase = addDependentSectionToAseloCase(
-  'sudSurvey',
-  caseReportToSudSurveyCaseSection,
-);
+export const createCaseReportProcessor = (
+  accountSid: string,
+): ItemProcessor<RawCaseReportApiPayload> => {
+  const addCaseReportSectionToAseloCase = addSectionToAseloCase(
+    'caseReport',
+    caseReportToCaseReportCaseSection,
+    accountSid,
+  );
+  const addPehSectionToAseloCase = addDependentSectionToAseloCase(
+    'personExperiencingHomelessness',
+    caseReportToPehCaseSection,
+    accountSid,
+  );
+  const addSafetyPlanSectionToAseloCase = addDependentSectionToAseloCase(
+    'safetyPlan',
+    caseReportToSafetyPlanCaseSection,
+    accountSid,
+  );
+  const addSudSurveySectionToAseloCase = addDependentSectionToAseloCase(
+    'sudSurvey',
+    caseReportToSudSurveyCaseSection,
+    accountSid,
+  );
 
-export const addCaseReportSectionsToAseloCase: ItemProcessor<
-  RawCaseReportApiPayload
-> = async (
-  rawCaseReport: RawCaseReportApiPayload,
+  return async (rawCaseReport: RawCaseReportApiPayload, lastSeen: string) => {
+    const caseReport = restructureApiContent(rawCaseReport);
+    const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, lastSeen);
+    if (isOk(caseReportResult)) {
+      const additionalSectionsResults: ReturnType<
+        ReturnType<typeof addDependentSectionToAseloCase>
+      >[] = [];
+      if (caseReport.Demographics) {
+        additionalSectionsResults.push(addPehSectionToAseloCase(caseReport));
+      }
+      if (caseReport['Collaborative SUD Survey']) {
+        additionalSectionsResults.push(addSudSurveySectionToAseloCase(caseReport));
+      }
+      if (caseReport['Safety Plan']) {
+        additionalSectionsResults.push(addSafetyPlanSectionToAseloCase(caseReport));
+      }
+      const results: (
+        | SuccessResult<unknown>
+        | ErrorResult<{
+            level: 'error' | 'warn';
+          }>
+      )[] = await Promise.all(additionalSectionsResults);
+      const status = caseReport['Next Action']?.['Case Status'];
 
-  lastSeen: string,
-) => {
-  const caseReport = restructureApiContent(rawCaseReport);
-  const caseReportResult = await addCaseReportSectionToAseloCase(caseReport, lastSeen);
-  if (isOk(caseReportResult)) {
-    const additionalSectionsResults: ReturnType<
-      ReturnType<typeof addDependentSectionToAseloCase>
-    >[] = [];
-    if (caseReport.Demographics) {
-      additionalSectionsResults.push(addPehSectionToAseloCase(caseReport));
-    }
-    if (caseReport['Collaborative SUD Survey']) {
-      additionalSectionsResults.push(addSudSurveySectionToAseloCase(caseReport));
-    }
-    if (caseReport['Safety Plan']) {
-      additionalSectionsResults.push(addSafetyPlanSectionToAseloCase(caseReport));
-    }
-    const results: (
-      | SuccessResult<unknown>
-      | ErrorResult<{
-          level: 'error' | 'warn';
-        }>
-    )[] = await Promise.all(additionalSectionsResults);
-    const status = caseReport['Next Action']?.['Case Status'];
-
-    if (caseReport.case_id && status) {
-      if (BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP]) {
-        const caseStatusUpdateResult = await updateAseloCaseStatus(
-          caseReport.case_id,
-          BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP],
-        );
-        results.push(caseStatusUpdateResult);
-        // The starting value of the dropdown is 'Select', not sure if it ever comes through the API?
-      } else if (status !== 'Select') {
-        results.push(
-          newErr({
-            message: 'Invalid case status',
-            error: {
-              type: 'InvalidCaseStatus',
-              level: 'error',
-              status,
-            },
-          }),
-        );
-      } else {
-        console.debug('No case status provided, so no update being made');
+      if (caseReport.case_id && status) {
+        if (
+          BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP]
+        ) {
+          const caseStatusUpdateResult = await updateAseloCaseStatus(
+            caseReport.case_id,
+            BEACON_TO_ASELO_STATUS_MAP[status as keyof typeof BEACON_TO_ASELO_STATUS_MAP],
+            accountSid,
+          );
+          results.push(caseStatusUpdateResult);
+          // The starting value of the dropdown is 'Select', not sure if it ever comes through the API?
+        } else if (status !== 'Select') {
+          results.push(
+            newErr({
+              message: 'Invalid case status',
+              error: {
+                type: 'InvalidCaseStatus',
+                level: 'error',
+                status,
+              },
+            }),
+          );
+        } else {
+          console.debug('No case status provided, so no update being made');
+        }
+      }
+      const errors = (await Promise.all(results)).filter(isErr);
+      if (errors.length) {
+        const errorLevel = errors.some(e => e.error.level === 'error') ? 'error' : 'warn';
+        return newErr({
+          message: 'Failed to add additional sections from case report to Aselo case',
+          error: {
+            type: 'AggregateError',
+            level: errorLevel,
+            lastUpdated: caseReportResult.unwrap(),
+            errors,
+          },
+        });
       }
     }
-    const errors = (await Promise.all(results)).filter(isErr);
-    if (errors.length) {
-      const errorLevel = errors.some(e => e.error.level === 'error') ? 'error' : 'warn';
-      return newErr({
-        message: 'Failed to add additional sections from case report to Aselo case',
-        error: {
-          type: 'AggregateError',
-          level: errorLevel,
-          lastUpdated: caseReportResult.unwrap(),
-          errors,
-        },
-      });
-    }
-  }
-  return caseReportResult;
+    return caseReportResult;
+  };
 };

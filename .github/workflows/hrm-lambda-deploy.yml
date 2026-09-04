@@ -40,8 +40,8 @@ on:
           - resources-domain/lambdas/sched-importer
           - resources-domain/lambdas/s3-importer
           - resources-domain/lambdas/search-index
-          - hrm-domain/lambdas/custom-integrations/uscr-dispatcher
-          - hrm-domain/lambdas/custom-integrations/uscr-beacon-poller
+          - hrm-domain/lambdas/custom-integrations/beacon-dispatcher
+          - hrm-domain/lambdas/custom-integrations/beacon-poller
 
   workflow_call:
     secrets:

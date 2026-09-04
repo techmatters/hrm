@@ -14,10 +14,4 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-export const accountSid = process.env.ACCOUNT_SID;
-
 export const BEACON_API_KEY_HEADER = 'X-API-Token';
-
-export const beaconHeaders = {
-  [BEACON_API_KEY_HEADER]: process.env.BEACON_API_KEY!,
-};

@@ -56,18 +56,22 @@ beforeEach(async () => {
 });
 
 describe('addSectionToAseloCase', () => {
-  const chickenAdder = addSectionToAseloCase('chicken', (chicken: Chicken) => {
-    return {
-      caseId: chicken.case_id,
-      section: {
-        sectionId: chicken.id,
-        sectionTypeSpecificData: {
-          boc: chicken.boc,
+  const chickenAdder = addSectionToAseloCase(
+    'chicken',
+    (chicken: Chicken) => {
+      return {
+        caseId: chicken.case_id,
+        section: {
+          sectionId: chicken.id,
+          sectionTypeSpecificData: {
+            boc: chicken.boc,
+          },
         },
-      },
-      lastUpdated: chicken.chicken_counter.toString(),
-    };
-  });
+        lastUpdated: chicken.chicken_counter.toString(),
+      };
+    },
+    process.env.ACCOUNT_SID!,
+  );
 
   test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API, returning the updated last_seen', async () => {
     const result = await chickenAdder(
@@ -278,6 +282,7 @@ describe('addDependentSectionToAseloCase', () => {
         },
       };
     },
+    process.env.ACCOUNT_SID!,
   );
   test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API', async () => {
     const result = await dependentChickenAdder({
