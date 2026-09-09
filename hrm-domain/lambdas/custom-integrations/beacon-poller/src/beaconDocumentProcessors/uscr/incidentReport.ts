@@ -20,7 +20,7 @@ import {
   addSectionToAseloCase,
   updateAseloCaseOverview,
 } from '../../caseUpdater';
-import { isErr, isOk, newErr } from '@tech-matters/types/dist/index';
+import { isErr, isOk, newErr } from '@tech-matters/types';
 import { Responder, responderToCaseSection } from '../../responder';
 
 export type IncidentReport = {
