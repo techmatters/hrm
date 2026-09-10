@@ -48,23 +48,35 @@ const authTokenLookup = async (accountSid: string) => {
 };
 
 const staticKeyLookup = async (keyName: string) => {
+  console.debug('[CHI-4005] staticKeyLookup', keyName);
   console.debug(`Looking up static key for '${keyName}'`);
   const localOverride = lookupLocalOverride('STATIC_KEYS_LOCAL_OVERRIDE', keyName);
   if (localOverride) {
     return localOverride;
   }
   try {
-    return await getSsmParameter(
-      `/${process.env.NODE_ENV}/hrm/service/${
-        process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-      }/static_key/${keyName}`,
-    );
+    const name = `/${process.env.NODE_ENV}/hrm/service/${
+      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
+    }/static_key/${keyName}`;
+    console.debug('[CHI-4005] staticKeyLookup trying to get', name);
+    return await getSsmParameter(name);
   } catch (error) {
+    console.debug(
+      '[CHI-4005] staticKeyLookup errored',
+      error,
+      'error instanceof SsmParameterNotFound',
+      error instanceof SsmParameterNotFound,
+      'keyName.startsWith(AC)',
+      keyName.startsWith('AC'),
+    );
     // Remove when a terraform apply has been done for all accounts
     if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
       console.warn(
         `New internal API key not set up for ${keyName} yet, looking for legacy key`,
       );
+
+      console.debug('[CHI-4005] staticKeyLookup trying to get', name);
+
       return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/static_key`);
     } else throw error;
   }

@@ -149,6 +149,7 @@ export const getAuthorizationMiddleware =
 export const staticKeyAuthorizationMiddleware =
   (staticKeyLookup: AuthSecretsLookup['staticKeyLookup']) =>
   async (req: Request, res: Response, next: NextFunction) => {
+    console.debug('[CHI-4005] staticKeyAuthorizationMiddleware caller');
     const accountSid = getTwilioAccountSidFromHrmAccountId(req.hrmAccountId);
     if (!accountSid) {
       throw new Error(
