@@ -17,15 +17,32 @@
 import type { CreateIncidentParams } from '../beacon-service';
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
 
+type GyCreateIncidentParams = CreateIncidentParams & {
+  class: string;
+  incident_description: string;
+  caller_number: string;
+  call_received: string;
+  created_at: string;
+};
+
 export const toCreateIncident = ({
   caseObj,
   contact,
 }: {
   caseObj: CaseService;
   contact: Contact;
-}): CreateIncidentParams => {
+}): GyCreateIncidentParams => {
+  const { categories } = contact.rawJson || {};
+
+  const category = Object.values(categories || {}).find(c => c.length)?.[0];
   return {
     contact_id: contact.id.toString(),
     case_id: parseInt(caseObj.id),
+    call_received: contact.timeOfContact ?? '',
+    caller_number: contact.number ?? '',
+    class: category ?? '',
+    incident_description:
+      contact.rawJson?.childInformation.incidentDescription?.toString() ?? '',
+    created_at: contact.createdAt,
   };
 };
