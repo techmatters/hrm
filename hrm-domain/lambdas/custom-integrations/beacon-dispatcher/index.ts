@@ -34,7 +34,7 @@ type DispatcherError =
   | 'HrmServiceError';
 
 const EXTRACT_HELPLINE_CODE_FROM_PATH =
-  /.*custom-integrations\/beacon\/dispatcher\/(?<helplineCode>[A-Za-z0-9]+)/g;
+  /.*custom-integrations\/beacon\/dispatcher\/(?<helplineCode>[A-Za-z0-9]+)/;
 
 const postHandler = async (
   event: AlbHandlerEvent,
