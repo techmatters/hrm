@@ -47,7 +47,6 @@ const authTokenLookup = async (accountSid: string) => {
 };
 
 const staticKeyLookup = async (keyName: string) => {
-  console.debug('[CHI-4005] staticKeyLookup', keyName);
   console.debug(`Looking up static key for '${keyName}'`);
   const localOverride = lookupLocalOverride('STATIC_KEYS_LOCAL_OVERRIDE', keyName);
   if (localOverride) {

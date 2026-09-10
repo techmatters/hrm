@@ -63,7 +63,6 @@ const getAccountStaticKey = async (keyName: string) => {
     const name = `/${process.env.NODE_ENV}/hrm/service/${
       process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
     }/static_key/${keyName}`;
-    console.debug('[CHI-4005] staticKeyLookup trying to get', name);
     return await getSsmParameter(name);
   } catch (error) {
     // Remove when a terraform apply has been done for all accounts
@@ -71,8 +70,6 @@ const getAccountStaticKey = async (keyName: string) => {
       console.warn(
         `New internal API key not set up for ${keyName} yet, looking for legacy key`,
       );
-
-      console.debug('[CHI-4005] staticKeyLookup trying to get', name);
 
       return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/static_key`);
     } else throw error;
