@@ -17,7 +17,7 @@
 import {
   ProcessedCaseReportApiPayload,
   RawCaseReportApiPayload,
-} from '../src/caseReport/apiPayload';
+} from '../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
 
 export const rawApiCaseReportPayload: RawCaseReportApiPayload = {
   id: 469,

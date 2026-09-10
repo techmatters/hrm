@@ -14,8 +14,27 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { CreateIncidentParams } from './beacon-service';
+import type { CreateIncidentParams } from '../beacon-service';
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
+
+type UscrCreateIncidentParams = CreateIncidentParams & {
+  caller_name: string;
+  caller_number: string;
+  description: string;
+  address: string;
+  category: string;
+  priority: string;
+  requestor_call_back: boolean;
+  person_demographics: {
+    first_name: string;
+    last_name: string;
+    nick_name: string;
+    age: string;
+    gender: string;
+    race: string;
+  };
+  is_officer_on_standby: boolean;
+};
 
 export const toCreateIncident = ({
   caseObj,
@@ -23,7 +42,7 @@ export const toCreateIncident = ({
 }: {
   caseObj: CaseService;
   contact: Contact;
-}): CreateIncidentParams => {
+}): UscrCreateIncidentParams => {
   const { callerInformation, childInformation, caseInformation, categories } =
     contact.rawJson || {};
 

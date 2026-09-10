@@ -13,26 +13,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-
-export type CaseReportContentNode = {
-  type:
-    | 'text'
-    | 'section'
-    | 'text_field'
-    | 'date_time_field'
-    | 'option'
-    | 'dropdown'
-    | 'date_time_field_calc'
-    | 'checkbox'
-    | 'documents';
-  value: string | null;
-  fields: CaseReportContentNode[] | null;
-  label: string;
-} & Record<string, string | null | number | CaseReportContentNode[]>;
-
-type CaseReportContentValues = {
-  [key: string]: string | null | number | boolean | CaseReportContentValues;
-};
+import {
+  CaseReportContentNode,
+  CaseReportContentValues,
+  extractContentNodeValues,
+} from '../../extractContentNodeValues';
 
 type RelevantRawCaseReportApiPayload = {
   id: number;
@@ -113,29 +98,6 @@ type RelevantProcessedCaseReportApiPayload = Omit<
 
 export type ProcessedCaseReportApiPayload = RelevantProcessedCaseReportApiPayload &
   Omit<Record<string, any>, keyof RelevantProcessedCaseReportApiPayload>;
-
-const extractContentNodeValues = ({
-  type,
-  value,
-  fields,
-  label,
-}: CaseReportContentNode): CaseReportContentValues[keyof CaseReportContentValues] => {
-  switch (type) {
-    case 'section': {
-      const sectionEntries = (fields || []).map(node => [
-        node.label,
-        extractContentNodeValues(node),
-      ]);
-      return Object.fromEntries(sectionEntries);
-    }
-    case 'checkbox': {
-      return value === label;
-    }
-    default: {
-      return value;
-    }
-  }
-};
 
 export const restructureApiContent = ({
   content,

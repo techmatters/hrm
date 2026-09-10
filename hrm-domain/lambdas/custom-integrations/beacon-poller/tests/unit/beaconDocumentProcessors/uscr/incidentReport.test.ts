@@ -17,10 +17,10 @@
 import {
   createIncidentReportProcessor,
   incidentReportToCaseSection,
-} from '../../src/incidentReport';
-import { generateIncidentReport } from '../mockGenerators';
+} from '../../../../src/beaconDocumentProcessors/uscr/incidentReport';
+import { generateIncidentReport } from '../../../mockGenerators';
 import each from 'jest-each';
-import { verifyAddSectionRequest } from './verifyAddSectionRequest';
+import { verifyAddSectionRequest } from '../../verifyAddSectionRequest';
 import { AssertionError } from 'node:assert';
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();

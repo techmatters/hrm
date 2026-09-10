@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2021-2023 Technology Matters
+ * Copyright (C) 2021-2026 Technology Matters
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
@@ -14,16 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  expectedProcessedApiCaseReportPayload,
-  rawApiCaseReportPayload,
-} from '../../fixtures';
-import { restructureApiContent } from '../../../src/caseReport/apiPayload';
+import * as uscr from './uscrMapping';
+import * as gy from './gyMapping';
 
-describe('reformatApiContent', () => {
-  test('Reformatting example fixture results in a valid processed case report object with data mapped in the expected places', () => {
-    expect(restructureApiContent(rawApiCaseReportPayload)).toMatchObject(
-      expectedProcessedApiCaseReportPayload,
-    );
-  });
-});
+export const newCreateIncidentMapper = (helplineCode: string | undefined) => {
+  switch (helplineCode) {
+    case 'gy':
+      return gy.toCreateIncident;
+    case 'as':
+    case 'uscr':
+      return uscr.toCreateIncident;
+    default:
+      throw new Error(`No mappings configured for  for helpline code: ${helplineCode}`);
+  }
+};

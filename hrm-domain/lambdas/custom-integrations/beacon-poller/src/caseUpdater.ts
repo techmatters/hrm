@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { ItemProcessor, NewCaseSection } from './types';
+import {
+  type BeaconDocumentSection,
+  BeaconDocumentProcessor,
+  NewCaseSection,
+} from './types';
 import {
   ErrorResult,
   isOk,
@@ -58,7 +62,7 @@ type UnexpectedError = ErrorResult<{
 }>;
 
 export const addSectionToAseloCase =
-  <TInput>(
+  <TInput extends BeaconDocumentSection>(
     sectionType: string,
     inputToSectionMapper: (item: TInput) => {
       section: NewCaseSection;
@@ -66,7 +70,7 @@ export const addSectionToAseloCase =
       lastUpdated: string;
     },
     accountSid: string,
-  ): ItemProcessor<TInput> =>
+  ): BeaconDocumentProcessor<TInput> =>
   async (
     inputData: TInput,
     lastSeen: string | null = null,
@@ -167,11 +171,9 @@ export const addSectionToAseloCase =
 /**
  * Adds a section but ignores all 'last seen' updating / checking.
  * This is for subsections of a main section that always need to be added if the parent is and shouldn't affect the last seen timestamp.
- * @param sectionType
- * @param inputToSectionMapper
  */
 export const addDependentSectionToAseloCase =
-  <TInput>(
+  <TInput extends BeaconDocumentSection>(
     sectionType: string,
     inputToSectionMapper: (item: TInput) => {
       section: NewCaseSection;

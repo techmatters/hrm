@@ -16,23 +16,23 @@
 
 import { getSsmParameter, putSsmParameter } from '@tech-matters/ssm-cache';
 import { isErr } from '@tech-matters/types';
-import { ItemProcessor } from './types';
+import type { BeaconDocumentSection, BeaconDocumentProcessor } from './types';
 
-type ChunkReaderConfig<TItem> = {
+type ChunkReaderConfig<TItem extends BeaconDocumentSection> = {
   url: URL;
   headers: Record<string, string>;
   lastUpdateSeenSsmKey: string;
-  itemProcessor: ItemProcessor<TItem>;
+  itemProcessor: BeaconDocumentProcessor<TItem>;
   itemExtractor: (responseBody: any) => TItem[];
   maxItemsInChunk: number;
   maxChunksToRead: number;
   itemTypeName?: string; // Just for logging
 };
 
-const processChunk = async <TItem>(
+const processChunk = async <TItem extends BeaconDocumentSection>(
   items: TItem[],
   lastSeen: string,
-  itemProcessor: ItemProcessor<TItem>,
+  itemProcessor: BeaconDocumentProcessor<TItem>,
   itemTypeName: string = 'item',
 ): Promise<string> => {
   let updatedLastSeen = lastSeen;
@@ -58,7 +58,7 @@ const processChunk = async <TItem>(
   return updatedLastSeen;
 };
 
-export const readApiInChunks = async <TItem>({
+export const readApiInChunks = async <TItem extends BeaconDocumentSection>({
   url,
   headers,
   lastUpdateSeenSsmKey,

@@ -16,8 +16,15 @@
 
 import { ErrorResult, SuccessResult } from '@tech-matters/types';
 import { CaseSection } from '@tech-matters/hrm-types';
+export type BeaconDocumentValue = string | null | number;
+export type BeaconDocumentSection = {
+  [p: string]:
+    | string
+    | (BeaconDocumentValue | BeaconDocumentSection)
+    | (BeaconDocumentValue | BeaconDocumentSection)[];
+};
 
-export type ItemProcessor<TItem> = (
+export type BeaconDocumentProcessor<TItem extends BeaconDocumentSection> = (
   item: TItem,
   lastSeen: string,
 ) => Promise<

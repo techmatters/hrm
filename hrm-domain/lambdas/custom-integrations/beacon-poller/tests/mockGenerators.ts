@@ -14,11 +14,9 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { IncidentReport } from '../src/incidentReport';
-import {
-  CaseReportContentNode,
-  RawCaseReportApiPayload,
-} from '../src/caseReport/apiPayload';
+import { IncidentReport } from '../src/beaconDocumentProcessors/uscr/incidentReport';
+import { RawCaseReportApiPayload } from '../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
+import { CaseReportContentNode } from '../src/beaconDocumentProcessors/extractContentNodeValues';
 
 const EMPTY_INCIDENT_REPORT: IncidentReport = {
   number: 0,
