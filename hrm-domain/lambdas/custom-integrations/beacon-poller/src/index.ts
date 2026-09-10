@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-
 import { BEACON_API_KEY_HEADER } from './config';
 import { readApiInChunks } from './apiChunkReader';
 import { getSsmParameter } from '@tech-matters/ssm-cache';
