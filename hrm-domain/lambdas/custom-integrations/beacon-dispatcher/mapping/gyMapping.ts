@@ -18,11 +18,10 @@ import type { CreateIncidentParams } from '../beacon-service';
 import type { CaseService, Contact } from '@tech-matters/hrm-types';
 
 type GyCreateIncidentParams = CreateIncidentParams & {
-  class: string;
-  incident_description: string;
+  category: string;
+  description: string;
   caller_number: string;
-  call_received: string;
-  created_at: string;
+  call_received_at: string;
 };
 
 export const toCreateIncident = ({
@@ -38,11 +37,9 @@ export const toCreateIncident = ({
   return {
     contact_id: contact.id.toString(),
     case_id: parseInt(caseObj.id),
-    call_received: contact.timeOfContact ?? '',
+    call_received_at: contact.timeOfContact ?? '',
     caller_number: contact.number ?? '',
-    class: category ?? '',
-    incident_description:
-      contact.rawJson?.childInformation.incidentDescription?.toString() ?? '',
-    created_at: contact.createdAt,
+    category: category ?? '',
+    description: contact.rawJson?.childInformation.incidentDescription?.toString() ?? '',
   };
 };
