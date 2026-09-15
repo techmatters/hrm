@@ -27,7 +27,7 @@ import {
 } from './sql/caseSearchSql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/caseGetSql';
-import { DateFilter, OrderByDirectionType } from '../sql';
+import { DateFilter, OrderByDirectionType, inferPostgresError } from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
@@ -222,7 +222,12 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
 
 export const deleteById = async (id: CaseRecord['id'], accountSid: AccountSID) => {
   const db = await getDbForAccount(accountSid);
-  return db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
+  try {
+    const deleted = await db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
+    return deleted;
+  } catch (err) {
+    throw inferPostgresError(err);
+  }
 };
 
 export const updateStatus = async (
