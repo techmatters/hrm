@@ -423,6 +423,7 @@ export const handler = async ({
           outcome: isNew ? 'created' : 'already-imported',
           valueWarnings: recordValueWarnings,
           usedSyntheticWorker,
+          contactId: createdContact.id,
         }),
       );
     }
