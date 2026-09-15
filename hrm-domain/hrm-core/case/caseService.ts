@@ -456,11 +456,13 @@ export const deleteCaseById = async ({
 }) => {
   const deleted = await deleteById(parseInt(caseId), accountSid);
 
-  await deleteCaseNotify({
-    accountSid,
-    caseId: deleted?.id?.toString(),
-    caseRecord: deleted,
-  });
+  if (deleted) {
+    await deleteCaseNotify({
+      accountSid,
+      caseId: deleted.id.toString(),
+      caseRecord: deleted,
+    });
+  }
 
   return deleted;
 };
