@@ -90,6 +90,10 @@ export const compareCallReportRows = (
 
 export const handler = async ({ region, location, outputPrefix, batchSize }) => {
   try {
+    if (!(batchSize > 0)) {
+      throw new Error(`--batch-size must be a positive number, got ${batchSize}`);
+    }
+
     const assumeRoleParams = {
       RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
       RoleSessionName: `hrm-admin-cli-${Date.now()}`,
@@ -164,5 +168,6 @@ export const handler = async ({ region, location, outputPrefix, batchSize }) => 
       `Failed to slice ${location} into batches`,
       err instanceof Error ? err.message : String(err),
     );
+    process.exitCode = 1;
   }
 };
