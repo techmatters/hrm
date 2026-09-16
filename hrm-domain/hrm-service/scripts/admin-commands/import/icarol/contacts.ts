@@ -288,6 +288,12 @@ export const handler = async ({
     // Tracks which name each synthetic worker ID belongs to, to catch collisions.
     const legacyWorkerRegistry: SyntheticWorkerRegistry = new Map();
 
+    // Tracks taskIds already submitted in this run. A source file with a
+    // duplicate CallReportNum would otherwise get double-counted as newly
+    // created, since the repeat submission just gets the first one's
+    // contact handed back, which still has a createdAt within this run.
+    const seenTaskIds = new Set<string>();
+
     for (const csvRecord of csvRecords) {
       const workerName = (csvRecord.PhoneWorkerName ?? '').trim();
       const resolvedWorkerSid = workerName
@@ -352,6 +358,22 @@ export const handler = async ({
         );
         continue;
       }
+
+      if (seenTaskIds.has(contact.taskId)) {
+        alreadyImportedCount++;
+        auditLogEntries.push(
+          buildAuditLogEntry({
+            runId,
+            callReportNum: csvRecord.CallReportNum,
+            timestamp: new Date(),
+            outcome: 'already-imported',
+            valueWarnings: recordValueWarnings,
+            usedSyntheticWorker,
+          }),
+        );
+        continue;
+      }
+      seenTaskIds.add(contact.taskId);
 
       const response = await fetch(url, {
         method: 'POST',
