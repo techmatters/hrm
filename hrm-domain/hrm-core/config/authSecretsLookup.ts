@@ -15,7 +15,7 @@
  */
 
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
-import { getFromSSMCache } from './ssmConfigurationCache';
+import { getAccountStaticKey, getFromSSMCache } from './ssmConfigurationCache';
 
 const lookupLocalOverride = (overrideEnvVarName: string, key: string) => {
   console.debug(
@@ -53,8 +53,8 @@ const staticKeyLookup = async (keyName: string) => {
     return localOverride;
   }
 
-  const { staticKey } = await getFromSSMCache(keyName);
-  return staticKey;
+  // Skips getFromSSMCache, which also fetches an auth token and permission config that a key like ADMIN_HRM doesn't have.
+  return getAccountStaticKey(keyName);
 };
 
 export const defaultAuthSecretsLookup: AuthSecretsLookup = {
