@@ -18,6 +18,13 @@
 export const buildRunId = (now: Date): string =>
   `icarol-${now.toISOString().replace(/[:.]/g, '-')}`;
 
+// Shared between writers and readers so a run's audit log always lands
+// where the next step expects to find it.
+export const ICAROL_IMPORT_AUDIT_LOG_PREFIX = 'icarol-import-audit-logs/';
+export const ICAROL_CASES_AUDIT_LOG_PREFIX = 'icarol-cases-audit-logs/';
+export const ICAROL_CASES_CLEARDOWN_AUDIT_LOG_PREFIX =
+  'icarol-cases-cleardown-audit-logs/';
+
 export type AuditLogOutcome =
   | 'created'
   | 'already-imported'
@@ -28,6 +35,7 @@ export type AuditLogOutcome =
   | 'skipped-touched'
   | 'already-unlinked'
   | 'deleted'
+  | 'already-deleted'
   | 'skipped-changed-since-unlink';
 
 // One entry per source record. No raw PII fields, only cross-reference ids.
