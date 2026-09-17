@@ -15,7 +15,6 @@
  */
 
 import parseISO from 'date-fns/parseISO';
-import { handler } from '../../index';
 import each from 'jest-each';
 import type {
   FlatResource,
@@ -25,13 +24,21 @@ import type {
 import type { SQSEvent } from 'aws-lambda';
 
 const mockFetch = jest.fn();
+let handler: (typeof import('../../index'))['handler'];
 
 jest.mock('@tech-matters/ssm-cache', () => ({
+  getAccountStaticKey: jest.fn().mockResolvedValue('static-key'),
   getSsmParameter: () => 'static-key',
 }));
 
 // @ts-ignore
 global.fetch = mockFetch;
+
+beforeAll(async () => {
+  process.env.internal_resources_base_url = 'https://internal-resources';
+  process.env.NODE_ENV = 'test';
+  ({ handler } = await import('../../index'));
+});
 
 beforeEach(() => {
   jest.resetAllMocks();
