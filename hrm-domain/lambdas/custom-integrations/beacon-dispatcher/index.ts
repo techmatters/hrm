@@ -18,7 +18,12 @@ import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
 import { validatePayload } from './validation';
 import * as hrmService from './hrm-service';
 import * as beaconService from './beacon-service';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getSsmParameter,
+  getTwilioAccountSidSsmPath,
+  getTwilioAuthTokenSsmPath,
+  getTwilioStaticKeySsmPath,
+} from '@tech-matters/ssm-cache';
 import {
   handleAlbEvent,
   AlbHandlerEvent,
@@ -77,9 +82,7 @@ const postHandler = async (
 
   // Legacy API didn't provide a short code and put the account SID in the body. New API has the short code in the path and no account sid
   const accountSid = helplineCode
-    ? await getSsmParameter(
-        `/${environment}/twilio/${helplineCode.toUpperCase()}/account_sid`,
-      )
+    ? await getSsmParameter(getTwilioAccountSidSsmPath(helplineCode, environment))
     : body.accountSid;
 
   const payloadResult = validatePayload({
@@ -103,7 +106,7 @@ const postHandler = async (
   }
 
   const authToken = await getSsmParameter(
-    `/${environment}/twilio/${accountSid}/auth_token`,
+    getTwilioAuthTokenSsmPath(accountSid, environment),
   );
   const tokenValidationResult = await twilioTokenValidator({
     accountSid,
@@ -118,7 +121,7 @@ const postHandler = async (
   }
 
   const staticKey = await getSsmParameter(
-    `/${environment}/twilio/${accountSid}/static_key`,
+    getTwilioStaticKeySsmPath(accountSid, environment),
   );
 
   const { casePayload, contactId } = payloadResult.data;

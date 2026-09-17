@@ -15,14 +15,21 @@
  */
 
 import { defaultAuthSecretsLookup } from '../../config/authSecretsLookup';
+import { getAccountStaticKey } from '@tech-matters/ssm-cache';
 import * as ssmConfigurationCache from '../../config/ssmConfigurationCache';
 
+jest.mock('@tech-matters/ssm-cache', () => {
+  const actual = jest.requireActual('@tech-matters/ssm-cache');
+  return {
+    ...actual,
+    getAccountStaticKey: jest.fn(),
+  };
+});
 jest.mock('../../config/ssmConfigurationCache');
 
-const mockGetAccountStaticKey =
-  ssmConfigurationCache.getAccountStaticKey as jest.MockedFunction<
-    typeof ssmConfigurationCache.getAccountStaticKey
-  >;
+const mockGetAccountStaticKey = getAccountStaticKey as jest.MockedFunction<
+  typeof getAccountStaticKey
+>;
 const mockGetFromSSMCache = ssmConfigurationCache.getFromSSMCache as jest.MockedFunction<
   typeof ssmConfigurationCache.getFromSSMCache
 >;

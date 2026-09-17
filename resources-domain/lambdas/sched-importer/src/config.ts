@@ -15,7 +15,15 @@
  */
 
 import type { AccountSID } from '@tech-matters/types';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getResourcesImportApiAuthHeaderSsmPath,
+  getResourcesImportApiBaseUrlSsmPath,
+  getResourcesImportApiKeySsmPath,
+  getS3DocsBucketNameSsmPath,
+  getSsmParameter,
+  getTwilioAccountSidSsmPath,
+  getTwilioStaticKeySsmPath,
+} from '@tech-matters/ssm-cache';
 
 const debugGetSsmParameter = async (path: string, logValue = false) => {
   console.debug(`Getting SSM parameter: ${path}`);
@@ -40,7 +48,7 @@ const getConfig = async () => {
   console.debug(`helplineShortCode: ${helplineShortCode}`);
 
   const accountSid: AccountSID = (await debugGetSsmParameter(
-    `/${deploymentEnvironment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`,
+    getTwilioAccountSidSsmPath(helplineShortCode, deploymentEnvironment),
   )) as AccountSID;
 
   const [
@@ -51,17 +59,17 @@ const getConfig = async () => {
     docsBucket,
   ] = await Promise.all([
     debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`,
+      getResourcesImportApiBaseUrlSsmPath(accountSid, deploymentEnvironment),
       true,
     ),
     debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
+      getResourcesImportApiKeySsmPath(accountSid, deploymentEnvironment),
     ),
     debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
+      getResourcesImportApiAuthHeaderSsmPath(accountSid, deploymentEnvironment),
     ),
-    debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
-    debugGetSsmParameter(`/${deploymentEnvironment}/s3/${accountSid}/docs_bucket_name`),
+    debugGetSsmParameter(getTwilioStaticKeySsmPath(accountSid, deploymentEnvironment)),
+    debugGetSsmParameter(getS3DocsBucketNameSsmPath(accountSid, deploymentEnvironment)),
   ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),

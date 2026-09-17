@@ -21,14 +21,14 @@ import {
 } from '@tech-matters/sqs-client';
 
 import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
-import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getCompletedContactJobsQueueUrlSsmPath,
+  getContactJobsQueueUrlSsmPath,
+  SsmParameterNotFound,
+  getSsmParameter,
+} from '@tech-matters/ssm-cache';
 
-const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
-  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-}/sqs/jobs/hrm-contact/queue-url-complete`;
-const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${
-  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-}/sqs/jobs/hrm-contact/queue-url-`;
+const COMPLETED_QUEUE_SSM_PATH = getCompletedContactJobsQueueUrlSsmPath();
 
 export const pollCompletedContactJobsFromQueue = async (): ReturnType<
   typeof receiveSqsMessage
@@ -64,7 +64,7 @@ export const deleteCompletedContactJobsFromQueue = async (receiptHandle: string)
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
   //TODO: more robust error handling/messaging
   try {
-    const queueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`);
+    const queueUrl = await getSsmParameter(getContactJobsQueueUrlSsmPath(params.jobType));
 
     const result = await sendSqsMessage({
       queueUrl,

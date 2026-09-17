@@ -15,7 +15,7 @@
  */
 
 import { HrmAccountId } from '@tech-matters/types';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getSsmParameter, getTwilioAccountSidSsmPath } from '@tech-matters/ssm-cache';
 import { streamTrainingSetContacts, TrainingSetContact } from './hrmdbAccess';
 import { attachTranscript } from './trainingSetDocument';
 import { uploadTrainingSetDocument, uploadStreamAsSingleFile } from './uploadTrainingSet';
@@ -28,7 +28,7 @@ const lookupAccountSid = async (
   hlShortCode: string,
 ): Promise<HrmAccountId> =>
   (await getSsmParameter(
-    `/${environment}/twilio/${hlShortCode.toUpperCase()}/account_sid`,
+    getTwilioAccountSidSsmPath(hlShortCode, environment),
   )) as HrmAccountId;
 
 const lookupAccountSids = async (

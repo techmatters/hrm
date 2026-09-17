@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getBeaconApiKeySsmPath,
+  getBeaconBaseUrlSsmPath,
+  getSsmParameter,
+} from '@tech-matters/ssm-cache';
 import { newErr, newOk } from '@tech-matters/types';
 
 export type PendingIncident = {
@@ -42,12 +46,8 @@ export const createIncident = async ({
 }) => {
   try {
     const [baseUrl, apiKey] = await Promise.all([
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`,
-      ),
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`,
-      ),
+      getSsmParameter(getBeaconBaseUrlSsmPath(helplineShortCode, environment)),
+      getSsmParameter(getBeaconApiKeySsmPath(helplineShortCode, environment)),
     ]);
 
     const fullUrl = `${baseUrl}/api/aselo/incidents`;

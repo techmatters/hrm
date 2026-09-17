@@ -16,7 +16,7 @@
 
 import type { HrmAccountId } from '@tech-matters/types';
 import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-types';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getSsmParameter, getTwilioAccountSidSsmPath } from '@tech-matters/ssm-cache';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../hrmInternalConfig';
 // import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
@@ -28,7 +28,7 @@ const getAccountSid = ({
   environment: string;
   shortCode: string;
 }) => {
-  return getSsmParameter(`/${environment}/twilio/${shortCode.toUpperCase()}/account_sid`);
+  return getSsmParameter(getTwilioAccountSidSsmPath(shortCode, environment));
 };
 
 const requestRenotify = async ({
