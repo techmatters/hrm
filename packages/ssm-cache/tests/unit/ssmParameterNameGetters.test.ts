@@ -100,4 +100,11 @@ describe('getAccountStaticKey', () => {
     await expect(getAccountStaticKey('ADMIN_HRM')).rejects.toThrow(SsmParameterNotFound);
     expect(mockGetSsmParameter).toHaveBeenCalledTimes(1);
   });
+
+  test('rethrows unexpected lookup errors unchanged', async () => {
+    const error = new Error('boom');
+    mockGetSsmParameter.mockRejectedValueOnce(error);
+
+    await expect(getAccountStaticKey('ADMIN_HRM')).rejects.toBe(error);
+  });
 });

@@ -35,14 +35,15 @@ export const handler = async ({
   apiType: 'incidentReport' | 'caseReport';
   helplineShortCode: 'uscr' | 'gy' | 'as';
 }): Promise<0 | -1> => {
+  const beaconHelplineShortCode = helplineShortCode.toLowerCase();
   let accountSid: AccountSID;
   let beaconBaseUrl: string;
   let beaconApiKey: string;
   try {
     [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
       getSsmParameter(getTwilioAccountSidSsmPath(helplineShortCode, environment)),
-      getSsmParameter(getBeaconBaseUrlSsmPath(helplineShortCode, environment)),
-      getSsmParameter(getBeaconApiKeySsmPath(helplineShortCode, environment)),
+      getSsmParameter(getBeaconBaseUrlSsmPath(beaconHelplineShortCode, environment)),
+      getSsmParameter(getBeaconApiKeySsmPath(beaconHelplineShortCode, environment)),
     ])) as [AccountSID, string, string];
   } catch (err) {
     console.error(
