@@ -22,7 +22,7 @@ import {
   getSsmParameter,
   getTwilioAccountSidSsmPath,
   getTwilioAuthTokenSsmPath,
-  getTwilioStaticKeySsmPath,
+  getAccountStaticKey,
 } from '@tech-matters/ssm-cache';
 import {
   handleAlbEvent,
@@ -120,9 +120,7 @@ const postHandler = async (
     });
   }
 
-  const staticKey = await getSsmParameter(
-    getTwilioStaticKeySsmPath(accountSid, environment),
-  );
+  const staticKey = await getAccountStaticKey(accountSid);
 
   const { casePayload, contactId } = payloadResult.data;
 

@@ -16,13 +16,13 @@
 
 import type { AccountSID } from '@tech-matters/types';
 import {
+  getAccountStaticKey,
   getResourcesImportApiAuthHeaderSsmPath,
   getResourcesImportApiBaseUrlSsmPath,
   getResourcesImportApiKeySsmPath,
   getS3DocsBucketNameSsmPath,
   getSsmParameter,
   getTwilioAccountSidSsmPath,
-  getTwilioStaticKeySsmPath,
 } from '@tech-matters/ssm-cache';
 
 const debugGetSsmParameter = async (path: string, logValue = false) => {
@@ -68,7 +68,7 @@ const getConfig = async () => {
     debugGetSsmParameter(
       getResourcesImportApiAuthHeaderSsmPath(accountSid, deploymentEnvironment),
     ),
-    debugGetSsmParameter(getTwilioStaticKeySsmPath(accountSid, deploymentEnvironment)),
+    getAccountStaticKey(accountSid),
     debugGetSsmParameter(getS3DocsBucketNameSsmPath(accountSid, deploymentEnvironment)),
   ]);
   return {

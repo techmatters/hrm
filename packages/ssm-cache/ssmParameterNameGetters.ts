@@ -24,7 +24,7 @@ export const getHrmStaticKeySsmPath = (
   region = getDefaultRegion(),
 ) => `/${environment}/hrm/service/${region}/static_key/${keyName}`;
 
-export const getTwilioStaticKeySsmPath = (
+const getTwilioStaticKeySsmPath = (
   accountSid: string,
   environment = process.env.NODE_ENV,
 ) => `/${environment}/twilio/${accountSid}/static_key`;
