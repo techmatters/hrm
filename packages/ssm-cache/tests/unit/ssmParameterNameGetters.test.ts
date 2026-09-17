@@ -78,16 +78,22 @@ describe('getAccountStaticKey', () => {
   });
 
   test('falls back to the legacy per-account key path when an account-shaped key is missing', async () => {
+    const keyName = 'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
     mockGetSsmParameter
       .mockRejectedValueOnce(
         new SsmParameterNotFound('/test/hrm/service/us-east-1/static_key/ACxxx'),
       )
       .mockResolvedValueOnce('legacy-key');
 
-    const result = await getAccountStaticKey('ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+    const result = await getAccountStaticKey(keyName);
 
     expect(result).toBe('legacy-key');
-    expect(mockGetSsmParameter).toHaveBeenLastCalledWith(
+    expect(mockGetSsmParameter).toHaveBeenNthCalledWith(
+      1,
+      '/test/hrm/service/us-east-1/static_key/ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    );
+    expect(mockGetSsmParameter).toHaveBeenNthCalledWith(
+      2,
       '/test/twilio/ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/static_key',
     );
   });
