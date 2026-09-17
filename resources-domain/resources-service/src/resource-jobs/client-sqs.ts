@@ -15,7 +15,10 @@
  */
 
 import { SQSClient, SendMessageCommand, SendMessageRequest } from '@aws-sdk/client-sqs';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getResourcesSearchIndexQueueUrlSsmPath,
+  getSsmParameter,
+} from '@tech-matters/ssm-cache';
 import { publishSns } from '@tech-matters/sns-client';
 
 import type { HrmAccountId } from '@tech-matters/types';
@@ -48,12 +51,6 @@ export const getSqsClient = () => {
   return sqs;
 };
 
-// will pick between more URLs as & when we interact with more queues directly from the resources resvice
-const getJobQueueUrl = () =>
-  `/${process.env.NODE_ENV}/${
-    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-  }/sqs/jobs/hrm-resources-search/queue-url-index`;
-
 export type PublishToResourcesJobParams = {
   params: ResourcesSearchIndexPayload;
   retryCount?: number;
@@ -69,7 +66,7 @@ export const publishToResourcesJob = async ({
   try {
     const QueueUrl =
       process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL ||
-      (await getSsmParameter(getJobQueueUrl(), 86400000));
+      (await getSsmParameter(getResourcesSearchIndexQueueUrlSsmPath(), 86400000));
 
     const message: SendMessageRequest = {
       MessageBody: JSON.stringify(params),

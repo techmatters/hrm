@@ -15,7 +15,6 @@
  */
 
 import parseISO from 'date-fns/parseISO';
-import { handler } from '../../index';
 import each from 'jest-each';
 import type {
   FlatResource,
@@ -23,11 +22,12 @@ import type {
   TimeSequence,
 } from '@tech-matters/resources-types';
 import type { SQSEvent } from 'aws-lambda';
+import { handler } from '../../index';
 
 const mockFetch = jest.fn();
 
 jest.mock('@tech-matters/ssm-cache', () => ({
-  getSsmParameter: () => 'static-key',
+  getAccountStaticKey: jest.fn().mockResolvedValue('static-key'),
 }));
 
 // @ts-ignore

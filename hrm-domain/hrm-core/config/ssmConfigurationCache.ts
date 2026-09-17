@@ -15,9 +15,11 @@
  */
 
 import {
+  getAccountStaticKey,
+  getPermissionConfigSsmPath,
+  getTwilioAuthTokenSsmPath,
   loadSsmCache as loadSsmCacheRoot,
   getSsmParameter,
-  SsmParameterNotFound,
 } from '@tech-matters/ssm-cache';
 
 import env from 'dotenv';
@@ -58,24 +60,6 @@ export const loadSsmCache = async () => {
   });
 };
 
-export const getAccountStaticKey = async (keyName: string) => {
-  try {
-    const name = `/${process.env.NODE_ENV}/hrm/service/${
-      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/static_key/${keyName}`;
-    return await getSsmParameter(name);
-  } catch (error) {
-    // Remove when a terraform apply has been done for all accounts
-    if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
-      console.warn(
-        `New internal API key not set up for ${keyName} yet, looking for legacy key`,
-      );
-
-      return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/static_key`);
-    } else throw error;
-  }
-};
-
 export const getFromSSMCache = async (accountSid: string) => {
   // does nothing if cache is still valid
   await loadSsmCache();
@@ -83,11 +67,7 @@ export const getFromSSMCache = async (accountSid: string) => {
   // Should be cached already
   return {
     staticKey: await getAccountStaticKey(accountSid),
-    authToken: await getSsmParameter(
-      `/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`,
-    ),
-    permissionConfig: await getSsmParameter(
-      `/${process.env.NODE_ENV}/config/${accountSid}/permission_config`,
-    ),
+    authToken: await getSsmParameter(getTwilioAuthTokenSsmPath(accountSid)),
+    permissionConfig: await getSsmParameter(getPermissionConfigSsmPath(accountSid)),
   };
 };
