@@ -22,23 +22,16 @@ import type {
   TimeSequence,
 } from '@tech-matters/resources-types';
 import type { SQSEvent } from 'aws-lambda';
+import { handler } from '../../index';
 
 const mockFetch = jest.fn();
-let handler: (typeof import('../../index'))['handler'];
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getAccountStaticKey: jest.fn().mockResolvedValue('static-key'),
-  getSsmParameter: () => 'static-key',
 }));
 
 // @ts-ignore
 global.fetch = mockFetch;
-
-beforeAll(async () => {
-  process.env.internal_resources_base_url = 'https://internal-resources';
-  process.env.NODE_ENV = 'test';
-  ({ handler } = await import('../../index'));
-});
 
 beforeEach(() => {
   jest.resetAllMocks();

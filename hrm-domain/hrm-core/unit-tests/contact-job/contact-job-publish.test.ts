@@ -27,11 +27,11 @@ jest.mock('../../contact-job/client-sqs');
 jest.mock('@tech-matters/ssm-cache', () => {
   class MockSsmParameterNotFound extends Error {}
   return {
+    getSsmParameter: jest.fn(),
     getCompletedContactJobsQueueUrlSsmPath: jest.fn(
       () => '/mock/completed-contact-jobs-queue-url',
     ),
     getContactJobsQueueUrlSsmPath: jest.fn(() => '/mock/contact-jobs-queue-url'),
-    getSsmParameter: jest.fn(),
     getContactJobScrubTranscriptEnabledSsmPath: jest.fn(
       () => '/mock/contact-job-scrub-transcript-enabled',
     ),
