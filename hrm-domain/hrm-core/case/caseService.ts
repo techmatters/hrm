@@ -37,7 +37,16 @@ import { InitializedCan } from '../permissions/initializeCanForRules';
 import type { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import type { Profile } from '../profile/profileDataAccess';
 import type { PaginationQuery } from '../search';
-import { HrmAccountId, newErr, newOk, TResult } from '@tech-matters/types';
+import {
+  ErrorResult,
+  HrmAccountId,
+  Result,
+  isErr,
+  newErr,
+  newOk,
+  TResult,
+} from '@tech-matters/types';
+import { DatabaseErrorResult } from '../sql';
 import { CaseInfoSection, CaseService, TimelineActivity } from '@tech-matters/hrm-types';
 import { RulesFile, TKConditionsSets } from '../permissions/rulesMap';
 
@@ -447,22 +456,38 @@ export const generalisedCasesSearch = async (
   }
 };
 
+// A domain error, distinct from the DatabaseForeignKeyViolationError it's derived
+// from, so callers (the router) never need to know a database is involved.
+export type DeleteCaseErrorResult =
+  | DatabaseErrorResult
+  | ErrorResult<'DeleteLinkedCaseError'>;
+
 export const deleteCaseById = async ({
   accountSid,
   caseId,
 }: {
   accountSid: HrmAccountId;
   caseId: string;
-}) => {
-  const deleted = await deleteById(parseInt(caseId), accountSid);
+}): Promise<Result<DeleteCaseErrorResult, CaseRecord | null>> => {
+  const result = await deleteById(parseInt(caseId), accountSid);
 
-  if (deleted) {
+  if (isErr(result)) {
+    if (result.error === 'DatabaseForeignKeyViolationError') {
+      return newErr({
+        message: `Case ${caseId} still has linked contacts; disconnect them first`,
+        error: 'DeleteLinkedCaseError',
+      });
+    }
+    return result;
+  }
+
+  if (result.data) {
     await deleteCaseNotify({
       accountSid,
-      caseId: deleted.id.toString(),
-      caseRecord: deleted,
+      caseId: result.data.id.toString(),
+      caseRecord: result.data,
     });
   }
 
-  return deleted;
+  return result;
 };

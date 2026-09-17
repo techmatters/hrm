@@ -20,8 +20,8 @@ import {
 } from '@tech-matters/hrm-types';
 
 import type { Request, Response, NextFunction } from 'express';
+import { isErr, mapHTTPError } from '@tech-matters/types';
 import { publicEndpoint, SafeRouter } from '../permissions';
-import { DatabaseForeignKeyViolationError } from '../sql';
 import { renotifyCasesStream } from './caseNotifyService';
 import * as caseApi from './caseService';
 import createError from 'http-errors';
@@ -47,29 +47,27 @@ adminCasesRouter.get('/:caseId', publicEndpoint, async (req, res) => {
   res.json(caseRecord);
 });
 
-adminCasesRouter.delete('/:caseId', publicEndpoint, async (req, res) => {
-  const { hrmAccountId, user } = req;
-  const { caseId } = req.params;
-  let deleted: Awaited<ReturnType<typeof caseApi.deleteCaseById>>;
-  try {
-    deleted = await caseApi.deleteCaseById({ accountSid: hrmAccountId, caseId });
-  } catch (err) {
-    if (err instanceof DatabaseForeignKeyViolationError) {
-      throw createError(
-        409,
-        `Case ${caseId} still has linked contacts; disconnect them first`,
+adminCasesRouter.delete(
+  '/:caseId',
+  publicEndpoint,
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { hrmAccountId, user } = req;
+    const { caseId } = req.params;
+    const result = await caseApi.deleteCaseById({ accountSid: hrmAccountId, caseId });
+    if (isErr(result)) {
+      return next(
+        mapHTTPError(result, { DeleteLinkedCaseError: 409, DatabaseError: 500 }),
       );
     }
-    throw err;
-  }
-  if (!deleted) {
-    throw createError(404);
-  }
-  console.info(
-    `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Case delete, case id: ${caseId}`,
-  );
-  res.sendStatus(200);
-});
+    if (!result.data) {
+      return next(createError(404));
+    }
+    console.info(
+      `[Data Access Audit] Account:${hrmAccountId}, User: ${user.workerSid}, Action: Case delete, case id: ${caseId}`,
+    );
+    res.sendStatus(200);
+  },
+);
 
 // A future POST /:caseId here would collide with :notifyOperation below.
 // admin POST endpoint to renotify cases. req body has accountSid, dateFrom, dateTo
