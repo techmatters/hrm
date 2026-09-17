@@ -17,6 +17,8 @@
 import { SsmParameterNotFound, getSsmParameter } from '../../ssmCache';
 import {
   getAccountStaticKey,
+  getBeaconApiKeySsmPath,
+  getBeaconBaseUrlSsmPath,
   getHrmStaticKeySsmPath,
   getTwilioAccountSidSsmPath,
 } from '../../ssmParameterNameGetters';
@@ -50,6 +52,15 @@ describe('ssm parameter path getters', () => {
   test('builds HRM service static key paths using environment and region', () => {
     expect(getHrmStaticKeySsmPath('ADMIN_HRM')).toBe(
       '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
+    );
+  });
+
+  test('preserves beacon helpline code casing supplied by the caller', () => {
+    expect(getBeaconBaseUrlSsmPath('USCR')).toBe(
+      '/test/hrm/custom-integration/USCR/beacon_base_url',
+    );
+    expect(getBeaconApiKeySsmPath('UsCr')).toBe(
+      '/test/hrm/custom-integration/UsCr/beacon_api_key',
     );
   });
 });

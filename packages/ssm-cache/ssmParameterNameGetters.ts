@@ -95,14 +95,12 @@ export const getIndexTranscriptsForSearchSsmPath = (
 export const getBeaconBaseUrlSsmPath = (
   helplineShortCode: string,
   environment = process.env.NODE_ENV,
-) =>
-  `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_base_url`;
+) => `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`;
 
 export const getBeaconApiKeySsmPath = (
   helplineShortCode: string,
   environment = process.env.NODE_ENV,
-) =>
-  `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_api_key`;
+) => `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`;
 
 export const getBeaconLatestSeenSsmPath = (
   accountSid: string,
