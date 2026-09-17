@@ -95,6 +95,71 @@ describe('buildAuditLogEntry', () => {
       }),
     ).not.toHaveProperty('usedSyntheticWorker');
   });
+
+  test('includes contactId when present, omits when not (needed to resolve taskId to a real Contact id)', () => {
+    expect(
+      buildAuditLogEntry({
+        runId: 'icarol-run-1',
+        callReportNum: '12345',
+        timestamp: new Date('2026-09-02T18:30:00.000Z'),
+        outcome: 'created',
+        contactId: 'abc-123',
+      }),
+    ).toMatchObject({ contactId: 'abc-123' });
+
+    expect(
+      buildAuditLogEntry({
+        runId: 'icarol-run-1',
+        callReportNum: '12345',
+        timestamp: new Date('2026-09-02T18:30:00.000Z'),
+        outcome: 'created',
+      }),
+    ).not.toHaveProperty('contactId');
+  });
+
+  test('omits callReportNum when not present (a case entry has no single call report)', () => {
+    expect(
+      buildAuditLogEntry({
+        runId: 'icarol-cases-run-1',
+        timestamp: new Date('2026-09-02T18:30:00.000Z'),
+        outcome: 'created',
+        callerNums: ['100', '200'],
+        caseId: 'case-abc',
+        contactIds: ['contact-1', 'contact-2'],
+      }),
+    ).toEqual({
+      runId: 'icarol-cases-run-1',
+      timestamp: '2026-09-02T18:30:00.000Z',
+      outcome: 'created',
+      callerNums: ['100', '200'],
+      caseId: 'case-abc',
+      contactIds: ['contact-1', 'contact-2'],
+    });
+  });
+
+  test('includes callerNums/caseId/contactIds/reason when present, omits when not', () => {
+    expect(
+      buildAuditLogEntry({
+        runId: 'icarol-cases-run-1',
+        timestamp: new Date('2026-09-02T18:30:00.000Z'),
+        outcome: 'skipped-touched',
+        reason: 'updatedBy no longer the system identity',
+      }),
+    ).toMatchObject({
+      outcome: 'skipped-touched',
+      reason: 'updatedBy no longer the system identity',
+    });
+
+    const bare = buildAuditLogEntry({
+      runId: 'icarol-cases-run-1',
+      timestamp: new Date('2026-09-02T18:30:00.000Z'),
+      outcome: 'deferred',
+    });
+    expect(bare).not.toHaveProperty('callerNums');
+    expect(bare).not.toHaveProperty('caseId');
+    expect(bare).not.toHaveProperty('contactIds');
+    expect(bare).not.toHaveProperty('reason');
+  });
 });
 
 describe('formatAuditLogLines', () => {
