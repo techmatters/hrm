@@ -19,6 +19,7 @@
 import * as caseApi from '@tech-matters/hrm-core/case/caseService';
 import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import * as caseDb from '@tech-matters/hrm-core/case/caseDataAccess';
+import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
 
 import * as mocks from '../mocks';
 import { adminHeaders, headers } from '../server';
@@ -27,7 +28,7 @@ import { ALWAYS_CAN } from '../mocks';
 import { casePopulated } from '../mocks';
 import { setupServiceTests } from '../setupServiceTest';
 
-const { case1, case2, accountSid, workerSid } = mocks;
+const { case1, case2, contact1, accountSid, workerSid } = mocks;
 
 const { request, internalRequest } = setupServiceTests(workerSid);
 
@@ -186,6 +187,29 @@ describe('/cases route', () => {
           .send();
 
         expect(response.status).toBe(404);
+      });
+      test('should return 409 when the case still has a linked contact', async () => {
+        const createdContact = await contactApi.createContact(
+          accountSid,
+          workerSid,
+          <any>contact1,
+          ALWAYS_CAN,
+          true,
+        );
+        await contactApi.connectContactToCase(
+          accountSid,
+          createdContact.id,
+          cases.blank.id,
+          ALWAYS_CAN,
+          true,
+        );
+
+        const response = await request
+          .delete(subRoute(cases.blank.id))
+          .set(headers)
+          .send();
+
+        expect(response.status).toBe(409);
       });
     });
   });
