@@ -16,11 +16,8 @@
 
 import { ContactJobType } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
-import {
-  getSsmParameter,
-  getTranscriptRetentionDaysSsmPath,
-  SsmParameterNotFound,
-} from '@tech-matters/ssm-cache';
+import { getTranscriptRetentionDays } from '@tech-matters/aselo-config';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import {
   ContactJob,
   deleteContactJob,
@@ -148,7 +145,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
   let ssmRetentionDays: number;
   try {
     ssmRetentionDays =
-      parseInt(await getSsmParameter(getTranscriptRetentionDaysSsmPath(accountSid))) ||
+      parseInt(await getTranscriptRetentionDays(accountSid)) ||
       MAX_CLEANUP_JOB_RETENTION_DAYS;
     console.debug(
       `SSM parameter for transcript retention days set to ${ssmRetentionDays} for account ${accountSid}, so using that`,

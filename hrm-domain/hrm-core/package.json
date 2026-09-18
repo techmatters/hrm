@@ -52,7 +52,8 @@
     "pg-promise": "^11.15.0",
     "pg-query-stream": "^4.7.0",
     "twilio": "^6.1.0",
-    "twilio-flex-token-validator": "^1.5.5"
+    "twilio-flex-token-validator": "^1.5.5",
+    "@tech-matters/aselo-config": "^1.0.0"
   },
   "devDependencies": {
     "@tech-matters/testing": "^1.0.0",

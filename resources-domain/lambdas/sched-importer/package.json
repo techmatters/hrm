@@ -12,7 +12,8 @@
     "@tech-matters/resources-mappers": "^1.0.0",
     "@tech-matters/resources-import-producer": "^1.0.0",
     "date-fns": "^2.30.0",
-    "lodash": "^4.18.1"
+    "lodash": "^4.18.1",
+    "@tech-matters/aselo-config": "^1.0.0"
   },
   "devDependencies": {
     "@tech-matters/types": "^1.0.0",

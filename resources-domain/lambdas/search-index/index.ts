@@ -29,7 +29,7 @@ import {
   RESOURCE_INDEX_TYPE,
   getResourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
-import { getSsmParameter, getTwilioShortHelplineSsmPath } from '@tech-matters/ssm-cache';
+import { getTwilioShortHelpline } from '@tech-matters/aselo-config';
 
 export type DocumentsByAccountSid = Record<string, BulkOperations<FlatResource>>;
 
@@ -88,7 +88,7 @@ export const executeBulk = async (
 ) => {
   await Promise.all(
     Object.keys(documentsByAccountSid).map(async accountSid => {
-      const shortCode = await getSsmParameter(getTwilioShortHelplineSsmPath(accountSid));
+      const shortCode = await getTwilioShortHelpline(accountSid);
       const resourceIndexConfiguration = getResourceIndexConfiguration(shortCode);
 
       const documents = documentsByAccountSid[accountSid];

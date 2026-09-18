@@ -59,7 +59,8 @@
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@types/debug": "^4.1.8",
     "@types/express": "^4.17.13",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "@tech-matters/aselo-config": "^1.0.0"
   },
   "devDependencies": {
     "@aws-sdk/client-sqs": "^3.1094.0",

@@ -14,17 +14,39 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { SsmParameterNotFound, getSsmParameter } from '../../ssmCache';
+import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
 import {
   getAccountStaticKey,
+  getBeaconApiKey,
+  getBeaconBaseUrl,
+  getBeaconLatestSeen,
+  getCompletedContactJobsQueueUrl,
+  getContactJobsQueueUrl,
+  getContactJobScrubTranscriptEnabled,
+  getEntityNotificationsTopicArn,
+  getHrmStaticKey,
+  getIndexTranscriptsForSearch,
+  getPermissionConfig,
+  getResourcesImportApiAuthHeader,
+  getResourcesImportApiBaseUrl,
+  getResourcesImportApiKey,
+  getResourcesSearchIndexQueueUrl,
+  getS3DocsBucketName,
+  getTranscriptRetentionDays,
+  getTwilioAccountSid,
+  getTwilioAuthToken,
+  getTwilioShortHelpline,
+  getTwilioStaticKey,
+} from '../../index';
+import {
   getBeaconApiKeySsmPath,
   getBeaconBaseUrlSsmPath,
   getHrmStaticKeySsmPath,
   getTwilioAccountSidSsmPath,
 } from '../../ssmParameterNameGetters';
 
-jest.mock('../../ssmCache', () => {
-  const actual = jest.requireActual('../../ssmCache');
+jest.mock('@tech-matters/ssm-cache', () => {
+  const actual = jest.requireActual('@tech-matters/ssm-cache');
   return {
     ...actual,
     getSsmParameter: jest.fn(),
@@ -38,10 +60,8 @@ const mockGetSsmParameter = getSsmParameter as jest.MockedFunction<
 beforeEach(() => {
   process.env.NODE_ENV = 'test';
   process.env.AWS_REGION = 'us-east-1';
-});
-
-afterEach(() => {
-  jest.resetAllMocks();
+  mockGetSsmParameter.mockReset();
+  mockGetSsmParameter.mockResolvedValue('the-value');
 });
 
 describe('ssm parameter path getters', () => {
@@ -65,6 +85,142 @@ describe('ssm parameter path getters', () => {
   });
 });
 
+describe('ssm parameter getters', () => {
+  test.each([
+    [
+      'getHrmStaticKey',
+      getHrmStaticKey,
+      ['ADMIN_HRM'],
+      '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
+    ],
+    [
+      'getTwilioStaticKey',
+      getTwilioStaticKey,
+      ['AC123'],
+      '/test/twilio/AC123/static_key',
+    ],
+    [
+      'getTwilioAuthToken',
+      getTwilioAuthToken,
+      ['AC123'],
+      '/test/twilio/AC123/auth_token',
+    ],
+    ['getTwilioAccountSid', getTwilioAccountSid, ['as'], '/test/twilio/AS/account_sid'],
+    [
+      'getTwilioShortHelpline',
+      getTwilioShortHelpline,
+      ['AC123'],
+      '/test/twilio/AC123/short_helpline',
+    ],
+    [
+      'getS3DocsBucketName',
+      getS3DocsBucketName,
+      ['AC123'],
+      '/test/s3/AC123/docs_bucket_name',
+    ],
+    [
+      'getPermissionConfig',
+      getPermissionConfig,
+      ['AC123'],
+      '/test/config/AC123/permission_config',
+    ],
+    [
+      'getEntityNotificationsTopicArn',
+      getEntityNotificationsTopicArn,
+      ['contact'],
+      '/test/us-east-1/hrm/contact/notifications-sns-topic-arn',
+    ],
+    [
+      'getCompletedContactJobsQueueUrl',
+      getCompletedContactJobsQueueUrl,
+      [],
+      '/test/us-east-1/sqs/jobs/hrm-contact/queue-url-complete',
+    ],
+    [
+      'getContactJobsQueueUrl',
+      getContactJobsQueueUrl,
+      ['retrieve-contact-transcript'],
+      '/test/us-east-1/sqs/jobs/hrm-contact/queue-url-retrieve-contact-transcript',
+    ],
+    [
+      'getResourcesSearchIndexQueueUrl',
+      getResourcesSearchIndexQueueUrl,
+      [],
+      '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
+    ],
+    [
+      'getContactJobScrubTranscriptEnabled',
+      getContactJobScrubTranscriptEnabled,
+      ['AC123'],
+      '/test/us-east-1/AC123/jobs/contact/scrub-transcript/enabled',
+    ],
+    [
+      'getTranscriptRetentionDays',
+      getTranscriptRetentionDays,
+      ['AC123'],
+      '/test/hrm/AC123/transcript_retention_days',
+    ],
+    [
+      'getIndexTranscriptsForSearch',
+      getIndexTranscriptsForSearch,
+      ['AC123'],
+      '/test/hrm/AC123/index_transcripts_for_search',
+    ],
+    [
+      'getBeaconBaseUrl',
+      getBeaconBaseUrl,
+      ['uscr'],
+      '/test/hrm/custom-integration/uscr/beacon_base_url',
+    ],
+    [
+      'getBeaconApiKey',
+      getBeaconApiKey,
+      ['uscr'],
+      '/test/hrm/custom-integration/uscr/beacon_api_key',
+    ],
+    [
+      'getResourcesImportApiBaseUrl',
+      getResourcesImportApiBaseUrl,
+      ['AC123'],
+      '/test/resources/AC123/import_api/base_url',
+    ],
+    [
+      'getResourcesImportApiKey',
+      getResourcesImportApiKey,
+      ['AC123'],
+      '/test/resources/AC123/import_api/api_key',
+    ],
+    [
+      'getResourcesImportApiAuthHeader',
+      getResourcesImportApiAuthHeader,
+      ['AC123'],
+      '/test/resources/AC123/import_api/auth_header',
+    ],
+    [
+      'getBeaconLatestSeen',
+      getBeaconLatestSeen,
+      ['AC123', 'incidentReport'],
+      '/test/hrm/custom-integration/beacon/AC123/incidentReport/latest_seen',
+    ],
+  ])('%s looks up the derived SSM path', async (_name, getter, args, expectedPath) => {
+    const result = await getter(...args);
+
+    expect(result).toBe('the-value');
+    expect(mockGetSsmParameter).toHaveBeenCalledWith(expectedPath, undefined);
+  });
+
+  test('passes cache-duration options through to getSsmParameter', async () => {
+    await getResourcesSearchIndexQueueUrl(undefined, undefined, {
+      cacheDurationMilliseconds: 86400000,
+    });
+
+    expect(mockGetSsmParameter).toHaveBeenCalledWith(
+      '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
+      86400000,
+    );
+  });
+});
+
 describe('getAccountStaticKey', () => {
   test('resolves the hrm-service-scoped static key directly when it exists', async () => {
     mockGetSsmParameter.mockResolvedValueOnce('the-key');
@@ -74,6 +230,7 @@ describe('getAccountStaticKey', () => {
     expect(result).toBe('the-key');
     expect(mockGetSsmParameter).toHaveBeenCalledWith(
       '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
+      undefined,
     );
   });
 
@@ -91,10 +248,12 @@ describe('getAccountStaticKey', () => {
     expect(mockGetSsmParameter).toHaveBeenNthCalledWith(
       1,
       '/test/hrm/service/us-east-1/static_key/ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+      undefined,
     );
     expect(mockGetSsmParameter).toHaveBeenNthCalledWith(
       2,
       '/test/twilio/ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/static_key',
+      undefined,
     );
   });
 

@@ -15,6 +15,7 @@
  */
 
 import addDays from 'date-fns/addDays';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import {
   GetParameterCommand,
   GetParametersByPathCommand,
@@ -29,7 +30,7 @@ import {
   getSsmParameter,
   ssmCache,
   setCacheDurationMilliseconds,
-} from '../../ssmCache';
+} from '@tech-matters/ssm-cache';
 
 const mockSSMClient = mockClient(SSMClient);
 

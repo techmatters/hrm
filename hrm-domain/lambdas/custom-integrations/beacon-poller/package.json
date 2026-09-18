@@ -8,7 +8,8 @@
   "dependencies": {
     "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
-    "@tech-matters/types": "^1.0.0"
+    "@tech-matters/types": "^1.0.0",
+    "@tech-matters/aselo-config": "^1.0.0"
   },
   "devDependencies": {
     "@tech-matters/hrm-service-test-support": "^1.0.0",

@@ -14,7 +14,8 @@
     "@tech-matters/twilio-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "twilio": "^6.1.0",
-    "util": "^0.12.4"
+    "util": "^0.12.4",
+    "@tech-matters/aselo-config": "^1.0.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

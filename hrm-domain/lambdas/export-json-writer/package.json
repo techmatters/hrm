@@ -11,7 +11,8 @@
     "@tech-matters/s3-client": "^1.0.0",
     "@tech-matters/types": "^1.0.0",
     "@tech-matters/hrm-types": "^1.0.0",
-    "date-fns": "2.30.0"
+    "date-fns": "2.30.0",
+    "@tech-matters/aselo-config": "^1.0.0"
   },
   "devDependencies": {
     "@tech-matters/types": "^1.0.0",

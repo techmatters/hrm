@@ -17,18 +17,26 @@
 import type { AccountSID } from '@tech-matters/types';
 import {
   getAccountStaticKey,
+  getResourcesImportApiAuthHeader,
   getResourcesImportApiAuthHeaderSsmPath,
+  getResourcesImportApiBaseUrl,
   getResourcesImportApiBaseUrlSsmPath,
+  getResourcesImportApiKey,
   getResourcesImportApiKeySsmPath,
+  getS3DocsBucketName,
   getS3DocsBucketNameSsmPath,
-  getSsmParameter,
+  getTwilioAccountSid,
   getTwilioAccountSidSsmPath,
-} from '@tech-matters/ssm-cache';
+} from '@tech-matters/aselo-config';
 
-const debugGetSsmParameter = async (path: string, logValue = false) => {
+const debugGetSsmParameter = async (
+  path: string,
+  getter: () => Promise<string>,
+  logValue = false,
+) => {
   console.debug(`Getting SSM parameter: ${path}`);
   try {
-    const value = await getSsmParameter(path);
+    const value = await getter();
     console.debug(
       `Got SSM parameter: ${path} value: ${logValue ? value : value.replace(/./g, '*')}`,
     );
@@ -49,6 +57,7 @@ const getConfig = async () => {
 
   const accountSid: AccountSID = (await debugGetSsmParameter(
     getTwilioAccountSidSsmPath(helplineShortCode, deploymentEnvironment),
+    () => getTwilioAccountSid(helplineShortCode, deploymentEnvironment),
   )) as AccountSID;
 
   const [
@@ -60,16 +69,22 @@ const getConfig = async () => {
   ] = await Promise.all([
     debugGetSsmParameter(
       getResourcesImportApiBaseUrlSsmPath(accountSid, deploymentEnvironment),
+      () => getResourcesImportApiBaseUrl(accountSid, deploymentEnvironment),
       true,
     ),
     debugGetSsmParameter(
       getResourcesImportApiKeySsmPath(accountSid, deploymentEnvironment),
+      () => getResourcesImportApiKey(accountSid, deploymentEnvironment),
     ),
     debugGetSsmParameter(
       getResourcesImportApiAuthHeaderSsmPath(accountSid, deploymentEnvironment),
+      () => getResourcesImportApiAuthHeader(accountSid, deploymentEnvironment),
     ),
     getAccountStaticKey(accountSid),
-    debugGetSsmParameter(getS3DocsBucketNameSsmPath(accountSid, deploymentEnvironment)),
+    debugGetSsmParameter(
+      getS3DocsBucketNameSsmPath(accountSid, deploymentEnvironment),
+      () => getS3DocsBucketName(accountSid, deploymentEnvironment),
+    ),
   ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),

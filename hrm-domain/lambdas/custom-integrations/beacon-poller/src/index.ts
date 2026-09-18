@@ -17,12 +17,13 @@
 import { BEACON_API_KEY_HEADER } from './config';
 import { readApiInChunks } from './apiChunkReader';
 import {
-  getBeaconApiKeySsmPath,
-  getBeaconBaseUrlSsmPath,
+  getBeaconApiKey,
+  getBeaconBaseUrl,
+  getBeaconLatestSeen,
   getBeaconLatestSeenSsmPath,
-  getSsmParameter,
+  getTwilioAccountSid,
   getTwilioAccountSidSsmPath,
-} from '@tech-matters/ssm-cache';
+} from '@tech-matters/aselo-config';
 import type { AccountSID } from '@tech-matters/types';
 import { createBeaconDocumentProcessor } from './beaconDocumentProcessors';
 
@@ -41,9 +42,9 @@ export const handler = async ({
   let beaconApiKey: string;
   try {
     [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
-      getSsmParameter(getTwilioAccountSidSsmPath(helplineShortCode, environment)),
-      getSsmParameter(getBeaconBaseUrlSsmPath(beaconHelplineShortCode, environment)),
-      getSsmParameter(getBeaconApiKeySsmPath(beaconHelplineShortCode, environment)),
+      getTwilioAccountSid(helplineShortCode, environment),
+      getBeaconBaseUrl(beaconHelplineShortCode, environment),
+      getBeaconApiKey(beaconHelplineShortCode, environment),
     ])) as [AccountSID, string, string];
   } catch (err) {
     console.error(
@@ -65,6 +66,7 @@ export const handler = async ({
   const configDefaults = {
     headers: beaconHeaders,
     lastUpdateSeenSsmKey,
+    getLastUpdateSeen: () => getBeaconLatestSeen(accountSid, apiType, environment),
     maxItemsInChunk: parseInt(
       (apiType === 'incidentReport'
         ? process.env.MAX_INCIDENT_REPORTS_PER_CALL

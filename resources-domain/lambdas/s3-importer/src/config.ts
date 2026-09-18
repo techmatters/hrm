@@ -16,15 +16,20 @@
 
 import type { AccountSID } from '@tech-matters/types';
 import {
+  getS3DocsBucketName,
   getS3DocsBucketNameSsmPath,
-  getSsmParameter,
+  getTwilioAccountSid,
   getTwilioAccountSidSsmPath,
-} from '@tech-matters/ssm-cache';
+} from '@tech-matters/aselo-config';
 
-const debugGetSsmParameter = async (path: string, logValue = false) => {
+const debugGetSsmParameter = async (
+  path: string,
+  getter: () => Promise<string>,
+  logValue = false,
+) => {
   console.debug(`Getting SSM parameter: ${path}`);
   try {
-    const value = await getSsmParameter(path);
+    const value = await getter();
     console.debug(
       `Got SSM parameter: ${path} value: ${logValue ? value : value.replace(/./g, '*')}`,
     );
@@ -45,10 +50,12 @@ const getConfig = async () => {
 
   const accountSid: AccountSID = (await debugGetSsmParameter(
     getTwilioAccountSidSsmPath(helplineShortCode, deploymentEnvironment),
+    () => getTwilioAccountSid(helplineShortCode, deploymentEnvironment),
   )) as AccountSID;
 
   const docsBucket = await debugGetSsmParameter(
     getS3DocsBucketNameSsmPath(accountSid, deploymentEnvironment),
+    () => getS3DocsBucketName(accountSid, deploymentEnvironment),
   );
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),

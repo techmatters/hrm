@@ -14,9 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import isAfter from 'date-fns/isAfter';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { loadSsmCache } from '../../loadSsmCache';
-import * as SsmCache from '../../ssmCache';
+import { loadSsmCache } from '@tech-matters/ssm-cache';
+import * as SsmCache from '@tech-matters/ssm-cache';
 import { mockClient } from 'aws-sdk-client-mock';
 
 const mockSSMClient = mockClient(SSMClient);

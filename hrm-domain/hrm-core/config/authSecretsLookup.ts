@@ -15,7 +15,7 @@
  */
 
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
-import { getAccountStaticKey } from '@tech-matters/ssm-cache';
+import { getAccountStaticKey } from '@tech-matters/aselo-config';
 import { getFromSSMCache } from './ssmConfigurationCache';
 
 const lookupLocalOverride = (overrideEnvVarName: string, key: string) => {

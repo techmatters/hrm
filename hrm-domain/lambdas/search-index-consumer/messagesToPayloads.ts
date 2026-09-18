@@ -26,11 +26,8 @@ import {
 import { type HrmAccountId } from '@tech-matters/types';
 import { ExportTranscriptDocument, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
-import {
-  getIndexTranscriptsForSearchSsmPath,
-  getSsmParameter,
-  SsmParameterNotFound,
-} from '@tech-matters/ssm-cache';
+import { getIndexTranscriptsForSearch } from '@tech-matters/aselo-config';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 /**
  * A payload is single object that should be indexed in a particular index. A single message might represent multiple payloads.
@@ -67,9 +64,7 @@ type ContactIndexingInputData = MessageWithMeta & {
 
 const shouldIndexTranscripts = async (accountSid: HrmAccountId): Promise<boolean> => {
   try {
-    const indexTranscriptParameterValue = await getSsmParameter(
-      getIndexTranscriptsForSearchSsmPath(accountSid),
-    );
+    const indexTranscriptParameterValue = await getIndexTranscriptsForSearch(accountSid);
     if (indexTranscriptParameterValue?.toLowerCase() === 'false') {
       return false;
     }
