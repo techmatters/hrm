@@ -15,10 +15,10 @@
  */
 import { ProfileWithRelationships } from '@tech-matters/hrm-types';
 import {
+  getEntityNotificationsTopicArn,
   getEntityNotificationsTopicArnSsmPath,
-  SsmParameterNotFound,
-  getSsmParameter,
-} from '@tech-matters/ssm-cache';
+} from '@tech-matters/aselo-config';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import {
   CaseSection,
   CaseService,
@@ -71,9 +71,9 @@ const publishToSns = async ({
   payload: NotificationPayload;
   messageGroupId: string;
 }) => {
-  const topicSsmPath = getEntityNotificationsTopicArnSsmPath(entityType);
+  const topicSsmPath = getEntityNotificationsTopicArnSsmPath({ entityType });
   try {
-    const topicArn = await getSsmParameter(topicSsmPath);
+    const topicArn = await getEntityNotificationsTopicArn({ entityType });
     const publishParameters: PublishSnsParams = {
       topicArn,
       message: JSON.stringify({ ...payload, entityType }),

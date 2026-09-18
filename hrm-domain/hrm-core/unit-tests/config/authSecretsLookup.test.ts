@@ -15,16 +15,13 @@
  */
 
 import { defaultAuthSecretsLookup } from '../../config/authSecretsLookup';
-import { getAccountStaticKey } from '@tech-matters/ssm-cache';
+import { getAccountStaticKey } from '@tech-matters/aselo-config';
 import * as ssmConfigurationCache from '../../config/ssmConfigurationCache';
 
-jest.mock('@tech-matters/ssm-cache', () => {
-  const actual = jest.requireActual('@tech-matters/ssm-cache');
-  return {
-    ...actual,
-    getAccountStaticKey: jest.fn(),
-  };
-});
+jest.mock('@tech-matters/aselo-config', () => ({
+  ...(jest.requireActual('@tech-matters/aselo-config') as Record<string, unknown>),
+  getAccountStaticKey: jest.fn(),
+}));
 jest.mock('../../config/ssmConfigurationCache');
 
 const mockGetAccountStaticKey = getAccountStaticKey as jest.MockedFunction<

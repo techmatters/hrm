@@ -14,20 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-jest.mock('@tech-matters/ssm-cache');
-jest.mock('@tech-matters/aselo-config');
-jest.mock('@tech-matters/sqs-client', () => {
-  return {
-    deleteSqsMessage: () => jest.fn(),
-    receiveSqsMessage: () =>
-      jest.fn(() => {
-        return {
-          promise: jest.fn().mockResolvedValue({
-            $metadata: {},
-            Messages: [],
-          }),
-        };
-      }),
-    sendSqsMessage: () => jest.fn().mockReturnThis(),
-  };
-});
+module.exports = config => {
+  return (
+    config || {
+      preset: 'ts-jest',
+      rootDir: './tests',
+      maxWorkers: 1,
+      globals: {
+        'ts-jest': {
+          // to give support to const enum. Not working, conflicting with module resolution
+          useExperimentalLanguageServer: true,
+        },
+      },
+      reporters: ['default', 'jest-junit'],
+    }
+  );
+};

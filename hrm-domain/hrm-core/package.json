@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
+    "@tech-matters/aselo-config": "^1.0.0",
     "@tech-matters/database-connect": "^1.0.0",
     "@tech-matters/elasticsearch-client": "^1.0.0",
     "@tech-matters/hrm-search-config": "^1.0.0",

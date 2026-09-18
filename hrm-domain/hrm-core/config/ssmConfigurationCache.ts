@@ -16,11 +16,10 @@
 
 import {
   getAccountStaticKey,
-  getPermissionConfigSsmPath,
-  getTwilioAuthTokenSsmPath,
-  loadSsmCache as loadSsmCacheRoot,
-  getSsmParameter,
-} from '@tech-matters/ssm-cache';
+  getPermissionConfig,
+  getTwilioAuthToken,
+} from '@tech-matters/aselo-config';
+import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
 
 import env from 'dotenv';
 
@@ -67,7 +66,7 @@ export const getFromSSMCache = async (accountSid: string) => {
   // Should be cached already
   return {
     staticKey: await getAccountStaticKey(accountSid),
-    authToken: await getSsmParameter(getTwilioAuthTokenSsmPath(accountSid)),
-    permissionConfig: await getSsmParameter(getPermissionConfigSsmPath(accountSid)),
+    authToken: await getTwilioAuthToken({ accountSid }),
+    permissionConfig: await getPermissionConfig({ accountSid }),
   };
 };

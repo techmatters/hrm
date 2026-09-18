@@ -15,27 +15,32 @@
  */
 
 import {
-  getSsmParameter,
   getAccountStaticKey,
-  loadSsmCache as loadSsmCacheRoot,
-} from '@tech-matters/ssm-cache';
+  getPermissionConfig,
+  getTwilioAuthToken,
+} from '@tech-matters/aselo-config';
+import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
 import { getFromSSMCache } from '../../config/ssmConfigurationCache';
 
-jest.mock('@tech-matters/ssm-cache', () => {
-  const actual = jest.requireActual('@tech-matters/ssm-cache');
-  return {
-    ...actual,
-    getAccountStaticKey: jest.fn(),
-    loadSsmCache: jest.fn(),
-    getSsmParameter: jest.fn(),
-  };
-});
+jest.mock('@tech-matters/aselo-config', () => ({
+  ...(jest.requireActual('@tech-matters/aselo-config') as Record<string, unknown>),
+  getAccountStaticKey: jest.fn(),
+  getPermissionConfig: jest.fn(),
+  getTwilioAuthToken: jest.fn(),
+}));
+jest.mock('@tech-matters/ssm-cache', () => ({
+  ...(jest.requireActual('@tech-matters/ssm-cache') as Record<string, unknown>),
+  loadSsmCache: jest.fn(),
+}));
 
 const mockGetAccountStaticKey = getAccountStaticKey as jest.MockedFunction<
   typeof getAccountStaticKey
 >;
-const mockGetSsmParameter = getSsmParameter as jest.MockedFunction<
-  typeof getSsmParameter
+const mockGetPermissionConfig = getPermissionConfig as jest.MockedFunction<
+  typeof getPermissionConfig
+>;
+const mockGetTwilioAuthToken = getTwilioAuthToken as jest.MockedFunction<
+  typeof getTwilioAuthToken
 >;
 const mockLoadSsmCache = loadSsmCacheRoot as jest.MockedFunction<typeof loadSsmCacheRoot>;
 
@@ -54,9 +59,8 @@ describe('getAccountStaticKey', () => {
   // still needs all three parameters for a real account.
   test('fetches the static key, auth token, and permission config together for a real account', async () => {
     mockGetAccountStaticKey.mockResolvedValueOnce('the-key');
-    mockGetSsmParameter
-      .mockResolvedValueOnce('the-token')
-      .mockResolvedValueOnce('the-config');
+    mockGetTwilioAuthToken.mockResolvedValueOnce('the-token');
+    mockGetPermissionConfig.mockResolvedValueOnce('the-config');
 
     const result = await getFromSSMCache('ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
 

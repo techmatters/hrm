@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aws-sdk/lib-storage": "^3.609.0",
+    "@tech-matters/aselo-config": "^1.0.0",
     "@tech-matters/hrm-core": "^1.0.0",
     "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/s3-client": "^1.0.0",
