@@ -42,15 +42,17 @@ export const handler = async ({
   let beaconApiKey: string;
   try {
     [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
-      getTwilioAccountSid(helplineShortCode, environment),
-      getBeaconBaseUrl(beaconHelplineShortCode, environment),
-      getBeaconApiKey(beaconHelplineShortCode, environment),
+      getTwilioAccountSid({ shortCode: helplineShortCode, environment }),
+      getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
+      getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
     ])) as [AccountSID, string, string];
   } catch (err) {
     console.error(
       `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${getTwilioAccountSidSsmPath(
-        helplineShortCode,
-        environment,
+        {
+          shortCode: helplineShortCode,
+          environment,
+        },
       )}. Abandoning run.`,
       err,
     );
@@ -58,15 +60,15 @@ export const handler = async ({
   }
 
   const beaconHeaders = { [BEACON_API_KEY_HEADER]: beaconApiKey };
-  const lastUpdateSeenSsmKey = getBeaconLatestSeenSsmPath(
+  const lastUpdateSeenSsmKey = getBeaconLatestSeenSsmPath({
     accountSid,
     apiType,
     environment,
-  );
+  });
   const configDefaults = {
     headers: beaconHeaders,
     lastUpdateSeenSsmKey,
-    getLastUpdateSeen: () => getBeaconLatestSeen(accountSid, apiType, environment),
+    getLastUpdateSeen: () => getBeaconLatestSeen({ accountSid, apiType, environment }),
     maxItemsInChunk: parseInt(
       (apiType === 'incidentReport'
         ? process.env.MAX_INCIDENT_REPORTS_PER_CALL

@@ -35,7 +35,10 @@ const processRecord = async (record: SQSRecord) => {
         `Could not determine Twilio account SID for ${notification.accountSid}`,
       );
     }
-    const bucket = await getS3DocsBucketName(accountSid, process.env.NODE_ENV);
+    const bucket = await getS3DocsBucketName({
+      accountSid,
+      environment: process.env.NODE_ENV,
+    });
     const { payload, timestamp, entityType } =
       getNormalisedNotificationPayload(notification);
     if (payload === null) {

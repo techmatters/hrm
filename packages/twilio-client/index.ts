@@ -55,7 +55,7 @@ export const getAuthToken = async (
     return process.env.TWILIO_AUTH_TOKEN;
   }
 
-  return getTwilioAuthToken(accountSid);
+  return getTwilioAuthToken({ accountSid });
 };
 
 export const getClient = async ({

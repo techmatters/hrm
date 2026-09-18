@@ -28,7 +28,7 @@ const getAccountSid = ({
   environment: string;
   shortCode: string;
 }) => {
-  return getTwilioAccountSid(shortCode, environment);
+  return getTwilioAccountSid({ shortCode, environment });
 };
 
 const requestRenotify = async ({

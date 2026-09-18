@@ -49,13 +49,27 @@ const getConfig = async () => {
   console.debug(`helplineShortCode: ${helplineShortCode}`);
 
   const accountSid: AccountSID = (await debugGetSsmParameter(
-    getTwilioAccountSidSsmPath(helplineShortCode, deploymentEnvironment),
-    () => getTwilioAccountSid(helplineShortCode, deploymentEnvironment),
+    getTwilioAccountSidSsmPath({
+      shortCode: helplineShortCode,
+      environment: deploymentEnvironment,
+    }),
+    () =>
+      getTwilioAccountSid({
+        shortCode: helplineShortCode,
+        environment: deploymentEnvironment,
+      }),
   )) as AccountSID;
 
   const docsBucket = await debugGetSsmParameter(
-    getS3DocsBucketNameSsmPath(accountSid, deploymentEnvironment),
-    () => getS3DocsBucketName(accountSid, deploymentEnvironment),
+    getS3DocsBucketNameSsmPath({
+      accountSid,
+      environment: deploymentEnvironment,
+    }),
+    () =>
+      getS3DocsBucketName({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
   );
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),

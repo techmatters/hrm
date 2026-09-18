@@ -17,7 +17,7 @@
 import { getTwilioAccountSid } from '@tech-matters/aselo-config';
 
 export const getAccountSid = (shortCode: string) => {
-  return getTwilioAccountSid(shortCode);
+  return getTwilioAccountSid({ shortCode });
 };
 
 export default getAccountSid;

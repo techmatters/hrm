@@ -145,7 +145,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
   let ssmRetentionDays: number;
   try {
     ssmRetentionDays =
-      parseInt(await getTranscriptRetentionDays(accountSid)) ||
+      parseInt(await getTranscriptRetentionDays({ accountSid })) ||
       MAX_CLEANUP_JOB_RETENTION_DAYS;
     console.debug(
       `SSM parameter for transcript retention days set to ${ssmRetentionDays} for account ${accountSid}, so using that`,

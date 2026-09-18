@@ -43,8 +43,8 @@ export const createIncident = async ({
   const beaconHelplineShortCode = helplineShortCode.toLowerCase();
   try {
     const [baseUrl, apiKey] = await Promise.all([
-      getBeaconBaseUrl(beaconHelplineShortCode, environment),
-      getBeaconApiKey(beaconHelplineShortCode, environment),
+      getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
+      getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
     ]);
 
     const fullUrl = `${baseUrl}/api/aselo/incidents`;

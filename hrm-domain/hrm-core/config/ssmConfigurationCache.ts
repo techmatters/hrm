@@ -66,7 +66,7 @@ export const getFromSSMCache = async (accountSid: string) => {
   // Should be cached already
   return {
     staticKey: await getAccountStaticKey(accountSid),
-    authToken: await getTwilioAuthToken(accountSid),
-    permissionConfig: await getPermissionConfig(accountSid),
+    authToken: await getTwilioAuthToken({ accountSid }),
+    permissionConfig: await getPermissionConfig({ accountSid }),
   };
 };

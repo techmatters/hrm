@@ -56,8 +56,15 @@ const getConfig = async () => {
   console.debug(`helplineShortCode: ${helplineShortCode}`);
 
   const accountSid: AccountSID = (await debugGetSsmParameter(
-    getTwilioAccountSidSsmPath(helplineShortCode, deploymentEnvironment),
-    () => getTwilioAccountSid(helplineShortCode, deploymentEnvironment),
+    getTwilioAccountSidSsmPath({
+      shortCode: helplineShortCode,
+      environment: deploymentEnvironment,
+    }),
+    () =>
+      getTwilioAccountSid({
+        shortCode: helplineShortCode,
+        environment: deploymentEnvironment,
+      }),
   )) as AccountSID;
 
   const [
@@ -68,22 +75,50 @@ const getConfig = async () => {
     docsBucket,
   ] = await Promise.all([
     debugGetSsmParameter(
-      getResourcesImportApiBaseUrlSsmPath(accountSid, deploymentEnvironment),
-      () => getResourcesImportApiBaseUrl(accountSid, deploymentEnvironment),
+      getResourcesImportApiBaseUrlSsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getResourcesImportApiBaseUrl({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
       true,
     ),
     debugGetSsmParameter(
-      getResourcesImportApiKeySsmPath(accountSid, deploymentEnvironment),
-      () => getResourcesImportApiKey(accountSid, deploymentEnvironment),
+      getResourcesImportApiKeySsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getResourcesImportApiKey({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
     ),
     debugGetSsmParameter(
-      getResourcesImportApiAuthHeaderSsmPath(accountSid, deploymentEnvironment),
-      () => getResourcesImportApiAuthHeader(accountSid, deploymentEnvironment),
+      getResourcesImportApiAuthHeaderSsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getResourcesImportApiAuthHeader({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
     ),
     getAccountStaticKey(accountSid),
     debugGetSsmParameter(
-      getS3DocsBucketNameSsmPath(accountSid, deploymentEnvironment),
-      () => getS3DocsBucketName(accountSid, deploymentEnvironment),
+      getS3DocsBucketNameSsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getS3DocsBucketName({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
     ),
   ]);
   return {

@@ -81,7 +81,7 @@ const postHandler = async (
 
   // Legacy API didn't provide a short code and put the account SID in the body. New API has the short code in the path and no account sid
   const accountSid = helplineCode
-    ? await getTwilioAccountSid(helplineCode, environment)
+    ? await getTwilioAccountSid({ shortCode: helplineCode, environment })
     : body.accountSid;
 
   const payloadResult = validatePayload({
@@ -104,7 +104,7 @@ const postHandler = async (
     });
   }
 
-  const authToken = await getTwilioAuthToken(accountSid, environment);
+  const authToken = await getTwilioAuthToken({ accountSid, environment });
   const tokenValidationResult = await twilioTokenValidator({
     accountSid,
     authToken,

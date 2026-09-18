@@ -26,101 +26,163 @@ export const getHrmStaticKeySsmPath = ({
   region?: string;
 }) => `/${environment}/hrm/service/${region}/static_key/${keyName}`;
 
-export const getTwilioStaticKeySsmPath = (
-  accountSid: string,
+export const getTwilioStaticKeySsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/twilio/${accountSid}/static_key`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/twilio/${accountSid}/static_key`;
 
-export const getTwilioAuthTokenSsmPath = (
-  accountSid: string,
+export const getTwilioAuthTokenSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/twilio/${accountSid}/auth_token`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/twilio/${accountSid}/auth_token`;
 
-export const getTwilioAccountSidSsmPath = (
-  shortCode: string,
+export const getTwilioAccountSidSsmPath = ({
+  shortCode,
   environment = process.env.NODE_ENV,
-) => `/${environment}/twilio/${shortCode.toUpperCase()}/account_sid`;
+}: {
+  shortCode: string;
+  environment?: string;
+}) => `/${environment}/twilio/${shortCode.toUpperCase()}/account_sid`;
 
-export const getTwilioShortHelplineSsmPath = (
-  accountSid: string,
+export const getTwilioShortHelplineSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/twilio/${accountSid}/short_helpline`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/twilio/${accountSid}/short_helpline`;
 
-export const getS3DocsBucketNameSsmPath = (
-  accountSid: string,
+export const getS3DocsBucketNameSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/s3/${accountSid}/docs_bucket_name`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/s3/${accountSid}/docs_bucket_name`;
 
-export const getPermissionConfigSsmPath = (
-  accountSid: string,
+export const getPermissionConfigSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/config/${accountSid}/permission_config`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/config/${accountSid}/permission_config`;
 
-export const getEntityNotificationsTopicArnSsmPath = (
-  entityType: string,
+export const getEntityNotificationsTopicArnSsmPath = ({
+  entityType,
   environment = process.env.NODE_ENV,
   region = getDefaultRegion(),
-) => `/${environment}/${region}/hrm/${entityType}/notifications-sns-topic-arn`;
+}: {
+  entityType: string;
+  environment?: string;
+  region?: string;
+}) => `/${environment}/${region}/hrm/${entityType}/notifications-sns-topic-arn`;
 
-export const getCompletedContactJobsQueueUrlSsmPath = (
+export const getCompletedContactJobsQueueUrlSsmPath = ({
   environment = process.env.NODE_ENV,
   region = getDefaultRegion(),
-) => `/${environment}/${region}/sqs/jobs/hrm-contact/queue-url-complete`;
+}: {
+  environment?: string;
+  region?: string;
+}) => `/${environment}/${region}/sqs/jobs/hrm-contact/queue-url-complete`;
 
-export const getContactJobsQueueUrlSsmPath = (
-  jobType: string,
+export const getContactJobsQueueUrlSsmPath = ({
+  jobType,
   environment = process.env.NODE_ENV,
   region = getDefaultRegion(),
-) => `/${environment}/${region}/sqs/jobs/hrm-contact/queue-url-${jobType}`;
+}: {
+  jobType: string;
+  environment?: string;
+  region?: string;
+}) => `/${environment}/${region}/sqs/jobs/hrm-contact/queue-url-${jobType}`;
 
-export const getResourcesSearchIndexQueueUrlSsmPath = (
+export const getResourcesSearchIndexQueueUrlSsmPath = ({
   environment = process.env.NODE_ENV,
   region = getDefaultRegion(),
-) => `/${environment}/${region}/sqs/jobs/hrm-resources-search/queue-url-index`;
+}: {
+  environment?: string;
+  region?: string;
+}) => `/${environment}/${region}/sqs/jobs/hrm-resources-search/queue-url-index`;
 
-export const getContactJobScrubTranscriptEnabledSsmPath = (
-  accountSid: string,
+export const getContactJobScrubTranscriptEnabledSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
   region = getDefaultRegion(),
-) => `/${environment}/${region}/${accountSid}/jobs/contact/scrub-transcript/enabled`;
+}: {
+  accountSid: string;
+  environment?: string;
+  region?: string;
+}) => `/${environment}/${region}/${accountSid}/jobs/contact/scrub-transcript/enabled`;
 
-export const getTranscriptRetentionDaysSsmPath = (
-  accountSid: string,
+export const getTranscriptRetentionDaysSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/hrm/${accountSid}/transcript_retention_days`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/hrm/${accountSid}/transcript_retention_days`;
 
-export const getIndexTranscriptsForSearchSsmPath = (
-  accountSid: string,
+export const getIndexTranscriptsForSearchSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/hrm/${accountSid}/index_transcripts_for_search`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/hrm/${accountSid}/index_transcripts_for_search`;
 
-export const getBeaconBaseUrlSsmPath = (
-  helplineShortCode: string,
+export const getBeaconBaseUrlSsmPath = ({
+  helplineShortCode,
   environment = process.env.NODE_ENV,
-) => `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`;
+}: {
+  helplineShortCode: string;
+  environment?: string;
+}) => `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`;
 
-export const getBeaconApiKeySsmPath = (
-  helplineShortCode: string,
+export const getBeaconApiKeySsmPath = ({
+  helplineShortCode,
   environment = process.env.NODE_ENV,
-) => `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`;
+}: {
+  helplineShortCode: string;
+  environment?: string;
+}) => `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`;
 
-export const getBeaconLatestSeenSsmPath = (
-  accountSid: string,
-  apiType: string,
+export const getBeaconLatestSeenSsmPath = ({
+  accountSid,
+  apiType,
   environment = process.env.NODE_ENV,
-) => `/${environment}/hrm/custom-integration/beacon/${accountSid}/${apiType}/latest_seen`;
+}: {
+  accountSid: string;
+  apiType: string;
+  environment?: string;
+}) =>
+  `/${environment}/hrm/custom-integration/beacon/${accountSid}/${apiType}/latest_seen`;
 
-export const getResourcesImportApiBaseUrlSsmPath = (
-  accountSid: string,
+export const getResourcesImportApiBaseUrlSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/resources/${accountSid}/import_api/base_url`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/resources/${accountSid}/import_api/base_url`;
 
-export const getResourcesImportApiKeySsmPath = (
-  accountSid: string,
+export const getResourcesImportApiKeySsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/resources/${accountSid}/import_api/api_key`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/resources/${accountSid}/import_api/api_key`;
 
-export const getResourcesImportApiAuthHeaderSsmPath = (
-  accountSid: string,
+export const getResourcesImportApiAuthHeaderSsmPath = ({
+  accountSid,
   environment = process.env.NODE_ENV,
-) => `/${environment}/resources/${accountSid}/import_api/auth_header`;
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/resources/${accountSid}/import_api/auth_header`;

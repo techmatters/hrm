@@ -96,7 +96,7 @@ export const getResourcesImportApiAuthHeader = createSsmParameterGetter(
 
 export const getAccountStaticKey = async (keyName: string) => {
   try {
-    return await getHrmStaticKey({});
+    return await getHrmStaticKey({ keyName });
   } catch (error) {
     // Remove when a terraform apply has been done for all accounts
     if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
@@ -104,7 +104,7 @@ export const getAccountStaticKey = async (keyName: string) => {
         `New internal API key not set up for ${keyName} yet, looking for legacy key`,
       );
 
-      return getTwilioStaticKey(keyName);
+      return getTwilioStaticKey({ accountSid: keyName });
     }
 
     throw error;

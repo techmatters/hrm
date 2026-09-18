@@ -64,7 +64,9 @@ type ContactIndexingInputData = MessageWithMeta & {
 
 const shouldIndexTranscripts = async (accountSid: HrmAccountId): Promise<boolean> => {
   try {
-    const indexTranscriptParameterValue = await getIndexTranscriptsForSearch(accountSid);
+    const indexTranscriptParameterValue = await getIndexTranscriptsForSearch({
+      accountSid,
+    });
     if (indexTranscriptParameterValue?.toLowerCase() === 'false') {
       return false;
     }

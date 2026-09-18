@@ -153,7 +153,7 @@ export const resourceService = () => {
         pagination: { ...searchParameters.pagination!, limit },
       };
 
-      const shortCode = await getTwilioShortHelpline(accountSid);
+      const shortCode = await getTwilioShortHelpline({ accountSid });
       const searchConfiguration = getSearchConfiguration(shortCode);
 
       const client = (
@@ -199,7 +199,7 @@ export const resourceService = () => {
       accountSid: AccountSID,
       suggestParameters: SuggestParameters,
     ) => {
-      const shortCode = await getTwilioShortHelpline(accountSid);
+      const shortCode = await getTwilioShortHelpline({ accountSid });
       const searchConfiguration = getSearchConfiguration(shortCode);
 
       const client = (

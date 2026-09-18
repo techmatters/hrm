@@ -66,151 +66,168 @@ beforeEach(() => {
 
 describe('ssm parameter path getters', () => {
   test('builds account sid paths from uppercase short codes', () => {
-    expect(getTwilioAccountSidSsmPath('as')).toBe('/test/twilio/AS/account_sid');
+    expect(getTwilioAccountSidSsmPath({ shortCode: 'as' })).toBe(
+      '/test/twilio/AS/account_sid',
+    );
   });
 
   test('builds HRM service static key paths using environment and region', () => {
-    expect(getHrmStaticKeySsmPath('ADMIN_HRM')).toBe(
+    expect(getHrmStaticKeySsmPath({ keyName: 'ADMIN_HRM' })).toBe(
       '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
     );
   });
 
   test('preserves beacon helpline code casing supplied by the caller', () => {
-    expect(getBeaconBaseUrlSsmPath('USCR')).toBe(
+    expect(getBeaconBaseUrlSsmPath({ helplineShortCode: 'USCR' })).toBe(
       '/test/hrm/custom-integration/USCR/beacon_base_url',
     );
-    expect(getBeaconApiKeySsmPath('UsCr')).toBe(
+    expect(getBeaconApiKeySsmPath({ helplineShortCode: 'UsCr' })).toBe(
       '/test/hrm/custom-integration/UsCr/beacon_api_key',
     );
   });
 });
 
 describe('ssm parameter getters', () => {
-  test.each([
+  const getterCases: [
+    string,
+    (args: any) => Promise<string>,
+    Record<string, unknown>,
+    string,
+  ][] = [
     [
       'getHrmStaticKey',
       getHrmStaticKey,
-      ['ADMIN_HRM'],
+      { keyName: 'ADMIN_HRM' },
       '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
     ],
     [
       'getTwilioStaticKey',
       getTwilioStaticKey,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/twilio/AC123/static_key',
     ],
     [
       'getTwilioAuthToken',
       getTwilioAuthToken,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/twilio/AC123/auth_token',
     ],
-    ['getTwilioAccountSid', getTwilioAccountSid, ['as'], '/test/twilio/AS/account_sid'],
+    [
+      'getTwilioAccountSid',
+      getTwilioAccountSid,
+      { shortCode: 'as' },
+      '/test/twilio/AS/account_sid',
+    ],
     [
       'getTwilioShortHelpline',
       getTwilioShortHelpline,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/twilio/AC123/short_helpline',
     ],
     [
       'getS3DocsBucketName',
       getS3DocsBucketName,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/s3/AC123/docs_bucket_name',
     ],
     [
       'getPermissionConfig',
       getPermissionConfig,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/config/AC123/permission_config',
     ],
     [
       'getEntityNotificationsTopicArn',
       getEntityNotificationsTopicArn,
-      ['contact'],
+      { entityType: 'contact' },
       '/test/us-east-1/hrm/contact/notifications-sns-topic-arn',
     ],
     [
       'getCompletedContactJobsQueueUrl',
       getCompletedContactJobsQueueUrl,
-      [],
+      {},
       '/test/us-east-1/sqs/jobs/hrm-contact/queue-url-complete',
     ],
     [
       'getContactJobsQueueUrl',
       getContactJobsQueueUrl,
-      ['retrieve-contact-transcript'],
+      { jobType: 'retrieve-contact-transcript' },
       '/test/us-east-1/sqs/jobs/hrm-contact/queue-url-retrieve-contact-transcript',
     ],
     [
       'getResourcesSearchIndexQueueUrl',
       getResourcesSearchIndexQueueUrl,
-      [],
+      {},
       '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
     ],
     [
       'getContactJobScrubTranscriptEnabled',
       getContactJobScrubTranscriptEnabled,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/us-east-1/AC123/jobs/contact/scrub-transcript/enabled',
     ],
     [
       'getTranscriptRetentionDays',
       getTranscriptRetentionDays,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/hrm/AC123/transcript_retention_days',
     ],
     [
       'getIndexTranscriptsForSearch',
       getIndexTranscriptsForSearch,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/hrm/AC123/index_transcripts_for_search',
     ],
     [
       'getBeaconBaseUrl',
       getBeaconBaseUrl,
-      ['uscr'],
+      { helplineShortCode: 'uscr' },
       '/test/hrm/custom-integration/uscr/beacon_base_url',
     ],
     [
       'getBeaconApiKey',
       getBeaconApiKey,
-      ['uscr'],
+      { helplineShortCode: 'uscr' },
       '/test/hrm/custom-integration/uscr/beacon_api_key',
     ],
     [
       'getResourcesImportApiBaseUrl',
       getResourcesImportApiBaseUrl,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/resources/AC123/import_api/base_url',
     ],
     [
       'getResourcesImportApiKey',
       getResourcesImportApiKey,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/resources/AC123/import_api/api_key',
     ],
     [
       'getResourcesImportApiAuthHeader',
       getResourcesImportApiAuthHeader,
-      ['AC123'],
+      { accountSid: 'AC123' },
       '/test/resources/AC123/import_api/auth_header',
     ],
     [
       'getBeaconLatestSeen',
       getBeaconLatestSeen,
-      ['AC123', 'incidentReport'],
+      { accountSid: 'AC123', apiType: 'incidentReport' },
       '/test/hrm/custom-integration/beacon/AC123/incidentReport/latest_seen',
     ],
-  ])('%s looks up the derived SSM path', async (_name, getter, args, expectedPath) => {
-    const result = await getter(...args);
+  ];
 
-    expect(result).toBe('the-value');
-    expect(mockGetSsmParameter).toHaveBeenCalledWith(expectedPath, undefined);
-  });
+  test.each(getterCases)(
+    '%s looks up the derived SSM path',
+    async (_name, getter, args, expectedPath) => {
+      const result = await getter(args);
+
+      expect(result).toBe('the-value');
+      expect(mockGetSsmParameter).toHaveBeenCalledWith(expectedPath, undefined);
+    },
+  );
 
   test('passes cache-duration options through to getSsmParameter', async () => {
-    await getResourcesSearchIndexQueueUrl(undefined, undefined, {
+    await getResourcesSearchIndexQueueUrl({
       cacheDurationMilliseconds: 86400000,
     });
 

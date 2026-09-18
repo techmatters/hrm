@@ -27,7 +27,7 @@ const lookupAccountSid = async (
   environment: Environment,
   hlShortCode: string,
 ): Promise<HrmAccountId> =>
-  (await getTwilioAccountSid(hlShortCode, environment)) as HrmAccountId;
+  (await getTwilioAccountSid({ shortCode: hlShortCode, environment })) as HrmAccountId;
 
 const lookupAccountSids = async (
   environment: Environment,

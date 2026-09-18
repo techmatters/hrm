@@ -71,9 +71,9 @@ const publishToSns = async ({
   payload: NotificationPayload;
   messageGroupId: string;
 }) => {
-  const topicSsmPath = getEntityNotificationsTopicArnSsmPath(entityType);
+  const topicSsmPath = getEntityNotificationsTopicArnSsmPath({ entityType });
   try {
-    const topicArn = await getEntityNotificationsTopicArn(entityType);
+    const topicArn = await getEntityNotificationsTopicArn({ entityType });
     const publishParameters: PublishSnsParams = {
       topicArn,
       message: JSON.stringify({ ...payload, entityType }),

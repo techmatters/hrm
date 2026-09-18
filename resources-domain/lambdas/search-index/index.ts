@@ -88,7 +88,7 @@ export const executeBulk = async (
 ) => {
   await Promise.all(
     Object.keys(documentsByAccountSid).map(async accountSid => {
-      const shortCode = await getTwilioShortHelpline(accountSid);
+      const shortCode = await getTwilioShortHelpline({ accountSid });
       const resourceIndexConfiguration = getResourceIndexConfiguration(shortCode);
 
       const documents = documentsByAccountSid[accountSid];

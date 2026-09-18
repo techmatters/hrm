@@ -63,7 +63,7 @@ export const publishScrubTranscriptJob = async (
 ) => {
   const { accountSid, id: contactId, taskId, twilioWorkerId } = contactJob.resource;
   try {
-    const paramVal = await getContactJobScrubTranscriptEnabled(accountSid);
+    const paramVal = await getContactJobScrubTranscriptEnabled({ accountSid });
     if (paramVal?.toLowerCase() === 'true') {
       return await publishToContactJobs({
         jobType: contactJob.jobType,

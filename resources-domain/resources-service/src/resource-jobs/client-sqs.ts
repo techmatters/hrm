@@ -63,7 +63,7 @@ export const publishToResourcesJob = async ({
   try {
     const QueueUrl =
       process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL ||
-      (await getResourcesSearchIndexQueueUrl(undefined, undefined, {
+      (await getResourcesSearchIndexQueueUrl({
         cacheDurationMilliseconds: 86400000,
       }));
 

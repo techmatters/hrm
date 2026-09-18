@@ -68,8 +68,8 @@ const processRetrieveTranscriptRecord = async (
       `Account sid not found, HRM account ID value passed: ${hrmAccountId}`,
     );
   }
-  const authToken = await getTwilioAuthToken(accountSid, hrmEnv);
-  const docsBucketName = await getS3DocsBucketName(accountSid, hrmEnv);
+  const authToken = await getTwilioAuthToken({ accountSid, environment: hrmEnv });
+  const docsBucketName = await getS3DocsBucketName({ accountSid, environment: hrmEnv });
 
   if (!authToken || !docsBucketName) {
     const missing = [
