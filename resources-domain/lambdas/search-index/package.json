@@ -6,13 +6,13 @@
   "author": "",
   "license": "AGPL",
   "dependencies": {
+    "@tech-matters/aselo-config": "^1.0.0",
     "@tech-matters/elasticsearch-client": "^1.0.0",
     "@tech-matters/job-errors": "^1.0.0",
     "@tech-matters/resources-search-config": "^1.0.0",
     "@tech-matters/sqs-client": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
-    "@tech-matters/types": "^1.0.0",
-    "@tech-matters/aselo-config": "^1.0.0"
+    "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

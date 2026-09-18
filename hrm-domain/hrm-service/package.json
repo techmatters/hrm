@@ -45,6 +45,7 @@
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
+    "@tech-matters/aselo-config": "^1.0.0",
     "@tech-matters/case-status-transition": "^1.0.0",
     "@tech-matters/contact-job-cleanup": "^1.0.0",
     "@tech-matters/conversation-cleanup": "^1.0.0",
@@ -59,8 +60,7 @@
     "@tech-matters/twilio-worker-auth": "^1.0.0",
     "@types/debug": "^4.1.8",
     "@types/express": "^4.17.13",
-    "dotenv": "^16.3.1",
-    "@tech-matters/aselo-config": "^1.0.0"
+    "dotenv": "^16.3.1"
   },
   "devDependencies": {
     "@aws-sdk/client-sqs": "^3.1094.0",
