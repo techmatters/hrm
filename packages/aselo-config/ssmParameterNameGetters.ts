@@ -14,8 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter, SsmParameterNotFound } from './ssmCache';
-
 const getDefaultRegion = () => process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION;
 
 export const getHrmStaticKeySsmPath = (
@@ -24,7 +22,7 @@ export const getHrmStaticKeySsmPath = (
   region = getDefaultRegion(),
 ) => `/${environment}/hrm/service/${region}/static_key/${keyName}`;
 
-const getTwilioStaticKeySsmPath = (
+export const getTwilioStaticKeySsmPath = (
   accountSid: string,
   environment = process.env.NODE_ENV,
 ) => `/${environment}/twilio/${accountSid}/static_key`;
@@ -122,20 +120,3 @@ export const getResourcesImportApiAuthHeaderSsmPath = (
   accountSid: string,
   environment = process.env.NODE_ENV,
 ) => `/${environment}/resources/${accountSid}/import_api/auth_header`;
-
-export const getAccountStaticKey = async (keyName: string) => {
-  try {
-    return await getSsmParameter(getHrmStaticKeySsmPath(keyName));
-  } catch (error) {
-    // Remove when a terraform apply has been done for all accounts
-    if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
-      console.warn(
-        `New internal API key not set up for ${keyName} yet, looking for legacy key`,
-      );
-
-      return getSsmParameter(getTwilioStaticKeySsmPath(keyName));
-    }
-
-    throw error;
-  }
-};
