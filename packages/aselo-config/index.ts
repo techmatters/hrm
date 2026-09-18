@@ -44,19 +44,11 @@ type GetSsmParameterOptions = {
   cacheDurationMilliseconds?: number;
 };
 
-const isGetSsmParameterOptions = (value: unknown): value is GetSsmParameterOptions =>
-  typeof value === 'object' && value !== null;
-
 const createSsmParameterGetter =
-  <TArgs extends unknown[]>(getSsmPath: (...args: TArgs) => string) =>
-  (...argsAndMaybeOptions: [...TArgs, GetSsmParameterOptions?]) => {
-    const maybeOptions = argsAndMaybeOptions.at(-1);
-    const options = isGetSsmParameterOptions(maybeOptions) ? maybeOptions : undefined;
-    const args = (
-      options ? argsAndMaybeOptions.slice(0, -1) : argsAndMaybeOptions
-    ) as TArgs;
-
-    return getSsmParameter(getSsmPath(...args), options?.cacheDurationMilliseconds);
+  <TExtra extends Record<string, unknown>>(getSsmPath: (args: TExtra) => string) =>
+  (argsAndMaybeOptions: TExtra & GetSsmParameterOptions) => {
+    const { cacheDurationMilliseconds, ...targs } = argsAndMaybeOptions;
+    return getSsmParameter(getSsmPath(targs as TExtra), cacheDurationMilliseconds);
   };
 
 export const getHrmStaticKey = createSsmParameterGetter(getHrmStaticKeySsmPath);
@@ -104,7 +96,7 @@ export const getResourcesImportApiAuthHeader = createSsmParameterGetter(
 
 export const getAccountStaticKey = async (keyName: string) => {
   try {
-    return await getHrmStaticKey(keyName);
+    return await getHrmStaticKey({});
   } catch (error) {
     // Remove when a terraform apply has been done for all accounts
     if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {

@@ -16,11 +16,15 @@
 
 const getDefaultRegion = () => process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION;
 
-export const getHrmStaticKeySsmPath = (
-  keyName: string,
+export const getHrmStaticKeySsmPath = ({
+  keyName,
   environment = process.env.NODE_ENV,
   region = getDefaultRegion(),
-) => `/${environment}/hrm/service/${region}/static_key/${keyName}`;
+}: {
+  keyName: string;
+  environment?: string;
+  region?: string;
+}) => `/${environment}/hrm/service/${region}/static_key/${keyName}`;
 
 export const getTwilioStaticKeySsmPath = (
   accountSid: string,
