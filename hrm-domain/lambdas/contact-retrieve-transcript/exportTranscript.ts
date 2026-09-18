@@ -16,7 +16,7 @@
 
 import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 
-import RestException from 'twilio/lib/base/RestException';
+import { RestException } from 'twilio';
 import type { MemberInstance } from 'twilio/lib/rest/chat/v2/service/channel/member';
 import { HrmAccountId } from '@tech-matters/types';
 import { ExportTranscripParticipants, ExportTranscript } from '@tech-matters/hrm-types';
