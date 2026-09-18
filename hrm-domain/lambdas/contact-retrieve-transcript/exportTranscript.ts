@@ -16,7 +16,6 @@
 
 import { getClient, TwilioClient } from '@tech-matters/twilio-client';
 
-import { RestException } from 'twilio';
 import type { MemberInstance } from 'twilio/lib/rest/chat/v2/service/channel/member';
 import { HrmAccountId } from '@tech-matters/types';
 import { ExportTranscripParticipants, ExportTranscript } from '@tech-matters/hrm-types';
@@ -72,7 +71,7 @@ const getUser = async (client: TwilioClient, serviceSid: string, from: string) =
       url: user.url,
     };
   } catch (err) {
-    if (err instanceof RestException && err.code === 20404) {
+    if ((err as any)?.code === 20404) {
       return null;
     }
     throw err;
@@ -110,7 +109,7 @@ const getRole = async (
       isCounselor,
     };
   } catch (err) {
-    if (err instanceof RestException && err.code === 20404) {
+    if ((err as any)?.code === 20404) {
       return null;
     }
     throw err;
