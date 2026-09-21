@@ -15,7 +15,7 @@
  */
 
 import { Twilio } from 'twilio';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getTwilioAuthToken } from '@tech-matters/aselo-config';
 
 import { getMockClient } from './mockClient';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';
@@ -55,7 +55,7 @@ export const getAuthToken = async (
     return process.env.TWILIO_AUTH_TOKEN;
   }
 
-  return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${accountSid}/auth_token`);
+  return getTwilioAuthToken({ accountSid });
 };
 
 export const getClient = async ({

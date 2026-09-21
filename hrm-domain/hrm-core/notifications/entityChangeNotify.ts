@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { ProfileWithRelationships } from '@tech-matters/hrm-types';
-import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getEntityNotificationsTopicArn,
+  getEntityNotificationsTopicArnSsmPath,
+} from '@tech-matters/aselo-config';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import {
   CaseSection,
   CaseService,
@@ -58,11 +62,6 @@ type NotificationPayload =
   | UpsertCaseNotificationPayload
   | UpsertContactNotificationPayload;
 
-const getSnsSsmPath = dataType =>
-  `/${process.env.NODE_ENV}/${
-    process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-  }/hrm/${dataType}/notifications-sns-topic-arn`;
-
 const publishToSns = async ({
   entityType,
   payload,
@@ -72,8 +71,9 @@ const publishToSns = async ({
   payload: NotificationPayload;
   messageGroupId: string;
 }) => {
+  const topicSsmPath = getEntityNotificationsTopicArnSsmPath({ entityType });
   try {
-    const topicArn = await getSsmParameter(getSnsSsmPath(entityType));
+    const topicArn = await getEntityNotificationsTopicArn({ entityType });
     const publishParameters: PublishSnsParams = {
       topicArn,
       message: JSON.stringify({ ...payload, entityType }),
@@ -117,16 +117,12 @@ const publishToSns = async ({
     console.debug('[SENSITIVE] Failed SNS topic complete payload:', payload);
     if (err instanceof SsmParameterNotFound) {
       console.debug(
-        `No SNS topic stored in SSM parameter ${getSnsSsmPath(
-          entityType,
-        )}. Skipping publish.`,
+        `No SNS topic stored in SSM parameter ${topicSsmPath}. Skipping publish.`,
       );
       return;
     }
     console.error(
-      `Error trying to publish message to SNS topic stored in SSM parameter ${getSnsSsmPath(
-        entityType,
-      )}`,
+      `Error trying to publish message to SNS topic stored in SSM parameter ${topicSsmPath}`,
       err,
     );
   }

@@ -15,12 +15,28 @@
  */
 
 import type { AccountSID } from '@tech-matters/types';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getAccountStaticKey,
+  getResourcesImportApiAuthHeader,
+  getResourcesImportApiAuthHeaderSsmPath,
+  getResourcesImportApiBaseUrl,
+  getResourcesImportApiBaseUrlSsmPath,
+  getResourcesImportApiKey,
+  getResourcesImportApiKeySsmPath,
+  getS3DocsBucketName,
+  getS3DocsBucketNameSsmPath,
+  getTwilioAccountSid,
+  getTwilioAccountSidSsmPath,
+} from '@tech-matters/aselo-config';
 
-const debugGetSsmParameter = async (path: string, logValue = false) => {
+const debugGetSsmParameter = async (
+  path: string,
+  getter: () => Promise<string>,
+  logValue = false,
+) => {
   console.debug(`Getting SSM parameter: ${path}`);
   try {
-    const value = await getSsmParameter(path);
+    const value = await getter();
     console.debug(
       `Got SSM parameter: ${path} value: ${logValue ? value : value.replace(/./g, '*')}`,
     );
@@ -40,7 +56,15 @@ const getConfig = async () => {
   console.debug(`helplineShortCode: ${helplineShortCode}`);
 
   const accountSid: AccountSID = (await debugGetSsmParameter(
-    `/${deploymentEnvironment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`,
+    getTwilioAccountSidSsmPath({
+      shortCode: helplineShortCode,
+      environment: deploymentEnvironment,
+    }),
+    () =>
+      getTwilioAccountSid({
+        shortCode: helplineShortCode,
+        environment: deploymentEnvironment,
+      }),
   )) as AccountSID;
 
   const [
@@ -51,17 +75,51 @@ const getConfig = async () => {
     docsBucket,
   ] = await Promise.all([
     debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/base_url`,
+      getResourcesImportApiBaseUrlSsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getResourcesImportApiBaseUrl({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
       true,
     ),
     debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/api_key`,
+      getResourcesImportApiKeySsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getResourcesImportApiKey({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
     ),
     debugGetSsmParameter(
-      `/${deploymentEnvironment}/resources/${accountSid}/import_api/auth_header`,
+      getResourcesImportApiAuthHeaderSsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getResourcesImportApiAuthHeader({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
     ),
-    debugGetSsmParameter(`/${deploymentEnvironment}/twilio/${accountSid}/static_key`),
-    debugGetSsmParameter(`/${deploymentEnvironment}/s3/${accountSid}/docs_bucket_name`),
+    getAccountStaticKey(accountSid),
+    debugGetSsmParameter(
+      getS3DocsBucketNameSsmPath({
+        accountSid,
+        environment: deploymentEnvironment,
+      }),
+      () =>
+        getS3DocsBucketName({
+          accountSid,
+          environment: deploymentEnvironment,
+        }),
+    ),
   ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),

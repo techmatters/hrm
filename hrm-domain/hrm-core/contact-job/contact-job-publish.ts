@@ -22,7 +22,8 @@ import {
 } from './contact-job-data-access';
 import { publishToContactJobs } from './client-sqs';
 import { assertExhaustive, ContactJobType } from '@tech-matters/types';
-import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
+import { getContactJobScrubTranscriptEnabled } from '@tech-matters/aselo-config';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 export const publishRetrieveContactTranscript = (
   contactJob: RetrieveContactTranscriptJob,
@@ -62,11 +63,7 @@ export const publishScrubTranscriptJob = async (
 ) => {
   const { accountSid, id: contactId, taskId, twilioWorkerId } = contactJob.resource;
   try {
-    const paramVal = await getSsmParameter(
-      `/${process.env.NODE_ENV}/${
-        process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-      }/${accountSid}/jobs/contact/scrub-transcript/enabled`,
-    );
+    const paramVal = await getContactJobScrubTranscriptEnabled({ accountSid });
     if (paramVal?.toLowerCase() === 'true') {
       return await publishToContactJobs({
         jobType: contactJob.jobType,

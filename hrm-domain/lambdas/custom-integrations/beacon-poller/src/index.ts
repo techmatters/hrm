@@ -16,14 +16,18 @@
 
 import { BEACON_API_KEY_HEADER } from './config';
 import { readApiInChunks } from './apiChunkReader';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getBeaconApiKey,
+  getBeaconBaseUrl,
+  getBeaconLatestSeen,
+  getBeaconLatestSeenSsmPath,
+  getTwilioAccountSid,
+  getTwilioAccountSidSsmPath,
+} from '@tech-matters/aselo-config';
 import type { AccountSID } from '@tech-matters/types';
 import { createBeaconDocumentProcessor } from './beaconDocumentProcessors';
 
 const environment = process.env.NODE_ENV!;
-
-const accountSidParamPath = (helplineShortCode: string): string =>
-  `/${environment}/twilio/${helplineShortCode.toUpperCase()}/account_sid`;
 
 export const handler = async ({
   apiType,
@@ -32,23 +36,23 @@ export const handler = async ({
   apiType: 'incidentReport' | 'caseReport';
   helplineShortCode: 'uscr' | 'gy' | 'as';
 }): Promise<0 | -1> => {
+  const beaconHelplineShortCode = helplineShortCode.toLowerCase();
   let accountSid: AccountSID;
   let beaconBaseUrl: string;
   let beaconApiKey: string;
   try {
     [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
-      getSsmParameter(accountSidParamPath(helplineShortCode)),
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_base_url`,
-      ),
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_api_key`,
-      ),
+      getTwilioAccountSid({ shortCode: helplineShortCode, environment }),
+      getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
+      getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
     ])) as [AccountSID, string, string];
   } catch (err) {
     console.error(
-      `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${accountSidParamPath(
-        helplineShortCode,
+      `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${getTwilioAccountSidSsmPath(
+        {
+          shortCode: helplineShortCode,
+          environment,
+        },
       )}. Abandoning run.`,
       err,
     );
@@ -56,10 +60,15 @@ export const handler = async ({
   }
 
   const beaconHeaders = { [BEACON_API_KEY_HEADER]: beaconApiKey };
-  const lastUpdateSeenSsmKey = `/${environment}/hrm/custom-integration/beacon/${accountSid}/${apiType}/latest_seen`;
+  const lastUpdateSeenSsmKey = getBeaconLatestSeenSsmPath({
+    accountSid,
+    apiType,
+    environment,
+  });
   const configDefaults = {
     headers: beaconHeaders,
     lastUpdateSeenSsmKey,
+    getLastUpdateSeen: () => getBeaconLatestSeen({ accountSid, apiType, environment }),
     maxItemsInChunk: parseInt(
       (apiType === 'incidentReport'
         ? process.env.MAX_INCIDENT_REPORTS_PER_CALL

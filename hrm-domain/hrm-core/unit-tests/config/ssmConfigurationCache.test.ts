@@ -15,23 +15,32 @@
  */
 
 import {
-  getSsmParameter,
-  SsmParameterNotFound,
-  loadSsmCache as loadSsmCacheRoot,
-} from '@tech-matters/ssm-cache';
-import { getAccountStaticKey, getFromSSMCache } from '../../config/ssmConfigurationCache';
+  getAccountStaticKey,
+  getPermissionConfig,
+  getTwilioAuthToken,
+} from '@tech-matters/aselo-config';
+import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
+import { getFromSSMCache } from '../../config/ssmConfigurationCache';
 
-jest.mock('@tech-matters/ssm-cache', () => {
-  const actual = jest.requireActual('@tech-matters/ssm-cache');
-  return {
-    ...actual,
-    loadSsmCache: jest.fn(),
-    getSsmParameter: jest.fn(),
-  };
-});
+jest.mock('@tech-matters/aselo-config', () => ({
+  ...(jest.requireActual('@tech-matters/aselo-config') as Record<string, unknown>),
+  getAccountStaticKey: jest.fn(),
+  getPermissionConfig: jest.fn(),
+  getTwilioAuthToken: jest.fn(),
+}));
+jest.mock('@tech-matters/ssm-cache', () => ({
+  ...(jest.requireActual('@tech-matters/ssm-cache') as Record<string, unknown>),
+  loadSsmCache: jest.fn(),
+}));
 
-const mockGetSsmParameter = getSsmParameter as jest.MockedFunction<
-  typeof getSsmParameter
+const mockGetAccountStaticKey = getAccountStaticKey as jest.MockedFunction<
+  typeof getAccountStaticKey
+>;
+const mockGetPermissionConfig = getPermissionConfig as jest.MockedFunction<
+  typeof getPermissionConfig
+>;
+const mockGetTwilioAuthToken = getTwilioAuthToken as jest.MockedFunction<
+  typeof getTwilioAuthToken
 >;
 const mockLoadSsmCache = loadSsmCacheRoot as jest.MockedFunction<typeof loadSsmCacheRoot>;
 
@@ -46,50 +55,12 @@ afterEach(() => {
 });
 
 describe('getAccountStaticKey', () => {
-  test('resolves the hrm-service-scoped static key directly when it exists', async () => {
-    mockGetSsmParameter.mockResolvedValueOnce('the-key');
-
-    const result = await getAccountStaticKey('ADMIN_HRM');
-
-    expect(result).toBe('the-key');
-    expect(mockGetSsmParameter).toHaveBeenCalledWith(
-      '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
-    );
-  });
-
-  test('prior behavior: falls back to the legacy per-account key path when an account-shaped key is missing', async () => {
-    mockGetSsmParameter
-      .mockRejectedValueOnce(
-        new SsmParameterNotFound('/test/hrm/service/us-east-1/static_key/ACxxx'),
-      )
-      .mockResolvedValueOnce('legacy-key');
-
-    const result = await getAccountStaticKey('ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
-
-    expect(result).toBe('legacy-key');
-    expect(mockGetSsmParameter).toHaveBeenLastCalledWith(
-      '/test/twilio/ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/static_key',
-    );
-  });
-
-  test('prior behavior: a missing non-account key throws instead of silently falling back', async () => {
-    mockGetSsmParameter.mockRejectedValueOnce(
-      new SsmParameterNotFound('/test/hrm/service/us-east-1/static_key/ADMIN_HRM'),
-    );
-
-    await expect(getAccountStaticKey('ADMIN_HRM')).rejects.toThrow(SsmParameterNotFound);
-    expect(mockGetSsmParameter).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe('getFromSSMCache', () => {
   // Prior, unaffected behavior: still used directly by authTokenLookup, and
   // still needs all three parameters for a real account.
   test('fetches the static key, auth token, and permission config together for a real account', async () => {
-    mockGetSsmParameter
-      .mockResolvedValueOnce('the-key')
-      .mockResolvedValueOnce('the-token')
-      .mockResolvedValueOnce('the-config');
+    mockGetAccountStaticKey.mockResolvedValueOnce('the-key');
+    mockGetTwilioAuthToken.mockResolvedValueOnce('the-token');
+    mockGetPermissionConfig.mockResolvedValueOnce('the-config');
 
     const result = await getFromSSMCache('ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
 
@@ -98,5 +69,9 @@ describe('getFromSSMCache', () => {
       authToken: 'the-token',
       permissionConfig: 'the-config',
     });
+    expect(mockLoadSsmCache).toHaveBeenCalled();
+    expect(mockGetAccountStaticKey).toHaveBeenCalledWith(
+      'ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    );
   });
 });

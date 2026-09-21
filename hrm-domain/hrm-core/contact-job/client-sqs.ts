@@ -21,20 +21,20 @@ import {
 } from '@tech-matters/sqs-client';
 
 import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
-import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getCompletedContactJobsQueueUrl,
+  getCompletedContactJobsQueueUrlSsmPath,
+  getContactJobsQueueUrl,
+} from '@tech-matters/aselo-config';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
-const COMPLETED_QUEUE_SSM_PATH = `/${process.env.NODE_ENV}/${
-  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-}/sqs/jobs/hrm-contact/queue-url-complete`;
-const JOB_QUEUE_SSM_PATH_BASE = `/${process.env.NODE_ENV}/${
-  process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-}/sqs/jobs/hrm-contact/queue-url-`;
+const COMPLETED_QUEUE_SSM_PATH = getCompletedContactJobsQueueUrlSsmPath({});
 
 export const pollCompletedContactJobsFromQueue = async (): ReturnType<
   typeof receiveSqsMessage
 > => {
   try {
-    const queueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
+    const queueUrl = await getCompletedContactJobsQueueUrl({});
     console.debug(
       `[contact-job] Polling messages from SQS queue: ${queueUrl}, looked up from SSM parameter: ${COMPLETED_QUEUE_SSM_PATH}`,
     );
@@ -50,7 +50,7 @@ export const pollCompletedContactJobsFromQueue = async (): ReturnType<
 
 export const deleteCompletedContactJobsFromQueue = async (receiptHandle: string) => {
   try {
-    const queueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
+    const queueUrl = await getCompletedContactJobsQueueUrl({});
 
     return await deleteSqsMessage({
       queueUrl,
@@ -64,7 +64,7 @@ export const deleteCompletedContactJobsFromQueue = async (receiptHandle: string)
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
   //TODO: more robust error handling/messaging
   try {
-    const queueUrl = await getSsmParameter(`${JOB_QUEUE_SSM_PATH_BASE}${params.jobType}`);
+    const queueUrl = await getContactJobsQueueUrl({ jobType: params.jobType });
 
     const result = await sendSqsMessage({
       queueUrl,
