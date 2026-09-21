@@ -56,7 +56,10 @@ import {
   hrmIndexConfiguration,
   hrmSearchConfiguration,
 } from '@tech-matters/hrm-search-config';
-import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
+import {
+  publishCaseChangeNotification,
+  publishCaseDeleteNotification,
+} from '../notifications/entityChangeNotify';
 import { getClient } from '@tech-matters/elasticsearch-client';
 import {
   CaseListCondition,
@@ -159,7 +162,6 @@ const doCaseChangeNotification =
 
 export const createCaseNotify = doCaseChangeNotification('create');
 export const updateCaseNotify = doCaseChangeNotification('update');
-const deleteCaseNotify = doCaseChangeNotification('delete');
 
 export const createCase = async (
   body: Partial<CaseService>,
@@ -481,13 +483,7 @@ export const deleteCaseById = async ({
     return result;
   }
 
-  if (result.data) {
-    await deleteCaseNotify({
-      accountSid,
-      caseId: result.data.id.toString(),
-      caseRecord: result.data,
-    });
-  }
+  await publishCaseDeleteNotification({ accountSid, caseId });
 
   return result;
 };
