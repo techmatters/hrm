@@ -27,7 +27,7 @@ import { handler } from '../../index';
 const mockFetch = jest.fn();
 
 jest.mock('@tech-matters/aselo-config', () => ({
-  getAccountStaticKey: jest.fn().mockResolvedValue('static-key'),
+  getAccountStaticKey: () => Promise.resolve('static-key'),
 }));
 
 // @ts-ignore
