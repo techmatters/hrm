@@ -58,7 +58,7 @@ export const loadSsmCache = async () => {
   });
 };
 
-const getAccountStaticKey = async (keyName: string) => {
+export const getAccountStaticKey = async (keyName: string) => {
   try {
     const name = `/${process.env.NODE_ENV}/hrm/service/${
       process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
