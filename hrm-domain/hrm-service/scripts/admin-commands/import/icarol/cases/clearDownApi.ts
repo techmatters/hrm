@@ -54,20 +54,6 @@ export const getCaseById = async (
 const SYSTEM_IDENTITY = 'system';
 
 /**
- * True if a Case still looks untouched by a real user. createdAt/updatedAt
- * can't be used for this: connectToCase bumps updatedAt on every link,
- * including this migration's own, so every case would fail that check the
- * moment it's actually used. updatedBy survives linking instead: create()
- * never sets it, and admin-path connectToCase calls always set it to
- * 'system'; only a real counsellor action sets a real workerSid. A touched
- * CaseSection also bumps updatedBy the same way, so no separate check for
- * that is needed.
- */
-export const looksUntouchedSinceImport = (liveCase: {
-  updatedBy: string | null;
-}): boolean => !liveCase.updatedBy || liveCase.updatedBy === SYSTEM_IDENTITY;
-
-/**
  * True if this Case was created by the migration itself, not a counsellor.
  * Used before reconnecting sibling contacts to an existing caseId, so a
  * contact that somehow got linked to a real, human-created case is never

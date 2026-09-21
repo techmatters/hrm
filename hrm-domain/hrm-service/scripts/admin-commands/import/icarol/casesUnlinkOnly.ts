@@ -17,12 +17,7 @@ import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { parseS3Uri } from './contacts/contactMapper';
-import {
-  getCaseById,
-  getContactById,
-  looksUntouchedSinceImport,
-  unlinkContactFromCase,
-} from './cases/clearDownApi';
+import { getCaseById, getContactById, unlinkContactFromCase } from './cases/clearDownApi';
 import {
   AuditLogEntry,
   buildAuditLogEntry,
@@ -122,7 +117,6 @@ export const handler = async ({
     const auditLogEntries: AuditLogEntry[] = [];
     let unlinkedCount = 0;
     let alreadyUnlinkedCount = 0;
-    let skippedCount = 0;
     let failedCount = 0;
 
     // Rewrites the whole log after every case, so a crash mid-run loses at
@@ -166,23 +160,6 @@ export const handler = async ({
               caseId,
               contactIds,
               reason: 'case no longer exists',
-            }),
-          );
-          continue;
-        }
-
-        if (!looksUntouchedSinceImport(liveCase)) {
-          skippedCount++;
-          auditLogEntries.push(
-            buildAuditLogEntry({
-              runId,
-              timestamp: new Date(),
-              outcome: 'skipped-touched',
-              callerNums,
-              caseId,
-              contactIds,
-              reason:
-                'case has been edited or has sections since import; needs manual review',
             }),
           );
           continue;
@@ -256,7 +233,7 @@ export const handler = async ({
     }
 
     console.info(
-      `Unlink: ${unlinkedCount} unlinked, ${alreadyUnlinkedCount} already unlinked, ${skippedCount} skipped, ${failedCount} failed, out of ${createdEntries.length} cases from run ${targetRunId}.`,
+      `Unlink: ${unlinkedCount} unlinked, ${alreadyUnlinkedCount} already unlinked, ${failedCount} failed, out of ${createdEntries.length} cases from run ${targetRunId}.`,
     );
 
     if (aborted) {

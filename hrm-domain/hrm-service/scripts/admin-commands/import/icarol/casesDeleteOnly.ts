@@ -22,7 +22,6 @@ import {
   deleteCaseById,
   getCaseById,
   getContactById,
-  looksUntouchedSinceImport,
 } from './cases/clearDownApi';
 import {
   AuditLogEntry,
@@ -204,22 +203,6 @@ export const handler = async ({
               caseId,
               contactIds,
               reason: 'already deleted, no-op',
-            }),
-          );
-          continue;
-        }
-
-        if (!looksUntouchedSinceImport(liveCase)) {
-          skippedCount++;
-          auditLogEntries.push(
-            buildAuditLogEntry({
-              runId,
-              timestamp: new Date(),
-              outcome: 'skipped-changed-since-unlink',
-              callerNums,
-              caseId,
-              contactIds,
-              reason: 'case has changed since the unlink pass; needs manual review',
             }),
           );
           continue;
