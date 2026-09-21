@@ -17,12 +17,13 @@
 import { BEACON_API_KEY_HEADER } from './config';
 import { readApiInChunks } from './apiChunkReader';
 import {
-  getBeaconApiKeySsmPath,
-  getBeaconBaseUrlSsmPath,
+  getBeaconApiKey,
+  getBeaconBaseUrl,
+  getBeaconLatestSeen,
   getBeaconLatestSeenSsmPath,
-  getSsmParameter,
+  getTwilioAccountSid,
   getTwilioAccountSidSsmPath,
-} from '@tech-matters/ssm-cache';
+} from '@tech-matters/aselo-config';
 import type { AccountSID } from '@tech-matters/types';
 import { createBeaconDocumentProcessor } from './beaconDocumentProcessors';
 
@@ -41,15 +42,17 @@ export const handler = async ({
   let beaconApiKey: string;
   try {
     [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
-      getSsmParameter(getTwilioAccountSidSsmPath(helplineShortCode, environment)),
-      getSsmParameter(getBeaconBaseUrlSsmPath(beaconHelplineShortCode, environment)),
-      getSsmParameter(getBeaconApiKeySsmPath(beaconHelplineShortCode, environment)),
+      getTwilioAccountSid({ shortCode: helplineShortCode, environment }),
+      getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
+      getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
     ])) as [AccountSID, string, string];
   } catch (err) {
     console.error(
       `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${getTwilioAccountSidSsmPath(
-        helplineShortCode,
-        environment,
+        {
+          shortCode: helplineShortCode,
+          environment,
+        },
       )}. Abandoning run.`,
       err,
     );
@@ -57,14 +60,15 @@ export const handler = async ({
   }
 
   const beaconHeaders = { [BEACON_API_KEY_HEADER]: beaconApiKey };
-  const lastUpdateSeenSsmKey = getBeaconLatestSeenSsmPath(
+  const lastUpdateSeenSsmKey = getBeaconLatestSeenSsmPath({
     accountSid,
     apiType,
     environment,
-  );
+  });
   const configDefaults = {
     headers: beaconHeaders,
     lastUpdateSeenSsmKey,
+    getLastUpdateSeen: () => getBeaconLatestSeen({ accountSid, apiType, environment }),
     maxItemsInChunk: parseInt(
       (apiType === 'incidentReport'
         ? process.env.MAX_INCIDENT_REPORTS_PER_CALL

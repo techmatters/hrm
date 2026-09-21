@@ -45,6 +45,7 @@
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
+    "@tech-matters/aselo-config": "^1.0.0",
     "@tech-matters/case-status-transition": "^1.0.0",
     "@tech-matters/contact-job-cleanup": "^1.0.0",
     "@tech-matters/conversation-cleanup": "^1.0.0",

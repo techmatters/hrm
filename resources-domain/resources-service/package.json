@@ -63,6 +63,7 @@
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.1092.0",
     "@aws-sdk/client-sts": "^3.1092.0",
+    "@tech-matters/aselo-config": "^1.0.0",
     "@tech-matters/elasticsearch-client": "^1.0.0",
     "@tech-matters/resources-search-config": "^1.0.0",
     "@tech-matters/resources-types": "^1.0.0",

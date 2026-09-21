@@ -22,19 +22,19 @@ import {
 
 import type { PublishToContactJobsTopicParams } from '@tech-matters/types';
 import {
+  getCompletedContactJobsQueueUrl,
   getCompletedContactJobsQueueUrlSsmPath,
-  getContactJobsQueueUrlSsmPath,
-  SsmParameterNotFound,
-  getSsmParameter,
-} from '@tech-matters/ssm-cache';
+  getContactJobsQueueUrl,
+} from '@tech-matters/aselo-config';
+import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
-const COMPLETED_QUEUE_SSM_PATH = getCompletedContactJobsQueueUrlSsmPath();
+const COMPLETED_QUEUE_SSM_PATH = getCompletedContactJobsQueueUrlSsmPath({});
 
 export const pollCompletedContactJobsFromQueue = async (): ReturnType<
   typeof receiveSqsMessage
 > => {
   try {
-    const queueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
+    const queueUrl = await getCompletedContactJobsQueueUrl({});
     console.debug(
       `[contact-job] Polling messages from SQS queue: ${queueUrl}, looked up from SSM parameter: ${COMPLETED_QUEUE_SSM_PATH}`,
     );
@@ -50,7 +50,7 @@ export const pollCompletedContactJobsFromQueue = async (): ReturnType<
 
 export const deleteCompletedContactJobsFromQueue = async (receiptHandle: string) => {
   try {
-    const queueUrl = await getSsmParameter(COMPLETED_QUEUE_SSM_PATH);
+    const queueUrl = await getCompletedContactJobsQueueUrl({});
 
     return await deleteSqsMessage({
       queueUrl,
@@ -64,7 +64,7 @@ export const deleteCompletedContactJobsFromQueue = async (receiptHandle: string)
 export const publishToContactJobs = async (params: PublishToContactJobsTopicParams) => {
   //TODO: more robust error handling/messaging
   try {
-    const queueUrl = await getSsmParameter(getContactJobsQueueUrlSsmPath(params.jobType));
+    const queueUrl = await getContactJobsQueueUrl({ jobType: params.jobType });
 
     const result = await sendSqsMessage({
       queueUrl,

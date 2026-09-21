@@ -14,10 +14,10 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter, getTwilioAccountSidSsmPath } from '@tech-matters/ssm-cache';
+import { getTwilioAccountSid } from '@tech-matters/aselo-config';
 
 export const getAccountSid = (shortCode: string) => {
-  return getSsmParameter(getTwilioAccountSidSsmPath(shortCode));
+  return getTwilioAccountSid({ shortCode });
 };
 
 export default getAccountSid;

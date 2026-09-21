@@ -28,7 +28,7 @@ import {
   RESOURCE_INDEX_TYPE,
   getSearchConfiguration,
 } from '@tech-matters/resources-search-config';
-import { getSsmParameter, getTwilioShortHelplineSsmPath } from '@tech-matters/ssm-cache';
+import { getTwilioShortHelpline } from '@tech-matters/aselo-config';
 
 // Represents a resource whose ID was returned by a search, but which is not in the database
 export type MissingResource = {
@@ -153,7 +153,7 @@ export const resourceService = () => {
         pagination: { ...searchParameters.pagination!, limit },
       };
 
-      const shortCode = await getSsmParameter(getTwilioShortHelplineSsmPath(accountSid));
+      const shortCode = await getTwilioShortHelpline({ accountSid });
       const searchConfiguration = getSearchConfiguration(shortCode);
 
       const client = (
@@ -199,7 +199,7 @@ export const resourceService = () => {
       accountSid: AccountSID,
       suggestParameters: SuggestParameters,
     ) => {
-      const shortCode = await getSsmParameter(getTwilioShortHelplineSsmPath(accountSid));
+      const shortCode = await getTwilioShortHelpline({ accountSid });
       const searchConfiguration = getSearchConfiguration(shortCode);
 
       const client = (

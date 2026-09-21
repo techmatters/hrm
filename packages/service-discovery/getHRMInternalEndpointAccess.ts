@@ -17,7 +17,7 @@
 import { DescribeTasksCommand, ECSClient, ListTasksCommand } from '@aws-sdk/client-ecs';
 import { EC2Client, DescribeNetworkInterfacesCommand } from '@aws-sdk/client-ec2';
 import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
-import { getHrmStaticKeySsmPath, getSsmParameter } from '@tech-matters/ssm-cache';
+import { getHrmStaticKey } from '@tech-matters/aselo-config';
 
 /**
  * Returns the private IP address of the first task defined under the cluster - serviceName service discovery registry
@@ -120,9 +120,7 @@ export const getHRMInternalEndpointAccess = async ({
   internalResourcesUrl!.hostname = privateIpAddress;
   internalResourcesUrl!.port = '8081';
 
-  const authKey = await getSsmParameter(
-    getHrmStaticKeySsmPath('ADMIN_HRM', environment, region),
-  );
+  const authKey = await getHrmStaticKey({ keyName: 'ADMIN_HRM', environment, region });
 
   return {
     internalResourcesUrl,

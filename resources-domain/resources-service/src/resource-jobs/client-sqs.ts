@@ -15,10 +15,7 @@
  */
 
 import { SQSClient, SendMessageCommand, SendMessageRequest } from '@aws-sdk/client-sqs';
-import {
-  getResourcesSearchIndexQueueUrlSsmPath,
-  getSsmParameter,
-} from '@tech-matters/ssm-cache';
+import { getResourcesSearchIndexQueueUrl } from '@tech-matters/aselo-config';
 import { publishSns } from '@tech-matters/sns-client';
 
 import type { HrmAccountId } from '@tech-matters/types';
@@ -66,7 +63,9 @@ export const publishToResourcesJob = async ({
   try {
     const QueueUrl =
       process.env.RESOURCES_SEARCH_INDEX_SQS_QUEUE_URL ||
-      (await getSsmParameter(getResourcesSearchIndexQueueUrlSsmPath(), 86400000));
+      (await getResourcesSearchIndexQueueUrl({
+        cacheDurationMilliseconds: 86400000,
+      }));
 
     const message: SendMessageRequest = {
       MessageBody: JSON.stringify(params),

@@ -17,10 +17,11 @@
 import { AccountSID } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
 import {
+  getTranscriptRetentionDays,
+  getTwilioAuthToken,
+} from '@tech-matters/aselo-config';
+import {
   getCachedParameters,
-  getSsmParameter,
-  getTranscriptRetentionDaysSsmPath,
-  getTwilioAuthTokenSsmPath,
   loadSsmCache,
   SsmParameterNotFound,
 } from '@tech-matters/ssm-cache';
@@ -41,7 +42,7 @@ const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> 
   let ssmRetentionDays: number;
   try {
     ssmRetentionDays =
-      parseInt(await getSsmParameter(getTranscriptRetentionDaysSsmPath(accountSid))) ||
+      parseInt(await getTranscriptRetentionDays({ accountSid })) ||
       MAX_CLEANUP_JOB_RETENTION_DAYS;
     console.debug(
       `SSM parameter for transcript retention days set to ${ssmRetentionDays} for account ${accountSid}, so using that`,
@@ -127,7 +128,7 @@ const removeOldConversations = async (
   state?: string,
 ) => {
   const endDate = subDays(new Date(), retentionDays);
-  const authToken = await getSsmParameter(getTwilioAuthTokenSsmPath(accountSid, hrmEnv));
+  const authToken = await getTwilioAuthToken({ accountSid, environment: hrmEnv });
   let conversationsRetrieved = PAGE_SIZE;
   let iteration = 0;
   // Whilst we can filter conversations using the API, we can just repeatedly pull the first page.
