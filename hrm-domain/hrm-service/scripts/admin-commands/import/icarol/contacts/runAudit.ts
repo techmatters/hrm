@@ -18,20 +18,40 @@
 export const buildRunId = (now: Date): string =>
   `icarol-${now.toISOString().replace(/[:.]/g, '-')}`;
 
-export type AuditLogOutcome = 'created' | 'already-imported' | 'failed' | 'dry-run';
+// Shared between writers and readers so a run's audit log always lands
+// where the next step expects to find it.
+export const ICAROL_IMPORT_AUDIT_LOG_PREFIX = 'icarol-import-audit-logs/';
+export const ICAROL_CASES_AUDIT_LOG_PREFIX = 'icarol-cases-audit-logs/';
+export const ICAROL_CASES_CLEARDOWN_AUDIT_LOG_PREFIX =
+  'icarol-cases-cleardown-audit-logs/';
 
-// One entry per source CSV record. No raw PII fields (name/phone/demographics);
-// callReportNum is enough to cross-reference the source CSV if needed.
-// failureReason is a generic/DB-level error string, verified not to echo
-// submitted field values (see the comment at its call site in contacts.ts).
+export type AuditLogOutcome =
+  | 'created'
+  | 'already-imported'
+  | 'failed'
+  | 'dry-run'
+  | 'deferred'
+  | 'unlinked'
+  | 'skipped-touched'
+  | 'already-unlinked'
+  | 'deleted'
+  | 'already-deleted'
+  | 'skipped-changed-since-unlink';
+
+// One entry per source record. No raw PII fields, only cross-reference ids.
 export type AuditLogEntry = {
   runId: string;
-  callReportNum: string;
+  callReportNum?: string;
   timestamp: string;
   outcome: AuditLogOutcome;
   failureReason?: string;
   valueWarnings?: string[];
   usedSyntheticWorker?: boolean;
+  contactId?: string;
+  callerNums?: string[];
+  caseId?: string;
+  contactIds?: string[];
+  reason?: string;
 };
 
 export const buildAuditLogEntry = ({
@@ -42,22 +62,37 @@ export const buildAuditLogEntry = ({
   failureReason,
   valueWarnings,
   usedSyntheticWorker,
+  contactId,
+  callerNums,
+  caseId,
+  contactIds,
+  reason,
 }: {
   runId: string;
-  callReportNum: string;
+  callReportNum?: string;
   timestamp: Date;
   outcome: AuditLogOutcome;
   failureReason?: string;
   valueWarnings?: string[];
   usedSyntheticWorker?: boolean;
+  contactId?: string;
+  callerNums?: string[];
+  caseId?: string;
+  contactIds?: string[];
+  reason?: string;
 }): AuditLogEntry => ({
   runId,
-  callReportNum,
+  ...(callReportNum ? { callReportNum } : {}),
   timestamp: timestamp.toISOString(),
   outcome,
   ...(failureReason ? { failureReason } : {}),
   ...(valueWarnings && valueWarnings.length > 0 ? { valueWarnings } : {}),
   ...(usedSyntheticWorker ? { usedSyntheticWorker } : {}),
+  ...(contactId ? { contactId } : {}),
+  ...(callerNums && callerNums.length > 0 ? { callerNums } : {}),
+  ...(caseId ? { caseId } : {}),
+  ...(contactIds && contactIds.length > 0 ? { contactIds } : {}),
+  ...(reason ? { reason } : {}),
 });
 
 // Newline-delimited JSON, one object per line.
