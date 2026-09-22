@@ -132,6 +132,26 @@ const publishToSns = async ({
   }
 };
 
+/**
+ * Publishes a case delete notification from just an id, with no lookup of
+ * the case itself. Used so a delete-index-entry attempt still happens when
+ * the case was already gone from the DB (a stale search-index entry can
+ * exist independently of the DB row), which a caseObj-requiring lookup
+ * would otherwise silently skip.
+ */
+export const publishCaseDeleteNotification = ({
+  accountSid,
+  caseId,
+}: {
+  accountSid: HrmAccountId;
+  caseId: string;
+}) =>
+  publishToSns({
+    entityType: 'case',
+    payload: { accountSid, id: caseId, operation: 'delete' },
+    messageGroupId: `${accountSid}-case-${caseId}`,
+  });
+
 type CaseWithLegacySections = CaseService & {
   sections: Record<string, CaseSection[]>;
   connectedContacts: Contact[];
