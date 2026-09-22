@@ -27,10 +27,20 @@ import {
 } from './sql/caseSearchSql';
 import { DELETE_BY_ID } from './sql/case-delete-sql';
 import { selectSingleCaseByIdSql } from './sql/caseGetSql';
-import { DateFilter, OrderByDirectionType } from '../sql';
+import {
+  DatabaseErrorResult,
+  DateFilter,
+  OrderByDirectionType,
+  inferPostgresErrorResult,
+} from '../sql';
 import { TKConditionsSets } from '../permissions/rulesMap';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
-import { AccountSID, TwilioUserIdentifier } from '@tech-matters/types';
+import {
+  AccountSID,
+  Result,
+  TwilioUserIdentifier,
+  newOkFromData,
+} from '@tech-matters/types';
 import {
   PrecalculatedCasePermissionConditions,
   CaseRecordCommon,
@@ -220,9 +230,17 @@ export const searchByProfileId = generalizedSearchQueryFunction<{
   }),
 );
 
-export const deleteById = async (id: CaseRecord['id'], accountSid: AccountSID) => {
+export const deleteById = async (
+  id: CaseRecord['id'],
+  accountSid: AccountSID,
+): Promise<Result<DatabaseErrorResult, CaseRecord | null>> => {
   const db = await getDbForAccount(accountSid);
-  return db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
+  try {
+    const deleted = await db.oneOrNone<CaseRecord>(DELETE_BY_ID, [accountSid, id]);
+    return newOkFromData(deleted);
+  } catch (err) {
+    return inferPostgresErrorResult(err as Error);
+  }
 };
 
 export const updateStatus = async (
