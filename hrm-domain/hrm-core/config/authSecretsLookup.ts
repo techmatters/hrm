@@ -15,8 +15,7 @@
  */
 
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
-import { getFromSSMCache } from './ssmConfigurationCache';
-import { getSsmParameter, SsmParameterNotFound } from '@tech-matters/ssm-cache';
+import { getAccountStaticKey, getFromSSMCache } from './ssmConfigurationCache';
 
 const lookupLocalOverride = (overrideEnvVarName: string, key: string) => {
   console.debug(
@@ -53,21 +52,9 @@ const staticKeyLookup = async (keyName: string) => {
   if (localOverride) {
     return localOverride;
   }
-  try {
-    return await getSsmParameter(
-      `/${process.env.NODE_ENV}/hrm/service/${
-        process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-      }/static_key/${keyName}`,
-    );
-  } catch (error) {
-    // Remove when a terraform apply has been done for all accounts
-    if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {
-      console.warn(
-        `New internal API key not set up for ${keyName} yet, looking for legacy key`,
-      );
-      return getSsmParameter(`/${process.env.NODE_ENV}/twilio/${keyName}/static_key`);
-    } else throw error;
-  }
+
+  // Skips getFromSSMCache, which also fetches an auth token and permission config that a key like ADMIN_HRM doesn't have.
+  return getAccountStaticKey(keyName);
 };
 
 export const defaultAuthSecretsLookup: AuthSecretsLookup = {

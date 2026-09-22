@@ -85,7 +85,7 @@ export type ExportedTranscriptUser = {
   identity: string;
   dateCreated: Date;
   joinedChannelsCount: number;
-  links: string;
+  links: Record<string, string>;
   url: string;
 };
 

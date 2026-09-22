@@ -26,9 +26,14 @@ import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { rulesMap } from '../../permissions';
 import { RulesFile } from '../../permissions/rulesMap';
 import * as entityChangeNotify from '../../notifications/entityChangeNotify';
+import { isErr, isOk, newErr, newOkFromData } from '@tech-matters/types';
 
 const publishCaseChangeNotificationSpy = jest
   .spyOn(entityChangeNotify, 'publishCaseChangeNotification')
+  .mockImplementation(() => Promise.resolve('Ok') as any);
+
+const publishCaseDeleteNotificationSpy = jest
+  .spyOn(entityChangeNotify, 'publishCaseDeleteNotification')
   .mockImplementation(() => Promise.resolve('Ok') as any);
 
 jest.mock('../../case/caseDataAccess');
@@ -80,6 +85,57 @@ test('create case', async () => {
 
   await new Promise(process.nextTick);
   expect(publishCaseChangeNotificationSpy).toHaveBeenCalled();
+});
+
+describe('deleteCaseById', () => {
+  const caseId = '123';
+  const caseRecord = createMockCaseRecord({
+    id: parseInt(caseId),
+    accountSid,
+    helpline: 'helpline',
+    status: 'open',
+    info: {},
+    twilioWorkerId,
+  });
+
+  beforeEach(() => {
+    publishCaseDeleteNotificationSpy.mockClear();
+  });
+
+  test('notifies with the request caseId when a row was deleted', async () => {
+    jest.spyOn(caseDb, 'deleteById').mockResolvedValue(newOkFromData(caseRecord));
+
+    const result = await caseApi.deleteCaseById({ accountSid, caseId });
+
+    expect(isOk(result)).toBe(true);
+    expect(publishCaseDeleteNotificationSpy).toHaveBeenCalledWith({ accountSid, caseId });
+  });
+
+  test('still notifies when nothing existed at that id', async () => {
+    jest.spyOn(caseDb, 'deleteById').mockResolvedValue(newOkFromData(undefined));
+
+    const result = await caseApi.deleteCaseById({ accountSid, caseId });
+
+    expect(isOk(result)).toBe(true);
+    expect(publishCaseDeleteNotificationSpy).toHaveBeenCalledWith({ accountSid, caseId });
+  });
+
+  test('does not notify when the delete itself errored', async () => {
+    jest.spyOn(caseDb, 'deleteById').mockResolvedValue({
+      ...newErr({
+        message: 'Case 123 still has linked contacts',
+        error: 'DatabaseForeignKeyViolationError',
+      }),
+      rawError: new Error('violates foreign key constraint'),
+      table: 'Cases',
+      constraint: 'FK_Cases_Contacts',
+    });
+
+    const result = await caseApi.deleteCaseById({ accountSid, caseId });
+
+    expect(isErr(result)).toBe(true);
+    expect(publishCaseDeleteNotificationSpy).not.toHaveBeenCalled();
+  });
 });
 
 describe('searchCases', () => {
