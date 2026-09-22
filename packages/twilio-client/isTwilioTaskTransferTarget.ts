@@ -15,7 +15,7 @@
  */
 
 import { Twilio } from 'twilio';
-import { TaskInstance } from 'twilio/lib/rest/taskrouter/v1/workspace/task';
+import type { TaskInstance } from 'twilio/lib/rest/taskrouter/v1/workspace/task';
 
 export const isTwilioTaskTransferTarget = async (
   twilioClient: Twilio,
