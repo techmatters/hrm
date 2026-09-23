@@ -41,17 +41,17 @@ export const createIncident = async ({
   incidentParams: CreateIncidentParams;
 }) => {
   try {
-    const [baseUrl, apiKey, apiVersion] = await Promise.all([
+    const [baseUrl, apiKey] = await Promise.all([
       getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`,
       ),
       getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`,
       ),
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_dispatch_api_version`,
-      ),
     ]);
+    const apiVersion = ((await getSsmParameter(
+      `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_dispatch_api_version`,
+    ).catch(() => 'v1')) || 'v1') as 'v1' | 'v2';
     const urlPath = `/api/aselo${apiVersion === 'v1' ? '' : `/${apiVersion}`}/incidents`;
     const fullUrl = `${baseUrl}${urlPath}`;
     const apiCallStart = Date.now();
