@@ -34,17 +34,21 @@ export const handler = async ({
 }): Promise<0 | -1> => {
   let accountSid: AccountSID;
   let beaconBaseUrl: string;
+  let beaconApiVersion: 'v1' | 'v2';
   let beaconApiKey: string;
   try {
-    [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
+    [accountSid, beaconBaseUrl, beaconApiVersion, beaconApiKey] = (await Promise.all([
       getSsmParameter(accountSidParamPath(helplineShortCode)),
       getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_base_url`,
       ),
       getSsmParameter(
+        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_update_api_version`,
+      ),
+      getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_api_key`,
       ),
-    ])) as [AccountSID, string, string];
+    ])) as [AccountSID, string, 'v1' | 'v2', string];
   } catch (err) {
     console.error(
       `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${accountSidParamPath(
@@ -69,9 +73,13 @@ export const handler = async ({
     itemProcessor: createBeaconDocumentProcessor(helplineShortCode, apiType, accountSid),
   };
   const beaconApiName = apiType === 'incidentReport' ? 'incidents' : 'case_reports';
+
+  const urlPath = `/api/aselo${
+    beaconApiVersion === 'v1' ? '' : `/${beaconApiVersion}`
+  }${beaconApiName}/updates`;
   const apiPollConfig = {
     ...configDefaults,
-    url: new URL(`${beaconBaseUrl}/api/aselo/${beaconApiName}/updates`),
+    url: new URL(`${beaconBaseUrl}${urlPath}`),
     itemExtractor: (body: any) => body[beaconApiName],
     itemTypeName: apiType === 'incidentReport' ? 'incident report' : 'case report',
   } as const;
