@@ -34,17 +34,21 @@ export const handler = async ({
 }): Promise<0 | -1> => {
   let accountSid: AccountSID;
   let beaconBaseUrl: string;
+  let beaconApiVersion: 'v1' | 'v2';
   let beaconApiKey: string;
   try {
-    [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
+    [accountSid, beaconBaseUrl, beaconApiVersion, beaconApiKey] = (await Promise.all([
       getSsmParameter(accountSidParamPath(helplineShortCode)),
       getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_base_url`,
       ),
       getSsmParameter(
+        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_update_api_version`,
+      ),
+      getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode.toLowerCase()}/beacon_api_key`,
       ),
-    ])) as [AccountSID, string, string];
+    ])) as [AccountSID, string, 'v1' | 'v2', string];
   } catch (err) {
     console.error(
       `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${accountSidParamPath(
@@ -54,9 +58,6 @@ export const handler = async ({
     );
     return -1;
   }
-  const beaconApiVersion = ((await getSsmParameter(
-    `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_update_api_version`,
-  ).catch(() => 'v1')) || 'v1') as 'v1' | 'v2';
 
   const beaconHeaders = { [BEACON_API_KEY_HEADER]: beaconApiKey };
   const lastUpdateSeenSsmKey = `/${environment}/hrm/custom-integration/beacon/${accountSid}/${apiType}/latest_seen`;
