@@ -228,6 +228,9 @@ export const handler = async ({
     });
 
     const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts');
+    // Finalized on create, so an imported contact isn't left as an unopenable
+    // draft (only its own creator/owner or a supervisor could open it otherwise).
+    url.searchParams.set('finalize', 'true');
     const s3 = new S3Client({
       region,
       credentials: await assumeRoleCredentials(region, assumeRoleParams),

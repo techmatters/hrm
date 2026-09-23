@@ -21,7 +21,12 @@ import {
 } from '@tech-matters/hrm-types';
 import { publicEndpoint, SafeRouter } from '../permissions';
 import { processContactsStream } from './contactsNotifyService';
-import { connectContactToCase, createContact, getContactById } from './contactService';
+import {
+  connectContactToCase,
+  createContact,
+  getContactById,
+  patchContact,
+} from './contactService';
 import createError from 'http-errors';
 
 const adminContactsRouter = SafeRouter();
@@ -34,6 +39,18 @@ adminContactsRouter.post('/', publicEndpoint, async (req: Request, res: Response
     can: req.can,
     user,
   });
+  if (req.query.finalize === 'true') {
+    const finalized = await patchContact(
+      hrmAccountId,
+      body.createdBy,
+      true,
+      contact.id,
+      {},
+      { can: req.can, user, permissionRules, permissionCheckContact: undefined },
+    );
+    res.json(finalized);
+    return;
+  }
   res.json(contact);
 });
 
