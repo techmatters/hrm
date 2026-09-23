@@ -14,8 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { MockedEndpoint, Mockttp } from 'mockttp';
-import { addHours } from 'date-fns/addHours';
-import { subDays } from 'date-fns/subDays';
+import { addHours, parseISO, subDays } from 'date-fns';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import { CaseSectionRecord } from '@tech-matters/hrm-types';
 import { putSsmParameter, ssmCache } from '@tech-matters/ssm-cache';
@@ -25,7 +24,6 @@ import each from 'jest-each';
 import { db } from './dbConnection';
 import { BEACON_API_KEY_HEADER } from '../../src/config';
 import { handler } from '../../src';
-import { parseISO } from 'date-fns';
 import { IncidentReport } from '../../src/beaconDocumentProcessors/uscr/incidentReport';
 import {
   generateCaseReport,
@@ -333,7 +331,7 @@ describe('Beacon Polling Service', () => {
             [generateCaseReports(4, 1, caseIds)],
           );
         }
-        await handler({ apiType, helplineShortCode: 'uscr' });
+        await handler({ apiType, helplineShortCode: HELPLINE_SHORT_CODE });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
 
@@ -361,7 +359,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ apiType, helplineShortCode: 'as' });
+        await handler({ apiType, helplineShortCode: HELPLINE_SHORT_CODE });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(3);
 
@@ -398,7 +396,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ apiType, helplineShortCode: 'as' });
+        await handler({ apiType, helplineShortCode: HELPLINE_SHORT_CODE });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(5);
       });
@@ -450,7 +448,10 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -477,7 +478,10 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -519,7 +523,10 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -555,7 +562,10 @@ describe('Beacon Polling Service', () => {
           ],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -630,7 +640,7 @@ describe('Beacon Polling Service', () => {
           [caseReports],
         );
         // Act
-        await handler({ apiType: 'caseReport', helplineShortCode: 'as' });
+        await handler({ apiType: 'caseReport', helplineShortCode: HELPLINE_SHORT_CODE });
         // Assert
         await verifyCaseReportsForCase(caseIds[0], [caseReports[0]]);
         await verifyCaseReportsForCase(caseIds[1], [caseReports[1]]);
