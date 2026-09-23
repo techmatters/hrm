@@ -316,8 +316,8 @@ describe('Beacon Polling Service', () => {
       jest.setTimeout(60000);
       const apiPath =
         apiType === 'incidentReport'
-          ? '/api/aseloincidents/updates'
-          : '/api/aselocase_reports/updates';
+          ? '/api/aselo/incidents/updates'
+          : '/api/aselo/case_reports/updates';
       test(`[${apiType}] Returns less than the maximum records - doesn't query again`, async () => {
         const caseIds = await generateCases(4);
         if (apiType === 'incidentReport') {
@@ -446,7 +446,7 @@ describe('Beacon Polling Service', () => {
         const incidentReports = generateIncidentReports(2, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aseloincidents/updates',
+          '/api/aselo/incidents/updates',
           [incidentReports],
         );
         // Act
@@ -473,7 +473,7 @@ describe('Beacon Polling Service', () => {
         const incidentReports = generateIncidentReports(5, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aseloincidents/updates',
+          '/api/aselo/incidents/updates',
           [incidentReports],
         );
         // Act
@@ -515,7 +515,7 @@ describe('Beacon Polling Service', () => {
         ]);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aseloincidents/updates',
+          '/api/aselo/incidents/updates',
           [incidentReports],
         );
         // Act
@@ -546,7 +546,7 @@ describe('Beacon Polling Service', () => {
         };
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aseloincidents/updates',
+          '/api/aselo/incidents/updates',
           [
             [...incidentReports, updatedIncidentReport].sort(
               (ir1, ir2) =>
@@ -626,7 +626,7 @@ describe('Beacon Polling Service', () => {
         const caseReports = generateCaseReports(2, 1, caseIds, BASELINE_DATE, true);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aselocase_reports/updates',
+          '/api/aselo/case_reports/updates',
           [caseReports],
         );
         // Act

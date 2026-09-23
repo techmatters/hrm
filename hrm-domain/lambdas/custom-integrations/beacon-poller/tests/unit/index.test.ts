@@ -62,7 +62,7 @@ describe('handler endpoint versioning', () => {
 
     expect(result).toBe(0);
     const pollConfig = mockedReadApiInChunks.mock.calls[0][0] as any;
-    expect(pollConfig.url.toString()).toBe('https://beacon.example/api/aseloincidents/updates');
+    expect(pollConfig.url.toString()).toBe('https://beacon.example/api/aselo/incidents/updates');
   });
 
   test('uses versioned endpoint path when API version is v2', async () => {
@@ -73,7 +73,7 @@ describe('handler endpoint versioning', () => {
     expect(result).toBe(0);
     const pollConfig = mockedReadApiInChunks.mock.calls[0][0] as any;
     expect(pollConfig.url.toString()).toBe(
-      'https://beacon.example/api/aselo/v2case_reports/updates',
+      'https://beacon.example/api/aselo/v2/case_reports/updates',
     );
   });
 

@@ -76,7 +76,7 @@ export const handler = async ({
 
   const urlPath = `/api/aselo${
     beaconApiVersion === 'v1' ? '' : `/${beaconApiVersion}`
-  }${beaconApiName}/updates`;
+  }/${beaconApiName}/updates`;
   const apiPollConfig = {
     ...configDefaults,
     url: new URL(`${beaconBaseUrl}${urlPath}`),
