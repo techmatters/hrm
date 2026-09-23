@@ -54,6 +54,13 @@ export const createIncident = async ({
     ]);
     const urlPath = `/api/aselo${apiVersion === 'v1' ? '' : `/${apiVersion}`}/incidents`;
     const fullUrl = `${baseUrl}${urlPath}`;
+    console.debug(
+      `[SENSITIVE][TRACER][incident dispatch][${helplineShortCode}] Beacon API endpoint ${fullUrl}, token starting '${apiKey.slice(
+        0,
+        2,
+      )}' request sent with payload:`,
+      incidentParams,
+    );
     const apiCallStart = Date.now();
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -66,7 +73,10 @@ export const createIncident = async ({
     const apiCallMillis = Date.now() - apiCallStart;
 
     console.info(
-      `[TRACER][incident dispatch] Beacon API responded after ${apiCallMillis}ms with status:`,
+      `[TRACER][incident dispatch][${helplineShortCode}] Beacon API endpoint ${fullUrl}, token starting '${apiKey.slice(
+        0,
+        2,
+      )}' responded after ${apiCallMillis}ms with status:`,
       response.status,
     );
 
