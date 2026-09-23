@@ -278,11 +278,11 @@ export const mapCallType = (record: ICarolContactRecord): { callType: string } =
     return { callType: translateFieldValue('callType', rawCallType) ?? rawCallType };
   }
 
-  // Fall back to inferring the callType from the boolean flag columns.
+  // Never fall back to a blank string; keep a real, recognizable value.
   const matched = CALL_TYPE_FLAG_MAP.find(
     ([field]) => parseICarolBoolean(record[field]) === true,
   );
-  return { callType: matched ? matched[1] : '' };
+  return { callType: matched ? matched[1] : DATA_CALL_TYPE };
 };
 
 /**
@@ -482,6 +482,10 @@ export const mapContact = (
   const rawJson: ContactRawJson = {
     callType,
     childInformation,
+    // Flex's search UI crashes on any callType other than the "data" one when
+    // callerInformation is missing. We never collect this field, so always set
+    // it to an empty object rather than leaving it undefined.
+    callerInformation: {},
     caseInformation,
     categories: mapCategories(
       record[
