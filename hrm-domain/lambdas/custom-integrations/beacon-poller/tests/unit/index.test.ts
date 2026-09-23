@@ -25,11 +25,16 @@ jest.mock('../../src/beaconDocumentProcessors', () => ({
   createBeaconDocumentProcessor: jest.fn(),
 }));
 
-const mockedGetSsmParameter = getSsmParameter as jest.MockedFunction<typeof getSsmParameter>;
-const mockedReadApiInChunks = readApiInChunks as jest.MockedFunction<typeof readApiInChunks>;
-const mockedCreateBeaconDocumentProcessor = createBeaconDocumentProcessor as jest.MockedFunction<
-  typeof createBeaconDocumentProcessor
+const mockedGetSsmParameter = getSsmParameter as jest.MockedFunction<
+  typeof getSsmParameter
 >;
+const mockedReadApiInChunks = readApiInChunks as jest.MockedFunction<
+  typeof readApiInChunks
+>;
+const mockedCreateBeaconDocumentProcessor =
+  createBeaconDocumentProcessor as jest.MockedFunction<
+    typeof createBeaconDocumentProcessor
+  >;
 
 const setupSsm = (apiVersion: 'v1' | 'v2' | undefined) => {
   mockedGetSsmParameter.mockImplementation(async (path: string) => {
@@ -37,7 +42,9 @@ const setupSsm = (apiVersion: 'v1' | 'v2' | undefined) => {
       '/test/twilio/AS/account_sid': 'AC123',
       '/test/hrm/custom-integration/as/beacon_base_url': 'https://beacon.example',
       '/test/hrm/custom-integration/as/beacon_api_key': 'abc123',
-      ...(apiVersion ? { '/test/hrm/custom-integration/as/beacon_update_api_version': apiVersion } : {}),
+      ...(apiVersion
+        ? { '/test/hrm/custom-integration/as/beacon_update_api_version': apiVersion }
+        : {}),
     };
     if (values[path]) return values[path];
     throw new Error(`Unexpected SSM path: ${path}`);
@@ -62,7 +69,9 @@ describe('handler endpoint versioning', () => {
 
     expect(result).toBe(0);
     const pollConfig = mockedReadApiInChunks.mock.calls[0][0] as any;
-    expect(pollConfig.url.toString()).toBe('https://beacon.example/api/aselo/incidents/updates');
+    expect(pollConfig.url.toString()).toBe(
+      'https://beacon.example/api/aselo/incidents/updates',
+    );
   });
 
   test('uses versioned endpoint path when API version is v2', async () => {
