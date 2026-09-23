@@ -39,7 +39,7 @@ import {
 } from '../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
 
 const ACCOUNT_SID = 'ACservicetest';
-const HELPLINE_SHORT_CODE = 'as';
+const HELPLINE_SHORT_CODE = 'uscr';
 const BEACON_RESPONSE_HEADERS = {
   'Content-Type': 'application/json',
 };
@@ -97,7 +97,7 @@ const generateCases = (numberToGenerate: number): Promise<string[]> => {
             method: 'POST',
             body: JSON.stringify({
               info: { summary: 'something' },
-              definitionVersion: 'as-v1',
+              definitionVersion: 'uscr-v1',
             }),
             headers: HRM_REQUEST_HEADERS,
           },
@@ -333,7 +333,7 @@ describe('Beacon Polling Service', () => {
             [generateCaseReports(4, 1, caseIds)],
           );
         }
-        await handler({ apiType, helplineShortCode: 'as' });
+        await handler({ apiType, helplineShortCode: 'uscr' });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
 
