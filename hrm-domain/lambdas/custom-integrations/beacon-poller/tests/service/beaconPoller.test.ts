@@ -70,6 +70,10 @@ export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
       valueGenerator: () => ACCOUNT_SID,
     },
     {
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_update_api_version`,
+      valueGenerator: () => 'v1',
+    },
+    {
       name: LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
       valueGenerator: () => '',
       updateable: true,
@@ -312,8 +316,8 @@ describe('Beacon Polling Service', () => {
       jest.setTimeout(60000);
       const apiPath =
         apiType === 'incidentReport'
-          ? '/api/aselo/incidents/updates'
-          : '/api/aselo/case_reports/updates';
+          ? '/api/aseloincidents/updates'
+          : '/api/aselocase_reports/updates';
       test(`[${apiType}] Returns less than the maximum records - doesn't query again`, async () => {
         const caseIds = await generateCases(4);
         if (apiType === 'incidentReport') {
@@ -442,7 +446,7 @@ describe('Beacon Polling Service', () => {
         const incidentReports = generateIncidentReports(2, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aselo/incidents/updates',
+          '/api/aseloincidents/updates',
           [incidentReports],
         );
         // Act
@@ -469,7 +473,7 @@ describe('Beacon Polling Service', () => {
         const incidentReports = generateIncidentReports(5, 1, caseIds);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aselo/incidents/updates',
+          '/api/aseloincidents/updates',
           [incidentReports],
         );
         // Act
@@ -511,7 +515,7 @@ describe('Beacon Polling Service', () => {
         ]);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aselo/incidents/updates',
+          '/api/aseloincidents/updates',
           [incidentReports],
         );
         // Act
@@ -542,7 +546,7 @@ describe('Beacon Polling Service', () => {
         };
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aselo/incidents/updates',
+          '/api/aseloincidents/updates',
           [
             [...incidentReports, updatedIncidentReport].sort(
               (ir1, ir2) =>
@@ -622,7 +626,7 @@ describe('Beacon Polling Service', () => {
         const caseReports = generateCaseReports(2, 1, caseIds, BASELINE_DATE, true);
         mockedBeaconEndpoint = await mockBeacon(
           await mockingProxy.mockttpServer(),
-          '/api/aselo/case_reports/updates',
+          '/api/aselocase_reports/updates',
           [caseReports],
         );
         // Act

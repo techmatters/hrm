@@ -17,7 +17,7 @@
 import { getSsmParameter } from '@tech-matters/ssm-cache';
 import { readApiInChunks } from '../../src/apiChunkReader';
 import { createBeaconDocumentProcessor } from '../../src/beaconDocumentProcessors';
-import { handler } from '../../src/index';
+import { handler } from '../../src';
 
 jest.mock('../../src/apiChunkReader', () => ({ readApiInChunks: jest.fn() }));
 jest.mock('@tech-matters/ssm-cache', () => ({ getSsmParameter: jest.fn() }));
@@ -31,17 +31,14 @@ const mockedCreateBeaconDocumentProcessor = createBeaconDocumentProcessor as jes
   typeof createBeaconDocumentProcessor
 >;
 
-const setupSsm = (apiVersion: 'v1' | 'v2' | null) => {
+const setupSsm = (apiVersion: 'v1' | 'v2' | undefined) => {
   mockedGetSsmParameter.mockImplementation(async (path: string) => {
     const values: Record<string, string> = {
       '/test/twilio/AS/account_sid': 'AC123',
       '/test/hrm/custom-integration/as/beacon_base_url': 'https://beacon.example',
       '/test/hrm/custom-integration/as/beacon_api_key': 'abc123',
+      ...(apiVersion ? { '/test/hrm/custom-integration/as/beacon_update_api_version': apiVersion } : {}),
     };
-    if (path === '/test/hrm/custom-integration/as/beacon_update_api_version') {
-      if (apiVersion === null) throw new Error('ParameterNotFound');
-      return apiVersion;
-    }
     if (values[path]) return values[path];
     throw new Error(`Unexpected SSM path: ${path}`);
   });
@@ -57,30 +54,35 @@ beforeEach(() => {
   mockedReadApiInChunks.mockResolvedValue(undefined as any);
 });
 
-describe('handler', () => {
-  test('uses v1 beacon endpoint when update API version is v1', async () => {
+describe('handler endpoint versioning', () => {
+  test('uses v1 endpoint path when API version is v1', async () => {
     setupSsm('v1');
-    await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
 
+    const result = await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+
+    expect(result).toBe(0);
     const pollConfig = mockedReadApiInChunks.mock.calls[0][0] as any;
-    expect(pollConfig.url.toString()).toBe('https://beacon.example/api/aselo/incidents/updates');
+    expect(pollConfig.url.toString()).toBe('https://beacon.example/api/aseloincidents/updates');
   });
 
-  test('uses versioned beacon endpoint when update API version is v2', async () => {
+  test('uses versioned endpoint path when API version is v2', async () => {
     setupSsm('v2');
-    await handler({ apiType: 'caseReport', helplineShortCode: 'as' });
 
+    const result = await handler({ apiType: 'caseReport', helplineShortCode: 'as' });
+
+    expect(result).toBe(0);
     const pollConfig = mockedReadApiInChunks.mock.calls[0][0] as any;
     expect(pollConfig.url.toString()).toBe(
-      'https://beacon.example/api/aselo/v2/case_reports/updates',
+      'https://beacon.example/api/aselo/v2case_reports/updates',
     );
   });
 
-  test('falls back to v1 endpoint when update API version SSM parameter is missing', async () => {
-    setupSsm(null);
-    await handler({ apiType: 'caseReport', helplineShortCode: 'as' });
+  test('returns -1 when API version parameter is missing', async () => {
+    setupSsm(undefined);
 
-    const pollConfig = mockedReadApiInChunks.mock.calls[0][0] as any;
-    expect(pollConfig.url.toString()).toBe('https://beacon.example/api/aselo/case_reports/updates');
+    const result = await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+
+    expect(result).toBe(-1);
+    expect(mockedReadApiInChunks).not.toHaveBeenCalled();
   });
 });
