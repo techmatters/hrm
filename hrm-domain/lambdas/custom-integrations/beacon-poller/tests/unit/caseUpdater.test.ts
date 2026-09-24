@@ -22,6 +22,11 @@ import {
 import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
 
+const RUNTIME_STATIC_KEY = process.env.STATIC_KEY!;
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: jest.fn(async () => RUNTIME_STATIC_KEY),
+}));
+
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
 global.fetch = mockFetch;
@@ -40,7 +45,7 @@ const verifyAddSectionRequest = (caseId: string, expectedCaseSection: NewCaseSec
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Basic ${process.env.STATIC_KEY}`,
+        Authorization: `Basic ${RUNTIME_STATIC_KEY}`,
       },
       body: JSON.stringify(expectedCaseSection),
     },

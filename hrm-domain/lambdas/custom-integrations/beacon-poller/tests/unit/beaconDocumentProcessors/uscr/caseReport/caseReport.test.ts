@@ -28,6 +28,10 @@ import { AssertionError } from 'node:assert';
 import { verifyAddSectionRequest } from '../../../verifyAddSectionRequest';
 import { RawCaseReportApiPayload } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
 
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: jest.fn(async () => process.env.STATIC_KEY!),
+}));
+
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
 global.fetch = mockFetch;

@@ -52,6 +52,7 @@ process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CASE_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CONSECUTIVE_API_CALLS = '5';
 const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
+const STATIC_KEY_PARAMETER_NAME = `/${process.env.NODE_ENV}/twilio/${ACCOUNT_SID}/static_key`;
 const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/incidentReport/latest_seen`;
 const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/caseReport/latest_seen`;
 
@@ -68,6 +69,10 @@ export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
         process.env.NODE_ENV
       }/twilio/${HELPLINE_SHORT_CODE.toUpperCase()}/account_sid`,
       valueGenerator: () => ACCOUNT_SID,
+    },
+    {
+      name: STATIC_KEY_PARAMETER_NAME,
+      valueGenerator: () => process.env.STATIC_KEY!,
     },
     {
       name: LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,

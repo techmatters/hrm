@@ -26,11 +26,7 @@ import {
   newOkFromData,
   SuccessResult,
 } from '@tech-matters/types';
-
-const hrmHeaders = {
-  Authorization: `Basic ${process.env.STATIC_KEY}`,
-  'Content-Type': 'application/json',
-};
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
 type CaseNotSpecifiedError = ErrorResult<{
   type: 'CaseNotSpecified';
@@ -105,13 +101,18 @@ export const addSectionToAseloCase =
           },
         });
       }
-
+      const staticKey = await getSsmParameter(
+        `/${process.env.NODE_ENV}/twilio/${accountSid}/static_key`,
+      );
       const newSectionResponse = await fetch(
         `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/sections/${sectionType}`,
         {
           method: 'POST',
           body: JSON.stringify(section),
-          headers: hrmHeaders,
+          headers: {
+            Authorization: `Basic ${staticKey}`,
+            'Content-Type': 'application/json',
+          },
         },
       );
       if (newSectionResponse.ok) {
@@ -217,11 +218,17 @@ const updateAseloCase = async (
     }>
   | SuccessResult<unknown>
 > => {
+  const staticKey = await getSsmParameter(
+    `/${process.env.NODE_ENV}/twilio/${accountSid}/static_key`,
+  );
   console.info(`Updating case ${caseId} ${caseDescendentPath}:`, patch);
   const existingCaseResponse = await fetch(
     `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/${caseDescendentPath}`,
     {
-      headers: hrmHeaders,
+      headers: {
+        Authorization: `Basic ${staticKey}`,
+        'Content-Type': 'application/json',
+      },
       method: 'PUT',
       body: JSON.stringify(patch),
     },
