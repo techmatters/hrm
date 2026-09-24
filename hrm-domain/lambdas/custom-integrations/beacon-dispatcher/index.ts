@@ -65,7 +65,7 @@ const postHandler = async (
 
   // Extract accountSid from the last segment of the path
   const pathMatch = event.path.match(EXTRACT_HELPLINE_CODE_FROM_PATH);
-  const helplineCode = pathMatch?.groups?.helplineCode;
+  const helplineCode = pathMatch?.groups?.helplineCode ?? 'uscr';
 
   // Parse request body
   let body: any;
