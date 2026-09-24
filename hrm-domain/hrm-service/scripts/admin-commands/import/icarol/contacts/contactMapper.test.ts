@@ -260,6 +260,22 @@ describe('mapContact', () => {
     });
   });
 
+  test('sets the top-level number field to the same value as childInformation.phone1', () => {
+    const contact = mapContact(
+      buildRecord({ PhoneNumberFull: '+15555550123' }),
+      defaultWorkerSid,
+    );
+
+    expect(contact.number).toBe('+15555550123');
+    expect(contact.number).toBe(contact.rawJson!.childInformation.phone1);
+  });
+
+  test('leaves number undefined when PhoneNumberFull is blank', () => {
+    const contact = mapContact(buildRecord({ PhoneNumberFull: '' }), defaultWorkerSid);
+
+    expect(contact.number).toBeUndefined();
+  });
+
   test('translates demographic values that need a value-level fix, not just a field mapping', () => {
     const { rawJson } = mapContact(
       buildRecord({

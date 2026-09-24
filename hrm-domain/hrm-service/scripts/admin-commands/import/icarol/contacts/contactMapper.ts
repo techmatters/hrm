@@ -376,14 +376,13 @@ export const mapContact = (
   record: ICarolContactRecord,
   workerSid: WorkerSID,
 ): Partial<NewContactRecord> => {
+  // Also used for the top-level `number` field below, so the two always agree.
+  const phoneNumber = translateFieldValue('phone1', record.PhoneNumberFull);
+
   // Contact > Support Seeker -> rawJson.childInformation
   const childInformation: ContactRawJson['childInformation'] = {};
   assignIfPresent(childInformation, 'friendlyName', record.CallerName);
-  assignIfPresent(
-    childInformation,
-    'phone1',
-    translateFieldValue('phone1', record.PhoneNumberFull),
-  );
+  assignIfPresent(childInformation, 'phone1', phoneNumber);
   assignIfPresent(
     childInformation,
     'state',
@@ -509,6 +508,9 @@ export const mapContact = (
     ),
     twilioWorkerId: workerSid,
     createdBy: workerSid as TwilioUserIdentifier,
+    // Drives Profile/Identifier creation in createContact; without it, imported
+    // contacts never get one.
+    number: phoneNumber,
     rawJson,
   };
 };
