@@ -20,8 +20,8 @@ import * as gy from './gyMapping';
 export const newCreateIncidentMapper = (helplineCode: string | undefined) => {
   switch (helplineCode) {
     case 'gy':
-      return gy.toCreateIncident;
     case 'as':
+      return gy.toCreateIncident;
     case 'uscr':
       return uscr.toCreateIncident;
     default:

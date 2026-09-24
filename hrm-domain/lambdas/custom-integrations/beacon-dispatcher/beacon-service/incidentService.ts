@@ -41,16 +41,26 @@ export const createIncident = async ({
   incidentParams: CreateIncidentParams;
 }) => {
   try {
-    const [baseUrl, apiKey] = await Promise.all([
+    const [baseUrl, apiKey, apiVersion] = await Promise.all([
       getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`,
       ),
       getSsmParameter(
         `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`,
       ),
+      getSsmParameter(
+        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_dispatch_api_version`,
+      ),
     ]);
-
-    const fullUrl = `${baseUrl}/api/aselo/incidents`;
+    const urlPath = `/api/aselo${apiVersion === 'v1' ? '' : `/${apiVersion}`}/incidents`;
+    const fullUrl = `${baseUrl}${urlPath}`;
+    console.debug(
+      `[SENSITIVE][TRACER][incident dispatch][${helplineShortCode}] Beacon API endpoint ${fullUrl}, token starting '${apiKey.slice(
+        0,
+        2,
+      )}' request sent with payload:`,
+      incidentParams,
+    );
     const apiCallStart = Date.now();
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -63,7 +73,10 @@ export const createIncident = async ({
     const apiCallMillis = Date.now() - apiCallStart;
 
     console.info(
-      `[TRACER][incident dispatch] Beacon API responded after ${apiCallMillis}ms with status:`,
+      `[TRACER][incident dispatch][${helplineShortCode}] Beacon API endpoint ${fullUrl}, token starting '${apiKey.slice(
+        0,
+        2,
+      )}' responded after ${apiCallMillis}ms with status:`,
       response.status,
     );
 
