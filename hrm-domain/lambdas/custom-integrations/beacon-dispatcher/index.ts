@@ -65,7 +65,9 @@ const postHandler = async (
 
   // Extract accountSid from the last segment of the path
   const pathMatch = event.path.match(EXTRACT_HELPLINE_CODE_FROM_PATH);
-  const helplineCode = pathMatch?.groups?.helplineCode;
+  // If the helpline isn't found in the URL it's probably the legacy URL which only supports USCR
+  // Remove the hardcoded fallback once use_new_dispatcher_path is set everywhere / deprecated
+  const helplineCode = pathMatch?.groups?.helplineCode ?? 'uscr';
 
   // Parse request body
   let body: any;
@@ -159,7 +161,7 @@ const postHandler = async (
 
   console.info(`Creating incident with the following data:`, incidentParams);
 
-  // Case does not contains a corresponding case entry section, we assume the incident was never reported (this can only happen if Beacon responded with an error)
+  // Case does not contain a corresponding case entry section, we assume the incident was never reported (this can only happen if Beacon responded with an error)
   const createIncidentResult = await beaconService.createIncident({
     environment,
     helplineShortCode: helplineCode?.toLowerCase() ?? 'uscr', // Legacy API only looked for creds under USCR
@@ -173,11 +175,15 @@ const postHandler = async (
   }
 
   console.debug(JSON.stringify(createIncidentResult));
-
+  const {
+    pending_incident: { id: pendingIncidentId },
+    incident,
+    status,
+  } = createIncidentResult.unwrap();
   // Create incident case section to mark this case as "already reported"
   const updateSectionResult = await hrmService.updateAttemptCaseSection({
     accountSid,
-    beaconIncidentId: createIncidentResult.data.pending_incident.id,
+    beaconIncidentId: pendingIncidentId,
     caseId: caseObj.id,
     attemptSection: sections.currentAttempt.caseSection,
     baseUrl: hrmInternalUrl,
@@ -189,12 +195,6 @@ const postHandler = async (
     console.error(message);
     return newErr({ error: 'HrmServiceError', message });
   }
-
-  const {
-    pending_incident: { id: pendingIncidentId },
-    incident: { id: incidentId },
-    status,
-  } = createIncidentResult.unwrap();
   console.info(
     `${
       status === 'success' ? 'new incident reported' : 'incident already exists'
@@ -204,7 +204,7 @@ const postHandler = async (
     data: {
       caseId: caseObj.id,
       pendingIncidentId,
-      incidentId,
+      incidentId: incident?.id,
       status,
     },
   });
