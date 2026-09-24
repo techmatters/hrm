@@ -65,6 +65,8 @@ const postHandler = async (
 
   // Extract accountSid from the last segment of the path
   const pathMatch = event.path.match(EXTRACT_HELPLINE_CODE_FROM_PATH);
+  // If the helpline isn't found in the URL it's probably the legacy URL which only supports USCR
+  // Remove the hardcoded fallback once use_new_dispatcher_path is set everywhere / deprecated
   const helplineCode = pathMatch?.groups?.helplineCode ?? 'uscr';
 
   // Parse request body
