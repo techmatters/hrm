@@ -23,6 +23,10 @@ import each from 'jest-each';
 import { verifyAddSectionRequest } from '../../verifyAddSectionRequest';
 import { AssertionError } from 'node:assert';
 
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: jest.fn(async () => process.env.STATIC_KEY!),
+}));
+
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 global.fetch = mockFetch;
 
