@@ -260,6 +260,22 @@ describe('mapContact', () => {
     });
   });
 
+  test('sets the top-level number field to the same value as childInformation.phone1', () => {
+    const contact = mapContact(
+      buildRecord({ PhoneNumberFull: '+15555550123' }),
+      defaultWorkerSid,
+    );
+
+    expect(contact.number).toBe('+15555550123');
+    expect(contact.number).toBe(contact.rawJson!.childInformation.phone1);
+  });
+
+  test('leaves number undefined when PhoneNumberFull is blank', () => {
+    const contact = mapContact(buildRecord({ PhoneNumberFull: '' }), defaultWorkerSid);
+
+    expect(contact.number).toBeUndefined();
+  });
+
   test('translates demographic values that need a value-level fix, not just a field mapping', () => {
     const { rawJson } = mapContact(
       buildRecord({
@@ -392,8 +408,10 @@ describe('mapContact', () => {
       ).toBe('Child calling about self');
     });
 
-    test('falls back to an empty callType when nothing is set', () => {
-      expect(mapContact(buildRecord(), defaultWorkerSid).rawJson!.callType).toBe('');
+    test('falls back to the data callType when nothing else is set, never a bare empty string', () => {
+      expect(mapContact(buildRecord(), defaultWorkerSid).rawJson!.callType).toBe(
+        'Child calling about self',
+      );
     });
 
     test('maps the compound call type value to the new, unmapped label', () => {
@@ -406,6 +424,23 @@ describe('mapContact', () => {
           defaultWorkerSid,
         ).rawJson!.callType,
       ).toBe('Prank Call/Hang-up Call/Wrong Number/Voicemail - Legacy');
+    });
+
+    test('always sets callerInformation to an empty object, regardless of callType', () => {
+      // Flex's search UI crashes on any callType other than the data one when
+      // callerInformation is missing, which we never collect.
+      expect(
+        mapContact(buildRecord(), defaultWorkerSid).rawJson!.callerInformation,
+      ).toEqual({});
+      expect(
+        mapContact(
+          buildRecord({
+            'Call Information - Call Type':
+              'Prank Call/Hang-up Call/Wrong Number/Voicemail',
+          }),
+          defaultWorkerSid,
+        ).rawJson!.callerInformation,
+      ).toEqual({});
     });
 
     test('passes through any other unrecognised call type value unchanged', () => {

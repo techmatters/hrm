@@ -278,11 +278,11 @@ export const mapCallType = (record: ICarolContactRecord): { callType: string } =
     return { callType: translateFieldValue('callType', rawCallType) ?? rawCallType };
   }
 
-  // Fall back to inferring the callType from the boolean flag columns.
+  // Never fall back to a blank string; keep a real, recognizable value.
   const matched = CALL_TYPE_FLAG_MAP.find(
     ([field]) => parseICarolBoolean(record[field]) === true,
   );
-  return { callType: matched ? matched[1] : '' };
+  return { callType: matched ? matched[1] : DATA_CALL_TYPE };
 };
 
 /**
@@ -376,14 +376,13 @@ export const mapContact = (
   record: ICarolContactRecord,
   workerSid: WorkerSID,
 ): Partial<NewContactRecord> => {
+  // Also used for the top-level `number` field below, so the two always agree.
+  const phoneNumber = translateFieldValue('phone1', record.PhoneNumberFull);
+
   // Contact > Support Seeker -> rawJson.childInformation
   const childInformation: ContactRawJson['childInformation'] = {};
   assignIfPresent(childInformation, 'friendlyName', record.CallerName);
-  assignIfPresent(
-    childInformation,
-    'phone1',
-    translateFieldValue('phone1', record.PhoneNumberFull),
-  );
+  assignIfPresent(childInformation, 'phone1', phoneNumber);
   assignIfPresent(
     childInformation,
     'state',
@@ -482,6 +481,10 @@ export const mapContact = (
   const rawJson: ContactRawJson = {
     callType,
     childInformation,
+    // Flex's search UI crashes on any callType other than the "data" one when
+    // callerInformation is missing. We never collect this field, so always set
+    // it to an empty object rather than leaving it undefined.
+    callerInformation: {},
     caseInformation,
     categories: mapCategories(
       record[
@@ -505,6 +508,9 @@ export const mapContact = (
     ),
     twilioWorkerId: workerSid,
     createdBy: workerSid as TwilioUserIdentifier,
+    // Drives Profile/Identifier creation in createContact; without it, imported
+    // contacts never get one.
+    number: phoneNumber,
     rawJson,
   };
 };

@@ -18,7 +18,7 @@ export const command = 'icarol <command>';
 export const desc = 'iCarol data migration commands';
 export const builder = function (yargs) {
   return yargs.commandDir('icarol', {
-    exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
+    exclude: /^(index|_)|\.test\.ts$/, // Exclude files starting with 'index' or '_', and test files
     extensions: ['ts'],
   });
   // .commandDir('common_cmds'); add more
