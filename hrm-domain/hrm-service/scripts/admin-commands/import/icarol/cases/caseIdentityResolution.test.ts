@@ -154,10 +154,47 @@ describe('resolveIdentityGroups', () => {
     expect(groups).toEqual([['100', '200']]);
   });
 
+  test('merges punctuation variants of the same Alias (same normalization as validity)', () => {
+    const repeatCallers = [
+      buildRepeatCaller({ CallerNum: '100', Alias: 'Jane-Doe1234' }),
+      buildRepeatCaller({ CallerNum: '200', Alias: 'JaneDoe1234' }),
+      buildRepeatCaller({ CallerNum: '300', Alias: 'Jane Doe1234' }),
+    ];
+    const groups = resolveIdentityGroups(['100', '200', '300'], repeatCallers);
+    expect(groups).toEqual([['100', '200', '300']]);
+  });
+
   test('keeps unrelated CallerNums with different real Aliases as separate groups', () => {
     const repeatCallers = [
       buildRepeatCaller({ CallerNum: '100', Alias: 'Janey1234' }),
       buildRepeatCaller({ CallerNum: '200', Alias: 'Bobby5678' }),
+    ];
+    const groups = resolveIdentityGroups(['100', '200'], repeatCallers);
+    expect(groups).toHaveLength(2);
+  });
+
+  test.each([
+    'Anon6578', // the plain, already-clean case
+    'Jane (1234)', // punctuation gets stripped before checking
+  ])('merges two CallerNums sharing a valid Alias: %s', alias => {
+    const repeatCallers = [
+      buildRepeatCaller({ CallerNum: '100', Alias: alias }),
+      buildRepeatCaller({ CallerNum: '200', Alias: alias }),
+    ];
+    const groups = resolveIdentityGroups(['100', '200'], repeatCallers);
+    expect(groups).toEqual([['100', '200']]);
+  });
+
+  test.each([
+    'Jane', // no digits at all
+    '4Jane', // digits lead instead of trailing
+    '1234', // digits with no letters
+    'A1', // fewer than 2 letters, and fewer than 4 digits
+    'Jane1234Extra', // content after the digits
+  ])('does NOT merge two CallerNums sharing an invalid Alias: %s', alias => {
+    const repeatCallers = [
+      buildRepeatCaller({ CallerNum: '100', Alias: alias }),
+      buildRepeatCaller({ CallerNum: '200', Alias: alias }),
     ];
     const groups = resolveIdentityGroups(['100', '200'], repeatCallers);
     expect(groups).toHaveLength(2);
@@ -257,6 +294,18 @@ describe('qualifyingIdentityGroups', () => {
     const repeatCallers = [
       buildRepeatCaller({ CallerNum: '100', Alias: 'Anon1234' }),
       buildRepeatCaller({ CallerNum: '200', Alias: 'Anon5678' }),
+    ];
+    expect(qualifyingIdentityGroups(records, repeatCallers)).toEqual([]);
+  });
+
+  test('does NOT merge two CallerNums sharing a bare Alias into a false qualification', () => {
+    const records = [
+      buildCallReport({ CallerNum: '100', PhoneNumberFull: '5551111111' }),
+      buildCallReport({ CallerNum: '200', PhoneNumberFull: '5552222222' }),
+    ];
+    const repeatCallers = [
+      buildRepeatCaller({ CallerNum: '100', Alias: 'Jane' }),
+      buildRepeatCaller({ CallerNum: '200', Alias: 'Jane' }),
     ];
     expect(qualifyingIdentityGroups(records, repeatCallers)).toEqual([]);
   });
