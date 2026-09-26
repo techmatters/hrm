@@ -55,6 +55,24 @@ const isBlank = (value: string | undefined): boolean => !value || value.trim() =
 const isRealAlias = (alias: string | undefined): boolean => !isBlank(alias);
 
 /**
+ * The merge key: Alias with punctuation stripped and lowercased.
+ */
+const normalizeAlias = (alias: string): string =>
+  alias.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+
+/**
+ * A valid Alias for merging: 2+ letters before a trailing 4-digit run.
+ */
+const isValidAlias = (alias: string | undefined): boolean => {
+  if (isBlank(alias)) return false;
+  const normalized = normalizeAlias(alias!);
+  const match = normalized.match(/^(.*?)(?<!\d)(\d{4})$/);
+  if (!match) return false;
+  const lettersBeforeDigits = (match[1].match(/[a-z]/g) ?? []).length;
+  return lettersBeforeDigits >= 2;
+};
+
+/**
  * Groups call records by CallerNum, the join key between the two source
  * records. Order within each group is preserved.
  */
@@ -102,7 +120,7 @@ export const distinctPhoneNumbers = (records: ICarolCallReportRecord[]): string[
 };
 
 /**
- * Groups CallerNums sharing the same Alias (see `isRealAlias`) into one
+ * Groups CallerNums sharing the same Alias (see `isValidAlias`) into one
  * identity; everything else stays its own group.
  */
 export const resolveIdentityGroups = (
@@ -115,8 +133,8 @@ export const resolveIdentityGroups = (
 
   for (const callerNum of distinctCallerNums) {
     const alias = aliasByCallerNum.get(callerNum);
-    if (isRealAlias(alias)) {
-      const normalizedAlias = alias!.trim().toLowerCase();
+    if (isValidAlias(alias)) {
+      const normalizedAlias = normalizeAlias(alias!);
       const existing = groupsByAlias.get(normalizedAlias);
       if (existing) {
         existing.push(callerNum);
