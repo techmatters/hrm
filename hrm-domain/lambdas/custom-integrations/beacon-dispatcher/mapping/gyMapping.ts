@@ -42,6 +42,6 @@ export const toCreateIncident = ({
     caller_number: contact.number ?? '',
     category: category ?? '',
     category_id: 2497, // TEMPORARY, to unblock testing
-    description: contact.rawJson?.childInformation.incidentDescription?.toString() ?? '',
+    description: contact.rawJson?.childInformation.incidentSummary?.toString() ?? '',
   };
 };
