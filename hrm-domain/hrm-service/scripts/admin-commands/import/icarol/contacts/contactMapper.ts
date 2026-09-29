@@ -376,8 +376,10 @@ export const mapContact = (
   record: ICarolContactRecord,
   workerSid: WorkerSID,
 ): Partial<NewContactRecord> => {
-  // Also used for the top-level `number` field below, so the two always agree.
-  const phoneNumber = translateFieldValue('phone1', record.PhoneNumberFull);
+  // Also used for `number` below. Normalized to E.164 (10 digits -> +1XXXXXXXXXX)
+  // to match how Twilio stores numbers.
+  const rawPhoneDigits = (record.PhoneNumberFull ?? '').replace(/\D/g, '');
+  const phoneNumber = rawPhoneDigits.length === 10 ? `+1${rawPhoneDigits}` : undefined;
 
   // Contact > Support Seeker -> rawJson.childInformation
   const childInformation: ContactRawJson['childInformation'] = {};

@@ -227,7 +227,7 @@ describe('mapContact', () => {
     const { rawJson } = mapContact(
       buildRecord({
         CallerName: 'Jane Doe',
-        PhoneNumberFull: '+15555550123',
+        PhoneNumberFull: '5555550123',
         StateProvince: 'CA',
         CityName: 'San Francisco',
         CountyName: 'San Francisco',
@@ -262,12 +262,32 @@ describe('mapContact', () => {
 
   test('sets the top-level number field to the same value as childInformation.phone1', () => {
     const contact = mapContact(
-      buildRecord({ PhoneNumberFull: '+15555550123' }),
+      buildRecord({ PhoneNumberFull: '5555550123' }),
       defaultWorkerSid,
     );
 
     expect(contact.number).toBe('+15555550123');
     expect(contact.number).toBe(contact.rawJson!.childInformation.phone1);
+  });
+
+  test('normalizes a raw 10-digit number to E.164 for both number and phone1', () => {
+    const contact = mapContact(
+      buildRecord({ PhoneNumberFull: '(555) 555-0123' }),
+      defaultWorkerSid,
+    );
+
+    expect(contact.number).toBe('+15555550123');
+    expect(contact.rawJson!.childInformation.phone1).toBe('+15555550123');
+  });
+
+  test('leaves number and phone1 unset when the digit count is not exactly 10', () => {
+    const contact = mapContact(
+      buildRecord({ PhoneNumberFull: '555-0123' }),
+      defaultWorkerSid,
+    );
+
+    expect(contact.number).toBeUndefined();
+    expect(contact.rawJson!.childInformation.phone1).toBeUndefined();
   });
 
   test('leaves number undefined when PhoneNumberFull is blank', () => {
