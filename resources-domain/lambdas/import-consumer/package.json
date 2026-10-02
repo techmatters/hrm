@@ -14,6 +14,7 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
+    "@tech-matters/resources-types": "^1.0.0",
     "@tsconfig/node22": "^22.0.0",
     "@types/aws-lambda": "^8.10.108",
     "date-fns": "^2.29.3",
