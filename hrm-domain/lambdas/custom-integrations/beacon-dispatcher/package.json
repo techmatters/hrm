@@ -8,6 +8,7 @@
   "dependencies": {
     "@tech-matters/alb-handler": "^1.0.0",
     "@tech-matters/aselo-config": "^1.0.0",
+    "@tech-matters/hrm-aselo-config": "^1.0.0",
     "@tech-matters/hrm-authentication": "^1.0.0",
     "@tech-matters/hrm-types": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",

@@ -17,17 +17,19 @@
 import type { AccountSID } from '@tech-matters/types';
 import {
   getAccountStaticKey,
+  getS3DocsBucketName,
+  getS3DocsBucketNameSsmPath,
+  getTwilioAccountSid,
+  getTwilioAccountSidSsmPath,
+} from '@tech-matters/aselo-config';
+import {
   getResourcesImportApiAuthHeader,
   getResourcesImportApiAuthHeaderSsmPath,
   getResourcesImportApiBaseUrl,
   getResourcesImportApiBaseUrlSsmPath,
   getResourcesImportApiKey,
   getResourcesImportApiKeySsmPath,
-  getS3DocsBucketName,
-  getS3DocsBucketNameSsmPath,
-  getTwilioAccountSid,
-  getTwilioAccountSidSsmPath,
-} from '@tech-matters/aselo-config';
+} from '@tech-matters/resources-aselo-config';
 
 const debugGetSsmParameter = async (
   path: string,

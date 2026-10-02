@@ -6,6 +6,7 @@
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/aselo-config" },
+    { "path": "hrm-domain/packages/aselo-config" },
     { "path": "packages/http" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "lambdas/packages/hrm-authentication" },

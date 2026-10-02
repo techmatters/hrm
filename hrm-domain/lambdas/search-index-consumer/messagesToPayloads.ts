@@ -26,7 +26,7 @@ import {
 import { type HrmAccountId } from '@tech-matters/types';
 import { ExportTranscriptDocument, isS3StoredTranscript } from '@tech-matters/hrm-types';
 import type { MessageWithMeta, MessagesByAccountSid } from './messages';
-import { getIndexTranscriptsForSearch } from '@tech-matters/aselo-config';
+import { getIndexTranscriptsForSearch } from '@tech-matters/hrm-aselo-config';
 import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 /**

@@ -19,7 +19,8 @@ import { sendSqsMessage } from '@tech-matters/sqs-client';
 import { putS3Object } from '@tech-matters/s3-client';
 
 import { ContactJobProcessorError } from '@tech-matters/job-errors';
-import { getS3DocsBucketName, getTwilioAuthToken } from '@tech-matters/aselo-config';
+import { getS3DocsBucketName } from '@tech-matters/aselo-config';
+import { getTwilioAuthToken } from '@tech-matters/hrm-aselo-config';
 import {
   CompletedRetrieveContactTranscript,
   ContactJobAttemptResult,

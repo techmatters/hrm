@@ -18,34 +18,17 @@ export * from './ssmParameterNameGetters';
 
 import { getSsmParameter, SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import {
-  getBeaconApiKeySsmPath,
-  getBeaconBaseUrlSsmPath,
-  getBeaconLatestSeenSsmPath,
-  getCompletedContactJobsQueueUrlSsmPath,
-  getContactJobsQueueUrlSsmPath,
-  getContactJobScrubTranscriptEnabledSsmPath,
-  getEntityNotificationsTopicArnSsmPath,
   getHrmStaticKeySsmPath,
-  getIndexTranscriptsForSearchSsmPath,
-  getPermissionConfigSsmPath,
-  getResourcesImportApiAuthHeaderSsmPath,
-  getResourcesImportApiBaseUrlSsmPath,
-  getResourcesImportApiKeySsmPath,
-  getResourcesSearchIndexQueueUrlSsmPath,
   getS3DocsBucketNameSsmPath,
-  getTranscriptRetentionDaysSsmPath,
   getTwilioAccountSidSsmPath,
-  getTwilioAuthTokenSsmPath,
-  getTwilioShortHelplineSsmPath,
   getTwilioStaticKeySsmPath,
-  getBeaconDispatchApiVersionSsmPath,
 } from './ssmParameterNameGetters';
 
 type GetSsmParameterOptions = {
   cacheDurationMilliseconds?: number;
 };
 
-const createSsmParameterGetter =
+export const createSsmParameterGetter =
   <TExtra extends Record<string, unknown>>(getSsmPath: (args: TExtra) => string) =>
   (argsAndMaybeOptions: TExtra & GetSsmParameterOptions) => {
     const { cacheDurationMilliseconds, ...targs } = argsAndMaybeOptions;
@@ -54,49 +37,8 @@ const createSsmParameterGetter =
 
 export const getHrmStaticKey = createSsmParameterGetter(getHrmStaticKeySsmPath);
 export const getTwilioStaticKey = createSsmParameterGetter(getTwilioStaticKeySsmPath);
-export const getTwilioAuthToken = createSsmParameterGetter(getTwilioAuthTokenSsmPath);
 export const getTwilioAccountSid = createSsmParameterGetter(getTwilioAccountSidSsmPath);
-export const getTwilioShortHelpline = createSsmParameterGetter(
-  getTwilioShortHelplineSsmPath,
-);
 export const getS3DocsBucketName = createSsmParameterGetter(getS3DocsBucketNameSsmPath);
-export const getPermissionConfig = createSsmParameterGetter(getPermissionConfigSsmPath);
-export const getEntityNotificationsTopicArn = createSsmParameterGetter(
-  getEntityNotificationsTopicArnSsmPath,
-);
-export const getCompletedContactJobsQueueUrl = createSsmParameterGetter(
-  getCompletedContactJobsQueueUrlSsmPath,
-);
-export const getContactJobsQueueUrl = createSsmParameterGetter(
-  getContactJobsQueueUrlSsmPath,
-);
-export const getResourcesSearchIndexQueueUrl = createSsmParameterGetter(
-  getResourcesSearchIndexQueueUrlSsmPath,
-);
-export const getContactJobScrubTranscriptEnabled = createSsmParameterGetter(
-  getContactJobScrubTranscriptEnabledSsmPath,
-);
-export const getTranscriptRetentionDays = createSsmParameterGetter(
-  getTranscriptRetentionDaysSsmPath,
-);
-export const getIndexTranscriptsForSearch = createSsmParameterGetter(
-  getIndexTranscriptsForSearchSsmPath,
-);
-export const getBeaconBaseUrl = createSsmParameterGetter(getBeaconBaseUrlSsmPath);
-export const getBeaconApiKey = createSsmParameterGetter(getBeaconApiKeySsmPath);
-export const getBeaconDispatchApiVersion = createSsmParameterGetter(
-  getBeaconDispatchApiVersionSsmPath,
-);
-export const getBeaconLatestSeen = createSsmParameterGetter(getBeaconLatestSeenSsmPath);
-export const getResourcesImportApiBaseUrl = createSsmParameterGetter(
-  getResourcesImportApiBaseUrlSsmPath,
-);
-export const getResourcesImportApiKey = createSsmParameterGetter(
-  getResourcesImportApiKeySsmPath,
-);
-export const getResourcesImportApiAuthHeader = createSsmParameterGetter(
-  getResourcesImportApiAuthHeaderSsmPath,
-);
 
 export const getAccountStaticKey = async (keyName: string) => {
   try {

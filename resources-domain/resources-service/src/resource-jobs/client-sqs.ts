@@ -15,7 +15,7 @@
  */
 
 import { SQSClient, SendMessageCommand, SendMessageRequest } from '@aws-sdk/client-sqs';
-import { getResourcesSearchIndexQueueUrl } from '@tech-matters/aselo-config';
+import { getResourcesSearchIndexQueueUrl } from '@tech-matters/resources-aselo-config';
 import { publishSns } from '@tech-matters/sns-client';
 
 import type { HrmAccountId } from '@tech-matters/types';

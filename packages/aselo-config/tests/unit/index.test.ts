@@ -17,25 +17,9 @@
 import { SsmParameterNotFound, getSsmParameter } from '@tech-matters/ssm-cache';
 import {
   getAccountStaticKey,
-  getBeaconApiKey,
-  getBeaconBaseUrl,
-  getBeaconLatestSeen,
-  getCompletedContactJobsQueueUrl,
-  getContactJobsQueueUrl,
-  getContactJobScrubTranscriptEnabled,
-  getEntityNotificationsTopicArn,
   getHrmStaticKey,
-  getIndexTranscriptsForSearch,
-  getPermissionConfig,
-  getResourcesImportApiAuthHeader,
-  getResourcesImportApiBaseUrl,
-  getResourcesImportApiKey,
-  getResourcesSearchIndexQueueUrl,
   getS3DocsBucketName,
-  getTranscriptRetentionDays,
   getTwilioAccountSid,
-  getTwilioAuthToken,
-  getTwilioShortHelpline,
   getTwilioStaticKey,
 } from '../../index';
 
@@ -78,112 +62,16 @@ describe('ssm parameter getters', () => {
       '/test/twilio/AC123/static_key',
     ],
     [
-      'getTwilioAuthToken',
-      getTwilioAuthToken,
-      { accountSid: 'AC123' },
-      '/test/twilio/AC123/auth_token',
-    ],
-    [
       'getTwilioAccountSid',
       getTwilioAccountSid,
       { shortCode: 'as' },
       '/test/twilio/AS/account_sid',
     ],
     [
-      'getTwilioShortHelpline',
-      getTwilioShortHelpline,
-      { accountSid: 'AC123' },
-      '/test/twilio/AC123/short_helpline',
-    ],
-    [
       'getS3DocsBucketName',
       getS3DocsBucketName,
       { accountSid: 'AC123' },
       '/test/s3/AC123/docs_bucket_name',
-    ],
-    [
-      'getPermissionConfig',
-      getPermissionConfig,
-      { accountSid: 'AC123' },
-      '/test/config/AC123/permission_config',
-    ],
-    [
-      'getEntityNotificationsTopicArn',
-      getEntityNotificationsTopicArn,
-      { entityType: 'contact' },
-      '/test/us-east-1/hrm/contact/notifications-sns-topic-arn',
-    ],
-    [
-      'getCompletedContactJobsQueueUrl',
-      getCompletedContactJobsQueueUrl,
-      {},
-      '/test/us-east-1/sqs/jobs/hrm-contact/queue-url-complete',
-    ],
-    [
-      'getContactJobsQueueUrl',
-      getContactJobsQueueUrl,
-      { jobType: 'retrieve-contact-transcript' },
-      '/test/us-east-1/sqs/jobs/hrm-contact/queue-url-retrieve-contact-transcript',
-    ],
-    [
-      'getResourcesSearchIndexQueueUrl',
-      getResourcesSearchIndexQueueUrl,
-      {},
-      '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
-    ],
-    [
-      'getContactJobScrubTranscriptEnabled',
-      getContactJobScrubTranscriptEnabled,
-      { accountSid: 'AC123' },
-      '/test/us-east-1/AC123/jobs/contact/scrub-transcript/enabled',
-    ],
-    [
-      'getTranscriptRetentionDays',
-      getTranscriptRetentionDays,
-      { accountSid: 'AC123' },
-      '/test/hrm/AC123/transcript_retention_days',
-    ],
-    [
-      'getIndexTranscriptsForSearch',
-      getIndexTranscriptsForSearch,
-      { accountSid: 'AC123' },
-      '/test/hrm/AC123/index_transcripts_for_search',
-    ],
-    [
-      'getBeaconBaseUrl',
-      getBeaconBaseUrl,
-      { helplineShortCode: 'uscr' },
-      '/test/hrm/custom-integration/uscr/beacon_base_url',
-    ],
-    [
-      'getBeaconApiKey',
-      getBeaconApiKey,
-      { helplineShortCode: 'uscr' },
-      '/test/hrm/custom-integration/uscr/beacon_api_key',
-    ],
-    [
-      'getResourcesImportApiBaseUrl',
-      getResourcesImportApiBaseUrl,
-      { accountSid: 'AC123' },
-      '/test/resources/AC123/import_api/base_url',
-    ],
-    [
-      'getResourcesImportApiKey',
-      getResourcesImportApiKey,
-      { accountSid: 'AC123' },
-      '/test/resources/AC123/import_api/api_key',
-    ],
-    [
-      'getResourcesImportApiAuthHeader',
-      getResourcesImportApiAuthHeader,
-      { accountSid: 'AC123' },
-      '/test/resources/AC123/import_api/auth_header',
-    ],
-    [
-      'getBeaconLatestSeen',
-      getBeaconLatestSeen,
-      { accountSid: 'AC123', apiType: 'incidentReport' },
-      '/test/hrm/custom-integration/beacon/AC123/incidentReport/latest_seen',
     ],
   ];
 
@@ -198,12 +86,13 @@ describe('ssm parameter getters', () => {
   );
 
   test('passes cache-duration options through to getSsmParameter', async () => {
-    await getResourcesSearchIndexQueueUrl({
+    await getTwilioAccountSid({
+      shortCode: 'as',
       cacheDurationMilliseconds: 86400000,
     });
 
     expect(mockGetSsmParameter).toHaveBeenCalledWith(
-      '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
+      '/test/twilio/AS/account_sid',
       86400000,
     );
   });

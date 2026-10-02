@@ -1,0 +1,12 @@
+{
+  "name": "@tech-matters/resources-aselo-config",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "license": "AGPL",
+  "dependencies": {
+    "@tech-matters/aselo-config": "^1.0.0"
+  },
+  "scripts": {
+    "test:unit": "jest --config jest.config.js tests/unit"
+  }
+}

@@ -18,7 +18,7 @@ import {
   getBeaconApiKey,
   getBeaconBaseUrl,
   getBeaconDispatchApiVersion,
-} from '@tech-matters/aselo-config';
+} from '@tech-matters/hrm-aselo-config';
 import { newErr, newOk } from '@tech-matters/types';
 
 export type PendingIncident = {

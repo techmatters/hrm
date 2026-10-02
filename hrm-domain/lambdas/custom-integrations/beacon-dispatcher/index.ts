@@ -18,11 +18,8 @@ import { isErr, newErr, newOk, TResult } from '@tech-matters/types';
 import { validatePayload } from './validation';
 import * as hrmService from './hrm-service';
 import * as beaconService from './beacon-service';
-import {
-  getAccountStaticKey,
-  getTwilioAccountSid,
-  getTwilioAuthToken,
-} from '@tech-matters/aselo-config';
+import { getAccountStaticKey, getTwilioAccountSid } from '@tech-matters/aselo-config';
+import { getTwilioAuthToken } from '@tech-matters/hrm-aselo-config';
 import {
   handleAlbEvent,
   AlbHandlerEvent,

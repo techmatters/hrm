@@ -28,7 +28,7 @@ import {
   RESOURCE_INDEX_TYPE,
   getSearchConfiguration,
 } from '@tech-matters/resources-search-config';
-import { getTwilioShortHelpline } from '@tech-matters/aselo-config';
+import { getTwilioShortHelpline } from '@tech-matters/resources-aselo-config';
 
 // Represents a resource whose ID was returned by a search, but which is not in the database
 export type MissingResource = {

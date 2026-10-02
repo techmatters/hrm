@@ -14,11 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  getAccountStaticKey,
-  getPermissionConfig,
-  getTwilioAuthToken,
-} from '@tech-matters/aselo-config';
+import { getAccountStaticKey } from '@tech-matters/aselo-config';
+import { getPermissionConfig, getTwilioAuthToken } from '@tech-matters/hrm-aselo-config';
 import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
 
 import env from 'dotenv';

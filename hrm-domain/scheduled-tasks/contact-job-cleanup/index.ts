@@ -16,7 +16,7 @@
 
 import { ContactJobType } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
-import { getTranscriptRetentionDays } from '@tech-matters/aselo-config';
+import { getTranscriptRetentionDays } from '@tech-matters/hrm-aselo-config';
 import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import {
   ContactJob,

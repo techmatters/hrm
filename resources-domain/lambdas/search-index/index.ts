@@ -29,7 +29,7 @@ import {
   RESOURCE_INDEX_TYPE,
   getResourceIndexConfiguration,
 } from '@tech-matters/resources-search-config';
-import { getTwilioShortHelpline } from '@tech-matters/aselo-config';
+import { getTwilioShortHelpline } from '@tech-matters/resources-aselo-config';
 
 export type DocumentsByAccountSid = Record<string, BulkOperations<FlatResource>>;
 

@@ -15,7 +15,7 @@
  */
 
 import { Twilio } from 'twilio';
-import { getTwilioAuthToken } from '@tech-matters/aselo-config';
+import { getTwilioAuthToken } from '@tech-matters/hrm-aselo-config';
 
 import { getMockClient } from './mockClient';
 import { AccountSID, HrmAccountId } from '@tech-matters/types';

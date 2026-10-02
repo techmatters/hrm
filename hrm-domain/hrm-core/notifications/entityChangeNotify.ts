@@ -17,7 +17,7 @@ import { ProfileWithRelationships } from '@tech-matters/hrm-types';
 import {
   getEntityNotificationsTopicArn,
   getEntityNotificationsTopicArnSsmPath,
-} from '@tech-matters/aselo-config';
+} from '@tech-matters/hrm-aselo-config';
 import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 import {
   CaseSection,

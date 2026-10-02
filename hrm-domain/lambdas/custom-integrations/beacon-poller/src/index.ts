@@ -21,9 +21,11 @@ import {
   getBeaconBaseUrl,
   getBeaconLatestSeen,
   getBeaconLatestSeenSsmPath,
+  getBeaconDispatchApiVersion,
+} from '@tech-matters/hrm-aselo-config';
+import {
   getTwilioAccountSid,
   getTwilioAccountSidSsmPath,
-  getBeaconDispatchApiVersion,
 } from '@tech-matters/aselo-config';
 import type { AccountSID } from '@tech-matters/types';
 import { createBeaconDocumentProcessor } from './beaconDocumentProcessors';
@@ -46,11 +48,11 @@ export const handler = async ({
     [accountSid, beaconBaseUrl, beaconApiVersion, beaconApiKey] = (await Promise.all([
       getTwilioAccountSid({ shortCode: helplineShortCode, environment }),
       getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
-      getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
       getBeaconDispatchApiVersion({
         helplineShortCode: beaconHelplineShortCode,
         environment,
       }),
+      getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
     ])) as [AccountSID, string, 'v1' | 'v2', string];
   } catch (err) {
     console.error(

@@ -16,36 +16,42 @@
 
 const getDefaultRegion = () => process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION;
 
-export const getHrmStaticKeySsmPath = ({
-  keyName,
+export const getResourcesSearchIndexQueueUrlSsmPath = ({
   environment = process.env.NODE_ENV,
   region = getDefaultRegion(),
 }: {
-  keyName: string;
   environment?: string;
   region?: string;
-}) => `/${environment}/hrm/service/${region}/static_key/${keyName}`;
+}) => `/${environment}/${region}/sqs/jobs/hrm-resources-search/queue-url-index`;
 
-export const getTwilioStaticKeySsmPath = ({
+export const getTwilioShortHelplineSsmPath = ({
   accountSid,
   environment = process.env.NODE_ENV,
 }: {
   accountSid: string;
   environment?: string;
-}) => `/${environment}/twilio/${accountSid}/static_key`;
+}) => `/${environment}/twilio/${accountSid}/short_helpline`;
 
-export const getTwilioAccountSidSsmPath = ({
-  shortCode,
-  environment = process.env.NODE_ENV,
-}: {
-  shortCode: string;
-  environment?: string;
-}) => `/${environment}/twilio/${shortCode.toUpperCase()}/account_sid`;
-
-export const getS3DocsBucketNameSsmPath = ({
+export const getResourcesImportApiBaseUrlSsmPath = ({
   accountSid,
   environment = process.env.NODE_ENV,
 }: {
   accountSid: string;
   environment?: string;
-}) => `/${environment}/s3/${accountSid}/docs_bucket_name`;
+}) => `/${environment}/resources/${accountSid}/import_api/base_url`;
+
+export const getResourcesImportApiKeySsmPath = ({
+  accountSid,
+  environment = process.env.NODE_ENV,
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/resources/${accountSid}/import_api/api_key`;
+
+export const getResourcesImportApiAuthHeaderSsmPath = ({
+  accountSid,
+  environment = process.env.NODE_ENV,
+}: {
+  accountSid: string;
+  environment?: string;
+}) => `/${environment}/resources/${accountSid}/import_api/auth_header`;

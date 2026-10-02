@@ -25,7 +25,7 @@ import {
   getCompletedContactJobsQueueUrl,
   getCompletedContactJobsQueueUrlSsmPath,
   getContactJobsQueueUrl,
-} from '@tech-matters/aselo-config';
+} from '@tech-matters/hrm-aselo-config';
 import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 const COMPLETED_QUEUE_SSM_PATH = getCompletedContactJobsQueueUrlSsmPath({});

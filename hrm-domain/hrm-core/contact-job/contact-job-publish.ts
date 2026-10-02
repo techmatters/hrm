@@ -22,7 +22,7 @@ import {
 } from './contact-job-data-access';
 import { publishToContactJobs } from './client-sqs';
 import { assertExhaustive, ContactJobType } from '@tech-matters/types';
-import { getContactJobScrubTranscriptEnabled } from '@tech-matters/aselo-config';
+import { getContactJobScrubTranscriptEnabled } from '@tech-matters/hrm-aselo-config';
 import { SsmParameterNotFound } from '@tech-matters/ssm-cache';
 
 export const publishRetrieveContactTranscript = (

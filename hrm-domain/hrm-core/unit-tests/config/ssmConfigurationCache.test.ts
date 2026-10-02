@@ -14,17 +14,17 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  getAccountStaticKey,
-  getPermissionConfig,
-  getTwilioAuthToken,
-} from '@tech-matters/aselo-config';
+import { getAccountStaticKey } from '@tech-matters/aselo-config';
+import { getPermissionConfig, getTwilioAuthToken } from '@tech-matters/hrm-aselo-config';
 import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
 import { getFromSSMCache } from '../../config/ssmConfigurationCache';
 
 jest.mock('@tech-matters/aselo-config', () => ({
   ...(jest.requireActual('@tech-matters/aselo-config') as Record<string, unknown>),
   getAccountStaticKey: jest.fn(),
+}));
+jest.mock('@tech-matters/hrm-aselo-config', () => ({
+  ...(jest.requireActual('@tech-matters/hrm-aselo-config') as Record<string, unknown>),
   getPermissionConfig: jest.fn(),
   getTwilioAuthToken: jest.fn(),
 }));

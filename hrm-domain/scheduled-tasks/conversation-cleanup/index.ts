@@ -19,7 +19,7 @@ import { getClient } from '@tech-matters/twilio-client';
 import {
   getTranscriptRetentionDays,
   getTwilioAuthToken,
-} from '@tech-matters/aselo-config';
+} from '@tech-matters/hrm-aselo-config';
 import {
   getCachedParameters,
   loadSsmCache,

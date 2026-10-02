@@ -7,6 +7,7 @@
   "license": "AGPL",
   "dependencies": {
     "@tech-matters/aselo-config": "^1.0.0",
+    "@tech-matters/resources-aselo-config": "^1.0.0",
     "@tech-matters/resources-import-producer": "^1.0.0",
     "@tech-matters/resources-mappers": "^1.0.0",
     "@tech-matters/resources-types": "^1.0.0",

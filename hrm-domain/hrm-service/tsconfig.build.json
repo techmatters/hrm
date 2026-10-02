@@ -9,6 +9,7 @@
     { "path": "packages/sns-client" },
     { "path": "packages/ssm-cache" },
     { "path": "packages/aselo-config" },
+    { "path": "hrm-domain/packages/aselo-config" },
     { "path": "packages/sqs-client" },
     { "path": "packages/database-connect" },
     { "path": "packages/elasticsearch-client" },
