@@ -46,6 +46,7 @@
   },
   "homepage": "https://github.com/tech-matters/hrm#readme",
   "dependencies": {
+    "@tech-matters/aselo-config": "^1.0.0",
     "@aws-sdk/client-s3": "^3.1062.0",
     "@aws-sdk/client-ssm": "^3.1062.0",
     "@aws-sdk/client-sts": "^3.1092.0",

@@ -15,7 +15,7 @@
  */
 
 import { ResourceImportProcessorError } from '@tech-matters/job-errors';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getAccountStaticKey } from '@tech-matters/aselo-config';
 import type { SQSBatchResponse, SQSEvent, SQSRecord } from 'aws-lambda';
 import type { HrmAccountId } from '@tech-matters/types';
 import type { FlatResource, ImportRequestBody } from '@tech-matters/resources-types';
@@ -49,7 +49,7 @@ const upsertRecord = async (
   accountSid: HrmAccountId,
   body: ImportRequestBody,
 ): Promise<void> => {
-  const apiKey = await getSsmParameter(`/${hrmEnv}/twilio/${accountSid}/static_key`);
+  const apiKey = await getAccountStaticKey(accountSid);
 
   const result = await postResourcesBody(accountSid, apiKey, body);
 

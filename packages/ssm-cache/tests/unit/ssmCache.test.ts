@@ -94,7 +94,9 @@ describe('getSsmParameter', () => {
   });
 
   it('should attempt to load parameter and throw an error if the parameter is not found', async () => {
-    await expect(getSsmParameter('/test/badParam')).rejects.toThrow(SsmParameterNotFound);
+    const badParamName = '/test/badParam';
+
+    await expect(getSsmParameter(badParamName)).rejects.toThrow(SsmParameterNotFound);
 
     expect(mockSSMClient.commandCalls(GetParameterCommand).length).toBe(1);
   });

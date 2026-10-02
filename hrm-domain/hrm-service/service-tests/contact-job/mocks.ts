@@ -15,6 +15,7 @@
  */
 
 jest.mock('@tech-matters/ssm-cache');
+jest.mock('@tech-matters/aselo-config');
 jest.mock('@tech-matters/sqs-client', () => {
   return {
     deleteSqsMessage: () => jest.fn(),
