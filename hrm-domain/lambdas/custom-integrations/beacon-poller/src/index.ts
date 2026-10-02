@@ -74,7 +74,7 @@ export const handler = async ({
   const configDefaults = {
     headers: beaconHeaders,
     lastUpdateSeenSsmKey,
-    getLastUpdateSeen: () => getBeaconLatestSeen({ helplineShortCode, environment }),
+    getLastUpdateSeen: () => getBeaconLatestSeen({ accountSid, apiType, environment }),
     maxItemsInChunk: parseInt(
       (apiType === 'incidentReport'
         ? process.env.MAX_INCIDENT_REPORTS_PER_CALL

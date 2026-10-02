@@ -84,11 +84,10 @@ export const getIndexTranscriptsForSearch = createSsmParameterGetter(
 );
 export const getBeaconBaseUrl = createSsmParameterGetter(getBeaconBaseUrlSsmPath);
 export const getBeaconApiKey = createSsmParameterGetter(getBeaconApiKeySsmPath);
-export const getBeaconDispatchApiVersion =
-  createSsmParameterGetter(getBeaconApiKeySsmPath);
-export const getBeaconLatestSeen = createSsmParameterGetter(
+export const getBeaconDispatchApiVersion = createSsmParameterGetter(
   getBeaconDispatchApiVersionSsmPath,
 );
+export const getBeaconLatestSeen = createSsmParameterGetter(getBeaconLatestSeenSsmPath);
 export const getResourcesImportApiBaseUrl = createSsmParameterGetter(
   getResourcesImportApiBaseUrlSsmPath,
 );
