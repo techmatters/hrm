@@ -4,7 +4,8 @@
   "main": "dist/index.js",
   "license": "AGPL",
   "dependencies": {
-    "@tech-matters/aselo-config": "^1.0.0"
+    "@tech-matters/aselo-config": "^1.0.0",
+    "@tech-matters/ssm-cache": "^1.0.0"
   },
   "scripts": {
     "test:unit": "jest --config jest.config.js tests/unit"

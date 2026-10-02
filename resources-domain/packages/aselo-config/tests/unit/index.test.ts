@@ -40,7 +40,12 @@ beforeEach(() => {
 });
 
 describe('resources SSM parameter getters', () => {
-  const cases: [string, (args: any) => Promise<string>, Record<string, unknown>, string][] = [
+  const cases: [
+    string,
+    (args: any) => Promise<string>,
+    Record<string, unknown>,
+    string,
+  ][] = [
     [
       'getResourcesSearchIndexQueueUrl',
       getResourcesSearchIndexQueueUrl,

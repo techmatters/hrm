@@ -47,7 +47,12 @@ beforeEach(() => {
 });
 
 describe('HRM SSM parameter getters', () => {
-  const cases: [string, (args: any) => Promise<string>, Record<string, unknown>, string][] = [
+  const cases: [
+    string,
+    (args: any) => Promise<string>,
+    Record<string, unknown>,
+    string,
+  ][] = [
     [
       'getPermissionConfig',
       getPermissionConfig,
