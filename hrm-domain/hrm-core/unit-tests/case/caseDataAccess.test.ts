@@ -23,6 +23,7 @@ import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
 import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
 import { newTwilioUser, TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
+import { isOk } from '@tech-matters/types';
 import { rulesMap } from '../../permissions';
 import { TKConditionsSets } from '../../permissions/rulesMap';
 import { VALID_CASE_CREATE_FIELDS } from '../../case/caseDataAccess';
@@ -324,9 +325,10 @@ describe('delete', () => {
       accountSid,
       caseId,
     ]);
-    expect(result).toStrictEqual(caseFromDB);
+    expect(isOk(result)).toBe(true);
+    expect(isOk(result) && result.data).toStrictEqual(caseFromDB);
   });
-  test('returns nothing if nothing at the specified ID exists to delete', async () => {
+  test('returns a success result with no data if nothing at the specified ID exists to delete', async () => {
     const oneOrNoneSpy = jest
       .spyOn(getMockAccountDb(accountSid), 'oneOrNone')
       .mockResolvedValue(undefined);
@@ -337,6 +339,7 @@ describe('delete', () => {
       accountSid,
       caseId,
     ]);
-    expect(result).not.toBeDefined();
+    expect(isOk(result)).toBe(true);
+    expect(isOk(result) && result.data).not.toBeDefined();
   });
 });

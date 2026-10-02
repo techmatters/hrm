@@ -119,18 +119,27 @@ const newCaseRouter = (isPublic: boolean) => {
     res.json(caseFromDB);
   });
 
-  casesRouter.delete('/:id', openEndpoint, async (req, res) => {
-    const { hrmAccountId } = req;
-    const { id } = req.params;
-    const deleted = await caseApi.deleteCaseById({
-      accountSid: hrmAccountId,
-      caseId: id,
-    });
-    if (!deleted) {
-      throw createError(404);
-    }
-    res.sendStatus(200);
-  });
+  casesRouter.delete(
+    '/:id',
+    openEndpoint,
+    async (req: Request, res: Response, next: NextFunction) => {
+      const { hrmAccountId } = req;
+      const { id } = req.params;
+      const result = await caseApi.deleteCaseById({
+        accountSid: hrmAccountId,
+        caseId: id,
+      });
+      if (isErr(result)) {
+        return next(
+          mapHTTPError(result, { DeleteLinkedCaseError: 409, DatabaseError: 500 }),
+        );
+      }
+      if (!result.data) {
+        return next(createError(404));
+      }
+      res.sendStatus(200);
+    },
+  );
 
   casesRouter.get(
     '/:id/timeline',

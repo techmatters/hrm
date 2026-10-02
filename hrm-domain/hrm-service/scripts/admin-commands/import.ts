@@ -14,17 +14,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as uscr from './uscrMapping';
-import * as gy from './gyMapping';
-
-export const newCreateIncidentMapper = (helplineCode: string | undefined) => {
-  switch (helplineCode) {
-    case 'gy':
-    case 'as':
-      return gy.toCreateIncident;
-    case 'uscr':
-      return uscr.toCreateIncident;
-    default:
-      throw new Error(`No mappings configured for  for helpline code: ${helplineCode}`);
-  }
+export const command = 'import <command>';
+export const desc = 'data import commands';
+export const builder = function (yargs) {
+  return yargs.commandDir('import', {
+    exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
+    extensions: ['ts'],
+  });
+  // .commandDir('common_cmds'); add more
 };
+// export const handler = function (argv) {};

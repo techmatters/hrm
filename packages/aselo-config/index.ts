@@ -38,6 +38,7 @@ import {
   getTwilioAuthTokenSsmPath,
   getTwilioShortHelplineSsmPath,
   getTwilioStaticKeySsmPath,
+  getBeaconDispatchApiVersionSsmPath,
 } from './ssmParameterNameGetters';
 
 type GetSsmParameterOptions = {
@@ -83,7 +84,11 @@ export const getIndexTranscriptsForSearch = createSsmParameterGetter(
 );
 export const getBeaconBaseUrl = createSsmParameterGetter(getBeaconBaseUrlSsmPath);
 export const getBeaconApiKey = createSsmParameterGetter(getBeaconApiKeySsmPath);
-export const getBeaconLatestSeen = createSsmParameterGetter(getBeaconLatestSeenSsmPath);
+export const getBeaconDispatchApiVersion =
+  createSsmParameterGetter(getBeaconApiKeySsmPath);
+export const getBeaconLatestSeen = createSsmParameterGetter(
+  getBeaconDispatchApiVersionSsmPath,
+);
 export const getResourcesImportApiBaseUrl = createSsmParameterGetter(
   getResourcesImportApiBaseUrlSsmPath,
 );

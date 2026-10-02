@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getBeaconApiKey, getBeaconBaseUrl } from '@tech-matters/aselo-config';
+import {
+  getBeaconApiKey,
+  getBeaconBaseUrl,
+  getBeaconDispatchApiVersion,
+} from '@tech-matters/aselo-config';
 import { newErr, newOk } from '@tech-matters/types';
 
 export type PendingIncident = {
@@ -42,12 +46,23 @@ export const createIncident = async ({
 }) => {
   const beaconHelplineShortCode = helplineShortCode.toLowerCase();
   try {
-    const [baseUrl, apiKey] = await Promise.all([
+    const [baseUrl, apiKey, apiVersion] = await Promise.all([
       getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
       getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
+      getBeaconDispatchApiVersion({
+        helplineShortCode: beaconHelplineShortCode,
+        environment,
+      }),
     ]);
-
-    const fullUrl = `${baseUrl}/api/aselo/incidents`;
+    const urlPath = `/api/aselo${apiVersion === 'v1' ? '' : `/${apiVersion}`}/incidents`;
+    const fullUrl = `${baseUrl}${urlPath}`;
+    console.debug(
+      `[SENSITIVE][TRACER][incident dispatch][${helplineShortCode}] Beacon API endpoint ${fullUrl}, token starting '${apiKey.slice(
+        0,
+        2,
+      )}' request sent with payload:`,
+      incidentParams,
+    );
     const apiCallStart = Date.now();
     const response = await fetch(fullUrl, {
       method: 'POST',
@@ -60,7 +75,10 @@ export const createIncident = async ({
     const apiCallMillis = Date.now() - apiCallStart;
 
     console.info(
-      `[TRACER][incident dispatch] Beacon API responded after ${apiCallMillis}ms with status:`,
+      `[TRACER][incident dispatch][${helplineShortCode}] Beacon API endpoint ${fullUrl}, token starting '${apiKey.slice(
+        0,
+        2,
+      )}' responded after ${apiCallMillis}ms with status:`,
       response.status,
     );
 

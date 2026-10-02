@@ -23,6 +23,7 @@ import {
   getBeaconLatestSeenSsmPath,
   getTwilioAccountSid,
   getTwilioAccountSidSsmPath,
+  getBeaconDispatchApiVersion,
 } from '@tech-matters/aselo-config';
 import type { AccountSID } from '@tech-matters/types';
 import { createBeaconDocumentProcessor } from './beaconDocumentProcessors';
@@ -39,13 +40,18 @@ export const handler = async ({
   const beaconHelplineShortCode = helplineShortCode.toLowerCase();
   let accountSid: AccountSID;
   let beaconBaseUrl: string;
+  let beaconApiVersion: 'v1' | 'v2';
   let beaconApiKey: string;
   try {
-    [accountSid, beaconBaseUrl, beaconApiKey] = (await Promise.all([
+    [accountSid, beaconBaseUrl, beaconApiVersion, beaconApiKey] = (await Promise.all([
       getTwilioAccountSid({ shortCode: helplineShortCode, environment }),
       getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
       getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
-    ])) as [AccountSID, string, string];
+      getBeaconDispatchApiVersion({
+        helplineShortCode: beaconHelplineShortCode,
+        environment,
+      }),
+    ])) as [AccountSID, string, 'v1' | 'v2', string];
   } catch (err) {
     console.error(
       `[beacon-poller] Could not look up required parameters for helpline '${helplineShortCode}' from SSM path ${getTwilioAccountSidSsmPath(
@@ -68,7 +74,7 @@ export const handler = async ({
   const configDefaults = {
     headers: beaconHeaders,
     lastUpdateSeenSsmKey,
-    getLastUpdateSeen: () => getBeaconLatestSeen({ accountSid, apiType, environment }),
+    getLastUpdateSeen: () => getBeaconLatestSeen({ helplineShortCode, environment }),
     maxItemsInChunk: parseInt(
       (apiType === 'incidentReport'
         ? process.env.MAX_INCIDENT_REPORTS_PER_CALL
@@ -78,9 +84,13 @@ export const handler = async ({
     itemProcessor: createBeaconDocumentProcessor(helplineShortCode, apiType, accountSid),
   };
   const beaconApiName = apiType === 'incidentReport' ? 'incidents' : 'case_reports';
+
+  const urlPath = `/api/aselo${
+    beaconApiVersion === 'v1' ? '' : `/${beaconApiVersion}`
+  }/${beaconApiName}/updates`;
   const apiPollConfig = {
     ...configDefaults,
-    url: new URL(`${beaconBaseUrl}/api/aselo/${beaconApiName}/updates`),
+    url: new URL(`${beaconBaseUrl}${urlPath}`),
     itemExtractor: (body: any) => body[beaconApiName],
     itemTypeName: apiType === 'incidentReport' ? 'incident report' : 'case report',
   } as const;

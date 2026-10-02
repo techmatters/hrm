@@ -25,7 +25,6 @@ export const createBeaconDocumentProcessor = (
 ): BeaconDocumentProcessor<BeaconDocumentSection> => {
   switch (helplineCode) {
     case 'uscr':
-    case 'as':
       switch (apiType) {
         case 'incidentReport':
           return uscr.createIncidentReportProcessor(
@@ -40,6 +39,7 @@ export const createBeaconDocumentProcessor = (
             `No mappings configured for api '${apiType}' for helpline code: ${helplineCode} (attempting to look up account ${accountSid})`,
           );
       }
+    case 'as':
     case 'gy':
       switch (apiType) {
         case 'incidentReport':
