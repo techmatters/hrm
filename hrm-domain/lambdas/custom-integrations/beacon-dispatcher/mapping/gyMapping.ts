@@ -19,7 +19,6 @@ import type { CaseService, Contact } from '@tech-matters/hrm-types';
 
 type GyCreateIncidentParams = CreateIncidentParams & {
   category: string;
-  category_id: number;
   description: string;
   caller_number: string;
   call_received_at: string;
