@@ -19,8 +19,12 @@ import {
   addDependentSectionToAseloCase,
   addSectionToAseloCase,
 } from '../../src/caseUpdater';
-import { isErr, isOk } from '@tech-matters/types';
+import { AccountSID, isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
+
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: () => 'BBC',
+}));
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
@@ -70,7 +74,7 @@ describe('addSectionToAseloCase', () => {
         lastUpdated: chicken.chicken_counter.toString(),
       };
     },
-    process.env.ACCOUNT_SID!,
+    process.env.ACCOUNT_SID! as AccountSID,
   );
 
   test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API, returning the updated last_seen', async () => {
@@ -282,7 +286,7 @@ describe('addDependentSectionToAseloCase', () => {
         },
       };
     },
-    process.env.ACCOUNT_SID!,
+    process.env.ACCOUNT_SID! as AccountSID,
   );
   test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API', async () => {
     const result = await dependentChickenAdder({
