@@ -16,7 +16,7 @@
 
 import { BeaconDocumentProcessor, NewCaseSectionInfo } from '../../types';
 import { addSectionToAseloCase, updateAseloCaseOverview } from '../../caseUpdater';
-import { isErr, isOk, newErr } from '@tech-matters/types';
+import { AccountSID, isErr, isOk, newErr } from '@tech-matters/types';
 
 export type IncidentReport = {
   id: number;
@@ -51,7 +51,7 @@ export const incidentReportToCaseSection = ({
 };
 
 export const createIncidentReportProcessor = (
-  accountSid: string,
+  accountSid: AccountSID,
 ): BeaconDocumentProcessor<IncidentReport> => {
   const addIncidentReportSectionToAseloCase = addSectionToAseloCase(
     'incidentReport',
