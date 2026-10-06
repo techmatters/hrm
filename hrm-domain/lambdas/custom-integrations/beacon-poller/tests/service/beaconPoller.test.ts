@@ -64,10 +64,18 @@ export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
       valueGenerator: () => process.env.BEACON_API_KEY!,
     },
     {
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_base_url`,
+      valueGenerator: () => process.env.BEACON_BASE_URL!,
+    },
+    {
       name: `/${
         process.env.NODE_ENV
       }/twilio/${HELPLINE_SHORT_CODE.toUpperCase()}/account_sid`,
       valueGenerator: () => ACCOUNT_SID,
+    },
+    {
+      name: `/${process.env.NODE_ENV}/twilio/${ACCOUNT_SID}/static_key`,
+      valueGenerator: () => process.env.STATIC_KEY!,
     },
     {
       name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_update_api_version`,
