@@ -20,17 +20,21 @@ import {
   NewCaseSection,
 } from './types';
 import {
+  AccountSID,
   ErrorResult,
   isOk,
   newErr,
   newOkFromData,
   SuccessResult,
 } from '@tech-matters/types';
+import { getSsmParameter } from '@tech-matters/ssm-cache';
 
-const hrmHeaders = {
-  Authorization: `Basic ${process.env.STATIC_KEY}`,
+const newHrmHeaders = async (accountSid: AccountSID) => ({
+  Authorization: `Basic ${await getSsmParameter(
+    `/${process.env.NODE_ENV}/twilio/${accountSid}/static_key`,
+  )}`,
   'Content-Type': 'application/json',
-};
+});
 
 type CaseNotSpecifiedError = ErrorResult<{
   type: 'CaseNotSpecified';
@@ -69,7 +73,7 @@ export const addSectionToAseloCase =
       caseId: string;
       lastUpdated: string;
     },
-    accountSid: string,
+    accountSid: AccountSID,
   ): BeaconDocumentProcessor<TInput> =>
   async (
     inputData: TInput,
@@ -111,7 +115,7 @@ export const addSectionToAseloCase =
         {
           method: 'POST',
           body: JSON.stringify(section),
-          headers: hrmHeaders,
+          headers: await newHrmHeaders(accountSid),
         },
       );
       if (newSectionResponse.ok) {
@@ -179,7 +183,7 @@ export const addDependentSectionToAseloCase =
       section: NewCaseSection;
       caseId: string;
     },
-    accountSid: string,
+    accountSid: AccountSID,
   ) =>
   async (item: TInput) => {
     const res = await addSectionToAseloCase(
@@ -202,7 +206,7 @@ const updateAseloCase = async (
   caseId: string,
   patch: { status: string } | { operatingArea: string; priority: string },
   caseDescendentPath: string,
-  accountSid: string,
+  accountSid: AccountSID,
 ): Promise<
   | ErrorResult<{
       type: 'CaseNotFound';
@@ -221,7 +225,7 @@ const updateAseloCase = async (
   const existingCaseResponse = await fetch(
     `${process.env.INTERNAL_HRM_URL}/internal/v0/accounts/${accountSid}/cases/${caseId}/${caseDescendentPath}`,
     {
-      headers: hrmHeaders,
+      headers: await newHrmHeaders(accountSid),
       method: 'PUT',
       body: JSON.stringify(patch),
     },
@@ -256,11 +260,11 @@ const updateAseloCase = async (
 export const updateAseloCaseOverview = async (
   caseId: string,
   patch: { operatingArea: string; priority: string },
-  accountSid: string,
+  accountSid: AccountSID,
 ) => updateAseloCase(caseId, patch, 'overview', accountSid);
 
 export const updateAseloCaseStatus = async (
   caseId: string,
   status: string,
-  accountSid: string,
+  accountSid: AccountSID,
 ) => updateAseloCase(caseId, { status }, 'status', accountSid);
