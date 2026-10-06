@@ -27,6 +27,7 @@ import { isErr, isOk } from '@tech-matters/types/dist/index';
 import { AssertionError } from 'node:assert';
 import { verifyAddSectionRequest } from '../../../verifyAddSectionRequest';
 import { RawCaseReportApiPayload } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
+import { AccountSID } from '@tech-matters/types/twilio';
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
@@ -61,7 +62,7 @@ export const verifyUpdateStatusRequest = (caseId: string, expectedStatus: string
 
 describe('createCaseReportProcessor', () => {
   const addCaseReportSectionsToAseloCase = createCaseReportProcessor(
-    process.env.ACCOUNT_SID!,
+    process.env.ACCOUNT_SID! as AccountSID,
   );
   const caseReportWithCoreSection = generateCaseReport({
     id: 1234,
