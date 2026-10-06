@@ -14,12 +14,16 @@
 
 
 -- CHI-4024: clear-down for legacy iCarol-imported Contacts. Only touches
--- taskIds listed in Step 1, plus any Profiles/Identifiers created by them.
+-- taskIds listed in Step 1. Does not touch Profiles/Identifiers at all, see
+-- legacy-profile-cleardown.sql for that, a separate, standalone pass you can
+-- run any time, independent of how many times you run this script.
 --
 -- Ordering warning: if a target Contact was ever linked to a Case, run this
 -- only after both cases-unlink-only and cases-delete-only have finished.
 -- Deleting the Contact first leaves cases-delete-only unable to re-verify it
--- (404). Step 0 aborts automatically if that ordering is violated.
+-- (404). Step 0 aborts automatically if it detects this; pass
+-- -v skip_case_guard=1 to proceed anyway once you've confirmed a flagged
+-- Case is unrelated to this run.
 --
 -- Follow-up warning: search index is never notified.
 -- Deleted contacts stay searchable until a manual reindex.
@@ -50,18 +54,31 @@
 --ROLLBACK;
 START TRANSACTION;
 
--- STEP 0: Abort if any orphaned Case exists (account-wide; may be unrelated).
-SELECT
-  CASE WHEN COUNT(*) > 0
-    THEN CAST('Found system-created Case(s) with zero linked Contacts: ' || string_agg(c.id::text, ', ') || '. Finish cases-delete-only first, or confirm these are unrelated.' AS integer)
-    ELSE 0
-  END
-FROM "Cases" c
-WHERE c."accountSid" = :'accountsid'
-  AND c."createdBy" = 'system'
-  AND NOT EXISTS (
-    SELECT 1 FROM "Contacts" ct WHERE ct."caseId" = c.id AND ct."accountSid" = c."accountSid"
-  );
+-- STEP 0: Abort if any system-created Case exists with zero linked Contacts.
+-- That's only possible if an earlier cases-delete-only run didn't finish.
+-- Account-wide, so a Case from unrelated tooling could trigger this; pass
+-- -v skip_case_guard=1 once you've confirmed that's the case. skip_case_guard
+-- defaults to false (guard runs) if never set, so =0/=false also runs it.
+\if :{?skip_case_guard}
+\else
+  \set skip_case_guard false
+\endif
+
+\if :skip_case_guard
+  \echo Skipping the orphaned-Case guard (skip_case_guard was set to a true value).
+\else
+  SELECT
+    CASE WHEN COUNT(*) > 0
+      THEN CAST('Found system-created Case(s) with zero linked Contacts: ' || string_agg(c.id::text, ', ') || '. Finish cases-delete-only first, or pass -v skip_case_guard=1 if unrelated.' AS integer)
+      ELSE 0
+    END
+  FROM "Cases" c
+  WHERE c."accountSid" = :'accountsid'
+    AND c."createdBy" = 'system'
+    AND NOT EXISTS (
+      SELECT 1 FROM "Contacts" ct WHERE ct."caseId" = c.id AND ct."accountSid" = c."accountSid"
+    );
+\endif
 
 -- Generate taskids.csv first from an audit log, e.g.:
 --   aws s3 cp s3://<bucket>/icarol-import-audit-logs/<runId>.jsonl - | jq -r '.taskId' > taskids.csv
@@ -76,7 +93,8 @@ CREATE TEMPORARY TABLE "cleardown_target_task_ids" ("taskId" text);
 -- STEP 2: Sort each target into an outcome. 'proceed' is the only one that
 -- gets deleted later. 'system' is included alongside createdBy because
 -- cases-unlink-only's connectToCase call always sets updatedBy to 'system',
--- so that alone doesn't mean a real person touched this Contact.
+-- so that alone doesn't mean a real person touched this Contact. profileId/
+-- identifierId are shown for reference only, this script never acts on them.
 DROP TABLE IF EXISTS pg_temp."cleardown_targets";
 CREATE TEMPORARY TABLE "cleardown_targets" AS
 SELECT DISTINCT
@@ -100,83 +118,16 @@ LEFT JOIN "Contacts" c ON c."taskId" = t."taskId" AND c."accountSid" = :'account
 -- STEP 3: REVIEW THIS. Anything not 'proceed' stays untouched below.
 SELECT * FROM "cleardown_targets" ORDER BY outcome, id;
 
--- STEP 4: A Profile/Identifier is safe to delete only if every Contact that
--- has EVER referenced it is in THIS run's proceed set (not merely legacy:
--- a legacy Contact from a different run, or a real one, still excludes it).
-DROP TABLE IF EXISTS pg_temp."cleardown_safe_profiles";
-CREATE TEMPORARY TABLE "cleardown_safe_profiles" AS
-SELECT DISTINCT p.id AS "profileId", p."accountSid"
-FROM "Profiles" p
-JOIN "cleardown_targets" ct ON ct."profileId" = p.id AND ct."accountSid" = p."accountSid"
-WHERE ct.outcome = 'proceed'
-  AND NOT EXISTS (
-    SELECT 1 FROM "Contacts" c
-    WHERE c."profileId" = p.id AND c."accountSid" = p."accountSid"
-      AND NOT EXISTS (
-        SELECT 1 FROM "cleardown_targets" ct2
-        WHERE ct2.id = c.id AND ct2."accountSid" = c."accountSid" AND ct2.outcome = 'proceed'
-      )
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM "ProfilesToProfileFlags" ptpf
-    WHERE ptpf."profileId" = p.id AND ptpf."accountSid" = p."accountSid"
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM "ProfileSections" ps
-    WHERE ps."profileId" = p.id AND ps."accountSid" = p."accountSid"
-  );
-
--- An Identifier can link to more than one Profile (ProfilesToIdentifiers is
--- many-to-many); quick check here.
-DROP TABLE IF EXISTS pg_temp."cleardown_safe_identifiers";
-CREATE TEMPORARY TABLE "cleardown_safe_identifiers" AS
-SELECT DISTINCT i.id AS "identifierId", i."accountSid"
-FROM "Identifiers" i
-JOIN "cleardown_targets" ct ON ct."identifierId" = i.id AND ct."accountSid" = i."accountSid"
-WHERE ct.outcome = 'proceed'
-  AND NOT EXISTS (
-    SELECT 1 FROM "Contacts" c
-    WHERE c."identifierId" = i.id AND c."accountSid" = i."accountSid"
-      AND NOT EXISTS (
-        SELECT 1 FROM "cleardown_targets" ct2
-        WHERE ct2.id = c.id AND ct2."accountSid" = c."accountSid" AND ct2.outcome = 'proceed'
-      )
-  )
-  AND NOT EXISTS (
-    SELECT 1 FROM "ProfilesToIdentifiers" pti
-    WHERE pti."identifierId" = i.id AND pti."accountSid" = i."accountSid"
-      AND NOT EXISTS (
-        SELECT 1 FROM "cleardown_safe_profiles" csp
-        WHERE csp."profileId" = pti."profileId" AND csp."accountSid" = pti."accountSid"
-      )
-  );
-
--- STEP 5: REVIEW THIS. These are the Profiles/Identifiers Step 7 will delete.
-SELECT 'profile' AS kind, "profileId" AS id, "accountSid" FROM "cleardown_safe_profiles"
-UNION ALL
-SELECT 'identifier' AS kind, "identifierId" AS id, "accountSid" FROM "cleardown_safe_identifiers";
-
--- STEP 6: Delete the Contacts. Referrals/ConversationMedias cascade
+-- STEP 4: Delete the Contacts. Referrals/ConversationMedias cascade
 -- automatically. ContactJobs/CSAMReports aren't pre-checked: the import
 -- never creates rows there, so a failure here means one exists unexpectedly.
+-- Any Profile/Identifier this orphans is left alone, see
+-- legacy-profile-cleardown.sql.
 DELETE FROM "Contacts" c
 USING "cleardown_targets" ct
 WHERE c.id = ct.id AND c."accountSid" = ct."accountSid" AND ct.outcome = 'proceed';
 
--- STEP 7: Delete the now-safe Profiles/Identifiers. 
-DELETE FROM "Profiles" p
-USING "cleardown_safe_profiles" sp
-WHERE p.id = sp."profileId" AND p."accountSid" = sp."accountSid";
-
-DELETE FROM "Identifiers" i
-USING "cleardown_safe_identifiers" si
-WHERE i.id = si."identifierId" AND i."accountSid" = si."accountSid";
-
--- STEP 8: Final log of what was deleted, ids only.
-SELECT 'contact' AS kind, id, "taskId" AS detail FROM "cleardown_targets" WHERE outcome = 'proceed'
-UNION ALL
-SELECT 'profile' AS kind, "profileId" AS id, NULL AS detail FROM "cleardown_safe_profiles"
-UNION ALL
-SELECT 'identifier' AS kind, "identifierId" AS id, NULL AS detail FROM "cleardown_safe_identifiers";
+-- STEP 5: Final log of what was deleted, ids only.
+SELECT id, "taskId" FROM "cleardown_targets" WHERE outcome = 'proceed';
 
 -- No COMMIT here on purpose; see header docs.
