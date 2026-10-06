@@ -29,6 +29,10 @@ import { verifyAddSectionRequest } from '../../../verifyAddSectionRequest';
 import { RawCaseReportApiPayload } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
 import { AccountSID } from '@tech-matters/types/twilio';
 
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: () => 'BBC',
+}));
+
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
 global.fetch = mockFetch;

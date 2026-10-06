@@ -24,6 +24,10 @@ import { verifyAddSectionRequest } from '../../verifyAddSectionRequest';
 import { AssertionError } from 'node:assert';
 import { AccountSID } from '@tech-matters/types/dist';
 
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: () => 'BBC',
+}));
+
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 global.fetch = mockFetch;
 

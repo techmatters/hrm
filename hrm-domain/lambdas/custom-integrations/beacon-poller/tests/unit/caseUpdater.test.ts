@@ -22,6 +22,10 @@ import {
 import { AccountSID, isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
 
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: () => 'BBC',
+}));
+
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
 global.fetch = mockFetch;
