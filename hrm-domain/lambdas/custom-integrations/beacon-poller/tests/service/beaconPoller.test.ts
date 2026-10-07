@@ -64,13 +64,17 @@ export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
       valueGenerator: () => process.env.BEACON_API_KEY!,
     },
     {
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_base_url`,
+      valueGenerator: () => process.env.BEACON_BASE_URL!,
+    },
+    {
       name: `/${
         process.env.NODE_ENV
       }/twilio/${HELPLINE_SHORT_CODE.toUpperCase()}/account_sid`,
       valueGenerator: () => ACCOUNT_SID,
     },
     {
-      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_update_api_version`,
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_dispatch_api_version`,
       valueGenerator: () => 'v1',
     },
     {
@@ -333,7 +337,7 @@ describe('Beacon Polling Service', () => {
             [generateCaseReports(4, 1, caseIds)],
           );
         }
-        await handler({ apiType, helplineShortCode: 'uscr' });
+        await handler({ apiType, helplineShortCode: HELPLINE_SHORT_CODE });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
 
