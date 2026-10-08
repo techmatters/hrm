@@ -67,6 +67,7 @@
     "@types/debug": "^4.1.8",
     "@types/express": "^4.17.13",
     "csv-parse": "^7.0.0",
+    "date-fns-tz": "^2.0.0",
     "dotenv": "^16.3.1"
   },
   "devDependencies": {
@@ -83,7 +84,6 @@
     "chalk": "^4.0.0",
     "cross-env": "^7.0.3",
     "date-fns": "^2.30.0",
-    "date-fns-tz": "^2.0.0",
     "global-agent": "^3.0.0",
     "jest-each": "^29.2.1",
     "mockttp": "^3.16.0",
