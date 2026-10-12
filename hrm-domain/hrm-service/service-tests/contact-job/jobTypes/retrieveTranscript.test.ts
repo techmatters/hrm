@@ -19,7 +19,10 @@ import { GetQueueUrlCommand, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../../mocks';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
-import { S3ContactMediaType, S3StoredConversationMedia } from '@tech-matters/hrm-types';
+import {
+  S3ContactMediaType,
+  S3StoredConversationMedia,
+} from '@tech-matters/hrm-types/ConversationMedia';
 import {
   CompletedRetrieveContactTranscript,
   ContactJobAttemptResult,

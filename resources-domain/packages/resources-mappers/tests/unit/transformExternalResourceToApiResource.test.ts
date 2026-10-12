@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { transformExternalResourceToApiResource } from '../../src/transformExternalResourceToApiResource';
+import { transformExternalResourceToApiResource } from '../../transformExternalResourceToApiResource';
 import {
   MappingNode,
   resourceFieldMapping,
   attributeMapping,
   referenceAttributeMapping,
   translatableAttributeMapping,
-} from '../../src/mappers';
+} from '../../mappers';
 import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
 import each from 'jest-each';

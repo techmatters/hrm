@@ -68,7 +68,7 @@ import {
 } from './caseSearchIndex';
 import { ContactListCondition } from '../contact/contactSearchIndex';
 import { maxPermissions } from '../permissions';
-import { NotificationOperation } from '@tech-matters/hrm-types';
+import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 import { getMultipleCaseTimelines } from './caseSection/caseSectionService';
 
 export { CaseService, CaseInfoSection };

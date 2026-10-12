@@ -15,7 +15,7 @@
  */
 
 import { TrainingSetContact } from './hrmdbAccess';
-import { ExportTranscript } from '@tech-matters/hrm-types';
+import { ExportTranscript } from '@tech-matters/hrm-types/ConversationMedia';
 import { getS3Object } from '@tech-matters/s3-client';
 
 export type TrainingSetDocument = {

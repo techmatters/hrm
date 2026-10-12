@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { FieldMappingContext, substituteCaptureTokens } from '../../src/mappers';
+import { FieldMappingContext, substituteCaptureTokens } from '../../mappers';
 
 const baselineContext: FieldMappingContext = {
   captures: {},

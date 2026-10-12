@@ -21,7 +21,7 @@ import {
   getResourcesImportApiKey,
   getResourcesSearchIndexQueueUrl,
   getTwilioShortHelpline,
-} from '../../src/index';
+} from '../../index';
 
 jest.mock('@tech-matters/ssm-cache', () => {
   const actual = jest.requireActual('@tech-matters/ssm-cache');

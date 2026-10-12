@@ -24,7 +24,7 @@ import {
   configureDefaultPreMiddlewares,
 } from '@tech-matters/http';
 import express from 'express';
-import { rulesMap } from '../../hrm-core/src/permissions';
+import { rulesMap } from '../../hrm-core/permissions';
 import type { AuthSecretsLookup } from '@tech-matters/twilio-worker-auth';
 
 const testRules: RulesFile = { ...rulesMap.open };

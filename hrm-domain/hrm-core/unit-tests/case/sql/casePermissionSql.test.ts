@@ -18,7 +18,7 @@ import each from 'jest-each';
 import {
   CaseListCondition,
   listCasesPermissionWhereClause,
-} from '../../../src/case/sql/casePermissionSql';
+} from '../../../case/sql/casePermissionSql';
 
 const FILTER_ALL_CASES_CLAUSE: [string] = ['1=0'];
 

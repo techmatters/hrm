@@ -30,7 +30,7 @@ declare global {
 
 // Usage: This is a custom matcher for Jest, it extends the expect object with a new matcher.
 // So you just need to import this file in your test file and it will be available, you don't need to import any symbols from it.
-// i.e. import '@tech-matters/testing/dist/expectToParseAsJson';
+// i.e. import '@tech-matters/testing/expectToParseAsJson';
 expect.extend({
   toParseAsEqualJson(received: string, expected?: any) {
     let parsedReceived: any;

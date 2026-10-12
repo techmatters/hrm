@@ -14,18 +14,18 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as caseDb from '../../src/case/caseDataAccess';
-import * as caseApi from '../../src/case/caseService';
-import * as caseSectionApi from '../../src/case/caseSection/caseSectionService';
+import * as caseDb from '../../case/caseDataAccess';
+import * as caseApi from '../../case/caseService';
+import * as caseSectionApi from '../../case/caseSection/caseSectionService';
 import { createMockCase, createMockCaseRecord } from './mockCases';
 import each from 'jest-each';
-import { CaseRecord, NewCaseRecord } from '../../src/case/caseDataAccess';
-import '@tech-matters/testing/dist/expectToParseAsDate';
+import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
+import '@tech-matters/testing/expectToParseAsDate';
 import { workerSid, accountSid } from '../mocks';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { rulesMap } from '../../src/permissions';
-import { RulesFile } from '../../src/permissions/rulesMap';
-import * as entityChangeNotify from '../../src/notifications/entityChangeNotify';
+import { rulesMap } from '../../permissions';
+import { RulesFile } from '../../permissions/rulesMap';
+import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 import { isErr, isOk, newErr, newOkFromData } from '@tech-matters/types';
 
 const publishCaseChangeNotificationSpy = jest
@@ -36,7 +36,7 @@ const publishCaseDeleteNotificationSpy = jest
   .spyOn(entityChangeNotify, 'publishCaseDeleteNotification')
   .mockImplementation(() => Promise.resolve('Ok') as any);
 
-jest.mock('../../src/case/caseDataAccess');
+jest.mock('../../case/caseDataAccess');
 const twilioWorkerId = 'WK-twilio-worker-id';
 
 test('create case', async () => {

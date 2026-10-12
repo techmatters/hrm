@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { NewContactRecord } from '@tech-matters/hrm-types';
+import { NewContactRecord } from '@tech-matters/hrm-types/Contact';
 
 export const MINIMAL_CONTACT: NewContactRecord = {
   conversationDuration: 0,

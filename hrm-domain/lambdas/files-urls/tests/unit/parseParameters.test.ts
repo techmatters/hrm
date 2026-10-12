@@ -15,7 +15,7 @@
  */
 import type { ALBEvent } from 'aws-lambda';
 import { isErr } from '@tech-matters/types';
-import { parseParameters, ERROR_MESSAGES } from '../../src/parseParameters';
+import { parseParameters, ERROR_MESSAGES } from '../../parseParameters';
 import { mockPathParameters, mockQueryStringParameters, newAlbEvent } from '../__mocks__';
 
 describe('parseParameters', () => {

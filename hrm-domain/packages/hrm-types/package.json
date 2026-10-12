@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "types": "src/index.ts",
   "author": "",
   "license": "AGPL",
   "dependencies": {

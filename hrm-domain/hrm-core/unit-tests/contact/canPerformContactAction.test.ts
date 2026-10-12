@@ -17,15 +17,15 @@
 import { parseISO, subHours } from 'date-fns';
 import { ContactBuilder } from './contact-builder';
 import { getClient, isTwilioTaskTransferTarget } from '@tech-matters/twilio-client';
-import { getContactById, PatchPayload } from '../../src/contact/contactService';
+import { getContactById, PatchPayload } from '../../contact/contactService';
 import createError from 'http-errors';
 import {
   canDisconnectContact,
   canPerformEditContactAction,
-} from '../../src/contact/canPerformContactAction';
-import { CaseService, getCase } from '../../src/case/caseService';
-import { actionsMaps } from '../../src/permissions';
-import { SafeRouterRequest } from '../../src/permissions/safe-router';
+} from '../../contact/canPerformContactAction';
+import { CaseService, getCase } from '../../case/caseService';
+import { actionsMaps } from '../../permissions';
+import { SafeRouterRequest } from '../../permissions/safe-router';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { mockingProxy, mockSsmParameters } from '@tech-matters/testing';
 
@@ -34,10 +34,10 @@ jest.mock('@tech-matters/twilio-client', () => ({
   isTwilioTaskTransferTarget: jest.fn(),
 }));
 jest.mock('http-errors', () => jest.fn());
-jest.mock('../../src/contact/contactService', () => ({
+jest.mock('../../contact/contactService', () => ({
   getContactById: jest.fn(),
 }));
-jest.mock('../../src/case/caseService', () => ({
+jest.mock('../../case/caseService', () => ({
   getCase: jest.fn(),
 }));
 

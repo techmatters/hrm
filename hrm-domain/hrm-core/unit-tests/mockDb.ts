@@ -18,12 +18,12 @@ import * as pgPromise from 'pg-promise';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import * as pgMocking from '@tech-matters/testing';
 import { Database } from '@tech-matters/database-connect';
-import { getDbForAdmin } from '../src/dbConnection';
+import { getDbForAdmin } from '../dbConnection';
 
 const userDbs: Record<string, Database> = {};
 let adminDb: Database = pgMocking.createMockConnection() as any;
 
-jest.mock('../src/dbConnection', () => ({
+jest.mock('../dbConnection', () => ({
   getDbForAdmin: () => adminDb,
   getDbForAccount: (accountSid: string) => {
     // Might already have been populated by a call to mockTask
@@ -31,7 +31,7 @@ jest.mock('../src/dbConnection', () => ({
       userDbs[accountSid] ?? (pgMocking.createMockConnection() as any);
     return Promise.resolve(userDbs[accountSid]);
   },
-  pgp: jest.requireActual('../src/dbConnection').pgp,
+  pgp: jest.requireActual('../dbConnection').pgp,
 }));
 
 export const mockConnection = pgMocking.createMockConnection;

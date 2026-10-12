@@ -30,7 +30,7 @@ declare global {
 
 // Usage: This is a custom matcher for Jest, it extends the expect object with a new matcher.
 // So you just need to import this file in your test file and it will be available, you don't need to import any symbols from it.
-// i.e. import '@tech-matters/testing/dist/expectToParseAsDate';
+// i.e. import '@tech-matters/testing/expectToParseAsDate';
 expect.extend({
   toParseAsDate(received: any, date?: string | Date) {
     let receivedDate;

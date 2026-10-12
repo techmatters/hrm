@@ -21,7 +21,10 @@ import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../../mocks';
 import { clearAllTables } from '../../dbCleanup';
 import { getById } from '@tech-matters/hrm-core/contact/contactDataAccess';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
-import { S3ContactMediaType, S3StoredConversationMedia } from '@tech-matters/hrm-types';
+import {
+  S3ContactMediaType,
+  S3StoredConversationMedia,
+} from '@tech-matters/hrm-types/ConversationMedia';
 import {
   CompletedRetrieveContactTranscript,
   CompletedScrubContactTranscript,

@@ -85,7 +85,7 @@ import {
   generateContactPermissionsFilters,
   generateContactSearchFilters,
 } from './contactSearchIndex';
-import { NotificationOperation } from '@tech-matters/hrm-types';
+import { NotificationOperation } from '@tech-matters/hrm-types/NotificationOperation';
 import { getDbForAccount } from '../dbConnection';
 import {
   getExcludedFields,

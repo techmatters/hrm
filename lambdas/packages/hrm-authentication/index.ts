@@ -19,7 +19,6 @@ import filesUrlsAuthenticator, {
 } from './filesUrlsAuthenticator';
 import type { CallHrmApiError } from './callHrmApi';
 export { default as callHrmApi } from './callHrmApi';
-export type { CallHrmApiError } from './callHrmApi';
 
 /**
  * The authenticator will call the authenticator based on the type.

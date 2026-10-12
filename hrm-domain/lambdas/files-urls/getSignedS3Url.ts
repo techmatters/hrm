@@ -19,7 +19,7 @@ import { type TResult, newErr, isErr, newOk } from '@tech-matters/types';
 import { authenticate } from '@tech-matters/hrm-authentication';
 import { getSignedUrl } from '@tech-matters/s3-client';
 import { type ParseParametersError, parseParameters } from './parseParameters';
-import { type CallHrmApiError } from '@tech-matters/hrm-authentication';
+import { type CallHrmApiError } from '@tech-matters/hrm-authentication/callHrmApi';
 
 export type GetSignedS3UrlSuccessResultData = {
   media_url: string;

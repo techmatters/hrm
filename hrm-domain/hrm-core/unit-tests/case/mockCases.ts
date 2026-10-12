@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { CaseRecord, NewCaseRecord } from '../../src/case/caseDataAccess';
-import { CaseService } from '../../src/case/caseService';
+import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
+import { CaseService } from '../../case/caseService';
 import { workerSid } from '../mocks';
 
 const baselineDate = new Date(2000, 5, 1);
