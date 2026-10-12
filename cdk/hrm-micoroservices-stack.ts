@@ -54,7 +54,7 @@ export default class HrmMicoservicesStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
-      entry: `./hrm-domain/lambdas/files-urls/index.ts`,
+      entry: `./hrm-domain/lambdas/files-urls/src/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',

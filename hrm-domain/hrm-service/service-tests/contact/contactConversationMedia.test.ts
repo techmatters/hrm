@@ -26,7 +26,7 @@ import {
   S3ContactMediaType,
 } from '@tech-matters/hrm-core/conversation-media/conversationMediaDataAccess';
 import each from 'jest-each';
-import { ContactJobType } from '@tech-matters/types/ContactJob';
+import { ContactJobType } from '@tech-matters/types';
 import { ruleFileActionOverride } from '../permissions-overrides';
 import { selectJobsByContactId } from './db-validations';
 import { setupServiceTests } from '../setupServiceTest';

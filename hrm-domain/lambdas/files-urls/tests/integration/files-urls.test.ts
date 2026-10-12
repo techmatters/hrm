@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { deleteS3Object, putS3Object } from '@tech-matters/s3-client';
-import { handler } from '../../index';
+import { handler } from '../../src/index';
 import { mockQueryStringParameters, newAlbEvent } from '../__mocks__';
 
 const bucket = mockQueryStringParameters.bucket;

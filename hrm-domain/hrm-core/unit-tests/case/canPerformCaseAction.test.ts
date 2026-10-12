@@ -15,13 +15,13 @@
  */
 
 import createError from 'http-errors';
-import { CaseService, getCase } from '../../case/caseService';
-import { actionsMaps } from '../../permissions';
-import { canUpdateCaseStatus, canViewCase } from '../../case/canPerformCaseAction';
+import { CaseService, getCase } from '../../src/case/caseService';
+import { actionsMaps } from '../../src/permissions';
+import { canUpdateCaseStatus, canViewCase } from '../../src/case/canPerformCaseAction';
 import each from 'jest-each';
 
 jest.mock('http-errors', () => jest.fn());
-jest.mock('../../case/caseService', () => ({
+jest.mock('../../src/case/caseService', () => ({
   getCase: jest.fn(),
 }));
 

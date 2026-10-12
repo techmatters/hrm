@@ -19,7 +19,7 @@ import {
   isContactFieldSpecificCondition,
   validateContactFieldConditionsSet,
   validateContactFieldConditionsSets,
-} from '../../permissions/rulesMap';
+} from '../../src/permissions/rulesMap';
 
 test('Rules maps are all valid', () => {
   expect(() => validRulesMap()).not.toThrow();

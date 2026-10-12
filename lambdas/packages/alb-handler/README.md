@@ -8,4 +8,4 @@ It handles OPTIONS requests, and converts them to 200 responses with the appropr
 
 ## Usage
 
-see [files-urls/index.ts](../../../hrm-domain/lambdas/files-urls/index.ts) for an example.
+see [files-urls/src/index.ts](../../../hrm-domain/lambdas/files-urls/src/index.ts) for an example.

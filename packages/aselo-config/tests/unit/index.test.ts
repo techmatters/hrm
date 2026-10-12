@@ -21,7 +21,7 @@ import {
   getS3DocsBucketName,
   getTwilioAccountSid,
   getTwilioStaticKey,
-} from '../../index';
+} from '../../src/index';
 
 jest.mock('@tech-matters/ssm-cache', () => {
   const actual = jest.requireActual('@tech-matters/ssm-cache');

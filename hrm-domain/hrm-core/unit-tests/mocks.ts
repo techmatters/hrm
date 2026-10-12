@@ -1,6 +1,6 @@
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
-import { openRules } from '../permissions/jsonPermissions';
-import { TKConditionsSets } from '../permissions/rulesMap';
+import { openRules } from '../src/permissions/jsonPermissions';
+import { TKConditionsSets } from '../src/permissions/rulesMap';
 
 /**
  * Copyright (C) 2021-2023 Technology Matters

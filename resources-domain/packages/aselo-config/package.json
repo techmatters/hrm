@@ -2,6 +2,7 @@
   "name": "@tech-matters/resources-aselo-config",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "types": "src/index.ts",
   "license": "AGPL",
   "dependencies": {
     "@tech-matters/aselo-config": "^1.0.0",

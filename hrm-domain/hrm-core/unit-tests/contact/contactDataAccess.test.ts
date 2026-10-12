@@ -16,9 +16,9 @@
 
 import * as pgPromise from 'pg-promise';
 import { mockConnection, mockTransaction } from '../mockDb';
-import { create } from '../../contact/contactDataAccess';
+import { create } from '../../src/contact/contactDataAccess';
 import { ContactBuilder } from './contact-builder';
-import { NewContactRecord } from '../../contact/sql/contactInsertSql';
+import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
 import { newOkFromData } from '@tech-matters/types';
 
 let conn: pgPromise.ITask<unknown>;

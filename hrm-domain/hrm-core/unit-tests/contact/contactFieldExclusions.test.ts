@@ -17,13 +17,13 @@
 import {
   getExcludedFields,
   removeNonPermittedFieldsFromContact,
-} from '../../contact/contactFieldExclusions';
-import { RulesFile, TKConditionsSets } from '../../permissions/rulesMap';
+} from '../../src/contact/contactFieldExclusions';
+import { RulesFile, TKConditionsSets } from '../../src/permissions/rulesMap';
 import { newTwilioUser, newAccountSystemUser } from '@tech-matters/twilio-worker-auth';
-import { Contact } from '../../contact/contactDataAccess';
+import { Contact } from '../../src/contact/contactDataAccess';
 import { WorkerSID } from '@tech-matters/types';
 import { NewContactRecord } from '@tech-matters/hrm-types';
-import { openRules } from '../../permissions/jsonPermissions';
+import { openRules } from '../../src/permissions/jsonPermissions';
 import { randomBytes } from 'crypto';
 import formatISO from 'date-fns/formatISO';
 

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "types": "index.ts",
+  "types": "src/index.ts",
   "scripts": {
     "test:unit": "jest tests/unit"
   },

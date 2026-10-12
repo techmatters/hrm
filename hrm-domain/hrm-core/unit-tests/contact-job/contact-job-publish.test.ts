@@ -15,14 +15,14 @@
  */
 
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import * as SQSClient from '../../contact-job/client-sqs';
-import * as contactJobPublish from '../../contact-job/contact-job-publish';
-import { ContactJob } from '../../contact-job/contact-job-data-access';
+import * as SQSClient from '../../src/contact-job/client-sqs';
+import * as contactJobPublish from '../../src/contact-job/contact-job-publish';
+import { ContactJob } from '../../src/contact-job/contact-job-data-access';
 import { ContactJobType } from '@tech-matters/types';
 import each from 'jest-each';
 import { PublishToContactJobsTopicParams } from '@tech-matters/types';
 
-jest.mock('../../contact-job/client-sqs');
+jest.mock('../../src/contact-job/client-sqs');
 
 jest.mock('@tech-matters/ssm-cache', () => {
   class MockSsmParameterNotFound extends Error {}

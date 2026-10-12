@@ -22,7 +22,7 @@ import type {
   TimeSequence,
 } from '@tech-matters/resources-types';
 import type { SQSEvent } from 'aws-lambda';
-import { handler } from '../../index';
+import { handler } from '../../src/index';
 
 const mockFetch = jest.fn();
 

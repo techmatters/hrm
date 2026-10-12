@@ -16,7 +16,7 @@
 
 import '../mockDb';
 import QueryStream from 'pg-query-stream';
-import { streamProfileForRenotifying } from '../../profile/profileDataAccess';
+import { streamProfileForRenotifying } from '../../src/profile/profileDataAccess';
 
 jest.mock('pg-query-stream', () => {
   return jest.fn().mockReturnValue({});

@@ -17,7 +17,7 @@
 import { getAccountStaticKey } from '@tech-matters/aselo-config';
 import { getPermissionConfig, getTwilioAuthToken } from '@tech-matters/hrm-aselo-config';
 import { loadSsmCache as loadSsmCacheRoot } from '@tech-matters/ssm-cache';
-import { getFromSSMCache } from '../../config/ssmConfigurationCache';
+import { getFromSSMCache } from '../../src/config/ssmConfigurationCache';
 
 jest.mock('@tech-matters/aselo-config', () => ({
   ...(jest.requireActual('@tech-matters/aselo-config') as Record<string, unknown>),

@@ -2,7 +2,7 @@
 
 # Lambda Microservices
 
-The beginnings of a framework for building HRM/resources microservices using lambdas was started with the [files-urls](../hrm-domain/lambdas/files-urls/index.ts) lambda. This is a good starting point for understanding how the framework works.
+The beginnings of a framework for building HRM/resources microservices using lambdas was started with the [files-urls](../hrm-domain/lambdas/files-urls/src/index.ts) lambda. This is a good starting point for understanding how the framework works.
 
 The framework is based on the [lambda-alb-handler](../lambdas/packages/alb-handler/README.md) package, which abstracts away the details of handling ALB requests and responses in lambdas that are meant to be used as ALB targets.
 

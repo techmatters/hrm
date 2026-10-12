@@ -20,7 +20,7 @@ import {
   getResourcesImportApiKeySsmPath,
   getResourcesSearchIndexQueueUrlSsmPath,
   getTwilioShortHelplineSsmPath,
-} from '../../ssmParameterNameGetters';
+} from '../../src/ssmParameterNameGetters';
 
 beforeEach(() => {
   process.env.NODE_ENV = 'test';

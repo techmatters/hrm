@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Contact, ContactRecord } from '../../contact/contactDataAccess';
+import { Contact, ContactRecord } from '../../src/contact/contactDataAccess';
 import { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 
 const defaultContactRecord: ContactRecord = {

@@ -17,16 +17,16 @@
 import * as pgPromise from 'pg-promise';
 import { subHours } from 'date-fns';
 import { mockConnection, mockTransaction } from '../mockDb';
-import * as referralDb from '../../referral/referralDataAccess';
+import * as referralDb from '../../src/referral/referralDataAccess';
 import {
   DuplicateReferralError,
   OrphanedReferralError,
-} from '../../referral/referralDataAccess';
+} from '../../src/referral/referralDataAccess';
 import {
   DatabaseForeignKeyViolationError,
   DatabaseUniqueConstraintViolationError,
   DatabaseError,
-} from '../../sql';
+} from '../../src/sql';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { getSqlStatement } from '@tech-matters/testing';

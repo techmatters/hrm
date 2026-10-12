@@ -17,16 +17,16 @@
 import { createMockCaseInsert, createMockCaseRecord } from './mockCases';
 import * as pgPromise from 'pg-promise';
 import { getMockAccountDb, mockConnection, mockTask } from '../mockDb';
-import * as caseDb from '../../case/caseDataAccess';
+import * as caseDb from '../../src/case/caseDataAccess';
 import each from 'jest-each';
-import { OrderByColumn, OrderByColumnType } from '../../case/sql/caseSearchSql';
+import { OrderByColumn, OrderByColumnType } from '../../src/case/sql/caseSearchSql';
 import { expectValuesInSql, getSqlStatement } from '@tech-matters/testing';
 import { newTwilioUser, TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { AccountSID } from '@tech-matters/types';
 import { isOk } from '@tech-matters/types';
-import { rulesMap } from '../../permissions';
-import { TKConditionsSets } from '../../permissions/rulesMap';
-import { VALID_CASE_CREATE_FIELDS } from '../../case/caseDataAccess';
+import { rulesMap } from '../../src/permissions';
+import { TKConditionsSets } from '../../src/permissions/rulesMap';
+import { VALID_CASE_CREATE_FIELDS } from '../../src/case/caseDataAccess';
 import { pick } from 'lodash';
 
 const accountSid: AccountSID = 'ACCOUNT_SID';

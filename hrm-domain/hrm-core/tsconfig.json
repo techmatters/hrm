@@ -13,6 +13,6 @@
     "resolveJsonModule": true
   },
 
-  "include": ["**/*.js", "**/*.json", "**/*.ts"],
-  "exclude": ["node_modules", "unit-tests", "dist", "**/*.test.ts", "**/*.test.js"],
+  "include": ["src/**/*.js", "src/**/*.json", "src/**/*.ts"],
+  "exclude": ["**/*.test.ts", "**/*.test.js"],
 }

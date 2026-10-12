@@ -16,7 +16,7 @@
 import { mocked } from 'jest-mock';
 import { newOk } from '@tech-matters/types';
 import { getSignedUrl as awsGetSignedUrl } from '@aws-sdk/s3-request-presigner';
-import getSignedS3Url from '../../getSignedS3Url';
+import getSignedS3Url from '../../src/getSignedS3Url';
 import { mockQueryStringParameters, mockSignedUrl, newAlbEvent } from '../__mocks__';
 
 jest.mock('@tech-matters/hrm-authentication', () => ({

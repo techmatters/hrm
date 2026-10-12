@@ -14,15 +14,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { defaultAuthSecretsLookup } from '../../config/authSecretsLookup';
+import { defaultAuthSecretsLookup } from '../../src/config/authSecretsLookup';
 import { getAccountStaticKey } from '@tech-matters/aselo-config';
-import * as ssmConfigurationCache from '../../config/ssmConfigurationCache';
+import * as ssmConfigurationCache from '../../src/config/ssmConfigurationCache';
 
 jest.mock('@tech-matters/aselo-config', () => ({
   ...(jest.requireActual('@tech-matters/aselo-config') as Record<string, unknown>),
   getAccountStaticKey: jest.fn(),
 }));
-jest.mock('../../config/ssmConfigurationCache');
+jest.mock('../../src/config/ssmConfigurationCache');
 
 const mockGetAccountStaticKey = getAccountStaticKey as jest.MockedFunction<
   typeof getAccountStaticKey

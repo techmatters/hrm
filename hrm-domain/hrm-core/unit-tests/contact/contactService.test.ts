@@ -14,21 +14,21 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { mockTransaction, mockConnection } from '../mockDb';
-import * as contactDb from '../../contact/contactDataAccess';
+import * as contactDb from '../../src/contact/contactDataAccess';
 import {
   connectContactToCase,
   createContact,
   patchContact,
-} from '../../contact/contactService';
+} from '../../src/contact/contactService';
 
 import { omit } from 'lodash';
 import { newOk, newOkFromData } from '@tech-matters/types';
-import * as profilesDB from '../../profile/profileDataAccess';
-import * as profilesService from '../../profile/profileService';
-import { NewContactRecord } from '../../contact/sql/contactInsertSql';
+import * as profilesDB from '../../src/profile/profileDataAccess';
+import * as profilesService from '../../src/profile/profileService';
+import { NewContactRecord } from '../../src/contact/sql/contactInsertSql';
 import { ALWAYS_CAN } from '../mocks';
-import '@tech-matters/testing/expectToParseAsDate';
-import * as entityChangeNotify from '../../notifications/entityChangeNotify';
+import '@tech-matters/testing/dist/expectToParseAsDate';
+import * as entityChangeNotify from '../../src/notifications/entityChangeNotify';
 
 const flushPromises = async () => {
   await new Promise(process.nextTick);
@@ -47,7 +47,7 @@ const contactCreatorSid = 'WK-contact-creator';
 const contactPatcherSid = 'WK-contact-patcher';
 const baselineDate = new Date(2020, 1, 1);
 
-jest.mock('../../contact/contactDataAccess');
+jest.mock('../../src/contact/contactDataAccess');
 
 const getIdentifierWithProfilesSpy = jest
   .spyOn(profilesDB, 'getIdentifierWithProfiles')

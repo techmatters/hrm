@@ -116,7 +116,7 @@ export default class ResourcessearchJobsStack extends cdk.Stack {
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
-      entry: `./resources-domain/lambdas/${id}/index.ts`,
+      entry: `./resources-domain/lambdas/${id}/src/index.ts`,
       environment: {
         NODE_OPTIONS: '--enable-source-maps',
         S3_ENDPOINT: 'http://localstack:4566',

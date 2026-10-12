@@ -15,7 +15,7 @@
  */
 
 import RestException from 'twilio/lib/base/RestException';
-import { exportTranscript } from '../../exportTranscript';
+import { exportTranscript } from '../../src/exportTranscript';
 
 const messageList = [
   {

@@ -17,10 +17,10 @@
 import each from 'jest-each';
 import { HrmAccountId, isErr, isOk } from '@tech-matters/types';
 
-import { canPerformActionsOnObject } from '../../permissions/canPerformActionOnObject';
-import { actionsMaps } from '../../permissions';
-import * as contactApi from '../../contact/contactService';
-import * as caseApi from '../../case/caseService';
+import { canPerformActionsOnObject } from '../../src/permissions/canPerformActionOnObject';
+import { actionsMaps } from '../../src/permissions';
+import * as contactApi from '../../src/contact/contactService';
+import * as caseApi from '../../src/case/caseService';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 
 const accountSid: HrmAccountId = 'ACxxxxxx';

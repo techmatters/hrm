@@ -28,7 +28,7 @@ import {
   getPermissionConfig,
   getTranscriptRetentionDays,
   getTwilioAuthToken,
-} from '../../index';
+} from '../../src/index';
 
 jest.mock('@tech-matters/ssm-cache', () => {
   const actual = jest.requireActual('@tech-matters/ssm-cache');

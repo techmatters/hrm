@@ -17,7 +17,7 @@
 import type {
   FlatResource,
   ReferrableResourceAttribute,
-} from '@tech-matters/resources-types/Resources';
+} from '@tech-matters/resources-types';
 import type { estypes } from '@elastic/elasticsearch';
 
 import {

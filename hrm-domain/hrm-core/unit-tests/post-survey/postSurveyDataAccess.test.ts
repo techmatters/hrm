@@ -22,7 +22,7 @@ import {
   filterByContactTaskId,
   NewPostSurvey,
   create,
-} from '../../post-survey/postSurveyDataAccess';
+} from '../../src/post-survey/postSurveyDataAccess';
 let conn: pgPromise.ITask<unknown>;
 const accountSid = 'account-sid';
 
