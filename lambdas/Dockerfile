@@ -46,6 +46,8 @@ RUN dnf install -y rsync \
     && cp -r lambdas/packages /var/task/lambdas/ \
     && cp -r ${lambda_dir}/../packages /var/task/${lambda_dir}/../packages/ \
     && cp -r ${lambda_dir}/packages /var/task/${lambda_dir}/packages/ \
+    && mkdir -p /var/task/hrm-domain/packages \
+    && cp -r hrm-domain/packages/. /var/task/hrm-domain/packages/ \
     && cp -r node_modules /var/task/
 
 # Ignore errors if node_modules is not present
