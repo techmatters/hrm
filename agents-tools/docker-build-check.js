@@ -38,7 +38,8 @@
  * packages, or anything outside the build stage commands above. Use a real `docker build`
  * for those, e.g. when changing base images or system dependencies.
  *
- * Usage: node docker-build-check.js [options] [filter ...]
+ * Usage: npm run docker:check -- [options] [filter ...]
+ *    or: node agents-tools/docker-build-check.js [options] [filter ...]
  *   filter              only check images whose workspace path or tag contains one of these
  *   --list              list discovered images and exit
  *   --jobs <n>          images to check in parallel (default 1)
@@ -60,7 +61,7 @@ const path = require('path');
 const { builtinModules } = require('module');
 const { execFileSync, spawn } = require('child_process');
 
-const REPO_ROOT = __dirname;
+const REPO_ROOT = path.resolve(__dirname, '..');
 const posix = path.posix;
 
 // ---------------------------------------------------------------------------------------------
