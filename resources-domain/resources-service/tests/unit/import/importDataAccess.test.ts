@@ -24,7 +24,7 @@ import {
 } from '../../../src/import/importDataAccess';
 import { getSqlStatement } from '@tech-matters/testing';
 import { BLANK_ATTRIBUTES, generateImportResource } from '../../mockResources';
-import { TimeSequence } from '@tech-matters/resources-types/Resources';
+import { TimeSequence } from '@tech-matters/resources-types';
 
 let conn: pgPromise.ITask<unknown>;
 

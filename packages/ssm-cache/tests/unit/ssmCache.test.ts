@@ -29,7 +29,7 @@ import {
   getSsmParameter,
   ssmCache,
   setCacheDurationMilliseconds,
-} from '../../ssmCache';
+} from '../../src/ssmCache';
 
 const mockSSMClient = mockClient(SSMClient);
 

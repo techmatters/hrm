@@ -27,7 +27,7 @@ import * as profilesDB from '../../profile/profileDataAccess';
 import * as profilesService from '../../profile/profileService';
 import { NewContactRecord } from '../../contact/sql/contactInsertSql';
 import { ALWAYS_CAN } from '../mocks';
-import '@tech-matters/testing/expectToParseAsDate';
+import '@tech-matters/testing/dist/expectToParseAsDate';
 import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 
 const flushPromises = async () => {

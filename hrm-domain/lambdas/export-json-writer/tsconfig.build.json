@@ -5,8 +5,8 @@
   "references": [
     { "path": "packages/ssm-cache" },
     { "path": "packages/aselo-config" },
-    { "path": "packages/sqs-client" },
     { "path": "packages/s3-client" },
+    { "path": "packages/sqs-client" },
     { "path": "packages/types" },
     { "path": "hrm-domain/packages/hrm-types" },
     { "path": "hrm-domain/lambdas/export-json-writer" }
