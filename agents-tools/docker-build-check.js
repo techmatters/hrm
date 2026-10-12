@@ -617,6 +617,9 @@ const ALLOWED_RUN_COMMANDS = new Set([
   'test',
   '[',
   'tsc',
+  // repo shell scripts: paths reach them as arguments, which are remapped like any other
+  'sh',
+  'bash',
 ]);
 
 /** Rewrite absolute paths in a shell command so they point into the stage's fake root. */

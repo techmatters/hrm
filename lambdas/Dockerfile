@@ -12,6 +12,20 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
+# A lambda can depend on the shared packages in the `packages` folder of its own folder and
+# of every parent folder up to the repo root (e.g. hrm-domain/packages and packages for
+# hrm-domain/lambdas/custom-integrations/*). COPY cannot walk folders, so this stage copies
+# the whole build context and selects those `packages` folders, plus the tsconfig.json files
+# along the same path that they extend. The build stage only copies the selection, so its
+# cache is only invalidated when those files change, not on any change in the repo.
+FROM public.ecr.aws/lambda/nodejs:22 as sources
+
+ARG lambda_dir
+
+COPY . /context
+RUN mkdir -p /sources \
+    && sh /context/lambdas/copy-ancestor-dirs.sh /context ${lambda_dir} /sources packages tsconfig.json > /sources/.ancestor-workspaces
+
 FROM public.ecr.aws/lambda/nodejs:22 as build
 
 ARG lambda_dir
@@ -19,35 +33,22 @@ ENV lambda_dir ${lambda_dir}
 ARG lambda_name
 ENV lambda_name ${lambda_name}
 
-# This is a bit complicated by the need for access to the packages.
-# We must have the full repo context for our docker build so we can
-# copy the hrm-lib package and labmdas folders so that the file: based
-# dependency in package.json can be resolved
-COPY packages /tmp/build/packages
+COPY --from=sources /sources/ /tmp/build/
+# Shared lambda packages, which are not in a parent folder of most lambdas
 COPY lambdas/tsconfig.json /tmp/build/lambdas/tsconfig.json
 COPY lambdas/packages /tmp/build/lambdas/packages
-COPY hrm-domain/packages /tmp/build/hrm-domain/packages
-COPY hrm-domain/tsconfig.json /tmp/build/hrm-domain/tsconfig.json
+COPY lambdas/copy-ancestor-dirs.sh /tmp/build/lambdas/copy-ancestor-dirs.sh
 COPY ${lambda_dir}/${lambda_name} /tmp/build/${lambda_dir}/${lambda_name}
-COPY ${lambda_dir}/packages /tmp/build/${lambda_dir}/packages
-COPY ${lambda_dir}/../packages /tmp/build/${lambda_dir}/../packages
-COPY ${lambda_dir}/../tsconfig.json /tmp/build/${lambda_dir}/../tsconfig.json
-COPY ${lambda_dir}/tsconfig.json /tmp/build/${lambda_dir}/tsconfig.json
 COPY package.json package-lock.json tsconfig.json tsconfig.base.json ${lambda_dir}/${lambda_name}/tsconfig.build.json /tmp/build/
 
 RUN dnf install -y rsync \
     && cd /tmp/build \
-    && npm ci -w ${lambda_dir}/${lambda_name} -w packages/* -w hrm-domain/packages/* -w ${lambda_dir}/../packages/* -w ${lambda_dir}/packages/* --verbose \
+    && npm ci -w ${lambda_dir}/${lambda_name} $(sed 's/^/-w /' .ancestor-workspaces) --verbose \
     && npx tsc -b tsconfig.build.json --verbose \
     && cp ${lambda_dir}/${lambda_name}/dist/* -r /var/task/ \
-    && cp -r packages /var/task/ \
-    && mkdir -p /var/task/${lambda_dir} \
+    && sh lambdas/copy-ancestor-dirs.sh . ${lambda_dir} /var/task packages > /dev/null \
     && mkdir -p /var/task/lambdas \
     && cp -r lambdas/packages /var/task/lambdas/ \
-    && cp -r ${lambda_dir}/../packages /var/task/${lambda_dir}/../packages/ \
-    && cp -r ${lambda_dir}/packages /var/task/${lambda_dir}/packages/ \
-    && mkdir -p /var/task/hrm-domain/packages \
-    && cp -r hrm-domain/packages/. /var/task/hrm-domain/packages/ \
     && cp -r node_modules /var/task/
 
 # Ignore errors if node_modules is not present
