@@ -42,7 +42,8 @@ export const getS3DocsBucketName = createSsmParameterGetter(getS3DocsBucketNameS
 
 export const getAccountStaticKey = async (keyName: string) => {
   try {
-    return await getHrmStaticKey({ keyName });
+    const staticKey = await getHrmStaticKey({ keyName });
+    return staticKey;
   } catch (error) {
     // Remove when a terraform apply has been done for all accounts
     if (error instanceof SsmParameterNotFound && keyName.startsWith('AC')) {

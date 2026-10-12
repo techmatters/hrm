@@ -20,7 +20,7 @@ import * as caseSectionApi from '../../case/caseSection/caseSectionService';
 import { createMockCase, createMockCaseRecord } from './mockCases';
 import each from 'jest-each';
 import { CaseRecord, NewCaseRecord } from '../../case/caseDataAccess';
-import '@tech-matters/testing/dist/expectToParseAsDate';
+import '@tech-matters/testing';
 import { workerSid, accountSid } from '../mocks';
 import { newTwilioUser } from '@tech-matters/twilio-worker-auth';
 import { rulesMap } from '../../permissions';
