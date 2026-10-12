@@ -38,11 +38,12 @@ export const pollCompletedContactJobsFromQueue = async (): ReturnType<
     console.debug(
       `[contact-job] Polling messages from SQS queue: ${queueUrl}, looked up from SSM parameter: ${COMPLETED_QUEUE_SSM_PATH}`,
     );
-    return await receiveSqsMessage({
+    const received = await receiveSqsMessage({
       queueUrl,
       maxNumberOfMessages: 10,
       waitTimeSeconds: 0,
     });
+    return received;
   } catch (err) {
     console.error('Error trying to poll messages from SQS queue', err);
   }
@@ -52,10 +53,11 @@ export const deleteCompletedContactJobsFromQueue = async (receiptHandle: string)
   try {
     const queueUrl = await getCompletedContactJobsQueueUrl({});
 
-    return await deleteSqsMessage({
+    const deleted = await deleteSqsMessage({
       queueUrl,
       receiptHandle,
     });
+    return deleted;
   } catch (err) {
     console.error('Error trying to delete message from SQS queue', err);
   }
