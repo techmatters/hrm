@@ -17,6 +17,10 @@ import { zonedTimeToUtc } from 'date-fns-tz';
 import type { ContactRawJson, NewContactRecord } from '@tech-matters/hrm-types';
 import type { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
 
+// iCarol timestamps have no timezone marker; assumed local to this zone. Re-verify
+// before reusing this script.
+const ICAROL_SOURCE_TIMEZONE = 'America/New_York';
+
 /**
  * Maps a Twilio worker's full name (as it appears in iCarol's "PhoneWorkerName"
  * column) to that worker's Twilio SID, so imported contacts can be attributed to
@@ -199,13 +203,14 @@ export const calculateConversationDuration = (
   return Math.round((endMs - startMs) / 1000);
 };
 
-// Converts an iCarol timestamp (assumed Eastern local time, no tz marker) to a UTC ISO string, applying EST/EDT by date.
+// Converts an iCarol timestamp (assumed local to ICAROL_SOURCE_TIMEZONE, no tz marker)
+// to a UTC ISO string, applying standard/daylight time by date.
 export const parseIcarolTimestampAsUtc = (
   value: string | undefined,
 ): string | undefined => {
   const trimmed = (value ?? '').trim();
   if (!trimmed) return undefined;
-  const utc = zonedTimeToUtc(trimmed.replace(' ', 'T'), 'America/New_York');
+  const utc = zonedTimeToUtc(trimmed.replace(' ', 'T'), ICAROL_SOURCE_TIMEZONE);
   return Number.isNaN(utc.getTime()) ? undefined : utc.toISOString();
 };
 
