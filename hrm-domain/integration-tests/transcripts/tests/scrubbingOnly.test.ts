@@ -26,12 +26,12 @@ import {
   waitForConversationMedia,
 } from '../src/contactDb';
 import { MINIMAL_CONTACT } from '../src/fixtures/sampleContacts';
-import { S3ContactMediaType } from '@tech-matters/hrm-types/ConversationMedia';
+import { S3ContactMediaType } from '@tech-matters/hrm-types';
 import { waitForExpectedNumberOfSQSMessage } from '../src/sqs';
 import { clearAllTables } from '../src/cleanupDb';
 import { runContainer } from '../src/docker';
 import { newCompletedRetrieveTranscriptMessageBody } from '../src/fixtures/sampleMessages';
-import { ContactJobType } from '@tech-matters/types/ContactJob';
+import { ContactJobType } from '@tech-matters/types';
 import { waitForS3Object } from '../src/s3';
 import { ACCOUNT_SID } from '../src/fixtures/sampleConfig';
 import { deleteParameter, putParameter } from '../src/ssm';

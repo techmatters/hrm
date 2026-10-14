@@ -19,7 +19,7 @@ import {
   getS3DocsBucketNameSsmPath,
   getTwilioAccountSidSsmPath,
   getTwilioStaticKeySsmPath,
-} from '../../ssmParameterNameGetters';
+} from '../../src/ssmParameterNameGetters';
 
 beforeEach(() => {
   process.env.NODE_ENV = 'test';

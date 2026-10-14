@@ -26,7 +26,8 @@ export const waitForS3Object = retryable(
     key: string;
   }): Promise<ReturnType<typeof getS3Object> | undefined> => {
     try {
-      return await getS3Object({ bucket, key });
+      const object = await getS3Object({ bucket, key });
+      return object;
     } catch (err) {
       return undefined;
     }

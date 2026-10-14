@@ -86,7 +86,8 @@ const publishToSns = async ({
       entityType,
       payload.operation,
     );
-    return await publishSns(publishParameters);
+    const published = await publishSns(publishParameters);
+    return published;
   } catch (err) {
     let id: string;
     if (payload.operation === 'update') {

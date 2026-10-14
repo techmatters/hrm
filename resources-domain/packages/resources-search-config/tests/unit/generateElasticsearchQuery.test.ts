@@ -18,9 +18,9 @@ import each from 'jest-each';
 import {
   type SearchGenerateElasticsearchQueryParams,
   generateElasticsearchQuery,
-} from '../../generateElasticsearchQuery';
+} from '../../src/generateElasticsearchQuery';
 import type { SearchQuery } from '@tech-matters/elasticsearch-client';
-import { ResourcesSearchConfiguration } from '../../searchConfiguration';
+import { ResourcesSearchConfiguration } from '../../src/searchConfiguration';
 
 describe('Search', () => {
   describe('generateElasticsearchQuery', () => {

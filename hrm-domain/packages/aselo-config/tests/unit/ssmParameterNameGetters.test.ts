@@ -27,7 +27,7 @@ import {
   getPermissionConfigSsmPath,
   getTranscriptRetentionDaysSsmPath,
   getTwilioAuthTokenSsmPath,
-} from '../../ssmParameterNameGetters';
+} from '../../src/ssmParameterNameGetters';
 
 beforeEach(() => {
   process.env.NODE_ENV = 'test';

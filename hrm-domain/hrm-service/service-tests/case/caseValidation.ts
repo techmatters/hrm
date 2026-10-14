@@ -18,7 +18,7 @@ import { CaseService } from '@tech-matters/hrm-core/case/caseService';
 import { NewContactRecord } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import '@tech-matters/testing/expectToParseAsDate';
+import '@tech-matters/testing';
 
 export const validateCaseListResponse = (actual, expectedCases: CaseService[], count) => {
   expect(actual.status).toBe(200);

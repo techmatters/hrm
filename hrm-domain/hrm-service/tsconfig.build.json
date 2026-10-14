@@ -3,11 +3,11 @@
   "extends": "./tsconfig.base.json",
   "files": [],
   "references": [
+    { "path": "packages/ssm-cache" },
     { "path": "packages/http" },
     { "path": "packages/twilio-worker-auth" },
     { "path": "packages/s3-client" },
     { "path": "packages/sns-client" },
-    { "path": "packages/ssm-cache" },
     { "path": "packages/aselo-config" },
     { "path": "hrm-domain/packages/aselo-config" },
     { "path": "packages/sqs-client" },

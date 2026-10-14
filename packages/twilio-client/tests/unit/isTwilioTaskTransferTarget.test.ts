@@ -18,7 +18,7 @@ import {
   getClient,
   isTwilioTaskTransferTarget,
   setMockTaskRouterWorkspaces,
-} from '../../index';
+} from '../../src/index';
 
 const generateWorkspaceMocks = (
   workspacesTasks: {
