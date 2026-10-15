@@ -23,6 +23,7 @@ import {
   mapContact,
   normalizeWorkerName,
   parseICarolBoolean,
+  parseIcarolTimestampAsUtc,
   parseS3Uri,
   registerSyntheticWorker,
   resolveWorkerSid,
@@ -90,6 +91,31 @@ describe('parseICarolBoolean', () => {
       expect(parseICarolBoolean(input)).toBeUndefined();
     },
   );
+});
+
+describe('parseIcarolTimestampAsUtc', () => {
+  test.each([undefined, '', '   ', 'not a date'])('returns undefined for "%s"', input => {
+    expect(parseIcarolTimestampAsUtc(input)).toBeUndefined();
+  });
+
+  test('applies EST (UTC-5) in January and EDT (UTC-4) in July', () => {
+    expect(parseIcarolTimestampAsUtc('2026-01-15 14:00:00')).toBe(
+      '2026-01-15T19:00:00.000Z',
+    );
+    expect(parseIcarolTimestampAsUtc('2026-07-15 14:00:00')).toBe(
+      '2026-07-15T18:00:00.000Z',
+    );
+  });
+
+  // These DST edge cases have no single correct answer; just pin the library's behaviour.
+  test('resolves the spring-forward skipped hour and fall-back ambiguous hour deterministically', () => {
+    expect(parseIcarolTimestampAsUtc('2026-03-08 02:30:00')).toBe(
+      '2026-03-08T06:30:00.000Z',
+    );
+    expect(parseIcarolTimestampAsUtc('2026-11-01 01:30:00')).toBe(
+      '2026-11-01T05:30:00.000Z',
+    );
+  });
 });
 
 describe('splitMultiselectValue', () => {
@@ -493,13 +519,19 @@ describe('mapContact', () => {
     expect(contact.channel).toBe('default');
   });
 
-  test('passes through the time of contact, using undefined when blank', () => {
+  test('converts the time of contact from Eastern local time to UTC, applying EST/EDT based on the date, using undefined when blank', () => {
     expect(
       mapContact(
-        buildRecord({ CallDateAndTimeStart: '2024-01-01T00:00:00Z' }),
+        buildRecord({ CallDateAndTimeStart: '2026-01-15 14:00:00' }),
         defaultWorkerSid,
       ).timeOfContact,
-    ).toBe('2024-01-01T00:00:00Z');
+    ).toBe('2026-01-15T19:00:00.000Z'); // January: EST, UTC-5
+    expect(
+      mapContact(
+        buildRecord({ CallDateAndTimeStart: '2026-07-15 14:00:00' }),
+        defaultWorkerSid,
+      ).timeOfContact,
+    ).toBe('2026-07-15T18:00:00.000Z'); // July: EDT, UTC-4
     expect(
       mapContact(buildRecord({ CallDateAndTimeStart: '' }), defaultWorkerSid)
         .timeOfContact,
