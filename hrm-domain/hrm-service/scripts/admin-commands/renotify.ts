@@ -16,41 +16,15 @@
 
 import type { HrmAccountId } from '@tech-matters/types';
 import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-types';
-import { getTwilioAccountSid } from '@tech-matters/aselo-config';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../hrmInternalConfig';
-import { confirm, getAccountSidsInRegion } from '../accountsInRegion';
+import { confirm, getAccountSidsInRegion, toAccountSids } from '../accountSids';
 // import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
-
-const getAccountSid = ({
-  environment,
-  shortCode,
-}: {
-  environment: string;
-  shortCode: string;
-}) => {
-  return getTwilioAccountSid({ shortCode, environment });
-};
-
-const ACCOUNT_SID_REGEX = /^AC[0-9a-f]{32}$/i;
-
-/**
- * Accepts either an account short code or an account sid, so sids listed by --dry-run can be used directly
- */
-const toAccountSid = async ({
-  environment,
-  account,
-}: {
-  environment: string;
-  account: string;
-}): Promise<HrmAccountId> =>
-  (ACCOUNT_SID_REGEX.test(account)
-    ? account
-    : await getAccountSid({ environment, shortCode: account })) as HrmAccountId;
 
 /**
  * Resolves the account sids to run the command against.
- * If no account short codes are provided, uses every account in the given region, after user confirmation.
+ * Accounts can be short codes or account sids.
+ * If no accounts are provided, uses every account in the given region, after user confirmation.
  * Any account in excludeAccounts (short codes or sids) is left out.
  * Returns undefined if the user doesn't confirm.
  */
@@ -67,18 +41,17 @@ const resolveAccountSids = async ({
   region: string;
   dryRun: boolean;
 }): Promise<HrmAccountId[] | undefined> => {
-  const excludedSids = await Promise.all(
-    (excludeAccounts ?? []).map(account => toAccountSid({ environment, account })),
-  );
+  // Resolve included and excluded short codes together, so SSM is only queried once
+  const allSids = await toAccountSids({
+    environment,
+    accounts: [...(accounts ?? []), ...(excludeAccounts ?? [])],
+  });
+  const includedSids = allSids.slice(0, accounts?.length ?? 0);
+  const excludedSids = allSids.slice(accounts?.length ?? 0);
 
   let accountSids: HrmAccountId[];
   if (accounts?.length) {
-    accountSids = await Promise.all(
-      accounts.map(
-        async shortCode =>
-          (await getAccountSid({ environment, shortCode })) as HrmAccountId,
-      ),
-    );
+    accountSids = includedSids;
   } else {
     // Nothing is run on a dry run, so there's nothing to confirm
     if (
