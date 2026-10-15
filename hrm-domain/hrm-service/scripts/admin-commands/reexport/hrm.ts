@@ -57,9 +57,9 @@ export const builder = {
       'list of accounts short codes (e.g. -a=AS ZA). If omitted, runs for every account in the region',
     type: 'array',
   },
-  ea: {
-    alias: 'excludeAccounts',
-    describe: 'list of accounts short codes or account sids to exclude (e.g. -ea=AS ZA)',
+  'exclude-accounts': {
+    describe:
+      'list of accounts short codes or account sids to exclude (e.g. --exclude-accounts=AS ZA)',
     type: 'array',
   },
   d: {

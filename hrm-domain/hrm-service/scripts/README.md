@@ -59,5 +59,5 @@ results in the same command as
 For `reindex hrm`, `republish hrm` and `reexport hrm`, the `-a/--accounts` parameter is optional. If omitted, the command runs for every account whose `/<environment>/aws/<account sid>/region` SSM parameter matches the given region, after asking for confirmation.
 Use `-d/--dry-run` to list the account sids the command would run for, without running it
 `npm run admin-cli reindex hrm -- -e development -r us-east-1 -f 2000-01-01 -t 2030-01-01 --dry-run`
-Use `-ea/--excludeAccounts` (short codes or account sids) to leave accounts out, e.g. every account in the region except ZA
-`npm run admin-cli reindex hrm -- -e development -r us-east-1 -f 2000-01-01 -t 2030-01-01 -ea ZA --dry-run`
+Use `--exclude-accounts` (short codes or account sids) to leave accounts out, e.g. every account in the region except ZA
+`npm run admin-cli reindex hrm -- -e development -r us-east-1 -f 2000-01-01 -t 2030-01-01 --exclude-accounts ZA --dry-run`
