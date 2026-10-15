@@ -19,6 +19,7 @@ import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-t
 import { getTwilioAccountSid } from '@tech-matters/aselo-config';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../hrmInternalConfig';
+import { confirm, getAccountSidsInRegion } from '../accountsInRegion';
 // import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
 
 const getAccountSid = ({
@@ -29,6 +30,44 @@ const getAccountSid = ({
   shortCode: string;
 }) => {
   return getTwilioAccountSid({ shortCode, environment });
+};
+
+/**
+ * Resolves the account sids to run the command against.
+ * If no account short codes are provided, uses every account in the given region, after user confirmation.
+ * Returns undefined if the user doesn't confirm.
+ */
+const resolveAccountSids = async ({
+  accounts,
+  environment,
+  region,
+  dryRun,
+}: {
+  accounts?: string[];
+  environment: string;
+  region: string;
+  dryRun: boolean;
+}): Promise<HrmAccountId[] | undefined> => {
+  if (accounts?.length) {
+    return Promise.all(
+      accounts.map(
+        async shortCode =>
+          (await getAccountSid({ environment, shortCode })) as HrmAccountId,
+      ),
+    );
+  }
+
+  // Nothing is run on a dry run, so there's nothing to confirm
+  if (
+    !dryRun &&
+    !(await confirm(
+      `running cli for every account in the region ${region}, are you sure?`,
+    ))
+  ) {
+    return undefined;
+  }
+
+  return getAccountSidsInRegion({ environment, region });
 };
 
 const requestRenotify = async ({
@@ -88,18 +127,40 @@ export const renotify = async ({
   cases,
   profiles,
   operation,
+  dryRun = false,
 }: {
   region: string;
   environment: string;
-  accounts: string[];
+  accounts?: string[];
   dateFrom: string;
   dateTo: string;
   contacts: boolean;
   cases: boolean;
   profiles: boolean;
   operation: ManuallyTriggeredNotificationOperation;
+  dryRun?: boolean;
 }) => {
   try {
+    const accountSids = await resolveAccountSids({
+      accounts,
+      environment,
+      region,
+      dryRun,
+    });
+
+    if (!accountSids) {
+      console.info('Aborted');
+      return;
+    }
+
+    if (dryRun) {
+      console.info(
+        `[dry run] ${operation} would run for ${accountSids.length} account(s) in ${environment} ${region}:`,
+      );
+      accountSids.forEach(accountSid => console.info(`  ${accountSid}`));
+      return;
+    }
+
     // TODO: access all regions (once eu-west-1 is accessible via management vpn)
     // console.log('envRegionMap', envRegionMap);
     const timestamp = new Date().getTime();
@@ -114,12 +175,7 @@ export const renotify = async ({
       assumeRoleParams,
     });
 
-    for (const account of accounts) {
-      const accountSid = (await getAccountSid({
-        environment,
-        shortCode: account,
-      })) as HrmAccountId;
-
+    for (const accountSid of accountSids) {
       console.log(`Processing ${operation} request for account ${accountSid}`);
       if (contacts) {
         await requestRenotify({
