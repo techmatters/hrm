@@ -59,6 +59,12 @@ Use Node 22 (`.nvmrc`). Steps 5–7 need Docker.
    - A lambda (CI builds each one listed in the `build-lambda-containers` matrix of
      `hrm-ci.yml`), e.g. for `hrm-domain/lambdas/files-urls`:
      `docker build -f lambdas/Dockerfile --build-arg lambda_dir=hrm-domain/lambdas --build-arg lambda_name=files-urls .`
+   - Without Docker, or as a quicker first pass over every image: `npm run docker:check`
+     (`npm run docker:check -- files-urls` for one image). It replays each Dockerfile's
+     build stage (`COPY`, `npm ci`, `tsc -b`, `cp`) in a temporary directory and checks the
+     final image's `require()` graph, but does not reproduce base images or OS packages,
+     so still run a real `docker build` when changing those. The script lives in
+     `agents-tools/docker-build-check.js`; see its header for options.
 
 If any step fails, fix the problem and start again from step 2 until you get a clean run.
 
