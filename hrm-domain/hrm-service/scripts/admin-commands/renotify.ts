@@ -32,42 +32,71 @@ const getAccountSid = ({
   return getTwilioAccountSid({ shortCode, environment });
 };
 
+const ACCOUNT_SID_REGEX = /^AC[0-9a-f]{32}$/i;
+
+/**
+ * Accepts either an account short code or an account sid, so sids listed by --dry-run can be used directly
+ */
+const toAccountSid = async ({
+  environment,
+  account,
+}: {
+  environment: string;
+  account: string;
+}): Promise<HrmAccountId> =>
+  (ACCOUNT_SID_REGEX.test(account)
+    ? account
+    : await getAccountSid({ environment, shortCode: account })) as HrmAccountId;
+
 /**
  * Resolves the account sids to run the command against.
  * If no account short codes are provided, uses every account in the given region, after user confirmation.
+ * Any account in excludeAccounts (short codes or sids) is left out.
  * Returns undefined if the user doesn't confirm.
  */
 const resolveAccountSids = async ({
   accounts,
+  excludeAccounts,
   environment,
   region,
   dryRun,
 }: {
   accounts?: string[];
+  excludeAccounts?: string[];
   environment: string;
   region: string;
   dryRun: boolean;
 }): Promise<HrmAccountId[] | undefined> => {
+  const excludedSids = await Promise.all(
+    (excludeAccounts ?? []).map(account => toAccountSid({ environment, account })),
+  );
+
+  let accountSids: HrmAccountId[];
   if (accounts?.length) {
-    return Promise.all(
+    accountSids = await Promise.all(
       accounts.map(
         async shortCode =>
           (await getAccountSid({ environment, shortCode })) as HrmAccountId,
       ),
     );
+  } else {
+    // Nothing is run on a dry run, so there's nothing to confirm
+    if (
+      !dryRun &&
+      !(await confirm(
+        `running cli for every account in the region ${region}, are you sure?`,
+      ))
+    ) {
+      return undefined;
+    }
+
+    accountSids = await getAccountSidsInRegion({ environment, region });
   }
 
-  // Nothing is run on a dry run, so there's nothing to confirm
-  if (
-    !dryRun &&
-    !(await confirm(
-      `running cli for every account in the region ${region}, are you sure?`,
-    ))
-  ) {
-    return undefined;
+  if (excludedSids.length) {
+    console.info(`Excluding account(s): ${excludedSids.join(', ')}`);
   }
-
-  return getAccountSidsInRegion({ environment, region });
+  return accountSids.filter(accountSid => !excludedSids.includes(accountSid));
 };
 
 const requestRenotify = async ({
@@ -127,11 +156,13 @@ export const renotify = async ({
   cases,
   profiles,
   operation,
+  excludeAccounts,
   dryRun = false,
 }: {
   region: string;
   environment: string;
   accounts?: string[];
+  excludeAccounts?: string[];
   dateFrom: string;
   dateTo: string;
   contacts: boolean;
@@ -143,6 +174,7 @@ export const renotify = async ({
   try {
     const accountSids = await resolveAccountSids({
       accounts,
+      excludeAccounts,
       environment,
       region,
       dryRun,

@@ -16,11 +16,25 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargs from 'yargs';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { hideBin } from 'yargs/helpers';
+
+// yargs parses single dash multi-letter flags as grouped short flags (e.g. -ea as -e -a),
+// so rewrite the ones we support to their double dash form
+const MULTI_LETTER_SHORT_FLAGS = ['ea'];
+const normaliseArgs = (args: string[]) =>
+  args.map(arg =>
+    MULTI_LETTER_SHORT_FLAGS.some(
+      flag => arg === `-${flag}` || arg.startsWith(`-${flag}=`),
+    )
+      ? `-${arg}`
+      : arg,
+  );
 
 const main = () => {
   console.info('Admin CLI');
   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-  yargs
+  yargs(normaliseArgs(hideBin(process.argv)))
     .commandDir('admin-commands', {
       exclude: /^(index|_)/, // Exclude files starting with 'index' or '_'
       extensions: ['ts'],
