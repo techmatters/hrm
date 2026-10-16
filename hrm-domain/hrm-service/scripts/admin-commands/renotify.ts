@@ -14,12 +14,23 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { createInterface } from 'node:readline/promises';
 import type { HrmAccountId } from '@tech-matters/types';
 import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-types';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../hrmInternalConfig';
-import { confirm, getAccountSidsInRegion, toAccountSids } from '../accountSids';
+import { getAccountSidsInRegion, toAccountSids } from '../accountSids';
 // import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
+
+const confirm = async (question: string): Promise<boolean> => {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question(`${question} (y/N) `);
+    return ['y', 'yes'].includes(answer.trim().toLowerCase());
+  } finally {
+    rl.close();
+  }
+};
 
 /**
  * Resolves the account sids to run the command against.
