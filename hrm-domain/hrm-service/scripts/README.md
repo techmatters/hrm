@@ -28,6 +28,8 @@ admin-cli
 | ├── hrm:            # Republish contacts and cases based on date range
 ├── reexport
 | ├── hrm:            # Re-export contacts, cases and profiles based on date range
+├── stats
+| ├── list-accounts:  # List the account short codes and sids in an environment, grouped by region
 ```
 
 ### Usage
@@ -61,3 +63,7 @@ Use `-d/--dry-run` to list the account sids the command would run for, without r
 `npm run admin-cli reindex hrm -- -e development -r us-east-1 -f 2000-01-01 -t 2030-01-01 --dry-run`
 Use `--exclude-accounts` (short codes or account sids) to leave accounts out, e.g. every account in the region except ZA
 `npm run admin-cli reindex hrm -- -e development -r us-east-1 -f 2000-01-01 -t 2030-01-01 --exclude-accounts ZA --dry-run`
+
+#### Listing accounts
+`stats list-accounts` lists the short code and account sid of every account in an environment, grouped by region, from the `/<environment>/twilio/<short code>/account_sid` and `/<environment>/aws/<account sid>/region` SSM parameters. Pass `-r` to only list the accounts in one region
+`npm run admin-cli stats list-accounts -- -e development -r us-east-1`
