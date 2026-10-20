@@ -14,7 +14,7 @@
   "editContactField": [],
   "editInProgressContact": [["isSupervisor"], ["isOwner"]],
   "viewExternalTranscript": [["isSupervisor"]],
-  "viewRecording": [["isSupervisor"]],
+  "viewRecording": [["everyone"]],
   "addContactToCase": [],
   "removeContactFromCase": [],
   
