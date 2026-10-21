@@ -23,6 +23,7 @@ import { isErr, isOk, mapHTTPError } from '@tech-matters/types';
 import { SafeRouter, publicEndpoint } from '../permissions';
 import * as profileController from './profileService';
 import createError from 'http-errors';
+import { parseRenotifyFilters } from '../notifications/renotifyFilters';
 import { renotifyProfilesStream } from './profileNotifyService';
 
 const adminProfilesRouter = SafeRouter();
@@ -133,7 +134,7 @@ adminProfilesRouter.delete(
     res.json(result);
   },
 );
-// admin POST endpoint to renotify cases. req body has accountSid, dateFrom, dateTo
+// admin POST endpoint to renotify cases. req body has dateFrom, dateTo and optionally ids
 adminProfilesRouter.post(
   '/:notifyOperation',
   publicEndpoint,
@@ -145,12 +146,11 @@ adminProfilesRouter.post(
     }
     console.log(`.......${notifyOperation}ing profiles......`, req, res);
     const { hrmAccountId } = req;
-    const { dateFrom, dateTo } = req.body;
+    const filters = parseRenotifyFilters(req.body);
 
     const resultStream = await renotifyProfilesStream(
       hrmAccountId,
-      dateFrom,
-      dateTo,
+      filters,
       notifyOperation,
     );
 
