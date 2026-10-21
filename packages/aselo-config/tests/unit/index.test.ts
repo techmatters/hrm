@@ -81,7 +81,11 @@ describe('ssm parameter getters', () => {
       const result = await getter(args);
 
       expect(result).toBe('the-value');
-      expect(mockGetSsmParameter).toHaveBeenCalledWith(expectedPath, undefined);
+      expect(mockGetSsmParameter).toHaveBeenCalledWith(
+        expectedPath,
+        undefined,
+        undefined,
+      );
     },
   );
 
@@ -94,6 +98,18 @@ describe('ssm parameter getters', () => {
     expect(mockGetSsmParameter).toHaveBeenCalledWith(
       '/test/twilio/AS/account_sid',
       86400000,
+      undefined,
+    );
+  });
+
+  test('passes credentials through to getSsmParameter', async () => {
+    const credentials = { accessKeyId: 'key', secretAccessKey: 'secret' };
+    await getHrmStaticKey({ keyName: 'ADMIN_HRM', credentials });
+
+    expect(mockGetSsmParameter).toHaveBeenCalledWith(
+      '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
+      undefined,
+      credentials,
     );
   });
 });
@@ -107,6 +123,7 @@ describe('getAccountStaticKey', () => {
     expect(result).toBe('the-key');
     expect(mockGetSsmParameter).toHaveBeenCalledWith(
       '/test/hrm/service/us-east-1/static_key/ADMIN_HRM',
+      undefined,
       undefined,
     );
   });
@@ -126,10 +143,12 @@ describe('getAccountStaticKey', () => {
       1,
       '/test/hrm/service/us-east-1/static_key/ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
       undefined,
+      undefined,
     );
     expect(mockGetSsmParameter).toHaveBeenNthCalledWith(
       2,
       '/test/twilio/ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/static_key',
+      undefined,
       undefined,
     );
   });
