@@ -20,7 +20,11 @@ import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-t
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../hrmInternalConfig';
 import { getAccountSidsInRegion, toAccountSids } from '../accountSids';
-import { getTfAdminAssumeRoleParams } from '../adminRoles';
+import {
+  CredentialsProvider,
+  getTfAdminAssumeRoleParams,
+  lazyTfAdminCredentials,
+} from '../adminRoles';
 // import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
 
 const confirm = async (question: string): Promise<boolean> => {
@@ -46,17 +50,20 @@ const resolveAccountSids = async ({
   environment,
   region,
   dryRun,
+  getCredentials,
 }: {
   accounts?: string[];
   excludeAccounts?: string[];
   environment: string;
   region: string;
   dryRun: boolean;
+  getCredentials: CredentialsProvider;
 }): Promise<HrmAccountId[] | undefined> => {
   // Resolve included and excluded short codes together, so SSM is only queried once
   const allSids = await toAccountSids({
     environment,
     accounts: [...(accounts ?? []), ...(excludeAccounts ?? [])],
+    getCredentials,
   });
   const includedSids = allSids.slice(0, accounts?.length ?? 0);
   const excludedSids = allSids.slice(accounts?.length ?? 0);
@@ -75,7 +82,7 @@ const resolveAccountSids = async ({
       return undefined;
     }
 
-    accountSids = await getAccountSidsInRegion({ environment, region });
+    accountSids = await getAccountSidsInRegion({ environment, region, getCredentials });
   }
 
   if (excludedSids.length) {
@@ -163,6 +170,8 @@ export const renotify = async ({
       environment,
       region,
       dryRun,
+      // The tf-admin role is only assumed if SSM needs to be read to resolve the accounts
+      getCredentials: lazyTfAdminCredentials(),
     });
 
     if (!accountSids) {

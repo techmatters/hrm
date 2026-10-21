@@ -16,6 +16,7 @@
 
 import type { HrmAccountId } from '@tech-matters/types';
 import { getCachedParameters, loadPaginated } from '@tech-matters/ssm-cache';
+import type { CredentialsProvider } from './adminRoles';
 
 const loadedPaths = new Map<string, Promise<void>>();
 
@@ -23,9 +24,16 @@ const loadedPaths = new Map<string, Promise<void>>();
  * Loads every parameter under the path into the SSM cache with a single paginated request.
  * Each path is only loaded once per run, as SSM rate limits are low.
  */
-const loadPathOnce = (path: string, regex: RegExp) => {
+const loadPathOnce = (
+  path: string,
+  regex: RegExp,
+  getCredentials: CredentialsProvider,
+) => {
   if (!loadedPaths.has(path)) {
-    loadedPaths.set(path, loadPaginated({ path, regex }));
+    loadedPaths.set(
+      path,
+      getCredentials().then(credentials => loadPaginated({ path, regex, credentials })),
+    );
   }
   return loadedPaths.get(path)!;
 };
@@ -36,8 +44,9 @@ const loadPathOnce = (path: string, regex: RegExp) => {
 const getParametersByCapturedSegment = async (
   path: string,
   regex: RegExp,
+  getCredentials: CredentialsProvider,
 ): Promise<Record<string, string>> => {
-  await loadPathOnce(path, regex);
+  await loadPathOnce(path, regex, getCredentials);
   return Object.fromEntries(
     Object.entries(getCachedParameters(regex)).map(([name, value]) => [
       name.match(regex)![1],
@@ -51,10 +60,12 @@ const getParametersByCapturedSegment = async (
  */
 export const getRegionsByAccountSid = (
   environment: string,
+  getCredentials: CredentialsProvider,
 ): Promise<Record<string, string>> =>
   getParametersByCapturedSegment(
     `/${environment}/aws/`,
     new RegExp(`^/${environment}/aws/([^/]+)/region$`),
+    getCredentials,
   );
 
 /**
@@ -62,10 +73,12 @@ export const getRegionsByAccountSid = (
  */
 export const getAccountSidsByShortCode = (
   environment: string,
+  getCredentials: CredentialsProvider,
 ): Promise<Record<string, HrmAccountId>> =>
   getParametersByCapturedSegment(
     `/${environment}/twilio/`,
     new RegExp(`^/${environment}/twilio/([^/]+)/account_sid$`),
+    getCredentials,
   ) as Promise<Record<string, HrmAccountId>>;
 
 /**
@@ -75,11 +88,13 @@ export const getAccountSidsByShortCode = (
 export const getAccountSidsInRegion = async ({
   environment,
   region,
+  getCredentials,
 }: {
   environment: string;
   region: string;
+  getCredentials: CredentialsProvider;
 }): Promise<HrmAccountId[]> =>
-  Object.entries(await getRegionsByAccountSid(environment))
+  Object.entries(await getRegionsByAccountSid(environment, getCredentials))
     .filter(([, accountRegion]) => accountRegion === region)
     .map(([accountSid]) => accountSid as HrmAccountId)
     .sort();
@@ -94,15 +109,17 @@ const ACCOUNT_SID_REGEX = /^AC[0-9a-f]{32}$/i;
 export const toAccountSids = async ({
   environment,
   accounts,
+  getCredentials,
 }: {
   environment: string;
   accounts: string[];
+  getCredentials: CredentialsProvider;
 }): Promise<HrmAccountId[]> => {
   if (accounts.every(account => ACCOUNT_SID_REGEX.test(account))) {
     return accounts as HrmAccountId[];
   }
 
-  const sidsByShortCode = await getAccountSidsByShortCode(environment);
+  const sidsByShortCode = await getAccountSidsByShortCode(environment, getCredentials);
 
   const unknownShortCodes = accounts.filter(
     account =>

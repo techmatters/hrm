@@ -60,3 +60,17 @@ export const getTfAdminAssumeRoleParams = () => getAssumeRoleParams(ROLE_ARNS.tf
 
 export const assumeTfAdminRole = (region?: string) =>
   assumeRoleCredentials(getTfAdminAssumeRoleParams(), region);
+
+export type CredentialsProvider = () => Promise<AwsCredentials>;
+
+/**
+ * Returns a credentials provider that only assumes the tf-admin role the first time credentials are needed,
+ * so commands that end up not using them never assume it, and the ones that use them several times assume it once
+ */
+export const lazyTfAdminCredentials = (): CredentialsProvider => {
+  let credentials: Promise<AwsCredentials> | undefined;
+  return () => {
+    credentials ??= assumeTfAdminRole();
+    return credentials;
+  };
+};
