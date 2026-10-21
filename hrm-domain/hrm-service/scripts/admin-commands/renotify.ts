@@ -20,6 +20,7 @@ import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-t
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../hrmInternalConfig';
 import { getAccountSidsInRegion, toAccountSids } from '../accountSids';
+import { getTfAdminAssumeRoleParams } from '../adminRoles';
 // import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
 
 const confirm = async (question: string): Promise<boolean> => {
@@ -179,16 +180,10 @@ export const renotify = async ({
 
     // TODO: access all regions (once eu-west-1 is accessible via management vpn)
     // console.log('envRegionMap', envRegionMap);
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      assumeRoleParams,
+      assumeRoleParams: getTfAdminAssumeRoleParams(),
     });
 
     for (const accountSid of accountSids) {

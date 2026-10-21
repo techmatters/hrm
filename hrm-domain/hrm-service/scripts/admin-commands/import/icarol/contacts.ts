@@ -14,17 +14,19 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { parse } from 'csv-parse/sync';
-import {
-  STSClient,
-  AssumeRoleCommand,
-  GetCallerIdentityCommand,
-} from '@aws-sdk/client-sts';
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getClient } from '@tech-matters/twilio-client';
 import type { HrmAccountId, WorkerSID } from '@tech-matters/types';
 import { getAdminV0URL } from '../../../hrmInternalConfig';
+import {
+  assumeRoleCredentials,
+  assumeTfAdminRole,
+  getAssumeRoleParams,
+  getTfAdminAssumeRoleParams,
+} from '../../../adminRoles';
 import {
   buildLegacyWorkerSid,
   ICarolContactRecord,
@@ -118,26 +120,16 @@ export const builder = {
 // TODO: update role name if it's renamed/rescoped in Terraform.
 const TWILIO_IAC_SERVICE_CONFIG_MANAGER_ROLE_NAME = 'twilio-iac-service-config-manager';
 
-const assumeRoleCredentials = async (
-  region: string,
-  assumeRoleParams: { RoleArn: string; RoleSessionName: string },
-) => {
-  const sts = new STSClient({ region });
-  const { Credentials } = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-  return {
-    accessKeyId: Credentials!.AccessKeyId!,
-    secretAccessKey: Credentials!.SecretAccessKey!,
-    sessionToken: Credentials!.SessionToken!,
-  };
-};
-
 const getTwilioConfigSsmClient = async (region: string): Promise<SSMClient> => {
   const sts = new STSClient({ region });
   const { Account: accountId } = await sts.send(new GetCallerIdentityCommand({}));
-  const credentials = await assumeRoleCredentials(region, {
-    RoleArn: `arn:aws:iam::${accountId}:role/${TWILIO_IAC_SERVICE_CONFIG_MANAGER_ROLE_NAME}`,
-    RoleSessionName: `hrm-admin-cli-worker-sid-lookup-${Date.now()}`,
-  });
+  const credentials = await assumeRoleCredentials(
+    getAssumeRoleParams(
+      `arn:aws:iam::${accountId}:role/${TWILIO_IAC_SERVICE_CONFIG_MANAGER_ROLE_NAME}`,
+      'hrm-admin-cli-worker-sid-lookup',
+    ),
+    region,
+  );
   return new SSMClient({ region, credentials });
 };
 
@@ -215,16 +207,10 @@ export const handler = async ({
   }
 
   try {
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      assumeRoleParams,
+      assumeRoleParams: getTfAdminAssumeRoleParams(),
     });
 
     const url = getAdminV0URL(internalResourcesUrl, accountSid, '/contacts');
@@ -233,7 +219,7 @@ export const handler = async ({
     url.searchParams.set('finalize', 'true');
     const s3 = new S3Client({
       region,
-      credentials: await assumeRoleCredentials(region, assumeRoleParams),
+      credentials: await assumeTfAdminRole(region),
     });
 
     // For attributing contacts to the counsellor named in "PhoneWorkerName".

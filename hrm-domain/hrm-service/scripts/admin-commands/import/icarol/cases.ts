@@ -14,7 +14,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { parse } from 'csv-parse/sync';
-import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import {
   S3Client,
   GetObjectCommand,
@@ -23,6 +22,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../../../hrmInternalConfig';
+import { assumeTfAdminRole, getTfAdminAssumeRoleParams } from '../../../adminRoles';
 import { parseS3Uri } from './contacts/contactMapper';
 import {
   buildCaseCandidates,
@@ -84,19 +84,6 @@ export const builder = {
   },
 };
 
-const assumeRoleCredentials = async (
-  region: string,
-  assumeRoleParams: { RoleArn: string; RoleSessionName: string },
-) => {
-  const sts = new STSClient({ region });
-  const { Credentials } = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-  return {
-    accessKeyId: Credentials!.AccessKeyId!,
-    secretAccessKey: Credentials!.SecretAccessKey!,
-    sessionToken: Credentials!.SessionToken!,
-  };
-};
-
 /**
  * Every taskId to real Contact id ever imported, built from every prior
  * contacts-import audit log (dry-run excluded). Stays valid across a
@@ -138,22 +125,16 @@ export const handler = async ({
   dryRun,
 }) => {
   try {
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      assumeRoleParams,
+      assumeRoleParams: getTfAdminAssumeRoleParams(),
     });
 
     const casesUrl = getAdminV0URL(internalResourcesUrl, accountSid, '/cases');
     const s3 = new S3Client({
       region,
-      credentials: await assumeRoleCredentials(region, assumeRoleParams),
+      credentials: await assumeTfAdminRole(region),
     });
 
     // iCarol exports prefix a title row and a blank row, so parsing begins at line 3.
