@@ -18,7 +18,6 @@ import { pgp } from '../../dbConnection';
 import { DateExistsCondition, DateFilter } from '../../sql';
 import { CaseListFilters } from '../caseDataAccess';
 import { OrderByClauseItem, OrderByDirection } from '../../sql';
-import { selectContactsOwnedCount } from './caseGetSql';
 import { CaseListCondition, listCasesPermissionWhereClause } from './casePermissionSql';
 import { TwilioUser } from '@tech-matters/twilio-worker-auth';
 import { TKConditionsSets } from '../../permissions/rulesMap';
@@ -43,11 +42,14 @@ const DEFAULT_SORT: OrderByClauseItem[] = [
   { sortBy: 'id', sortDirection: OrderByDirection.descending },
 ];
 
-const generateOrderByClause = (clauses: OrderByClauseItem[]): string => {
+const generateOrderByClause = (
+  clauses: OrderByClauseItem[],
+  tableAlias: string,
+): string => {
   const validClauses = clauses.filter(c => ORDER_BY_FIELDS[c.sortBy]);
-  if (clauses.length > 0) {
+  if (validClauses.length > 0) {
     return ` ORDER BY ${validClauses
-      .map(t => `${ORDER_BY_FIELDS[t.sortBy]} ${t.sortDirection}`)
+      .map(t => `${tableAlias}.${ORDER_BY_FIELDS[t.sortBy]} ${t.sortDirection}`)
       .join(', ')}`;
   } else return '';
 };
@@ -137,43 +139,39 @@ const filterSql = ({
   AND `);
 };
 
-const selectCasesUnorderedSql = ({
-  whereClause,
-  havingClause = '',
-}: Omit<SelectCasesParams, 'orderByClause'>) => {
-  return `
-  SELECT DISTINCT ON (cases."accountSid", cases.id)
-    (count(*) OVER())::INTEGER AS "totalCount",
-    "cases".*,
-    "contactsOwnedCount"."contactsOwnedByUserCount"
-  FROM "Cases" "cases"
-  LEFT JOIN LATERAL (
-      ${selectContactsOwnedCount('twilioWorkerSid')}
-  ) "contactsOwnedCount" ON true
-  ${whereClause ?? ''} GROUP BY
-    "cases"."accountSid",
-    "cases"."id",
-    "contactsOwnedCount"."contactsOwnedByUserCount"
-  ${havingClause}`;
-};
-
-type SelectCasesParams = {
-  whereClause: string;
-  orderByClause: string;
-  havingClause?: string;
-};
-
 const selectCasesPaginatedSql = ({
   whereClause,
   orderByClause,
-  havingClause = '',
-}: SelectCasesParams) => `
-SELECT * FROM (${selectCasesUnorderedSql({
-  whereClause,
-  havingClause,
-})}) "unordered" ${orderByClause}
-LIMIT $<limit>
-OFFSET $<offset>`;
+  outerOrderByClause,
+}: {
+  whereClause: string;
+  orderByClause: string;
+  outerOrderByClause: string;
+}) => `
+SELECT
+  total."totalCount",
+  page.*,
+  (
+    SELECT COUNT(*)
+    FROM "Contacts" c
+    WHERE c."caseId" = page.id
+      AND c."accountSid" = page."accountSid"
+      AND c."twilioWorkerId" = $<twilioWorkerSid>
+  ) AS "contactsOwnedByUserCount"
+FROM (
+  SELECT COUNT(*)::INTEGER AS "totalCount"
+  FROM "Cases" cases
+  ${whereClause ?? ''}
+) total
+CROSS JOIN (
+  SELECT cases.*
+  FROM "Cases" cases
+  ${whereClause ?? ''}
+  ${orderByClause}
+  LIMIT $<limit>
+  OFFSET $<offset>
+) page
+${outerOrderByClause}`;
 
 export type SearchQueryBuilder = (
   user: TwilioUser,
@@ -198,10 +196,18 @@ const selectSearchCaseBaseQuery = (whereClause: string): SearchQueryBuilder => {
       filterSql(filters),
     ].filter(sql => sql).join(`
     AND `);
-    const orderBySql = generateOrderByClause(orderByClauses.concat(DEFAULT_SORT));
+    const orderBySql = generateOrderByClause(
+      orderByClauses.concat(DEFAULT_SORT),
+      'cases',
+    );
+    const outerOrderBySql = generateOrderByClause(
+      orderByClauses.concat(DEFAULT_SORT),
+      'page',
+    );
     return selectCasesPaginatedSql({
       whereClause: whereSql ? `WHERE ${whereSql}` : null,
       orderByClause: orderBySql,
+      outerOrderByClause: outerOrderBySql,
     });
   };
 };
