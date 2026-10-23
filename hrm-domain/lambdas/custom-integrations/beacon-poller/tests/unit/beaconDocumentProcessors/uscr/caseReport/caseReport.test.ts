@@ -30,10 +30,6 @@ import { RawCaseReportApiPayload } from '../../../../../src/beaconDocumentProces
 import type { AccountSID } from '@tech-matters/types';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
-  getSsmParameter: () => 'BBC',
-}));
-
-jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: jest.fn(async () => process.env.STATIC_KEY!),
 }));
 

@@ -25,10 +25,6 @@ import { AssertionError } from 'node:assert';
 import { AccountSID } from '@tech-matters/types/dist';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
-  getSsmParameter: () => 'BBC',
-}));
-
-jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: jest.fn(async () => process.env.STATIC_KEY!),
 }));
 
