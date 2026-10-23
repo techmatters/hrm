@@ -14,7 +14,11 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import {
+  getBeaconApiKey,
+  getBeaconBaseUrl,
+  getBeaconDispatchApiVersion,
+} from '@tech-matters/hrm-aselo-config';
 import { newErr, newOk } from '@tech-matters/types';
 
 export type PendingIncident = {
@@ -40,17 +44,15 @@ export const createIncident = async ({
   helplineShortCode: string;
   incidentParams: CreateIncidentParams;
 }) => {
+  const beaconHelplineShortCode = helplineShortCode.toLowerCase();
   try {
     const [baseUrl, apiKey, apiVersion] = await Promise.all([
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_base_url`,
-      ),
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_api_key`,
-      ),
-      getSsmParameter(
-        `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_dispatch_api_version`,
-      ),
+      getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
+      getBeaconApiKey({ helplineShortCode: beaconHelplineShortCode, environment }),
+      getBeaconDispatchApiVersion({
+        helplineShortCode: beaconHelplineShortCode,
+        environment,
+      }),
     ]);
     const urlPath = `/api/aselo${apiVersion === 'v1' ? '' : `/${apiVersion}`}/incidents`;
     const fullUrl = `${baseUrl}${urlPath}`;

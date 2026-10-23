@@ -13,8 +13,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
+import { zonedTimeToUtc } from 'date-fns-tz';
 import type { ContactRawJson, NewContactRecord } from '@tech-matters/hrm-types';
 import type { TwilioUserIdentifier, WorkerSID } from '@tech-matters/types';
+
+// iCarol timestamps have no timezone marker; assumed local to this zone. Re-verify
+// before reusing this script.
+const ICAROL_SOURCE_TIMEZONE = 'America/New_York';
 
 /**
  * Maps a Twilio worker's full name (as it appears in iCarol's "PhoneWorkerName"
@@ -196,6 +201,17 @@ export const calculateConversationDuration = (
   const endMs = new Date(end).getTime();
   if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs < startMs) return 0;
   return Math.round((endMs - startMs) / 1000);
+};
+
+// Converts an iCarol timestamp (assumed local to ICAROL_SOURCE_TIMEZONE, no tz marker)
+// to a UTC ISO string, applying standard/daylight time by date.
+export const parseIcarolTimestampAsUtc = (
+  value: string | undefined,
+): string | undefined => {
+  const trimmed = (value ?? '').trim();
+  if (!trimmed) return undefined;
+  const utc = zonedTimeToUtc(trimmed.replace(' ', 'T'), ICAROL_SOURCE_TIMEZONE);
+  return Number.isNaN(utc.getTime()) ? undefined : utc.toISOString();
 };
 
 /**
@@ -501,7 +517,7 @@ export const mapContact = (
     definitionVersion: 'usnc-v1',
     // Imported iCarol contacts are phone calls.
     channel: 'default',
-    timeOfContact: record.CallDateAndTimeStart || undefined,
+    timeOfContact: parseIcarolTimestampAsUtc(record.CallDateAndTimeStart),
     // Aselo stores the conversation duration in seconds, derived from the iCarol
     // call start and end timestamps.
     conversationDuration: calculateConversationDuration(

@@ -31,11 +31,12 @@ export const publishToImportConsumer =
       console.debug(
         `[Imported Resource Trace](qualifiedResourceId:${messageGroupId}): Publishing resource to queue ${queueUrl} group ID ${messageGroupId}:`,
       );
-      return await sqsClient.sendSqsMessage({
+      const sent = await sqsClient.sendSqsMessage({
         message: JSON.stringify(params),
         queueUrl,
         messageGroupId,
       });
+      return sent;
     } catch (err) {
       console.error('Error trying to send message to SQS queue', err);
     }

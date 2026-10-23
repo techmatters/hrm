@@ -22,18 +22,23 @@ import {
   getNormalisedNotificationPayload,
   isCaseNotification,
 } from './entityNotification';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getS3DocsBucketName } from '@tech-matters/aselo-config';
 import { getTwilioAccountSidFromHrmAccountId } from '@tech-matters/types';
 
 const processRecord = async (record: SQSRecord) => {
   try {
     const notification: EntityNotification = JSON.parse(record.body);
     console.debug('Processing message:', record.messageId);
-    const bucket = await getSsmParameter(
-      `/${process.env.NODE_ENV!}/s3/${getTwilioAccountSidFromHrmAccountId(
-        notification.accountSid,
-      )}/docs_bucket_name`,
-    );
+    const accountSid = getTwilioAccountSidFromHrmAccountId(notification.accountSid);
+    if (!accountSid) {
+      throw new Error(
+        `Could not determine Twilio account SID for ${notification.accountSid}`,
+      );
+    }
+    const bucket = await getS3DocsBucketName({
+      accountSid,
+      environment: process.env.NODE_ENV,
+    });
     const { payload, timestamp, entityType } =
       getNormalisedNotificationPayload(notification);
     if (payload === null) {

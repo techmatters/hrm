@@ -23,11 +23,11 @@ import {
 } from '../../../../mockGenerators';
 import { createCaseReportProcessor } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport';
 import '@tech-matters/testing';
-import { isErr, isOk } from '@tech-matters/types/dist/index';
+import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
 import { verifyAddSectionRequest } from '../../../verifyAddSectionRequest';
 import { RawCaseReportApiPayload } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
-import { AccountSID } from '@tech-matters/types/twilio';
+import type { AccountSID } from '@tech-matters/types';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'BBC',

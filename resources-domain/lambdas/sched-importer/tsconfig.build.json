@@ -5,6 +5,8 @@
   "references": [
     { "path": "packages/types" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/aselo-config" },
+    { "path": "resources-domain/packages/aselo-config" },
     { "path": "packages/s3-client" },
     { "path": "packages/sqs-client" },
     { "path": "resources-domain/packages/resources-types" },

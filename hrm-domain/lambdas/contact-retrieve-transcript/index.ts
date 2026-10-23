@@ -19,7 +19,8 @@ import { sendSqsMessage } from '@tech-matters/sqs-client';
 import { putS3Object } from '@tech-matters/s3-client';
 
 import { ContactJobProcessorError } from '@tech-matters/job-errors';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getS3DocsBucketName } from '@tech-matters/aselo-config';
+import { getTwilioAuthToken } from '@tech-matters/hrm-aselo-config';
 import {
   CompletedRetrieveContactTranscript,
   ContactJobAttemptResult,
@@ -68,10 +69,8 @@ const processRetrieveTranscriptRecord = async (
       `Account sid not found, HRM account ID value passed: ${hrmAccountId}`,
     );
   }
-  const authToken = await getSsmParameter(`/${hrmEnv}/twilio/${accountSid}/auth_token`);
-  const docsBucketName = await getSsmParameter(
-    `/${hrmEnv}/s3/${accountSid}/docs_bucket_name`,
-  );
+  const authToken = await getTwilioAuthToken({ accountSid, environment: hrmEnv });
+  const docsBucketName = await getS3DocsBucketName({ accountSid, environment: hrmEnv });
 
   if (!authToken || !docsBucketName) {
     const missing = [
