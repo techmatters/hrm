@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { getSsmParameter, putSsmParameter } from '@tech-matters/ssm-cache';
+import { putSsmParameter } from '@tech-matters/ssm-cache';
 import { isErr } from '@tech-matters/types';
 import type { BeaconDocumentSection, BeaconDocumentProcessor } from './types';
 
@@ -22,6 +22,7 @@ type ChunkReaderConfig<TItem extends BeaconDocumentSection> = {
   url: URL;
   headers: Record<string, string>;
   lastUpdateSeenSsmKey: string;
+  getLastUpdateSeen: () => Promise<string>;
   itemProcessor: BeaconDocumentProcessor<TItem>;
   itemExtractor: (responseBody: any) => TItem[];
   maxItemsInChunk: number;
@@ -62,13 +63,14 @@ export const readApiInChunks = async <TItem extends BeaconDocumentSection>({
   url,
   headers,
   lastUpdateSeenSsmKey,
+  getLastUpdateSeen,
   maxItemsInChunk,
   maxChunksToRead,
   itemExtractor,
   itemProcessor,
   itemTypeName = 'item',
 }: ChunkReaderConfig<TItem>) => {
-  let lastUpdateSeen = await getSsmParameter(lastUpdateSeenSsmKey);
+  let lastUpdateSeen = await getLastUpdateSeen();
   let processedAllItems = false;
   let chunksRead = 0;
   for (; chunksRead < maxChunksToRead; chunksRead++) {
@@ -113,10 +115,7 @@ export const readApiInChunks = async <TItem extends BeaconDocumentSection>({
         cacheValue: true,
         overwrite: true,
       });
-      console.info(
-        'Last beacon update after:',
-        await getSsmParameter(lastUpdateSeenSsmKey),
-      );
+      console.info('Last beacon update after:', await getLastUpdateSeen());
       if (beaconData.length < maxItemsInChunk) {
         console.info(
           `Only ${beaconData.length} ${itemTypeName} in latest batch, less than the maximum of ${maxItemsInChunk}`,

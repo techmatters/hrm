@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Contact, NewContactRecord } from '@tech-matters/hrm-types/Contact';
+import { Contact, NewContactRecord } from '@tech-matters/hrm-types';
 import { ITask } from 'pg-promise';
 import { INSERT_CONTACT_SQL } from '@tech-matters/hrm-core/contact/sql/contactInsertSql';
 import { db } from './connectionPool';
@@ -24,7 +24,7 @@ import {
   NewConversationMedia,
   S3ContactMediaType,
   S3StoredConversationMedia,
-} from '@tech-matters/hrm-types/ConversationMedia';
+} from '@tech-matters/hrm-types';
 import { insertConversationMediaSql } from '@tech-matters/hrm-core/conversation-media/sql/conversation-media-insert-sql';
 import {
   insertIdentifierSql,
@@ -32,7 +32,7 @@ import {
 } from '@tech-matters/hrm-core/profile/sql/profile-insert-sql';
 import { ContactJob } from '@tech-matters/hrm-core/contact-job/contact-job-data-access';
 import { pgp } from '@tech-matters/hrm-core/dbConnection';
-import { ContactJobType } from '@tech-matters/types/ContactJob';
+import { ContactJobType } from '@tech-matters/types';
 import { retryable } from './retryable';
 
 type CreateResultRecord = Contact & { isNewRecord: boolean };

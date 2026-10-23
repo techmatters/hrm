@@ -15,8 +15,8 @@
  */
 import isAfter from 'date-fns/isAfter';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { loadSsmCache } from '../../loadSsmCache';
-import * as SsmCache from '../../ssmCache';
+import { loadSsmCache } from '../../src/loadSsmCache';
+import * as SsmCache from '../../src/ssmCache';
 import { mockClient } from 'aws-sdk-client-mock';
 
 const mockSSMClient = mockClient(SSMClient);

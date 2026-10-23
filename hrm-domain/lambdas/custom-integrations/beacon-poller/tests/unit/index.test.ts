@@ -43,7 +43,7 @@ const setupSsm = (apiVersion: 'v1' | 'v2' | undefined) => {
       '/test/hrm/custom-integration/as/beacon_base_url': 'https://beacon.example',
       '/test/hrm/custom-integration/as/beacon_api_key': 'abc123',
       ...(apiVersion
-        ? { '/test/hrm/custom-integration/as/beacon_update_api_version': apiVersion }
+        ? { '/test/hrm/custom-integration/as/beacon_dispatch_api_version': apiVersion }
         : {}),
     };
     if (values[path]) return values[path];

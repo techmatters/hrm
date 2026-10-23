@@ -16,7 +16,7 @@
 if [ -n "$RESOURCES_CREATE_SCHEMA" ]; then
   # Execute resources-service schema creation (move once the service lives in it's own container)
   cd ./resources-domain/resources-service
-  node ./db-create
+  node ./create-db
   if [ $? -ne 0 ]; then
     echo "Failed to run resource-service migrations"
     exit 1

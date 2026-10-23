@@ -47,9 +47,20 @@ export const builder = {
   },
   a: {
     alias: 'accounts',
-    describe: 'list of accounts short codes (e.g. -a=AS ZA)',
-    demandOption: true,
+    describe:
+      'list of accounts short codes or account sids (e.g. -a=AS ZA). If omitted, runs for every account in the region',
     type: 'array',
+  },
+  'exclude-accounts': {
+    describe:
+      'list of accounts short codes or account sids to exclude (e.g. --exclude-accounts=AS ZA)',
+    type: 'array',
+  },
+  d: {
+    alias: 'dryRun',
+    describe: 'list the account sids the command would run for, without running it',
+    type: 'boolean',
+    default: false,
   },
   f: {
     alias: 'dateFrom',
@@ -69,6 +80,8 @@ export const handler = async ({
   region,
   environment,
   accounts,
+  excludeAccounts,
+  dryRun,
   dateFrom,
   dateTo,
   contacts,
@@ -82,6 +95,8 @@ export const handler = async ({
   try {
     await renotify({
       accounts,
+      excludeAccounts,
+      dryRun,
       dateFrom,
       dateTo,
       environment,
