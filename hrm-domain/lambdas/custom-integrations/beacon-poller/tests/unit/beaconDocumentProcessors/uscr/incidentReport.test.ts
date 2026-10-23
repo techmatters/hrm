@@ -25,7 +25,7 @@ import { AssertionError } from 'node:assert';
 import { AccountSID } from '@tech-matters/types/dist';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
-  getSsmParameter: () => 'BBC',
+  getSsmParameter: jest.fn(async () => process.env.STATIC_KEY!),
 }));
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
