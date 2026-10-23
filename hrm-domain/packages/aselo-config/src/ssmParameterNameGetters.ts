@@ -111,6 +111,15 @@ export const getBeaconDispatchApiVersionSsmPath = ({
 }) =>
   `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_dispatch_api_version`;
 
+export const getBeaconUpdateApiVersionSsmPath = ({
+  helplineShortCode,
+  environment = process.env.NODE_ENV,
+}: {
+  helplineShortCode: string;
+  environment?: string;
+}) =>
+  `/${environment}/hrm/custom-integration/${helplineShortCode}/beacon_update_api_version`;
+
 export const getBeaconLatestSeenSsmPath = ({
   accountSid,
   apiType,

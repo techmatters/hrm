@@ -28,6 +28,7 @@ import {
   getPermissionConfigSsmPath,
   getTranscriptRetentionDaysSsmPath,
   getTwilioAuthTokenSsmPath,
+  getBeaconUpdateApiVersionSsmPath,
 } from './ssmParameterNameGetters';
 
 export * from './ssmParameterNameGetters';
@@ -56,5 +57,8 @@ export const getBeaconBaseUrl = createSsmParameterGetter(getBeaconBaseUrlSsmPath
 export const getBeaconApiKey = createSsmParameterGetter(getBeaconApiKeySsmPath);
 export const getBeaconDispatchApiVersion = createSsmParameterGetter(
   getBeaconDispatchApiVersionSsmPath,
+);
+export const getBeaconUpdateApiVersion = createSsmParameterGetter(
+  getBeaconUpdateApiVersionSsmPath,
 );
 export const getBeaconLatestSeen = createSsmParameterGetter(getBeaconLatestSeenSsmPath);
