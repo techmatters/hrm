@@ -23,10 +23,15 @@ import {
 } from '../../../../mockGenerators';
 import { createCaseReportProcessor } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport';
 import '@tech-matters/testing';
-import { isErr, isOk } from '@tech-matters/types/dist/index';
+import { isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
 import { verifyAddSectionRequest } from '../../../verifyAddSectionRequest';
 import { RawCaseReportApiPayload } from '../../../../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
+import type { AccountSID } from '@tech-matters/types';
+
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: () => 'BBC',
+}));
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
 
@@ -61,7 +66,7 @@ export const verifyUpdateStatusRequest = (caseId: string, expectedStatus: string
 
 describe('createCaseReportProcessor', () => {
   const addCaseReportSectionsToAseloCase = createCaseReportProcessor(
-    process.env.ACCOUNT_SID!,
+    process.env.ACCOUNT_SID! as AccountSID,
   );
   const caseReportWithCoreSection = generateCaseReport({
     id: 1234,
