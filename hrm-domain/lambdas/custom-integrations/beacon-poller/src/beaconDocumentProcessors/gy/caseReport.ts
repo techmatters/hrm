@@ -17,7 +17,7 @@
 
 import { BeaconDocumentProcessor, NewCaseSectionInfo } from '../../types';
 import { addSectionToAseloCase, updateAseloCaseStatus } from '../../caseUpdater';
-import { isErr, isOk, newErr } from '@tech-matters/types';
+import { AccountSID, isErr, isOk, newErr } from '@tech-matters/types';
 import { CaseReportContentNode } from '../extractContentNodeValues';
 
 type RelevantRawCaseReportApiPayload = {
@@ -50,7 +50,7 @@ export type RawCaseReportApiPayload = RelevantRawCaseReportApiPayload &
   Omit<Record<string, any>, keyof RelevantRawCaseReportApiPayload>;
 
 export const createCaseReportProcessor = (
-  accountSid: string,
+  accountSid: AccountSID,
 ): BeaconDocumentProcessor<RawCaseReportApiPayload> => {
   const addCaseReportSectionToAseloCase = addSectionToAseloCase(
     'caseReport',

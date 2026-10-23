@@ -21,7 +21,7 @@ import {
   getBeaconBaseUrl,
   getBeaconLatestSeen,
   getBeaconLatestSeenSsmPath,
-  getBeaconDispatchApiVersion,
+  getBeaconUpdateApiVersion,
 } from '@tech-matters/hrm-aselo-config';
 import {
   getTwilioAccountSid,
@@ -48,7 +48,7 @@ export const handler = async ({
     [accountSid, beaconBaseUrl, beaconApiVersion, beaconApiKey] = (await Promise.all([
       getTwilioAccountSid({ shortCode: helplineShortCode, environment }),
       getBeaconBaseUrl({ helplineShortCode: beaconHelplineShortCode, environment }),
-      getBeaconDispatchApiVersion({
+      getBeaconUpdateApiVersion({
         helplineShortCode: beaconHelplineShortCode,
         environment,
       }),
