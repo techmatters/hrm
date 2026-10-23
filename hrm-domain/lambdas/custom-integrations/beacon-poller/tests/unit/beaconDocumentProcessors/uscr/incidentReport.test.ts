@@ -22,6 +22,11 @@ import { generateIncidentReport } from '../../../mockGenerators';
 import each from 'jest-each';
 import { verifyAddSectionRequest } from '../../verifyAddSectionRequest';
 import { AssertionError } from 'node:assert';
+import { AccountSID } from '@tech-matters/types/dist';
+
+jest.mock('@tech-matters/ssm-cache', () => ({
+  getSsmParameter: () => 'BBC',
+}));
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: jest.fn(async () => process.env.STATIC_KEY!),
@@ -172,7 +177,7 @@ describe('incidentReportToCaseSection', () => {
 
 describe('createIncidentReportProcessor', () => {
   const addIncidentReportSectionsToAseloCase = createIncidentReportProcessor(
-    process.env.ACCOUNT_SID!,
+    process.env.ACCOUNT_SID! as AccountSID,
   );
   beforeEach(() => {
     jest.clearAllMocks();

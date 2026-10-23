@@ -21,7 +21,14 @@ import {
   addSectionToAseloCase,
   updateAseloCaseStatus,
 } from '../../../caseUpdater';
-import { ErrorResult, isErr, isOk, newErr, SuccessResult } from '@tech-matters/types';
+import {
+  AccountSID,
+  ErrorResult,
+  isErr,
+  isOk,
+  newErr,
+  SuccessResult,
+} from '@tech-matters/types';
 import {
   ProcessedCaseReportApiPayload,
   RawCaseReportApiPayload,
@@ -199,7 +206,7 @@ const caseReportToSudSurveyCaseSection = ({
 };
 
 export const createCaseReportProcessor = (
-  accountSid: string,
+  accountSid: AccountSID,
 ): BeaconDocumentProcessor<RawCaseReportApiPayload> => {
   const addCaseReportSectionToAseloCase = addSectionToAseloCase(
     'caseReport',

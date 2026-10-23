@@ -19,12 +19,11 @@ import {
   addDependentSectionToAseloCase,
   addSectionToAseloCase,
 } from '../../src/caseUpdater';
-import { isErr, isOk } from '@tech-matters/types';
+import { AccountSID, isErr, isOk } from '@tech-matters/types';
 import { AssertionError } from 'node:assert';
 
-const RUNTIME_STATIC_KEY = process.env.STATIC_KEY!;
 jest.mock('@tech-matters/ssm-cache', () => ({
-  getSsmParameter: jest.fn(async () => RUNTIME_STATIC_KEY),
+  getSsmParameter: () => 'BBC',
 }));
 
 const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn();
@@ -45,7 +44,7 @@ const verifyAddSectionRequest = (caseId: string, expectedCaseSection: NewCaseSec
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Basic ${RUNTIME_STATIC_KEY}`,
+        Authorization: `Basic ${process.env.STATIC_KEY}`,
       },
       body: JSON.stringify(expectedCaseSection),
     },
@@ -75,7 +74,7 @@ describe('addSectionToAseloCase', () => {
         lastUpdated: chicken.chicken_counter.toString(),
       };
     },
-    process.env.ACCOUNT_SID!,
+    process.env.ACCOUNT_SID! as AccountSID,
   );
 
   test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API, returning the updated last_seen', async () => {
@@ -287,7 +286,7 @@ describe('addDependentSectionToAseloCase', () => {
         },
       };
     },
-    process.env.ACCOUNT_SID!,
+    process.env.ACCOUNT_SID! as AccountSID,
   );
   test('creates an Aselo case section from source data using the mapper provided and adds it to the case via the HRM API', async () => {
     const result = await dependentChickenAdder({

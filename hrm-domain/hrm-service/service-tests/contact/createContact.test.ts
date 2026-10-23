@@ -189,7 +189,12 @@ each([
       expect(createdContact.number).toBe(expected.number);
       expect(createdContact.channel).toBe(expected.channel);
       expect(createdContact.conversationDuration).toBe(expected.conversationDuration);
-      expect(createdContact.finalizedAt).toBeFalsy();
+      // Only the admin route supports finalize-on-create.
+      if (route.includes('/admin/')) {
+        expect(createdContact.finalizedAt).toBeTruthy();
+      } else {
+        expect(createdContact.finalizedAt).toBeFalsy();
+      }
     },
   );
 

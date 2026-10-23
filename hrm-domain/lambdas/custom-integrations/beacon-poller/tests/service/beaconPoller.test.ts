@@ -39,7 +39,7 @@ import {
 } from '../../src/beaconDocumentProcessors/uscr/caseReport/apiPayload';
 
 const ACCOUNT_SID = 'ACservicetest';
-const HELPLINE_SHORT_CODE = 'as';
+const HELPLINE_SHORT_CODE = 'uscr';
 const BEACON_RESPONSE_HEADERS = {
   'Content-Type': 'application/json',
 };
@@ -52,7 +52,6 @@ process.env.MAX_INCIDENT_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CASE_REPORTS_PER_CALL = MAX_ITEMS_PER_CALL.toString();
 process.env.MAX_CONSECUTIVE_API_CALLS = '5';
 const BASELINE_DATE = new Date('2001-01-01T00:00:00.000Z');
-const STATIC_KEY_PARAMETER_NAME = `/${process.env.NODE_ENV}/twilio/${ACCOUNT_SID}/static_key`;
 const LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/incidentReport/latest_seen`;
 const LAST_CASE_REPORT_SEEN_PARAMETER_NAME = `/${process.env.NODE_ENV}/hrm/custom-integration/beacon/${ACCOUNT_SID}/caseReport/latest_seen`;
 
@@ -65,14 +64,22 @@ export const mockLastUpdateSeenParameter = async (mockttp: Mockttp) => {
       valueGenerator: () => process.env.BEACON_API_KEY!,
     },
     {
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_base_url`,
+      valueGenerator: () => process.env.BEACON_BASE_URL!,
+    },
+    {
       name: `/${
         process.env.NODE_ENV
       }/twilio/${HELPLINE_SHORT_CODE.toUpperCase()}/account_sid`,
       valueGenerator: () => ACCOUNT_SID,
     },
     {
-      name: STATIC_KEY_PARAMETER_NAME,
+      name: `/${process.env.NODE_ENV}/twilio/${ACCOUNT_SID}/static_key`,
       valueGenerator: () => process.env.STATIC_KEY!,
+    },
+    {
+      name: `/${process.env.NODE_ENV}/hrm/custom-integration/${HELPLINE_SHORT_CODE}/beacon_update_api_version`,
+      valueGenerator: () => 'v1',
     },
     {
       name: LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
@@ -98,7 +105,7 @@ const generateCases = (numberToGenerate: number): Promise<string[]> => {
             method: 'POST',
             body: JSON.stringify({
               info: { summary: 'something' },
-              definitionVersion: 'as-v1',
+              definitionVersion: 'uscr-v1',
             }),
             headers: HRM_REQUEST_HEADERS,
           },
@@ -334,7 +341,7 @@ describe('Beacon Polling Service', () => {
             [generateCaseReports(4, 1, caseIds)],
           );
         }
-        await handler({ apiType, helplineShortCode: 'as' });
+        await handler({ apiType, helplineShortCode: 'uscr' });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
 
@@ -362,7 +369,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(12, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ apiType, helplineShortCode: 'as' });
+        await handler({ apiType, helplineShortCode: HELPLINE_SHORT_CODE });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(3);
 
@@ -399,7 +406,7 @@ describe('Beacon Polling Service', () => {
             batch(generateCaseReports(1000, 1, caseIds), MAX_ITEMS_PER_CALL),
           );
         }
-        await handler({ apiType, helplineShortCode: 'as' });
+        await handler({ apiType, helplineShortCode: HELPLINE_SHORT_CODE });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(5);
       });
@@ -451,7 +458,10 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -478,7 +488,10 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -520,7 +533,10 @@ describe('Beacon Polling Service', () => {
           [incidentReports],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -556,7 +572,10 @@ describe('Beacon Polling Service', () => {
           ],
         );
         // Act
-        await handler({ apiType: 'incidentReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'incidentReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseOverviewForCase(caseIds[0], {
           priority: 'Low',
@@ -631,7 +650,10 @@ describe('Beacon Polling Service', () => {
           [caseReports],
         );
         // Act
-        await handler({ apiType: 'caseReport', helplineShortCode: 'as' });
+        await handler({
+          apiType: 'caseReport',
+          helplineShortCode: HELPLINE_SHORT_CODE,
+        });
         // Assert
         await verifyCaseReportsForCase(caseIds[0], [caseReports[0]]);
         await verifyCaseReportsForCase(caseIds[1], [caseReports[1]]);
