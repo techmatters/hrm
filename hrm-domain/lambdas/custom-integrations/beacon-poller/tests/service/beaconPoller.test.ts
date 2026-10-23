@@ -341,7 +341,7 @@ describe('Beacon Polling Service', () => {
             [generateCaseReports(4, 1, caseIds)],
           );
         }
-        await handler({ apiType, helplineShortCode: 'uscr' });
+        await handler({ apiType, helplineShortCode: HELPLINE_SHORT_CODE });
         const beaconRequests = await mockedBeaconEndpoint.getSeenRequests();
         expect(beaconRequests.length).toBe(1);
 

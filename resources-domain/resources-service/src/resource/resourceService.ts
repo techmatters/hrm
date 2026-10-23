@@ -28,7 +28,7 @@ import {
   RESOURCE_INDEX_TYPE,
   getSearchConfiguration,
 } from '@tech-matters/resources-search-config';
-import { getSsmParameter } from '@tech-matters/ssm-cache';
+import { getTwilioShortHelpline } from '@tech-matters/resources-aselo-config';
 
 // Represents a resource whose ID was returned by a search, but which is not in the database
 export type MissingResource = {
@@ -147,15 +147,13 @@ export const resourceService = () => {
         ...searchParameters,
         filters: {
           ...searchParameters.filters,
-          // exclude resources that are explicitly flagged as inactive. See resources-domain/packages/resources-search-config/index.ts filter mapping for more details on how this filter is generated.
+          // exclude resources that are explicitly flagged as inactive. See resources-domain/packages/resources-search-config/src/index.ts filter mapping for more details on how this filter is generated.
           isActive: false,
         },
         pagination: { ...searchParameters.pagination!, limit },
       };
 
-      const shortCode = await getSsmParameter(
-        `/${process.env.NODE_ENV}/twilio/${accountSid}/short_helpline`,
-      );
+      const shortCode = await getTwilioShortHelpline({ accountSid });
       const searchConfiguration = getSearchConfiguration(shortCode);
 
       const client = (
@@ -201,9 +199,7 @@ export const resourceService = () => {
       accountSid: AccountSID,
       suggestParameters: SuggestParameters,
     ) => {
-      const shortCode = await getSsmParameter(
-        `/${process.env.NODE_ENV}/twilio/${accountSid}/short_helpline`,
-      );
+      const shortCode = await getTwilioShortHelpline({ accountSid });
       const searchConfiguration = getSearchConfiguration(shortCode);
 
       const client = (

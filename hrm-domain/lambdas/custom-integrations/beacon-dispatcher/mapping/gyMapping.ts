@@ -19,7 +19,6 @@ import type { CaseService, Contact } from '@tech-matters/hrm-types';
 
 type GyCreateIncidentParams = CreateIncidentParams & {
   category: string;
-  category_id: number;
   description: string;
   caller_number: string;
   call_received_at: string;
@@ -41,7 +40,6 @@ export const toCreateIncident = ({
     call_received_at: contact.timeOfContact ?? '',
     caller_number: contact.number ?? '',
     category: category ?? '',
-    category_id: 2497, // TEMPORARY, to unblock testing
-    description: contact.rawJson?.childInformation.incidentDescription?.toString() ?? '',
+    description: contact.rawJson?.childInformation.incidentSummary?.toString() ?? '',
   };
 };

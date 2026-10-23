@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import * as twilioClient from '../../index';
+import * as twilioClient from '../../src/index';
 
 describe('getClient', () => {
   it('when called in a single session with multiple accountSids should return twilio client for multiple accounts', async () => {

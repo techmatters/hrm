@@ -5,6 +5,8 @@
   "references": [
     { "path": "packages/job-errors" },
     { "path": "packages/ssm-cache" },
+    { "path": "packages/aselo-config" },
+    { "path": "hrm-domain/packages/aselo-config" },
     { "path": "packages/s3-client" },
     { "path": "packages/sqs-client" },
     { "path": "packages/twilio-client" },

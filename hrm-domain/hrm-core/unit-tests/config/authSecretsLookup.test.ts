@@ -15,14 +15,18 @@
  */
 
 import { defaultAuthSecretsLookup } from '../../config/authSecretsLookup';
+import { getAccountStaticKey } from '@tech-matters/aselo-config';
 import * as ssmConfigurationCache from '../../config/ssmConfigurationCache';
 
+jest.mock('@tech-matters/aselo-config', () => ({
+  ...(jest.requireActual('@tech-matters/aselo-config') as Record<string, unknown>),
+  getAccountStaticKey: jest.fn(),
+}));
 jest.mock('../../config/ssmConfigurationCache');
 
-const mockGetAccountStaticKey =
-  ssmConfigurationCache.getAccountStaticKey as jest.MockedFunction<
-    typeof ssmConfigurationCache.getAccountStaticKey
-  >;
+const mockGetAccountStaticKey = getAccountStaticKey as jest.MockedFunction<
+  typeof getAccountStaticKey
+>;
 const mockGetFromSSMCache = ssmConfigurationCache.getFromSSMCache as jest.MockedFunction<
   typeof ssmConfigurationCache.getFromSSMCache
 >;

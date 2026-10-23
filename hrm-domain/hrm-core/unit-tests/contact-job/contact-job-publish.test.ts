@@ -25,8 +25,10 @@ import { PublishToContactJobsTopicParams } from '@tech-matters/types';
 jest.mock('../../contact-job/client-sqs');
 
 jest.mock('@tech-matters/ssm-cache', () => {
+  class MockSsmParameterNotFound extends Error {}
   return {
     getSsmParameter: jest.fn(),
+    SsmParameterNotFound: MockSsmParameterNotFound,
   };
 });
 
