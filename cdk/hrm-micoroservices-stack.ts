@@ -50,7 +50,7 @@ export default class HrmMicoservicesStack extends cdk.Stack {
     const accountProxy = accounts.addResource('{account_id}');
 
     const filesUrlsLambda = new lambdaNode.NodejsFunction(this, 'filesUrls', {
-      runtime: cdk.aws_lambda.Runtime.NODEJS_18_X,
+      runtime: cdk.aws_lambda.Runtime.NODEJS_24_X,
       memorySize: 512,
       timeout: cdk.Duration.seconds(10),
       handler: 'handler',
