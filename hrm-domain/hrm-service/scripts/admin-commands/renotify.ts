@@ -14,6 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 import type { HrmAccountId } from '@tech-matters/types';
 import type { ManuallyTriggeredNotificationOperation } from '@tech-matters/hrm-types';
@@ -26,6 +27,42 @@ import {
   lazyTfAdminCredentials,
 } from '../adminRoles';
 // import envRegionMap from '../../../../.github/workflows/config/environment-region-map.json';
+
+// yargs options shared by the commands that renotify, to target specific entities by id
+export const idsOptions = {
+  ids: {
+    describe:
+      "JSON list of the ids of the entities to target (e.g. --ids='[1, 2, 3]'). Requires exactly one entity type",
+    type: 'string',
+    conflicts: 'ids-file',
+  },
+  'ids-file': {
+    describe:
+      'path to a JSON file containing the list of the ids of the entities to target. Requires exactly one entity type',
+    type: 'string',
+  },
+} as const;
+
+/**
+ * Reads the list of entity ids, either from a JSON string or from a JSON file.
+ * Returns undefined if neither is given, so every entity in the date range is targeted.
+ */
+const readIds = ({
+  ids,
+  idsFile,
+}: {
+  ids?: string;
+  idsFile?: string;
+}): string[] | undefined => {
+  if (ids === undefined && idsFile === undefined) {
+    return undefined;
+  }
+  const parsed = JSON.parse(idsFile === undefined ? ids : readFileSync(idsFile, 'utf8'));
+  if (!Array.isArray(parsed) || !parsed.length) {
+    throw new Error(`ids must be a non empty JSON list, got: ${JSON.stringify(parsed)}`);
+  }
+  return parsed;
+};
 
 const confirm = async (question: string): Promise<boolean> => {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -96,6 +133,7 @@ const requestRenotify = async ({
   authKey,
   dateFrom,
   dateTo,
+  ids,
   entityType,
   internalResourcesUrl,
   operation,
@@ -105,8 +143,9 @@ const requestRenotify = async ({
   internalResourcesUrl: URL;
   accountSid: HrmAccountId;
   authKey: string;
-  dateFrom: string;
-  dateTo: string;
+  dateFrom?: string;
+  dateTo?: string;
+  ids?: string[];
 }) => {
   const url = getAdminV0URL(
     internalResourcesUrl,
@@ -122,7 +161,7 @@ const requestRenotify = async ({
       'Content-Type': 'application/json',
       Authorization: `Basic ${authKey}`,
     },
-    body: JSON.stringify({ dateFrom, dateTo }),
+    body: JSON.stringify({ dateFrom, dateTo, ids }),
   });
 
   if (!response.ok) {
@@ -131,9 +170,8 @@ const requestRenotify = async ({
     );
     console.info(await response.text());
   } else {
-    console.info(
-      `Performing ${operation} ${entityType} from ${dateFrom} to ${dateTo}...`,
-    );
+    const target = ids ? `with ${ids.length} id(s)` : `from ${dateFrom} to ${dateTo}`;
+    console.info(`Performing ${operation} ${entityType} ${target}...`);
     console.info(await response.text());
   }
 };
@@ -144,6 +182,9 @@ export const renotify = async ({
   accounts,
   dateFrom,
   dateTo,
+  requireDateRange = false,
+  ids: idsJson,
+  idsFile,
   contacts,
   cases,
   profiles,
@@ -155,8 +196,12 @@ export const renotify = async ({
   environment: string;
   accounts?: string[];
   excludeAccounts?: string[];
-  dateFrom: string;
-  dateTo: string;
+  dateFrom?: string;
+  dateTo?: string;
+  // If set, dateFrom and dateTo are required unless ids are given
+  requireDateRange?: boolean;
+  ids?: string;
+  idsFile?: string;
   contacts: boolean;
   cases: boolean;
   profiles: boolean;
@@ -164,6 +209,16 @@ export const renotify = async ({
   dryRun?: boolean;
 }) => {
   try {
+    const ids = readIds({ ids: idsJson, idsFile });
+    if (ids && [contacts, cases, profiles].filter(Boolean).length !== 1) {
+      console.error('When targeting ids, exactly one entity type must be specified');
+      return;
+    }
+    if (!ids && requireDateRange && !(dateFrom && dateTo)) {
+      console.error('dateFrom and dateTo are required unless ids are specified');
+      return;
+    }
+
     const accountSids = await resolveAccountSids({
       accounts,
       excludeAccounts,
@@ -184,6 +239,9 @@ export const renotify = async ({
         `[dry run] ${operation} would run for ${accountSids.length} account(s) in ${environment} ${region}:`,
       );
       accountSids.forEach(accountSid => console.info(`  ${accountSid}`));
+      if (ids) {
+        console.info(`[dry run] targeting ${ids.length} id(s): ${ids.join(', ')}`);
+      }
       return;
     }
 
@@ -206,6 +264,7 @@ export const renotify = async ({
           authKey,
           dateFrom,
           dateTo,
+          ids,
         });
       }
 
@@ -218,6 +277,7 @@ export const renotify = async ({
           authKey,
           dateFrom,
           dateTo,
+          ids,
         });
       }
 
@@ -230,6 +290,7 @@ export const renotify = async ({
           authKey,
           dateFrom,
           dateTo,
+          ids,
         });
       }
     }

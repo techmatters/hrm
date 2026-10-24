@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { renotify } from '../renotify';
+import { idsOptions, renotify } from '../renotify';
 
 export const command = 'hrm';
 export const describe = 'Reindex contacts and cases based on date range';
@@ -63,16 +63,15 @@ export const builder = {
   },
   f: {
     alias: 'dateFrom',
-    describe: 'start date (e.g. 2024-01-01)',
-    demandOption: true,
+    describe: 'start date (e.g. 2024-01-01). Required unless ids are specified',
     type: 'string',
   },
   t: {
     alias: 'dateTo',
-    describe: 'end date (e.g. 2024-12-31)',
-    demandOption: true,
+    describe: 'end date (e.g. 2024-12-31). Required unless ids are specified',
     type: 'string',
   },
+  ...idsOptions,
 };
 
 export const handler = async ({
@@ -83,6 +82,8 @@ export const handler = async ({
   dryRun,
   dateFrom,
   dateTo,
+  ids,
+  idsFile,
   contacts,
   cases,
 }) => {
@@ -98,7 +99,10 @@ export const handler = async ({
       dryRun,
       dateFrom,
       dateTo,
+      ids,
+      idsFile,
       environment,
+      requireDateRange: true,
       operation: 'reindex',
       cases: cases || allEntities,
       contacts: contacts || allEntities,

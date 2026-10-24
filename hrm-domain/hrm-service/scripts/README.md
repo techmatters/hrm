@@ -64,6 +64,11 @@ Use `-d/--dry-run` to list the account sids the command would run for, without r
 Use `--exclude-accounts` (short codes or account sids) to leave accounts out, e.g. every account in the region except ZA
 `npm run admin-cli reindex hrm -- -e development -r us-east-1 -f 2000-01-01 -t 2030-01-01 --exclude-accounts ZA --dry-run`
 
+#### Targeting specific entities by id
+`reindex hrm`, `republish hrm` and `reexport hrm` can target specific contacts, cases or profiles, by passing their ids as a JSON list with `--ids`, or as the path to a JSON file containing the list with `--ids-file`. Exactly one entity type must be specified. `-f/--dateFrom` and `-t/--dateTo` are then optional; if given, only the ids updated within that range are targeted
+`npm run admin-cli reindex hrm -- -a ACxx -e development -r us-east-1 -c --ids '[1234, 5678]'`
+`npm run admin-cli reexport hrm -- -a ACxx -e development -r us-east-1 -s --ids-file ./case-ids.json`
+
 #### Listing accounts
 `stats list-accounts` lists the short code and account sid of every account in an environment, grouped by region, from the `/<environment>/twilio/<short code>/account_sid` and `/<environment>/aws/<account sid>/region` SSM parameters. Pass `-r` to only list the accounts in one region
 `npm run admin-cli stats list-accounts -- -e development -r us-east-1`
