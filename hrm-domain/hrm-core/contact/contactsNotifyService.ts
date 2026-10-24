@@ -23,24 +23,19 @@ import {
 import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
 import { Transform } from 'stream';
 import { streamContactsAfterNotified } from './contactDataAccess';
+import { RenotifyFilters } from '../notifications/renotifyFilters';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
 export const processContactsStream = async (
   accountSid: HrmAccountId,
-  dateFrom: string,
-  dateTo: string,
+  searchParameters: RenotifyFilters,
   operation: ManuallyTriggeredNotificationOperation,
 ): Promise<Transform> => {
   if (!manuallyTriggeredNotificationOperations.includes(operation)) {
     throw new Error(`Invalid operation: ${operation}`);
   }
-  const searchParameters = {
-    dateFrom,
-    dateTo,
-  };
-
   console.debug(`Querying DB for contacts to ${operation}`, searchParameters);
   const contactsStream: NodeJS.ReadableStream = await streamContactsAfterNotified({
     accountSid,

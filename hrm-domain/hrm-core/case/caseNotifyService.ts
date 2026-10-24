@@ -26,14 +26,14 @@ import formatISO from 'date-fns/formatISO';
 import { CaseRecord, streamCasesForRenotifying } from './caseDataAccess';
 import { Transform } from 'stream';
 import { publishCaseChangeNotification } from '../notifications/entityChangeNotify';
+import { RenotifyFilters } from '../notifications/renotifyFilters';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
 export const renotifyCasesStream = async (
   accountSid: HrmAccountId,
-  dateFrom: string,
-  dateTo: string,
+  { dateFrom, dateTo, ids }: RenotifyFilters,
   operation: ManuallyTriggeredNotificationOperation,
 ): Promise<Transform> => {
   if (!manuallyTriggeredNotificationOperations.includes(operation)) {
@@ -42,14 +42,14 @@ export const renotifyCasesStream = async (
   const from = dateFrom ? formatISO(new Date(dateFrom)) : '-infinity';
   const to = dateTo ? formatISO(new Date(dateTo)) : 'infinity';
 
-  console.debug(`Querying DB for cases to ${operation}`, from, to);
+  console.debug(`Querying DB for cases to ${operation}`, from, to, ids);
   const casesStream: NodeJS.ReadableStream = await streamCasesForRenotifying({
     accountSid,
-    filters: { from, to },
+    filters: { from, to, ids },
     batchSize: highWaterMark,
   });
 
-  console.debug(`Piping cases to queue for ${operation}ing`, from, to);
+  console.debug(`Piping cases to queue for ${operation}ing`, from, to, ids);
   return casesStream.pipe(
     new Transform({
       objectMode: true,
