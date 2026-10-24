@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see https://www.gnu.org/licenses/.
 
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:22-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
