@@ -11,8 +11,8 @@
     "date-fns": "^2.30.0"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.0",
-    "typescript": "^5.7.3",
+    "@tsconfig/node24": "^24.0.5",
+    "typescript": "^5.9.3",
     "jest-each": "^29.2.1"
   },
   "scripts": {
