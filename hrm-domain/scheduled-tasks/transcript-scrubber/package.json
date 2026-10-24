@@ -9,9 +9,9 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.0",
-    "@types/node": "^22.13.5",
-    "typescript": "^5.7.3"
+    "@tsconfig/node24": "^24.0.5",
+    "@types/node": "^24.19.2",
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "docker:build": "docker pull crprivateaiprod.azurecr.io/deid:cpu-text && docker build -t transcript-scrubber --progress=plain --no-cache -f ./Dockerfile ../../../",

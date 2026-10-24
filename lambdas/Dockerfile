@@ -18,7 +18,7 @@
 # the whole build context and selects those `packages` folders, plus the tsconfig.json files
 # along the same path that they extend. The build stage only copies the selection, so its
 # cache is only invalidated when those files change, not on any change in the repo.
-FROM public.ecr.aws/lambda/nodejs:22 as sources
+FROM public.ecr.aws/lambda/nodejs:24 as sources
 
 ARG lambda_dir
 
@@ -26,7 +26,7 @@ COPY . /context
 RUN mkdir -p /sources \
     && sh /context/lambdas/copy-ancestor-dirs.sh /context ${lambda_dir} /sources packages tsconfig.json > /sources/.ancestor-workspaces
 
-FROM public.ecr.aws/lambda/nodejs:22 as build
+FROM public.ecr.aws/lambda/nodejs:24 as build
 
 ARG lambda_dir
 ENV lambda_dir ${lambda_dir}
@@ -56,11 +56,11 @@ RUN rsync -a ${lambda_dir}/${lambda_name}/node_modules/ /var/task/node_modules; 
 
 # The added layers from our build increase image size significantly. This flattens the image
 # to reduce the size of the final image.
-FROM public.ecr.aws/lambda/nodejs:22
+FROM public.ecr.aws/lambda/nodejs:24
 COPY --from=build /var/task /var/task
 
 # all of this is a little more fragile than I would like because we have to duplicate the parent repo
-# at https://github.com/aws/aws-lambda-base-images/blob/nodejs16.x/Dockerfile.nodejs16.x
+# at https://github.com/aws/aws-lambda-base-images/blob/nodejs24.x/Dockerfile.nodejs24.x
 ENV LANG=en_US.UTF-8
 ENV TZ=:/etc/localtime
 ENV PATH=/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin
