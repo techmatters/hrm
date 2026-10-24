@@ -31,6 +31,44 @@ const loadPathOnce = (path: string, regex: RegExp) => {
 };
 
 /**
+ * Loads the parameters under the path and maps the segment captured by the regex to the parameter value
+ */
+const getParametersByCapturedSegment = async (
+  path: string,
+  regex: RegExp,
+): Promise<Record<string, string>> => {
+  await loadPathOnce(path, regex);
+  return Object.fromEntries(
+    Object.entries(getCachedParameters(regex)).map(([name, value]) => [
+      name.match(regex)![1],
+      value,
+    ]),
+  );
+};
+
+/**
+ * Maps every account sid to its region, from the /<environment>/aws/<accountSid>/region SSM parameters
+ */
+export const getRegionsByAccountSid = (
+  environment: string,
+): Promise<Record<string, string>> =>
+  getParametersByCapturedSegment(
+    `/${environment}/aws/`,
+    new RegExp(`^/${environment}/aws/([^/]+)/region$`),
+  );
+
+/**
+ * Maps every account short code to its account sid, from the /<environment>/twilio/<SHORT_CODE>/account_sid SSM parameters
+ */
+export const getAccountSidsByShortCode = (
+  environment: string,
+): Promise<Record<string, HrmAccountId>> =>
+  getParametersByCapturedSegment(
+    `/${environment}/twilio/`,
+    new RegExp(`^/${environment}/twilio/([^/]+)/account_sid$`),
+  ) as Promise<Record<string, HrmAccountId>>;
+
+/**
  * Looks up every account whose region SSM parameter (/<environment>/aws/<accountSid>/region)
  * matches the given region, and returns their account sids
  */
@@ -40,15 +78,11 @@ export const getAccountSidsInRegion = async ({
 }: {
   environment: string;
   region: string;
-}): Promise<HrmAccountId[]> => {
-  const regionParameterRegex = new RegExp(`^/${environment}/aws/([^/]+)/region$`);
-  await loadPathOnce(`/${environment}/aws/`, regionParameterRegex);
-
-  return Object.entries(getCachedParameters(regionParameterRegex))
+}): Promise<HrmAccountId[]> =>
+  Object.entries(await getRegionsByAccountSid(environment))
     .filter(([, accountRegion]) => accountRegion === region)
-    .map(([name]) => name.match(regionParameterRegex)![1] as HrmAccountId)
+    .map(([accountSid]) => accountSid as HrmAccountId)
     .sort();
-};
 
 const ACCOUNT_SID_REGEX = /^AC[0-9a-f]{32}$/i;
 
@@ -68,15 +102,7 @@ export const toAccountSids = async ({
     return accounts as HrmAccountId[];
   }
 
-  const accountSidParameterRegex = new RegExp(
-    `^/${environment}/twilio/([^/]+)/account_sid$`,
-  );
-  await loadPathOnce(`/${environment}/twilio/`, accountSidParameterRegex);
-  const sidsByShortCode = Object.fromEntries(
-    Object.entries(getCachedParameters(accountSidParameterRegex)).map(
-      ([name, accountSid]) => [name.match(accountSidParameterRegex)![1], accountSid],
-    ),
-  );
+  const sidsByShortCode = await getAccountSidsByShortCode(environment);
 
   const unknownShortCodes = accounts.filter(
     account =>
