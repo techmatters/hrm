@@ -15,6 +15,7 @@
  */
 
 import { getAccountSidsByShortCode, getRegionsByAccountSid } from '../../accountSids';
+import { lazyTfAdminCredentials } from '../../adminRoles';
 
 const NO_SHORT_CODE = '(no short code)';
 const NO_REGION = '(no region)';
@@ -45,9 +46,11 @@ export const handler = async ({
   region?: string;
 }) => {
   try {
+    // Both lookups share the credentials, so the tf-admin role is assumed once
+    const getCredentials = lazyTfAdminCredentials();
     const [regionsByAccountSid, accountSidsByShortCode] = await Promise.all([
-      getRegionsByAccountSid(environment),
-      getAccountSidsByShortCode(environment),
+      getRegionsByAccountSid(environment, getCredentials),
+      getAccountSidsByShortCode(environment, getCredentials),
     ]);
 
     const shortCodesByAccountSid: Record<string, string> = Object.fromEntries(

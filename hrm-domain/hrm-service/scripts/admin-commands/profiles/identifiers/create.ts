@@ -16,6 +16,7 @@
 
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../../../hrmInternalConfig';
+import { getTfAdminAssumeRoleParams } from '../../../adminRoles';
 
 export const command = 'create';
 export const describe =
@@ -68,16 +69,10 @@ export const handler = async ({
   definitionVersion,
 }) => {
   try {
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      assumeRoleParams,
+      assumeRoleParams: getTfAdminAssumeRoleParams(),
     });
 
     const url = getAdminV0URL(internalResourcesUrl, accountSid, '/profiles/identifiers');

@@ -120,7 +120,13 @@ export const getHRMInternalEndpointAccess = async ({
   internalResourcesUrl!.hostname = privateIpAddress;
   internalResourcesUrl!.port = '8081';
 
-  const authKey = await getHrmStaticKey({ keyName: 'ADMIN_HRM', environment, region });
+  // Read with the assumed role too, the caller's own credentials may not be allowed to read it
+  const authKey = await getHrmStaticKey({
+    keyName: 'ADMIN_HRM',
+    environment,
+    region,
+    credentials,
+  });
 
   return {
     internalResourcesUrl,
