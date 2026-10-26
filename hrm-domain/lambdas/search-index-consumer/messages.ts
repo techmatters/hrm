@@ -45,3 +45,15 @@ const groupMessagesReducer = (
 
 export const groupMessagesByAccountSid = (records: SQSRecord[]): MessagesByAccountSid =>
   records.reduce<MessagesByAccountSid>(groupMessagesReducer, {});
+
+/**
+ * Splits the records into their SQS FIFO message groups, keeping the order of the records in each group.
+ * Records from a standard queue have no message group, so each one is treated as a group of its own.
+ */
+export const groupRecordsByMessageGroup = (records: SQSRecord[]): SQSRecord[][] =>
+  Object.values(
+    records.reduce<Record<string, SQSRecord[]>>((groups, record) => {
+      const groupId = record.attributes.MessageGroupId ?? record.messageId;
+      return { ...groups, [groupId]: [...(groups[groupId] ?? []), record] };
+    }, {}),
+  );
