@@ -147,6 +147,42 @@ describe('getSsmParameter', () => {
     expect(mockSSMClient.commandCalls(GetParameterCommand).length).toBe(2);
   });
 
+  it('should share a single SSM request between concurrent lookups of the same parameter', async () => {
+    const ssmParam = {
+      Name: '/test/concurrentParam',
+      Value: 'concurrentValue',
+    };
+    mockSSMClient.on(GetParameterCommand, { Name: ssmParam.Name }).resolves({
+      Parameter: ssmParam,
+    });
+
+    const values = await Promise.all(
+      Array.from({ length: 10 }, () => getSsmParameter(ssmParam.Name)),
+    );
+
+    expect(values).toEqual(Array(10).fill(ssmParam.Value));
+    expect(mockSSMClient.commandCalls(GetParameterCommand).length).toBe(1);
+  });
+
+  it('should share a single cached error between concurrent lookups of a parameter that is not found', async () => {
+    const badParamName = '/test/concurrentBadParam';
+    mockSSMClient
+      .on(GetParameterCommand, { Name: badParamName })
+      .rejects(new ParameterNotFound({ message: 'BONK!', $metadata: {} }));
+
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, () => getSsmParameter(badParamName)),
+    );
+
+    results.forEach(result => {
+      expect(result.status).toBe('rejected');
+      expect((result as PromiseRejectedResult).reason).toBeInstanceOf(
+        SsmParameterNotFound,
+      );
+    });
+    expect(mockSSMClient.commandCalls(GetParameterCommand).length).toBe(1);
+  });
+
   it('should cache not found errors for the duration specified in errorCacheDurationMilliseconds', async () => {
     const originalErrorCacheDurationMilliseconds =
       ssmCache.errorCacheDurationMilliseconds;

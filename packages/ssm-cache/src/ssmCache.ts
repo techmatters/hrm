@@ -171,6 +171,20 @@ export const loadParameter = async (name: string) => {
   }
 };
 
+// Loads currently waiting on SSM, so concurrent lookups of the same parameter share one request
+const inFlightParameterLoads: Record<string, Promise<void> | undefined> = {};
+
+const loadParameterOnce = (name: string): Promise<void> => {
+  const inFlightLoad = inFlightParameterLoads[name];
+  if (inFlightLoad) return inFlightLoad;
+
+  const load = loadParameter(name).finally(() => {
+    delete inFlightParameterLoads[name];
+  });
+  inFlightParameterLoads[name] = load;
+  return load;
+};
+
 export const getSsmParameter = async (
   name: string,
   cacheDurationMilliseconds?: number,
@@ -180,7 +194,7 @@ export const getSsmParameter = async (
 
   // If the cache doesn't have the requested parameter or if it is expired, load it
   if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
-    await loadParameter(name);
+    await loadParameterOnce(name);
   }
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
 
