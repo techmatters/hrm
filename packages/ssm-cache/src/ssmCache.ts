@@ -172,7 +172,8 @@ export const loadParameter = async (name: string) => {
 };
 
 // Loads currently waiting on SSM, so concurrent lookups of the same parameter share one request
-const inFlightParameterLoads: Record<string, Promise<void> | undefined> = {};
+const inFlightParameterLoads: Record<string, Promise<void> | undefined> =
+  Object.create(null);
 
 const loadParameterOnce = (name: string): Promise<void> => {
   const inFlightLoad = inFlightParameterLoads[name];
