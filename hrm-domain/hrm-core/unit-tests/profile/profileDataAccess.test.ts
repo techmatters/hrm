@@ -46,4 +46,24 @@ describe('streamProfilesForRenotifying', () => {
     expect(lastQuerySql).toContain("'infinity'");
     expect(promise).toBeTruthy();
   });
+
+  test('Ids set - restricts the query to those profile ids', async () => {
+    const promise = streamProfileForRenotifying({
+      accountSid: 'AC4321',
+      filters: { ids: ['12', '34'] },
+      batchSize: 1234,
+    });
+    expect(lastQuerySql).toContain("ANY(array['12','34']::INTEGER[])");
+    expect(promise).toBeTruthy();
+  });
+
+  test('No ids set - does not restrict the query by profile id', async () => {
+    const promise = streamProfileForRenotifying({
+      accountSid: 'AC4321',
+      filters: {},
+      batchSize: 1234,
+    });
+    expect(lastQuerySql).toContain('null::INTEGER[] IS NULL');
+    expect(promise).toBeTruthy();
+  });
 });

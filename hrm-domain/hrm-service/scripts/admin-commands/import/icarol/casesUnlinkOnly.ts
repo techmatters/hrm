@@ -13,9 +13,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
+import { assumeTfAdminRole, getTfAdminAssumeRoleParams } from '../../../adminRoles';
 import { parseS3Uri } from './contacts/contactMapper';
 import { getCaseById, getContactById, unlinkContactFromCase } from './cases/clearDownApi';
 import {
@@ -58,19 +58,6 @@ export const builder = {
   },
 };
 
-const assumeRoleCredentials = async (
-  region: string,
-  assumeRoleParams: { RoleArn: string; RoleSessionName: string },
-) => {
-  const sts = new STSClient({ region });
-  const { Credentials } = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-  return {
-    accessKeyId: Credentials!.AccessKeyId!,
-    secretAccessKey: Credentials!.SecretAccessKey!,
-    sessionToken: Credentials!.SessionToken!,
-  };
-};
-
 export const handler = async ({
   region,
   environment,
@@ -81,22 +68,17 @@ export const handler = async ({
   dryRun,
 }) => {
   try {
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      assumeRoleParams,
+      assumeRoleParams: getTfAdminAssumeRoleParams(),
     });
     const auth = { internalResourcesUrl, accountSid, authKey };
 
     const { bucket } = parseS3Uri(location);
     const s3 = new S3Client({
       region,
-      credentials: await assumeRoleCredentials(region, assumeRoleParams),
+      credentials: await assumeTfAdminRole(region),
     });
 
     const targetLogKey = `${ICAROL_CASES_AUDIT_LOG_PREFIX}${targetRunId}.jsonl`;

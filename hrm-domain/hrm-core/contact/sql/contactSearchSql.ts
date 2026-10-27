@@ -111,5 +111,7 @@ export const SELECT_CONTACTS_TO_RENOTIFY = `
   LEFT JOIN LATERAL (
     ${selectCoalesceConversationMediasByContactId('contacts')}
   ) "media" ON true
-  WHERE contacts."accountSid" = $<accountSid> AND "contacts"."updatedAt" BETWEEN $<dateFrom> AND $<dateTo>
+  WHERE contacts."accountSid" = $<accountSid>
+    AND "contacts"."updatedAt" BETWEEN COALESCE($<dateFrom>::TIMESTAMP WITH TIME ZONE, '-infinity') AND COALESCE($<dateTo>::TIMESTAMP WITH TIME ZONE, 'infinity')
+    AND ($<ids>::INTEGER[] IS NULL OR "contacts"."id" = ANY($<ids>::INTEGER[]))
   `;

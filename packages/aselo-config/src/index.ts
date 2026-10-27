@@ -16,7 +16,11 @@
 
 export * from './ssmParameterNameGetters';
 
-import { getSsmParameter, SsmParameterNotFound } from '@tech-matters/ssm-cache';
+import {
+  getSsmParameter,
+  SsmClientCredentials,
+  SsmParameterNotFound,
+} from '@tech-matters/ssm-cache';
 import {
   getHrmStaticKeySsmPath,
   getS3DocsBucketNameSsmPath,
@@ -26,13 +30,19 @@ import {
 
 type GetSsmParameterOptions = {
   cacheDurationMilliseconds?: number;
+  // Defaults to the shared SSM client's credentials, pass them to read with others (e.g. an assumed role)
+  credentials?: SsmClientCredentials;
 };
 
 export const createSsmParameterGetter =
   <TExtra extends Record<string, unknown>>(getSsmPath: (args: TExtra) => string) =>
   (argsAndMaybeOptions: TExtra & GetSsmParameterOptions) => {
-    const { cacheDurationMilliseconds, ...targs } = argsAndMaybeOptions;
-    return getSsmParameter(getSsmPath(targs as TExtra), cacheDurationMilliseconds);
+    const { cacheDurationMilliseconds, credentials, ...targs } = argsAndMaybeOptions;
+    return getSsmParameter(
+      getSsmPath(targs as TExtra),
+      cacheDurationMilliseconds,
+      credentials,
+    );
   };
 
 export const getHrmStaticKey = createSsmParameterGetter(getHrmStaticKeySsmPath);

@@ -25,6 +25,7 @@ import { publicEndpoint, SafeRouter } from '../permissions';
 import { renotifyCasesStream } from './caseNotifyService';
 import * as caseApi from './caseService';
 import createError from 'http-errors';
+import { parseRenotifyFilters } from '../notifications/renotifyFilters';
 
 const adminCasesRouter = SafeRouter();
 
@@ -70,7 +71,7 @@ adminCasesRouter.delete(
 );
 
 // A future POST /:caseId here would collide with :notifyOperation below.
-// admin POST endpoint to renotify cases. req body has accountSid, dateFrom, dateTo
+// admin POST endpoint to renotify cases. req body has dateFrom, dateTo and optionally ids
 adminCasesRouter.post(
   '/:notifyOperation',
   publicEndpoint,
@@ -82,12 +83,11 @@ adminCasesRouter.post(
     }
     console.log(`.......${notifyOperation}ing cases......`, req, res);
     const { hrmAccountId } = req;
-    const { dateFrom, dateTo } = req.body;
+    const filters = parseRenotifyFilters(req.body);
 
     const resultStream = await renotifyCasesStream(
       hrmAccountId,
-      dateFrom,
-      dateTo,
+      filters,
       notifyOperation,
     );
 

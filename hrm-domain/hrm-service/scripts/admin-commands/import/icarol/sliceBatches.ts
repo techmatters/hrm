@@ -14,8 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { parse } from 'csv-parse/sync';
-import { STSClient, AssumeRoleCommand } from '@aws-sdk/client-sts';
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { assumeTfAdminRole } from '../../../adminRoles';
 import { parseS3Uri } from './contacts/contactMapper';
 
 // Splits the full historical Call Reports export into ordered, fixed-size
@@ -41,19 +41,6 @@ export const builder = {
     demandOption: true,
     type: 'number',
   },
-};
-
-const assumeRoleCredentials = async (
-  region: string,
-  assumeRoleParams: { RoleArn: string; RoleSessionName: string },
-) => {
-  const sts = new STSClient({ region });
-  const { Credentials } = await sts.send(new AssumeRoleCommand(assumeRoleParams));
-  return {
-    accessKeyId: Credentials!.AccessKeyId!,
-    secretAccessKey: Credentials!.SecretAccessKey!,
-    sessionToken: Credentials!.SessionToken!,
-  };
 };
 
 // Quotes every field, doubling internal quotes.
@@ -94,13 +81,9 @@ export const handler = async ({ region, location, outputPrefix, batchSize }) => 
       throw new Error(`--batch-size must be a positive number, got ${batchSize}`);
     }
 
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${Date.now()}`,
-    };
     const s3 = new S3Client({
       region,
-      credentials: await assumeRoleCredentials(region, assumeRoleParams),
+      credentials: await assumeTfAdminRole(region),
     });
 
     const { bucket, key } = parseS3Uri(location);

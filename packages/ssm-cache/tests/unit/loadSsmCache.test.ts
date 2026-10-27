@@ -15,7 +15,7 @@
  */
 import isAfter from 'date-fns/isAfter';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { loadSsmCache } from '../../src/loadSsmCache';
+import { loadPaginated, loadSsmCache } from '../../src/loadSsmCache';
 import * as SsmCache from '../../src/ssmCache';
 import { mockClient } from 'aws-sdk-client-mock';
 
@@ -83,5 +83,53 @@ describe('loadSsmCache', () => {
 
     expect(SsmCache.ssmCache.values).toHaveProperty('/test/fake/param/1');
     expect(SsmCache.ssmCache.values).toHaveProperty('/test/fake/param/2');
+  });
+});
+
+describe('loadPaginated', () => {
+  const credentials = {
+    accessKeyId: 'role-key',
+    secretAccessKey: 'role-secret',
+    sessionToken: 'role-token',
+  };
+
+  beforeEach(() => {
+    mockSSMClient.reset();
+    SsmCache.ssmCache.values = {};
+  });
+
+  test('reads every page with the given credentials, without changing the shared client', async () => {
+    const accessKeyIdsUsed: string[] = [];
+    mockSSMClient.on(GetParametersByPathCommand).callsFake(async (input, getClient) => {
+      accessKeyIdsUsed.push((await getClient().config.credentials()).accessKeyId);
+      return input.NextToken
+        ? { Parameters: [{ Name: '/test/fake/param/2', Value: 'value' }] }
+        : {
+            Parameters: [{ Name: '/test/fake/param/1', Value: 'value' }],
+            NextToken: 'next',
+          };
+    });
+
+    const sharedClient = SsmCache.getSsmClient();
+    await loadPaginated({ path: '/test/fake/', credentials });
+
+    expect(accessKeyIdsUsed).toStrictEqual(['role-key', 'role-key']);
+    expect(SsmCache.ssmCache.values).toHaveProperty('/test/fake/param/1');
+    expect(SsmCache.ssmCache.values).toHaveProperty('/test/fake/param/2');
+    expect(SsmCache.getSsmClient()).toBe(sharedClient);
+  });
+
+  test('reuses the same client for the same credentials', async () => {
+    const clientsUsed = new Set<unknown>();
+    mockSSMClient.on(GetParametersByPathCommand).callsFake(async (_input, getClient) => {
+      clientsUsed.add(getClient());
+      return { Parameters: [] };
+    });
+
+    await loadPaginated({ path: '/test/fake/a/', credentials });
+    await loadPaginated({ path: '/test/fake/b/', credentials });
+
+    expect(clientsUsed.size).toBe(1);
+    expect(clientsUsed.has(SsmCache.getSsmClient(credentials))).toBe(true);
   });
 });

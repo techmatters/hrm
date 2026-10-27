@@ -239,4 +239,5 @@ export const SELECT_CASES_TO_RENOTIFY = `
       "cases"."definitionVersion"
   FROM "Cases" "cases"
   WHERE "cases"."accountSid" = $<accountSid> AND "cases"."updatedAt" BETWEEN $<dateFrom> AND $<dateTo>
+    AND ($<ids>::INTEGER[] IS NULL OR "cases"."id" = ANY($<ids>::INTEGER[]))
 `;

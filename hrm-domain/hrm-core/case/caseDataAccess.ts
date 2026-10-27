@@ -293,11 +293,11 @@ export const searchByCaseIds = generalizedSearchQueryFunction<{
 
 export const streamCasesForRenotifying = async ({
   accountSid,
-  filters: { from: dateFrom, to: dateTo },
+  filters: { from: dateFrom, to: dateTo, ids },
   batchSize = 1000,
 }: {
   accountSid: HrmAccountId;
-  filters: { from: string; to: string };
+  filters: { from: string; to: string; ids?: string[] };
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
   const qs = new QueryStream(
@@ -305,6 +305,7 @@ export const streamCasesForRenotifying = async ({
       accountSid,
       dateFrom,
       dateTo,
+      ids,
     }),
     [],
     {

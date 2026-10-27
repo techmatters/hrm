@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { renotify } from '../renotify';
+import { idsOptions, renotify } from '../renotify';
 
 export const command = 'hrm';
 export const describe =
@@ -78,6 +78,7 @@ export const builder = {
     describe: 'end date (e.g. 2024-12-31)',
     type: 'string',
   },
+  ...idsOptions,
 };
 
 export const handler = async ({
@@ -88,6 +89,8 @@ export const handler = async ({
   dryRun,
   dateFrom,
   dateTo,
+  ids,
+  idsFile,
   contacts,
   cases,
   profiles,
@@ -105,6 +108,8 @@ export const handler = async ({
       dryRun,
       dateFrom,
       dateTo,
+      ids,
+      idsFile,
       environment,
       operation: 'reexport',
       cases: cases || allEntities,

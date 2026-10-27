@@ -16,6 +16,7 @@
 
 import type { HrmAccountId } from '@tech-matters/types';
 import { getCachedParameters, loadPaginated } from '@tech-matters/ssm-cache';
+import type { CredentialsProvider } from './adminRoles';
 
 const loadedPaths = new Map<string, Promise<void>>();
 
@@ -23,12 +24,62 @@ const loadedPaths = new Map<string, Promise<void>>();
  * Loads every parameter under the path into the SSM cache with a single paginated request.
  * Each path is only loaded once per run, as SSM rate limits are low.
  */
-const loadPathOnce = (path: string, regex: RegExp) => {
+const loadPathOnce = (
+  path: string,
+  regex: RegExp,
+  getCredentials: CredentialsProvider,
+) => {
   if (!loadedPaths.has(path)) {
-    loadedPaths.set(path, loadPaginated({ path, regex }));
+    loadedPaths.set(
+      path,
+      getCredentials().then(credentials => loadPaginated({ path, regex, credentials })),
+    );
   }
   return loadedPaths.get(path)!;
 };
+
+/**
+ * Loads the parameters under the path and maps the segment captured by the regex to the parameter value
+ */
+const getParametersByCapturedSegment = async (
+  path: string,
+  regex: RegExp,
+  getCredentials: CredentialsProvider,
+): Promise<Record<string, string>> => {
+  await loadPathOnce(path, regex, getCredentials);
+  return Object.fromEntries(
+    Object.entries(getCachedParameters(regex)).map(([name, value]) => [
+      name.match(regex)![1],
+      value,
+    ]),
+  );
+};
+
+/**
+ * Maps every account sid to its region, from the /<environment>/aws/<accountSid>/region SSM parameters
+ */
+export const getRegionsByAccountSid = (
+  environment: string,
+  getCredentials: CredentialsProvider,
+): Promise<Record<string, string>> =>
+  getParametersByCapturedSegment(
+    `/${environment}/aws/`,
+    new RegExp(`^/${environment}/aws/([^/]+)/region$`),
+    getCredentials,
+  );
+
+/**
+ * Maps every account short code to its account sid, from the /<environment>/twilio/<SHORT_CODE>/account_sid SSM parameters
+ */
+export const getAccountSidsByShortCode = (
+  environment: string,
+  getCredentials: CredentialsProvider,
+): Promise<Record<string, HrmAccountId>> =>
+  getParametersByCapturedSegment(
+    `/${environment}/twilio/`,
+    new RegExp(`^/${environment}/twilio/([^/]+)/account_sid$`),
+    getCredentials,
+  ) as Promise<Record<string, HrmAccountId>>;
 
 /**
  * Looks up every account whose region SSM parameter (/<environment>/aws/<accountSid>/region)
@@ -37,18 +88,16 @@ const loadPathOnce = (path: string, regex: RegExp) => {
 export const getAccountSidsInRegion = async ({
   environment,
   region,
+  getCredentials,
 }: {
   environment: string;
   region: string;
-}): Promise<HrmAccountId[]> => {
-  const regionParameterRegex = new RegExp(`^/${environment}/aws/([^/]+)/region$`);
-  await loadPathOnce(`/${environment}/aws/`, regionParameterRegex);
-
-  return Object.entries(getCachedParameters(regionParameterRegex))
+  getCredentials: CredentialsProvider;
+}): Promise<HrmAccountId[]> =>
+  Object.entries(await getRegionsByAccountSid(environment, getCredentials))
     .filter(([, accountRegion]) => accountRegion === region)
-    .map(([name]) => name.match(regionParameterRegex)![1] as HrmAccountId)
+    .map(([accountSid]) => accountSid as HrmAccountId)
     .sort();
-};
 
 const ACCOUNT_SID_REGEX = /^AC[0-9a-f]{32}$/i;
 
@@ -60,23 +109,17 @@ const ACCOUNT_SID_REGEX = /^AC[0-9a-f]{32}$/i;
 export const toAccountSids = async ({
   environment,
   accounts,
+  getCredentials,
 }: {
   environment: string;
   accounts: string[];
+  getCredentials: CredentialsProvider;
 }): Promise<HrmAccountId[]> => {
   if (accounts.every(account => ACCOUNT_SID_REGEX.test(account))) {
     return accounts as HrmAccountId[];
   }
 
-  const accountSidParameterRegex = new RegExp(
-    `^/${environment}/twilio/([^/]+)/account_sid$`,
-  );
-  await loadPathOnce(`/${environment}/twilio/`, accountSidParameterRegex);
-  const sidsByShortCode = Object.fromEntries(
-    Object.entries(getCachedParameters(accountSidParameterRegex)).map(
-      ([name, accountSid]) => [name.match(accountSidParameterRegex)![1], accountSid],
-    ),
-  );
+  const sidsByShortCode = await getAccountSidsByShortCode(environment, getCredentials);
 
   const unknownShortCodes = accounts.filter(
     account =>
