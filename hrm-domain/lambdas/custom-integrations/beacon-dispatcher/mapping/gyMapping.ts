@@ -20,6 +20,7 @@ import type { CaseService, Contact } from '@tech-matters/hrm-types';
 type GyCreateIncidentParams = CreateIncidentParams & {
   category: string;
   description: string;
+  caller_name: string;
   caller_number: string;
   call_received_at: string;
 };
@@ -39,6 +40,7 @@ export const toCreateIncident = ({
     case_id: parseInt(caseObj.id),
     call_received_at: contact.timeOfContact ?? '',
     caller_number: contact.number ?? '',
+    caller_name: contact.rawJson?.childInformation?.firstName?.toString() ?? '',
     category: category ?? '',
     description: contact.rawJson?.childInformation.incidentSummary?.toString() ?? '',
   };
