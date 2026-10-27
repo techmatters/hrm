@@ -73,6 +73,7 @@ import type {
 import { getDbForAccount, getDbForAdmin, pgp } from '../dbConnection';
 import QueryStream from 'pg-query-stream';
 import { getProfilesToRenotifySql } from './sql/profileRenotifyStreamSql';
+import { RenotifyFilters } from '../notifications/renotifyFilters';
 
 export { ProfilesListFilters } from './sql/profile-list-sql';
 
@@ -522,14 +523,19 @@ export const getProfileSectionById = async (
 
 export const streamProfileForRenotifying = async ({
   accountSid,
-  filters: { dateTo, dateFrom },
+  filters: { dateTo, dateFrom, ids },
   batchSize,
 }: {
   accountSid: HrmAccountId;
-  filters: { dateTo: string; dateFrom: string };
+  filters: RenotifyFilters;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
-  const sql = pgp.as.format(getProfilesToRenotifySql(), { accountSid, dateTo, dateFrom });
+  const sql = pgp.as.format(getProfilesToRenotifySql(), {
+    accountSid,
+    dateTo,
+    dateFrom,
+    ids,
+  });
   console.debug(sql);
   const qs = new QueryStream(sql, [], {
     batchSize,

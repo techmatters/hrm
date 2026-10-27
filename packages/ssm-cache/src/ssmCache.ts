@@ -124,7 +124,26 @@ export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) 
 export const parameterExistsInCache = (name: string): boolean =>
   !!ssmCache.values[name]?.value;
 
-export const getSsmClient = () => {
+export type SsmClientCredentials = SSMClientConfig['credentials'];
+
+// One client per set of custom credentials, kept apart from the shared client so they never leak to its callers
+const clientsByCredentials = new WeakMap<NonNullable<SsmClientCredentials>, SSMClient>();
+
+/**
+ * Returns the shared client, or, if credentials are given (e.g. from an assumed role), the client using them.
+ * That client is created the first time those credentials (the same object) are passed, then reused.
+ */
+export const getSsmClient = (credentials?: SsmClientCredentials) => {
+  if (credentials) {
+    if (!clientsByCredentials.has(credentials)) {
+      clientsByCredentials.set(
+        credentials,
+        new SSMClient({ ...getSsmConfig(), credentials }),
+      );
+    }
+    return clientsByCredentials.get(credentials)!;
+  }
+
   if (!ssm) {
     ssm = new SSMClient(getSsmConfig());
   }
@@ -149,7 +168,7 @@ export const addErrorToCache = (parameterName: string, errorToCache: Error) => {
   };
 };
 
-export const loadParameter = async (name: string) => {
+export const loadParameter = async (name: string, credentials?: SsmClientCredentials) => {
   const params = {
     Name: name,
     WithDecryption: true,
@@ -157,7 +176,7 @@ export const loadParameter = async (name: string) => {
 
   const command = new GetParameterCommand(params);
   try {
-    const { Parameter } = await getSsmClient().send(command);
+    const { Parameter } = await getSsmClient(credentials).send(command);
     if (Parameter?.Name) {
       addToCache(undefined, Parameter);
     } else {
@@ -175,11 +194,14 @@ export const loadParameter = async (name: string) => {
 const inFlightParameterLoads: Record<string, Promise<void> | undefined> =
   Object.create(null);
 
-const loadParameterOnce = (name: string): Promise<void> => {
+const loadParameterOnce = (
+  name: string,
+  credentials?: SsmClientCredentials,
+): Promise<void> => {
   const inFlightLoad = inFlightParameterLoads[name];
   if (inFlightLoad) return inFlightLoad;
 
-  const load = loadParameter(name).finally(() => {
+  const load = loadParameter(name, credentials).finally(() => {
     delete inFlightParameterLoads[name];
   });
   inFlightParameterLoads[name] = load;
@@ -189,13 +211,15 @@ const loadParameterOnce = (name: string): Promise<void> => {
 export const getSsmParameter = async (
   name: string,
   cacheDurationMilliseconds?: number,
+  // Defaults to the shared client's credentials, pass them to read with others (e.g. an assumed role)
+  credentials?: SsmClientCredentials,
 ): Promise<string> => {
   const oldCacheDurationMilliseconds = ssmCache.cacheDurationMilliseconds;
   if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
   // If the cache doesn't have the requested parameter or if it is expired, load it
   if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
-    await loadParameterOnce(name);
+    await loadParameterOnce(name, credentials);
   }
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
 

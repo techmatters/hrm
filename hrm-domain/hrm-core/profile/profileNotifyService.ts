@@ -24,22 +24,23 @@ import { publishProfileChangeNotification } from '../notifications/entityChangeN
 import formatISO from 'date-fns/formatISO';
 import { Transform } from 'stream';
 import { streamProfileForRenotifying } from './profileDataAccess';
+import { RenotifyFilters } from '../notifications/renotifyFilters';
 
 // TODO: move this to service initialization or constant package?
 const highWaterMark = 1000;
 
 export const renotifyProfilesStream = async (
   accountSid: HrmAccountId,
-  dateFrom: string,
-  dateTo: string,
+  { dateFrom, dateTo, ids }: RenotifyFilters,
   operation: ManuallyTriggeredNotificationOperation,
 ): Promise<Transform> => {
   if (!manuallyTriggeredNotificationOperations.includes(operation)) {
     throw new Error(`Invalid operation: ${operation}`);
   }
   const filters = {
-    dateFrom: formatISO(new Date(dateFrom)),
-    dateTo: formatISO(new Date(dateTo)),
+    dateFrom: dateFrom ? formatISO(new Date(dateFrom)) : undefined,
+    dateTo: dateTo ? formatISO(new Date(dateTo)) : undefined,
+    ids,
   };
 
   console.debug(`Querying DB for profiles to ${operation}`, filters);

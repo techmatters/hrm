@@ -16,6 +16,7 @@
 
 import { getHRMInternalEndpointAccess } from '@tech-matters/service-discovery';
 import { getAdminV0URL } from '../../../hrmInternalConfig';
+import { getTfAdminAssumeRoleParams } from '../../../adminRoles';
 
 export const command = 'delete';
 export const describe = 'Delete an existing profile flag';
@@ -48,16 +49,10 @@ export const builder = {
 
 export const handler = async ({ region, environment, accountSid, flagId }) => {
   try {
-    const timestamp = new Date().getTime();
-    const assumeRoleParams = {
-      RoleArn: 'arn:aws:iam::712893914485:role/tf-admin',
-      RoleSessionName: `hrm-admin-cli-${timestamp}`,
-    };
-
     const { authKey, internalResourcesUrl } = await getHRMInternalEndpointAccess({
       region,
       environment,
-      assumeRoleParams,
+      assumeRoleParams: getTfAdminAssumeRoleParams(),
     });
 
     const url = getAdminV0URL(

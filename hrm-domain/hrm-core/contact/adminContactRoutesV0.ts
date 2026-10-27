@@ -28,6 +28,7 @@ import {
   patchContact,
 } from './contactService';
 import createError from 'http-errors';
+import { parseRenotifyFilters } from '../notifications/renotifyFilters';
 
 const adminContactsRouter = SafeRouter();
 
@@ -97,7 +98,7 @@ adminContactsRouter.put(
   },
 );
 
-// admin POST endpoint to reindex contacts. req body has accountSid, dateFrom, dateTo
+// admin POST endpoint to reindex contacts. req body has dateFrom, dateTo and optionally ids
 adminContactsRouter.post(
   '/:notifyOperation',
   publicEndpoint,
@@ -110,12 +111,11 @@ adminContactsRouter.post(
     console.info(`.......${notifyOperation}ing contacts......`, req, res);
 
     const { hrmAccountId } = req;
-    const { dateFrom, dateTo } = req.body;
+    const filters = parseRenotifyFilters(req.body);
 
     const resultStream = await processContactsStream(
       hrmAccountId,
-      dateFrom,
-      dateTo,
+      filters,
       notifyOperation,
     );
     resultStream.on('error', err => {

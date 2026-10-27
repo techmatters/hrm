@@ -32,6 +32,7 @@ import {
 import { INSERT_CONTACT_SQL, NewContactRecord } from './sql/contactInsertSql';
 import { ContactRawJson } from './contactJson';
 import type { ITask } from 'pg-promise';
+import { RenotifyFilters } from '../notifications/renotifyFilters';
 import { DatabaseErrorResult, inferPostgresErrorResult, txIfNotInOne } from '../sql';
 import { TOUCH_CASE_SQL } from '../case/sql/caseUpdateSql';
 import { TKConditionsSets } from '../permissions/rulesMap';
@@ -114,17 +115,6 @@ type QueryParams = {
   dataCallTypes: string[];
   limit: number;
   offset: number;
-};
-
-type SearchParametersForQueryParameters = {
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  contactNumber?: string;
-  helpline?: string;
-  counselor?: string;
 };
 
 type CreateResultRecord = ContactRecord & { isNewRecord: boolean };
@@ -321,16 +311,19 @@ export const streamContactsAfterNotified = ({
   batchSize = 1000,
 }: {
   accountSid: HrmAccountId;
-  searchParameters: NonNullable<
-    Pick<SearchParametersForQueryParameters, 'dateFrom' | 'dateTo'>
-  >;
+  searchParameters: RenotifyFilters;
   batchSize?: number;
 }): Promise<NodeJS.ReadableStream> => {
   const qs = new QueryStream(
     pgp.as.format(SELECT_CONTACTS_TO_RENOTIFY, {
       accountSid,
-      dateFrom: parseISO(searchParameters.dateFrom).toISOString(),
-      dateTo: parseISO(searchParameters.dateTo).toISOString(),
+      dateFrom: searchParameters.dateFrom
+        ? parseISO(searchParameters.dateFrom).toISOString()
+        : undefined,
+      dateTo: searchParameters.dateTo
+        ? parseISO(searchParameters.dateTo).toISOString()
+        : undefined,
+      ids: searchParameters.ids,
     }),
     [],
     {

@@ -11,7 +11,7 @@
   "dependencies": {
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.0",
-    "typescript": "^5.7.3"
+    "@tsconfig/node24": "^24.0.5",
+    "typescript": "^5.9.3"
   }
 }

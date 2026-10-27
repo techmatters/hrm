@@ -23,6 +23,7 @@ import {
   ssmCache,
   getSsmClient,
   addToCache,
+  SsmClientCredentials,
   hasCacheExpired,
   setCacheDurationMilliseconds,
   isConfigNotEmpty,
@@ -32,11 +33,14 @@ type LoadPaginatedParameters = {
   path: string;
   regex?: RegExp;
   nextToken?: string;
+  // Defaults to the shared client's credentials, pass them to read with others (e.g. an assumed role)
+  credentials?: SsmClientCredentials;
 };
 export const loadPaginated = async ({
   path,
   regex,
   nextToken,
+  credentials,
 }: LoadPaginatedParameters): Promise<void> => {
   const params: GetParametersByPathCommandInput = {
     MaxResults: 10, // 10 is max allowed by AWS
@@ -49,7 +53,7 @@ export const loadPaginated = async ({
 
   const command = new GetParametersByPathCommand(params);
 
-  const resp = await getSsmClient().send(command);
+  const resp = await getSsmClient(credentials).send(command);
 
   resp.Parameters?.forEach(p => addToCache(regex, p));
 
@@ -58,6 +62,7 @@ export const loadPaginated = async ({
       path,
       regex,
       nextToken: resp.NextToken,
+      credentials,
     });
   }
 };

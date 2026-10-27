@@ -80,7 +80,7 @@ describe('resources SSM parameter getters', () => {
 
   test.each(cases)('%s looks up the expected path', async (_name, getter, args, path) => {
     await expect(getter(args)).resolves.toBe('the-value');
-    expect(mockGetSsmParameter).toHaveBeenCalledWith(path, undefined);
+    expect(mockGetSsmParameter).toHaveBeenCalledWith(path, undefined, undefined);
   });
 
   test('passes cache duration to the shared getter', async () => {
@@ -88,6 +88,7 @@ describe('resources SSM parameter getters', () => {
     expect(mockGetSsmParameter).toHaveBeenCalledWith(
       '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
       1200,
+      undefined,
     );
   });
 });

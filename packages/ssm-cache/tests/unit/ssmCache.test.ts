@@ -93,6 +93,22 @@ describe('getSsmParameter', () => {
     expect(await getSsmParameter(ssmParam.Name)).toEqual(ssmParam.Value);
   });
 
+  it('should load the parameter with the given credentials', async () => {
+    const credentials = { accessKeyId: 'role-key', secretAccessKey: 'role-secret' };
+    let accessKeyIdUsed: string | undefined;
+    mockSSMClient
+      .on(GetParameterCommand, { Name: '/test/role/param' })
+      .callsFake(async (input, getClient) => {
+        accessKeyIdUsed = (await getClient().config.credentials()).accessKeyId;
+        return { Parameter: { Name: input.Name, Value: 'role-value' } };
+      });
+
+    expect(await getSsmParameter('/test/role/param', undefined, credentials)).toEqual(
+      'role-value',
+    );
+    expect(accessKeyIdUsed).toBe('role-key');
+  });
+
   it('should attempt to load parameter and throw an error if the parameter is not found', async () => {
     const badParamName = '/test/badParam';
 

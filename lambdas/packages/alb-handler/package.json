@@ -10,9 +10,9 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.0",
+    "@tsconfig/node24": "^24.0.5",
     "@types/aws-lambda": "^8.10.108",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "test:integration": "cross-env S3_FORCE_PATH_STYLE=true S3_ENDPOINT=http://localhost:4566 SQS_ENDPOINT=http://localhost:4566 jest tests/integration",
