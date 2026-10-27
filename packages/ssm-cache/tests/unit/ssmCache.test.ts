@@ -26,6 +26,7 @@ import {
   SsmParameterNotFound,
   addToCache,
   getCachedParameters,
+  getSsmClient,
   getSsmParameter,
   ssmCache,
   setCacheDurationMilliseconds,
@@ -107,6 +108,46 @@ describe('getSsmParameter', () => {
       'role-value',
     );
     expect(accessKeyIdUsed).toBe('role-key');
+  });
+
+  it('should not return a value loaded with some credentials to lookups with others', async () => {
+    const credentials = { accessKeyId: 'role-key', secretAccessKey: 'role-secret' };
+    mockSSMClient
+      .on(GetParameterCommand, { Name: '/test/role/restricted' })
+      .callsFake(async (input, getClient) => {
+        if (getClient() !== getSsmClient(credentials)) {
+          throw new ParameterNotFound({ message: 'BONK!', $metadata: {} });
+        }
+        return { Parameter: { Name: input.Name, Value: 'role-value' } };
+      });
+
+    expect(
+      await getSsmParameter('/test/role/restricted', undefined, credentials),
+    ).toEqual('role-value');
+    await expect(getSsmParameter('/test/role/restricted')).rejects.toThrow(
+      SsmParameterNotFound,
+    );
+    expect(mockSSMClient.commandCalls(GetParameterCommand).length).toBe(2);
+  });
+
+  it('should not share an in-flight load, nor its error, between lookups with different credentials', async () => {
+    const credentials = { accessKeyId: 'role-key', secretAccessKey: 'role-secret' };
+    const accessDenied = new Error('Access denied');
+    mockSSMClient
+      .on(GetParameterCommand, { Name: '/test/role/concurrent' })
+      .callsFake(async (input, getClient) => {
+        if (getClient() !== getSsmClient(credentials)) throw accessDenied;
+        return { Parameter: { Name: input.Name, Value: 'role-value' } };
+      });
+
+    const [sharedResult, roleResult] = await Promise.allSettled([
+      getSsmParameter('/test/role/concurrent'),
+      getSsmParameter('/test/role/concurrent', undefined, credentials),
+    ]);
+
+    expect(sharedResult).toStrictEqual({ status: 'rejected', reason: accessDenied });
+    expect(roleResult).toStrictEqual({ status: 'fulfilled', value: 'role-value' });
+    expect(mockSSMClient.commandCalls(GetParameterCommand).length).toBe(2);
   });
 
   it('should attempt to load parameter and throw an error if the parameter is not found', async () => {
