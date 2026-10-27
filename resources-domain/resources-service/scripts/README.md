@@ -35,9 +35,9 @@ Prerequisites:
 * Ensure you have the HRM source tree checked out.
 * In the root of the source tree run:
 ````bash
-docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:18-slim npm install
-docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:18-slim npm run build
-docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:18-slim node ./node_modules/@tech-matters/resources-service/scripts-dist/scripts/elasticsearch/reindexResources.js [...args]
+docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:24-slim npm install
+docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:24-slim npm run build
+docker run -it --rm --name reindex-resources --env AWS_REGION=us-east-1 -v "$PWD":/usr/src/app -w /usr/src/app node:24-slim node ./node_modules/@tech-matters/resources-service/scripts-dist/scripts/elasticsearch/reindexResources.js [...args]
 ````
 
 Arguments:

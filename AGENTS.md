@@ -40,7 +40,7 @@ CI (`.github/workflows/hrm-ci.yml` and `check-license-header.yml`) runs on every
 Before opening a PR or requesting a review, run the equivalent checks locally and fix
 anything they raise. There is no need to run them after every individual edit.
 
-Use Node 22 (`.nvmrc`). Steps 5–7 need Docker.
+Use Node 24 (`.nvmrc`). Steps 5–7 need Docker.
 
 1. `npm ci` — install the workspace
 2. `npm run build` — TypeScript must compile (`tsc -b` across all project references)

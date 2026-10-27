@@ -15,7 +15,7 @@
   "devDependencies": {
     "@tech-matters/hrm-service-test-support": "^1.0.0",
     "@tech-matters/testing": "^1.0.0",
-    "@tsconfig/node22": "^22.0.0",
+    "@tsconfig/node24": "^24.0.5",
     "@types/aws-lambda": "^8.10.108",
     "@types/jest": "^30.0.0",
     "cross-env": "^7.0.3",
@@ -26,7 +26,7 @@
     "mockttp": "^3.16.0",
     "pg-promise": "11.5.5",
     "ts-jest": "^29.4.12",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "docker:build": "docker build -t beacon-poller --build-arg lambda_name=beacon-poller --build-arg lambda_dir=hrm-domain/lambdas/custom-integrations -f ../../../../lambdas/Dockerfile ../../../../",

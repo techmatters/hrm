@@ -11,9 +11,9 @@
     "@tech-matters/types": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node22": "^22.0.0",
+    "@tsconfig/node24": "^24.0.5",
     "@types/aws-lambda": "^8.10.108",
-    "typescript": "^5.7.3"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "docker:build": "docker build -t job-complete --build-arg lambda_name=job-complete --build-arg lambda_dir=lambdas -f ../Dockerfile ../../"
