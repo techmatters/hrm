@@ -234,6 +234,23 @@ describe('search', () => {
         expect(result.cases).toStrictEqual(dbResult);
       },
     );
+
+    test('counts all matching cases separately from the paginated results', async () => {
+      const anySpy = jest.spyOn(conn, 'any').mockResolvedValue([]);
+      await caseDb.list(user, openViewPermissions, {}, accountSid, null, {
+        helplines: ['fakeHelpline'],
+      });
+
+      const sql = getSqlStatement(anySpy);
+      expect(sql).toContain('SELECT');
+      [
+        '$<accountSid>',
+        '$<helplines:csv>',
+        '$<twilioWorkerSid>',
+        '$<limit>',
+        '$<offset>',
+      ].forEach(parameter => expect(sql).toContain(parameter));
+    });
   });
   each([
     {
