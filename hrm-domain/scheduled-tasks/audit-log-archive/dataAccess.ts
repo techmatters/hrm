@@ -18,20 +18,22 @@ import QueryStream from 'pg-query-stream';
 import { getDbForAdmin } from '@tech-matters/hrm-core/dbConnection';
 import ReadableStream = NodeJS.ReadableStream;
 
-const SELECT_AUDITS_BEFORE_SQL = `
-  SELECT *
+const SELECT_AUDITS_TO_ARCHIVE_SQL = `
+  SELECT
+    public."Audits".*,
+    to_char(timestamp_clock AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS "_utcDay"
   FROM public."Audits"
   WHERE timestamp_clock < $1
-  ORDER BY id
+  ORDER BY timestamp_clock, id
 `;
 
-const DELETE_AUDITS_BEFORE_SQL = `
+const DELETE_AUDITS_BY_IDS_SQL = `
   DELETE FROM public."Audits"
-  WHERE timestamp_clock < $1
+  WHERE id = ANY($1::integer[])
 `;
 
-export const streamAuditsBefore = async (cutoff: Date): Promise<ReadableStream> => {
-  const query = new QueryStream(SELECT_AUDITS_BEFORE_SQL, [cutoff], {
+export const streamAuditsToArchive = async (before: Date): Promise<ReadableStream> => {
+  const query = new QueryStream(SELECT_AUDITS_TO_ARCHIVE_SQL, [before], {
     highWaterMark: 1000,
   });
   const db = getDbForAdmin();
@@ -41,5 +43,11 @@ export const streamAuditsBefore = async (cutoff: Date): Promise<ReadableStream> 
   });
 };
 
-export const deleteAuditsBefore = async (cutoff: Date): Promise<number> =>
-  getDbForAdmin().result(DELETE_AUDITS_BEFORE_SQL, [cutoff], result => result.rowCount);
+export const deleteAuditsByIds = async (ids: number[]): Promise<number> => {
+  if (!ids.length) return 0;
+  return getDbForAdmin().result(
+    DELETE_AUDITS_BY_IDS_SQL,
+    [ids],
+    result => result.rowCount,
+  );
+};

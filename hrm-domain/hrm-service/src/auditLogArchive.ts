@@ -20,8 +20,9 @@ import { handleSignals } from './handleSignals';
 const bucket = process.argv[2];
 
 archiveAudits(bucket)
-  .then(({ key, deletedCount }) => {
-    console.info(`Archived ${deletedCount} audit rows to s3://${bucket}/${key}`);
+  .then(({ archivedDays, deletedCount, keys }) => {
+    console.info(`Archived ${deletedCount} audit rows across ${archivedDays} days`);
+    keys.forEach(key => console.info(`Archived audit logs to s3://${bucket}/${key}`));
   })
   .catch(error => {
     console.error('Failed to archive audit logs', error);
