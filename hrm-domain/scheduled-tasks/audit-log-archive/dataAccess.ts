@@ -39,9 +39,25 @@ const DELETE_AUDITS_BY_IDS_SQL = `
 `;
 
 export const findOldestAuditTimestamp = async (before: Date): Promise<Date | null> => {
-  const { timestamp } = await getDbForAdmin().one<{ timestamp: Date | null }>(
-    FIND_OLDEST_AUDIT_TIMESTAMP_SQL,
-    [before],
+  console.debug(
+    `[scheduled-task:audit-log-archive]: Finding oldest audit before ${before.toISOString()}`,
+  );
+  let timestamp: Date | null;
+  try {
+    ({ timestamp } = await getDbForAdmin().one<{ timestamp: Date | null }>(
+      FIND_OLDEST_AUDIT_TIMESTAMP_SQL,
+      [before],
+    ));
+  } catch (error) {
+    console.error(
+      '[scheduled-task:audit-log-archive]: Failed to find the oldest eligible audit timestamp',
+    );
+    throw error;
+  }
+  console.debug(
+    `[scheduled-task:audit-log-archive]: Oldest eligible audit timestamp: ${
+      timestamp?.toISOString() ?? 'none'
+    }`,
   );
   return timestamp;
 };
@@ -51,6 +67,11 @@ export const streamAuditBatchForDay = async (
   end: Date,
   batchSize: number,
 ): Promise<ReadableStream> => {
+  console.debug(
+    `[scheduled-task:audit-log-archive]: Selecting audit batch for UTC window ${start.toISOString()} to ${end.toISOString()}, limit ${
+      batchSize + 1
+    }`,
+  );
   const query = new QueryStream(
     SELECT_AUDIT_BATCH_FOR_DAY_SQL,
     [start, end, batchSize + 1],
@@ -59,15 +80,29 @@ export const streamAuditBatchForDay = async (
   const db = getDbForAdmin();
 
   return new Promise((resolve, reject) => {
-    db.stream(query, stream => resolve(stream)).catch(reject);
+    db.stream(query, stream => resolve(stream)).catch(error => {
+      console.error(
+        `[scheduled-task:audit-log-archive]: Failed to stream audits for UTC window ${start.toISOString()} to ${end.toISOString()}`,
+      );
+      reject(error);
+    });
   });
 };
 
 export const deleteAuditsByIds = async (ids: number[]): Promise<number> => {
   if (!ids.length) return 0;
-  return getDbForAdmin().result(
+  const firstId = ids[0];
+  const lastId = ids[ids.length - 1];
+  console.debug(
+    `[scheduled-task:audit-log-archive]: Deleting ${ids.length} uploaded audit IDs, first ID ${firstId}, last ID ${lastId}`,
+  );
+  const deletedCount = await getDbForAdmin().result(
     DELETE_AUDITS_BY_IDS_SQL,
     [ids],
     result => result.rowCount,
   );
+  console.info(
+    `[scheduled-task:audit-log-archive]: Deleted ${deletedCount} audit rows for uploaded IDs; first ID ${firstId}, last ID ${lastId}`,
+  );
+  return deletedCount;
 };

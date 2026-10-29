@@ -27,8 +27,22 @@ import {
 const MAX_RUNTIME_MILLISECONDS = 60 * 60 * 1000;
 const DEFAULT_BATCH_SIZE = 10_000;
 
-type Audit = { id: number; [key: string]: unknown };
+type Audit = { id: number; timestamp_clock?: Date | string; [key: string]: unknown };
 type S3ReadableClient = ReturnType<typeof getNativeS3Client>;
+type BatchMetadata = {
+  count: number;
+  firstId?: number;
+  lastId?: number;
+  firstTimestamp?: string;
+  lastTimestamp?: string;
+  lookaheadId?: number;
+  lookaheadTimestamp?: string;
+};
+
+const getAuditTimestamp = (audit: Audit): string | undefined => {
+  if (audit.timestamp_clock instanceof Date) return audit.timestamp_clock.toISOString();
+  return typeof audit.timestamp_clock === 'string' ? audit.timestamp_clock : undefined;
+};
 
 const utcDayStart = (date: Date): Date => {
   const start = new Date(date);
@@ -41,6 +55,28 @@ const getDayPrefix = (dayStart: Date): string => {
   return `audit-logs/${utcDay.slice(0, 4)}/${utcDay.slice(5, 7)}/${utcDay}-`;
 };
 
+const listS3Objects = async (
+  client: S3ReadableClient,
+  bucket: string,
+  prefix: string,
+  continuationToken?: string,
+) => {
+  try {
+    return await client.send(
+      new ListObjectsV2Command({
+        Bucket: bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+  } catch (error) {
+    console.error(
+      `[scheduled-task:audit-log-archive]: Failed to list existing S3 files for ${prefix}`,
+    );
+    throw error;
+  }
+};
+
 const getNextFileSuffix = async (
   client: S3ReadableClient,
   bucket: string,
@@ -49,12 +85,11 @@ const getNextFileSuffix = async (
   let continuationToken: string | undefined;
   let nextSuffix = 0;
   do {
-    const response = await client.send(
-      new ListObjectsV2Command({
-        Bucket: bucket,
-        Prefix: prefix,
-        ContinuationToken: continuationToken,
-      }),
+    const response = await listS3Objects(client, bucket, prefix, continuationToken);
+    console.debug(
+      `[scheduled-task:audit-log-archive]: Listed ${
+        response.Contents?.length ?? 0
+      } existing S3 files for ${prefix}`,
     );
     for (const { Key } of response.Contents ?? []) {
       const suffix = Key?.match(/-(\d+)\.jsonl$/)?.[1];
@@ -62,6 +97,9 @@ const getNextFileSuffix = async (
     }
     continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
   } while (continuationToken);
+  console.debug(
+    `[scheduled-task:audit-log-archive]: Next S3 file suffix for ${prefix} is ${nextSuffix}`,
+  );
   return nextSuffix;
 };
 
@@ -69,7 +107,7 @@ const readBatch = async (
   stream: NodeJS.ReadableStream,
   batchSize: number,
   ids: number[],
-): Promise<{ body: Readable } | undefined> => {
+): Promise<{ body: Readable; metadata: BatchMetadata } | undefined> => {
   const iterator = (stream as AsyncIterable<Audit>)[Symbol.asyncIterator]();
   const firstAudit = await iterator.next();
   if (firstAudit.done) {
@@ -77,20 +115,30 @@ const readBatch = async (
     return undefined;
   }
 
+  const metadata: BatchMetadata = { count: 0 };
   return {
+    metadata,
     body: Readable.from(
       (async function* () {
         let nextAudit = firstAudit;
-        let count = 0;
         let streamEnded = false;
         try {
-          while (!nextAudit.done && count < batchSize) {
+          while (!nextAudit.done && metadata.count < batchSize) {
             ids.push(nextAudit.value.id);
-            count += 1;
-            yield `${JSON.stringify(nextAudit.value)}\n`;
-            if (count < batchSize) {
-              nextAudit = await iterator.next();
+            const timestamp = getAuditTimestamp(nextAudit.value);
+            if (metadata.count === 0) {
+              metadata.firstId = nextAudit.value.id;
+              metadata.firstTimestamp = timestamp;
             }
+            metadata.lastId = nextAudit.value.id;
+            metadata.lastTimestamp = timestamp;
+            metadata.count += 1;
+            yield `${JSON.stringify(nextAudit.value)}\n`;
+            nextAudit = await iterator.next();
+          }
+          if (!nextAudit.done) {
+            metadata.lookaheadId = nextAudit.value.id;
+            metadata.lookaheadTimestamp = getAuditTimestamp(nextAudit.value);
           }
           streamEnded = nextAudit.done;
         } finally {
@@ -114,10 +162,26 @@ const archiveBatch = async (
 ): Promise<{ key: string; deletedCount: number } | undefined> => {
   const stream = await streamAuditBatchForDay(start, end, batchSize);
   const ids: number[] = [];
-  const batch = await readBatch(stream, batchSize, ids);
-  if (!batch) return undefined;
+  let batch: Awaited<ReturnType<typeof readBatch>>;
+  try {
+    batch = await readBatch(stream, batchSize, ids);
+  } catch (error) {
+    console.error(
+      `[scheduled-task:audit-log-archive]: Failed to read audit batch for UTC window ${start.toISOString()} to ${end.toISOString()}`,
+    );
+    throw error;
+  }
+  if (!batch) {
+    console.debug(
+      `[scheduled-task:audit-log-archive]: No audits remain in UTC window ${start.toISOString()} to ${end.toISOString()}`,
+    );
+    return undefined;
+  }
 
   const key = `${getDayPrefix(start)}${String(suffix).padStart(4, '0')}.jsonl`;
+  console.debug(
+    `[scheduled-task:audit-log-archive]: Uploading batch ${suffix} for UTC day ${start.toISOString()} to s3://${bucket}/${key}`,
+  );
   const upload = new Upload({
     client,
     params: {
@@ -132,10 +196,33 @@ const archiveBatch = async (
     await upload.done();
   } catch (error) {
     (stream as NodeJS.ReadableStream & { destroy?: () => void }).destroy?.();
+    console.error(
+      `[scheduled-task:audit-log-archive]: S3 upload failed for ${key}; ${batch.metadata.count} audits read, first ID ${batch.metadata.firstId}, last ID ${batch.metadata.lastId}, timestamp range ${batch.metadata.firstTimestamp} to ${batch.metadata.lastTimestamp}; no audit IDs were deleted`,
+    );
     throw error;
   }
 
-  return { key, deletedCount: await deleteAuditsByIds(ids) };
+  console.info(
+    `[scheduled-task:audit-log-archive]: Uploaded ${batch.metadata.count} audits to ${key}; first ID ${batch.metadata.firstId}, last ID ${batch.metadata.lastId}, timestamp range ${batch.metadata.firstTimestamp} to ${batch.metadata.lastTimestamp}`,
+  );
+  if (batch.metadata.lookaheadId !== undefined) {
+    console.debug(
+      `[scheduled-task:audit-log-archive]: Retaining lookahead audit ID ${batch.metadata.lookaheadId} at ${batch.metadata.lookaheadTimestamp}; it will be queried in the next batch`,
+    );
+  }
+
+  try {
+    const deletedCount = await deleteAuditsByIds(ids);
+    console.info(
+      `[scheduled-task:audit-log-archive]: Finished batch ${key}; deleted ${deletedCount} of ${batch.metadata.count} uploaded audits`,
+    );
+    return { key, deletedCount };
+  } catch (error) {
+    console.error(
+      `[scheduled-task:audit-log-archive]: Database deletion failed after upload to ${key}; uploaded audit IDs remain available for retry`,
+    );
+    throw error;
+  }
 };
 
 const getConfiguredBatchSize = (): number => {
@@ -170,13 +257,23 @@ export const archiveAudits = async (
   let deletedCount = 0;
   const keys: string[] = [];
 
+  console.info(
+    `[scheduled-task:audit-log-archive]: Starting archive for bucket ${bucket}; cutoff ${eligibleBefore.toISOString()}, batch size ${batchSize}, max runtime ${MAX_RUNTIME_MILLISECONDS}ms`,
+  );
+
   while (Date.now() - startedAt < MAX_RUNTIME_MILLISECONDS) {
     const oldestAudit = await findOldestAuditTimestamp(eligibleBefore);
-    if (!oldestAudit) break;
+    if (!oldestAudit) {
+      console.info('[scheduled-task:audit-log-archive]: No eligible audit rows remain');
+      break;
+    }
 
     const dayStart = utcDayStart(oldestAudit);
     const dayEnd = new Date(dayStart);
     dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+    console.debug(
+      `[scheduled-task:audit-log-archive]: Processing UTC day ${dayStart.toISOString()} through ${dayEnd.toISOString()}; oldest audit timestamp ${oldestAudit.toISOString()}`,
+    );
     const dayPrefix = getDayPrefix(dayStart);
     let suffix = await getNextFileSuffix(client, bucket, dayPrefix);
     let archivedThisDay = false;
@@ -201,5 +298,14 @@ export const archiveAudits = async (
     if (archivedThisDay) archivedDays += 1;
   }
 
+  const elapsedMilliseconds = Date.now() - startedAt;
+  if (elapsedMilliseconds >= MAX_RUNTIME_MILLISECONDS) {
+    console.warn(
+      `[scheduled-task:audit-log-archive]: Stopping at the ${MAX_RUNTIME_MILLISECONDS}ms runtime limit`,
+    );
+  }
+  console.info(
+    `[scheduled-task:audit-log-archive]: Archive finished in ${elapsedMilliseconds}ms; archived ${archivedDays} days and deleted ${deletedCount} rows across ${keys.length} files`,
+  );
   return { archivedDays, deletedCount, keys };
 };

@@ -24,8 +24,10 @@ archiveAudits(bucket)
     console.info(`Archived ${deletedCount} audit rows across ${archivedDays} days`);
     keys.forEach(key => console.info(`Archived audit logs to s3://${bucket}/${key}`));
   })
-  .catch(error => {
-    console.error('Failed to archive audit logs', error);
+  .catch(() => {
+    console.error(
+      'Failed to archive audit logs; see scheduled-task logs for safe operation details',
+    );
     process.exitCode = 1;
   });
 
