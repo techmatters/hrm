@@ -51,6 +51,7 @@ export const findOldestAuditTimestamp = async (before: Date): Promise<Date | nul
   } catch (error) {
     console.error(
       '[scheduled-task:audit-log-archive]: Failed to find the oldest eligible audit timestamp',
+      error,
     );
     throw error;
   }
@@ -87,6 +88,7 @@ export const streamAuditBatchForDay = async (
   } catch (error) {
     console.error(
       `[scheduled-task:audit-log-archive]: Failed to stream audits for UTC window ${start.toISOString()} to ${end.toISOString()}`,
+      error,
     );
     throw error;
   }

@@ -73,6 +73,7 @@ const listS3Objects = async (
   } catch (error) {
     console.error(
       `[scheduled-task:audit-log-archive]: Failed to list existing S3 files for ${prefix}`,
+      error,
     );
     throw error;
   }
@@ -169,6 +170,7 @@ const archiveBatch = async (
   } catch (error) {
     console.error(
       `[scheduled-task:audit-log-archive]: Failed to read audit batch for UTC window ${start.toISOString()} to ${end.toISOString()}`,
+      error,
     );
     throw error;
   }
@@ -199,6 +201,7 @@ const archiveBatch = async (
     (stream as NodeJS.ReadableStream & { destroy?: () => void }).destroy?.();
     console.error(
       `[scheduled-task:audit-log-archive]: S3 upload failed for ${key}; ${batch.metadata.count} audits read, first ID ${batch.metadata.firstId}, last ID ${batch.metadata.lastId}, timestamp range ${batch.metadata.firstTimestamp} to ${batch.metadata.lastTimestamp}; no audit IDs were deleted`,
+      error,
     );
     throw error;
   }
@@ -221,6 +224,7 @@ const archiveBatch = async (
   } catch (error) {
     console.error(
       `[scheduled-task:audit-log-archive]: Database deletion failed after upload to ${key}; uploaded audit IDs remain available for retry`,
+      error,
     );
     throw error;
   }
