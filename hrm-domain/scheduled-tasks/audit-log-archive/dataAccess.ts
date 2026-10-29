@@ -53,10 +53,11 @@ export const findOldestAuditTimestamp = async (before: Date): Promise<Date | nul
   );
   let timestamp: Date | null;
   try {
-    ({ timestamp } = await getDbForAdmin().one<{ timestamp: Date | null }>(
+    const result = await getDbForAdmin().one<{ timestamp: string | null }>(
       FIND_OLDEST_AUDIT_TIMESTAMP_SQL,
       [before],
-    ));
+    );
+    timestamp = result.timestamp === null ? null : new Date(result.timestamp);
   } catch (error) {
     console.error(
       '[scheduled-task:audit-log-archive]: Failed to find the oldest eligible audit timestamp',
