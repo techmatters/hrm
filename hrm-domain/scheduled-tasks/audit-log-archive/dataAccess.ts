@@ -18,13 +18,19 @@ import QueryStream from 'pg-query-stream';
 import { getDbForAdmin } from '@tech-matters/hrm-core/dbConnection';
 import ReadableStream = NodeJS.ReadableStream;
 
-const SELECT_AUDITS_TO_ARCHIVE_SQL = `
-  SELECT
-    public."Audits".*,
-    to_char(timestamp_clock AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS "_utcDay"
+const FIND_OLDEST_AUDIT_TIMESTAMP_SQL = `
+  SELECT MIN(timestamp_clock) AS "timestamp"
   FROM public."Audits"
   WHERE timestamp_clock < $1
+`;
+
+const SELECT_AUDIT_BATCH_FOR_DAY_SQL = `
+  SELECT *
+  FROM public."Audits"
+  WHERE timestamp_clock >= $1
+    AND timestamp_clock < $2
   ORDER BY timestamp_clock, id
+  LIMIT $3
 `;
 
 const DELETE_AUDITS_BY_IDS_SQL = `
@@ -32,10 +38,24 @@ const DELETE_AUDITS_BY_IDS_SQL = `
   WHERE id = ANY($1::integer[])
 `;
 
-export const streamAuditsToArchive = async (before: Date): Promise<ReadableStream> => {
-  const query = new QueryStream(SELECT_AUDITS_TO_ARCHIVE_SQL, [before], {
-    highWaterMark: 1000,
-  });
+export const findOldestAuditTimestamp = async (before: Date): Promise<Date | null> => {
+  const { timestamp } = await getDbForAdmin().one<{ timestamp: Date | null }>(
+    FIND_OLDEST_AUDIT_TIMESTAMP_SQL,
+    [before],
+  );
+  return timestamp;
+};
+
+export const streamAuditBatchForDay = async (
+  start: Date,
+  end: Date,
+  batchSize: number,
+): Promise<ReadableStream> => {
+  const query = new QueryStream(
+    SELECT_AUDIT_BATCH_FOR_DAY_SQL,
+    [start, end, batchSize + 1],
+    { highWaterMark: 1000 },
+  );
   const db = getDbForAdmin();
 
   return new Promise((resolve, reject) => {
