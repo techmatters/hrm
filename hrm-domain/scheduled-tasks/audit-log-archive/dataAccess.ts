@@ -25,11 +25,20 @@ const FIND_OLDEST_AUDIT_TIMESTAMP_SQL = `
 `;
 
 const SELECT_AUDIT_BATCH_FOR_DAY_SQL = `
-  SELECT *
-  FROM public."Audits"
+  SELECT
+    id,
+    "user",
+    "tableName",
+    operation,
+    "oldRecord",
+    "newRecord",
+    timestamp_trx::text AS timestamp_trx,
+    timestamp_stm::text AS timestamp_stm,
+    timestamp_clock::text AS timestamp_clock
+  FROM public."Audits" AS audit
   WHERE timestamp_clock >= $1
     AND timestamp_clock < $2
-  ORDER BY timestamp_clock, id
+  ORDER BY audit.timestamp_clock, audit.id
   LIMIT $3
 `;
 
