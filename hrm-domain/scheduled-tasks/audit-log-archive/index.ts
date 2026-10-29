@@ -62,13 +62,14 @@ const listS3Objects = async (
   continuationToken?: string,
 ) => {
   try {
-    return await client.send(
+    const response = await client.send(
       new ListObjectsV2Command({
         Bucket: bucket,
         Prefix: prefix,
         ContinuationToken: continuationToken,
       }),
     );
+    return response;
   } catch (error) {
     console.error(
       `[scheduled-task:audit-log-archive]: Failed to list existing S3 files for ${prefix}`,

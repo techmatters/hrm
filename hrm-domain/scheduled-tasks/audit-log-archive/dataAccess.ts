@@ -79,14 +79,17 @@ export const streamAuditBatchForDay = async (
   );
   const db = getDbForAdmin();
 
-  return new Promise((resolve, reject) => {
-    db.stream(query, stream => resolve(stream)).catch(error => {
-      console.error(
-        `[scheduled-task:audit-log-archive]: Failed to stream audits for UTC window ${start.toISOString()} to ${end.toISOString()}`,
-      );
-      reject(error);
+  try {
+    const stream = await new Promise<ReadableStream>((resolve, reject) => {
+      db.stream(query, auditStream => resolve(auditStream)).catch(reject);
     });
-  });
+    return stream;
+  } catch (error) {
+    console.error(
+      `[scheduled-task:audit-log-archive]: Failed to stream audits for UTC window ${start.toISOString()} to ${end.toISOString()}`,
+    );
+    throw error;
+  }
 };
 
 export const deleteAuditsByIds = async (ids: number[]): Promise<number> => {

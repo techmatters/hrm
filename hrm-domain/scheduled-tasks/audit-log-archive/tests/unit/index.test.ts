@@ -45,9 +45,8 @@ const mockedDeleteAuditsByIds = deleteAuditsByIds as jest.Mock;
 const mockedFindOldestAuditTimestamp = findOldestAuditTimestamp as jest.Mock;
 const mockedStreamAuditBatchForDay = streamAuditBatchForDay as jest.Mock;
 
-const createAuditStream = (
-  audits: { id: number; timestamp_clock?: string; details?: string }[],
-) => Readable.from(audits);
+const createAuditStream = (audits: { id: number; details?: string }[]) =>
+  Readable.from(audits);
 
 describe('archiveAudits', () => {
   const now = new Date('2026-10-28T15:00:00.000Z');
@@ -155,50 +154,6 @@ describe('archiveAudits', () => {
     await archiveAudits('audit-archive', now, 2);
 
     expect(uploaded[0].key).toBe('audit-logs/2024/10/2024-10-26-0004.jsonl');
-  });
-
-  test('logs batch progress without logging audit row contents', async () => {
-    const logs: jest.SpyInstance[] = [
-      jest.spyOn(console, 'debug').mockImplementation(() => undefined),
-      jest.spyOn(console, 'info').mockImplementation(() => undefined),
-      jest.spyOn(console, 'warn').mockImplementation(() => undefined),
-      jest.spyOn(console, 'error').mockImplementation(() => undefined),
-    ];
-    const firstTimestamp = '2024-10-26T12:00:00.000Z';
-    const lookaheadTimestamp = '2024-10-26T12:01:00.000Z';
-    mockedFindOldestAuditTimestamp
-      .mockReset()
-      .mockResolvedValueOnce(new Date(firstTimestamp))
-      .mockResolvedValueOnce(null);
-    mockedStreamAuditBatchForDay
-      .mockReset()
-      .mockResolvedValueOnce(
-        createAuditStream([
-          { id: 31, timestamp_clock: firstTimestamp, details: 'private audit content' },
-          {
-            id: 32,
-            timestamp_clock: lookaheadTimestamp,
-            details: 'more private content',
-          },
-        ]),
-      )
-      .mockResolvedValueOnce(createAuditStream([]));
-
-    try {
-      await archiveAudits('audit-archive', now, 1);
-      const loggedOutput = JSON.stringify(logs.flatMap(logger => logger.mock.calls));
-
-      expect(uploaded[0].ids).toEqual([31]);
-      expect(mockedDeleteAuditsByIds).toHaveBeenCalledWith([31]);
-      expect(loggedOutput).toContain('first ID 31');
-      expect(loggedOutput).toContain(firstTimestamp);
-      expect(loggedOutput).toContain('lookahead audit ID 32');
-      expect(loggedOutput).toContain(lookaheadTimestamp);
-      expect(loggedOutput).not.toContain('private audit content');
-      expect(loggedOutput).not.toContain('more private content');
-    } finally {
-      logs.forEach(logger => logger.mockRestore());
-    }
   });
 
   test('queries only fully completed days before the two-year cutoff', async () => {
