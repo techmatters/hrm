@@ -62,6 +62,11 @@ type NotificationPayload =
   | UpsertCaseNotificationPayload
   | UpsertContactNotificationPayload;
 
+// Every message that changes a case's search index document must share this group ID, so
+// SQS FIFO delivers them in order: the case's own messages and those of its contacts
+const getCaseMessageGroupId = (accountSid: HrmAccountId, caseId: string) =>
+  `${accountSid}-case-${caseId}`;
+
 const publishToSns = async ({
   entityType,
   payload,
@@ -146,7 +151,7 @@ export const publishCaseDeleteNotification = ({
   publishToSns({
     entityType: 'case',
     payload: { accountSid, id: caseId, operation: 'delete' },
-    messageGroupId: `${accountSid}-case-${caseId}`,
+    messageGroupId: getCaseMessageGroupId(accountSid, caseId),
   });
 
 type CaseWithLegacySections = CaseService & {
@@ -187,10 +192,14 @@ export const publishEntityChangeNotification = async ({
   //       A better long term fix is suggested in https://github.com/techmatters/hrm/pull/1116
   //
   // const messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
-  const messageGroupId =
-    entityType === 'contact' && entity.caseId
-      ? `${accountSid}-'case'-${entity.caseId}`
-      : `${accountSid}-${entityType}-${entity.id}`;
+  let messageGroupId: string;
+  if (entityType === 'case') {
+    messageGroupId = getCaseMessageGroupId(accountSid, entity.id);
+  } else if (entityType === 'contact' && entity.caseId) {
+    messageGroupId = getCaseMessageGroupId(accountSid, entity.caseId);
+  } else {
+    messageGroupId = `${accountSid}-${entityType}-${entity.id}`;
+  }
 
   let publishResponse: { MessageId?: string };
   if (operation === 'delete') {
