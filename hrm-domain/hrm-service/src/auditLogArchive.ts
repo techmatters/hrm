@@ -17,12 +17,10 @@
 import { archiveAudits } from '@tech-matters/audit-log-archive';
 import { handleSignals } from './handleSignals';
 
-const bucket = process.argv[2];
-
-archiveAudits(bucket)
+archiveAudits()
   .then(({ archivedDays, deletedCount, keys }) => {
     console.info(`Archived ${deletedCount} audit rows across ${archivedDays} days`);
-    keys.forEach(key => console.info(`Archived audit logs to s3://${bucket}/${key}`));
+    keys.forEach(key => console.info(`Archived audit logs to ${key}`));
   })
   .catch(error => {
     console.error(
