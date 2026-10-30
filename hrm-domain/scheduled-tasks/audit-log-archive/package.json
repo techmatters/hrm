@@ -1,0 +1,23 @@
+{
+  "name": "@tech-matters/audit-log-archive",
+  "version": "1.0.0",
+  "description": "Archives HRM database audit logs older than two years to S3",
+  "scripts": {
+    "start": "cd dist && node ./index",
+    "test:unit": "jest --config jest.config.js tests/unit"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1062.0",
+    "@aws-sdk/lib-storage": "^3.609.0",
+    "@tech-matters/hrm-core": "^1.0.0",
+    "@tech-matters/s3-client": "^1.0.0",
+    "pg-query-stream": "^4.5.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.5",
+    "typescript": "^5.9.3"
+  }
+}
