@@ -112,10 +112,9 @@ export const hasParameterExpired = (parameter: SsmCacheParameter | undefined) =>
   return !!(parameter?.expiryDate && new Date() > parameter.expiryDate);
 };
 
+// Until loadSsmCache sets an expiry date it hasn't loaded anything, even if single parameter lookups have cached values
 export const hasCacheExpired = () =>
-  !!(ssmCache.expiryDate && new Date() > ssmCache.expiryDate);
-
-export const isConfigNotEmpty = () => !!Object.keys(ssmCache.values).length;
+  !ssmCache.expiryDate || new Date() > ssmCache.expiryDate;
 
 export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) => {
   ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
