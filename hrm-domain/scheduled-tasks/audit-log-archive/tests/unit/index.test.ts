@@ -204,9 +204,12 @@ describe('archiveAudits', () => {
     mockedStreamAuditBatchForDay.mockResolvedValueOnce(createAuditStream([{ id: 1 }]));
     const uploadError = new Error('upload failed');
     mockedUpload.mockImplementation(
-      () =>
+      ({ params }) =>
         ({
           done: async () => {
+            for await (const chunk of params.Body as AsyncIterable<Buffer | string>) {
+              void chunk;
+            }
             throw uploadError;
           },
         }) as unknown as Upload,
