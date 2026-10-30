@@ -18,6 +18,7 @@ import { ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getNativeS3Client } from '@tech-matters/s3-client';
 import { Readable } from 'stream';
+import { createGzip } from 'zlib';
 import {
   deleteAuditsByIds,
   findOldestAuditTimestamp,
@@ -94,7 +95,7 @@ const getNextFileSuffix = async (
       } existing S3 files for ${prefix}`,
     );
     for (const { Key } of response.Contents ?? []) {
-      const suffix = Key?.match(/-(\d+)\.jsonl$/)?.[1];
+      const suffix = Key?.match(/-(\d+)\.jsonl(?:\.gz)?$/)?.[1];
       if (suffix) nextSuffix = Math.max(nextSuffix, Number(suffix) + 1);
     }
     continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined;
@@ -181,7 +182,7 @@ const archiveBatch = async (
     return undefined;
   }
 
-  const key = `${getDayPrefix(start)}${String(suffix).padStart(4, '0')}.jsonl`;
+  const key = `${getDayPrefix(start)}${String(suffix).padStart(4, '0')}.jsonl.gz`;
   console.debug(
     `[scheduled-task:audit-log-archive]: Uploading batch ${suffix} for UTC day ${start.toISOString()} to s3://${bucket}/${key}`,
   );
@@ -190,8 +191,9 @@ const archiveBatch = async (
     params: {
       Bucket: bucket,
       Key: key,
-      Body: batch.body,
+      Body: batch.body.pipe(createGzip()),
       ContentType: 'application/x-ndjson',
+      ContentEncoding: 'gzip',
     },
   });
 

@@ -31,6 +31,7 @@ jest.mock('../../dataAccess', () => ({
 import { Upload } from '@aws-sdk/lib-storage';
 import { ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
+import { gunzipSync } from 'zlib';
 import {
   deleteAuditsByIds,
   findOldestAuditTimestamp,
@@ -50,7 +51,12 @@ const createAuditStream = (audits: { id: number; details?: string }[]) =>
 
 describe('archiveAudits', () => {
   const now = new Date('2026-10-28T15:00:00.000Z');
-  const uploaded: { key: string; ids: number[] }[] = [];
+  const uploaded: {
+    key: string;
+    ids: number[];
+    contentType: string;
+    contentEncoding: string;
+  }[] = [];
   const events: string[] = [];
   let s3Client: { send: jest.Mock };
 
@@ -75,15 +81,21 @@ describe('archiveAudits', () => {
       ({ params }) =>
         ({
           done: async () => {
-            let body = '';
+            const chunks: Buffer[] = [];
             for await (const chunk of params.Body as AsyncIterable<Buffer | string>) {
-              body += Buffer.isBuffer(chunk) ? chunk.toString() : chunk;
+              chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
             }
+            const body = gunzipSync(Buffer.concat(chunks)).toString();
             const ids = body
               .split('\n')
               .filter(Boolean)
               .map(line => JSON.parse(line).id);
-            uploaded.push({ key: params.Key, ids });
+            uploaded.push({
+              key: params.Key,
+              ids,
+              contentType: params.ContentType,
+              contentEncoding: params.ContentEncoding,
+            });
             events.push(`uploaded:${params.Key}:${ids.join(',')}`);
           },
         }) as unknown as Upload,
@@ -113,17 +125,32 @@ describe('archiveAudits', () => {
       2,
     );
     expect(uploaded).toEqual([
-      { key: 'audit-logs/2024/10/2024-10-26-0000.jsonl', ids: [1, 2] },
-      { key: 'audit-logs/2024/10/2024-10-26-0001.jsonl', ids: [3] },
-      { key: 'audit-logs/2024/10/2024-10-27-0000.jsonl', ids: [4] },
+      {
+        key: 'audit-logs/2024/10/2024-10-26-0000.jsonl.gz',
+        ids: [1, 2],
+        contentType: 'application/x-ndjson',
+        contentEncoding: 'gzip',
+      },
+      {
+        key: 'audit-logs/2024/10/2024-10-26-0001.jsonl.gz',
+        ids: [3],
+        contentType: 'application/x-ndjson',
+        contentEncoding: 'gzip',
+      },
+      {
+        key: 'audit-logs/2024/10/2024-10-27-0000.jsonl.gz',
+        ids: [4],
+        contentType: 'application/x-ndjson',
+        contentEncoding: 'gzip',
+      },
     ]);
     expect(mockedDeleteAuditsByIds.mock.calls).toEqual([[[1, 2]], [[3]], [[4]]]);
     expect(events).toEqual([
-      'uploaded:audit-logs/2024/10/2024-10-26-0000.jsonl:1,2',
+      'uploaded:audit-logs/2024/10/2024-10-26-0000.jsonl.gz:1,2',
       'deleted:1,2',
-      'uploaded:audit-logs/2024/10/2024-10-26-0001.jsonl:3',
+      'uploaded:audit-logs/2024/10/2024-10-26-0001.jsonl.gz:3',
       'deleted:3',
-      'uploaded:audit-logs/2024/10/2024-10-27-0000.jsonl:4',
+      'uploaded:audit-logs/2024/10/2024-10-27-0000.jsonl.gz:4',
       'deleted:4',
     ]);
     expect(result).toEqual({
@@ -146,14 +173,14 @@ describe('archiveAudits', () => {
     s3Client.send.mockResolvedValueOnce({
       Contents: [
         { Key: 'audit-logs/2024/10/2024-10-26-0000.jsonl' },
-        { Key: 'audit-logs/2024/10/2024-10-26-0003.jsonl' },
+        { Key: 'audit-logs/2024/10/2024-10-26-0003.jsonl.gz' },
       ],
       IsTruncated: false,
     });
 
     await archiveAudits('audit-archive', now, 2);
 
-    expect(uploaded[0].key).toBe('audit-logs/2024/10/2024-10-26-0004.jsonl');
+    expect(uploaded[0].key).toBe('audit-logs/2024/10/2024-10-26-0004.jsonl.gz');
   });
 
   test('queries only fully completed days before the two-year cutoff', async () => {
