@@ -26,7 +26,6 @@ import {
   SsmClientCredentials,
   hasCacheExpired,
   setCacheDurationMilliseconds,
-  isConfigNotEmpty,
 } from './ssmCache';
 
 type LoadParametersByPathParameters = {
@@ -87,7 +86,7 @@ export const loadSsmCache = async ({
   cacheDurationMilliseconds,
   configs,
 }: LoadSsmCacheParameters) => {
-  if (isConfigNotEmpty() && !hasCacheExpired()) return;
+  if (!hasCacheExpired()) return;
   if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
   ssmCache.expiryDate = new Date(Date.now() + ssmCache.cacheDurationMilliseconds);
