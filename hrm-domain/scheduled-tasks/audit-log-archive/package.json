@@ -1,7 +1,7 @@
 {
   "name": "@tech-matters/audit-log-archive",
   "version": "1.0.0",
-  "description": "Archives HRM database audit logs older than two years to S3",
+  "description": "Archives HRM database audit logs older than the configured retention period to S3",
   "scripts": {
     "start": "cd dist && node ./index",
     "test:unit": "jest --config jest.config.js tests/unit"

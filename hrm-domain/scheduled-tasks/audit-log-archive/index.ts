@@ -27,6 +27,7 @@ import {
 
 const MAX_RUNTIME_MILLISECONDS = 60 * 60 * 1000;
 const DEFAULT_BATCH_SIZE = 10_000;
+const DEFAULT_RETENTION_DAYS = 730;
 
 type Audit = { id: number; timestamp_clock?: Date | string; [key: string]: unknown };
 type S3ReadableClient = ReturnType<typeof getNativeS3Client>;
@@ -243,20 +244,42 @@ const getConfiguredBatchSize = (): number => {
   return batchSize;
 };
 
-export const archiveAudits = async (
-  bucket: string,
-  now: Date = new Date(),
-  batchSize: number = getConfiguredBatchSize(),
-): Promise<{ archivedDays: number; deletedCount: number; keys: string[] }> => {
-  if (!bucket) {
-    throw new Error('An S3 bucket is required to archive audit logs');
+const getConfiguredRetentionDays = (): number => {
+  const configured = process.env.AUDIT_ARCHIVE_RETENTION_DAYS;
+  if (configured === undefined) return DEFAULT_RETENTION_DAYS;
+
+  const retentionDays = Number(configured);
+  if (
+    configured.trim() === '' ||
+    !Number.isSafeInteger(retentionDays) ||
+    retentionDays < 0
+  ) {
+    throw new Error('AUDIT_ARCHIVE_RETENTION_DAYS must be a non-negative safe integer');
   }
-  if (!Number.isSafeInteger(batchSize) || batchSize < 1) {
+  return retentionDays;
+};
+
+export const archiveAudits = async (
+  now: Date = new Date(),
+  batchSize?: number,
+): Promise<{ archivedDays: number; deletedCount: number; keys: string[] }> => {
+  const bucket = process.env.AUDIT_ARCHIVE_BUCKET;
+  if (!bucket?.trim()) {
+    throw new Error(
+      'AUDIT_ARCHIVE_BUCKET environment variable must be set to archive audit logs',
+    );
+  }
+  const batchLimit = batchSize ?? getConfiguredBatchSize();
+  if (!Number.isSafeInteger(batchLimit) || batchLimit < 1) {
     throw new Error('Audit archive batch size must be a positive safe integer');
   }
 
+  const retentionDays = getConfiguredRetentionDays();
   const cutoff = new Date(now);
-  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 2);
+  cutoff.setUTCDate(cutoff.getUTCDate() - retentionDays);
+  if (!Number.isFinite(cutoff.getTime())) {
+    throw new Error('AUDIT_ARCHIVE_RETENTION_DAYS results in an unsupported cutoff date');
+  }
   const eligibleBefore = utcDayStart(cutoff);
   const startedAt = Date.now();
   const client = getNativeS3Client();
@@ -265,7 +288,7 @@ export const archiveAudits = async (
   const keys: string[] = [];
 
   console.info(
-    `[scheduled-task:audit-log-archive]: Starting archive for bucket ${bucket}; cutoff ${eligibleBefore.toISOString()}, batch size ${batchSize}, max runtime ${MAX_RUNTIME_MILLISECONDS}ms`,
+    `[scheduled-task:audit-log-archive]: Starting archive for bucket ${bucket}; cutoff ${eligibleBefore.toISOString()}, batch size ${batchLimit}, max runtime ${MAX_RUNTIME_MILLISECONDS}ms`,
   );
 
   while (Date.now() - startedAt < MAX_RUNTIME_MILLISECONDS) {
@@ -291,7 +314,7 @@ export const archiveAudits = async (
         bucket,
         dayStart,
         dayEnd,
-        batchSize,
+        batchLimit,
         suffix,
       );
       if (!batch) break;

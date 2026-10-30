@@ -59,9 +59,15 @@ describe('archiveAudits', () => {
   }[] = [];
   const events: string[] = [];
   let s3Client: { send: jest.Mock };
+  let previousBucket: string | undefined;
+  let previousRetentionDays: string | undefined;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    previousBucket = process.env.AUDIT_ARCHIVE_BUCKET;
+    previousRetentionDays = process.env.AUDIT_ARCHIVE_RETENTION_DAYS;
+    process.env.AUDIT_ARCHIVE_BUCKET = 'audit-archive';
+    delete process.env.AUDIT_ARCHIVE_RETENTION_DAYS;
     uploaded.length = 0;
     events.length = 0;
     s3Client = {
@@ -102,6 +108,14 @@ describe('archiveAudits', () => {
     );
   });
 
+  afterEach(() => {
+    if (previousBucket === undefined) delete process.env.AUDIT_ARCHIVE_BUCKET;
+    else process.env.AUDIT_ARCHIVE_BUCKET = previousBucket;
+    if (previousRetentionDays === undefined)
+      delete process.env.AUDIT_ARCHIVE_RETENTION_DAYS;
+    else process.env.AUDIT_ARCHIVE_RETENTION_DAYS = previousRetentionDays;
+  });
+
   test('writes bounded files per complete UTC day with increasing suffixes and deletes only uploaded IDs', async () => {
     mockedStreamAuditBatchForDay
       .mockResolvedValueOnce(createAuditStream([{ id: 1 }, { id: 2 }, { id: 3 }]))
@@ -110,7 +124,7 @@ describe('archiveAudits', () => {
       .mockResolvedValueOnce(createAuditStream([{ id: 4 }]))
       .mockResolvedValueOnce(createAuditStream([]));
 
-    const result = await archiveAudits('audit-archive', now, 2);
+    const result = await archiveAudits(now, 2);
 
     expect(mockedStreamAuditBatchForDay).toHaveBeenNthCalledWith(
       1,
@@ -178,15 +192,15 @@ describe('archiveAudits', () => {
       IsTruncated: false,
     });
 
-    await archiveAudits('audit-archive', now, 2);
+    await archiveAudits(now, 2);
 
     expect(uploaded[0].key).toBe('audit-logs/2024/10/2024-10-26-0004.jsonl.gz');
   });
 
-  test('queries only fully completed days before the two-year cutoff', async () => {
+  test('queries only fully completed days before the default 730-day cutoff', async () => {
     mockedFindOldestAuditTimestamp.mockReset().mockResolvedValueOnce(null);
 
-    const result = await archiveAudits('audit-archive', now, 2);
+    const result = await archiveAudits(now, 2);
 
     expect(mockedFindOldestAuditTimestamp).toHaveBeenCalledWith(
       new Date('2024-10-28T00:00:00.000Z'),
@@ -195,6 +209,17 @@ describe('archiveAudits', () => {
     expect(mockedUpload).not.toHaveBeenCalled();
     expect(mockedDeleteAuditsByIds).not.toHaveBeenCalled();
     expect(result).toEqual({ archivedDays: 0, deletedCount: 0, keys: [] });
+  });
+
+  test('reads the retention cutoff from AUDIT_ARCHIVE_RETENTION_DAYS', async () => {
+    process.env.AUDIT_ARCHIVE_RETENTION_DAYS = '30';
+    mockedFindOldestAuditTimestamp.mockReset().mockResolvedValueOnce(null);
+
+    await archiveAudits(now, 2);
+
+    expect(mockedFindOldestAuditTimestamp).toHaveBeenCalledWith(
+      new Date('2026-09-28T00:00:00.000Z'),
+    );
   });
 
   test('does not delete IDs when the S3 upload fails', async () => {
@@ -215,7 +240,7 @@ describe('archiveAudits', () => {
         }) as unknown as Upload,
     );
 
-    await expect(archiveAudits('audit-archive', now, 2)).rejects.toBe(uploadError);
+    await expect(archiveAudits(now, 2)).rejects.toBe(uploadError);
     expect(mockedDeleteAuditsByIds).not.toHaveBeenCalled();
   });
 
@@ -236,7 +261,7 @@ describe('archiveAudits', () => {
       .mockReturnValueOnce(100 + 60 * 60 * 1000);
 
     try {
-      const result = await archiveAudits('audit-archive', now, 2);
+      const result = await archiveAudits(now, 2);
 
       expect(mockedStreamAuditBatchForDay).toHaveBeenCalledTimes(1);
       expect(mockedDeleteAuditsByIds).toHaveBeenCalledWith([1, 2]);
@@ -259,7 +284,7 @@ describe('archiveAudits', () => {
       .mockResolvedValueOnce(createAuditStream([]));
 
     try {
-      await archiveAudits('audit-archive', now);
+      await archiveAudits(now);
       expect(mockedStreamAuditBatchForDay).toHaveBeenCalledWith(
         new Date('2024-10-26T00:00:00.000Z'),
         new Date('2024-10-27T00:00:00.000Z'),
@@ -272,9 +297,18 @@ describe('archiveAudits', () => {
   });
 
   test('requires an S3 bucket and a positive batch size', async () => {
-    await expect(archiveAudits('', now, 2)).rejects.toThrow('An S3 bucket is required');
-    await expect(archiveAudits('audit-archive', now, 0)).rejects.toThrow(
-      'positive safe integer',
+    delete process.env.AUDIT_ARCHIVE_BUCKET;
+    await expect(archiveAudits(now, 2)).rejects.toThrow('AUDIT_ARCHIVE_BUCKET');
+    process.env.AUDIT_ARCHIVE_BUCKET = 'audit-archive';
+    await expect(archiveAudits(now, 0)).rejects.toThrow('positive safe integer');
+    expect(mockedFindOldestAuditTimestamp).not.toHaveBeenCalled();
+  });
+
+  test('rejects invalid retention days before reading audit rows', async () => {
+    process.env.AUDIT_ARCHIVE_RETENTION_DAYS = '-1';
+
+    await expect(archiveAudits(now, 2)).rejects.toThrow(
+      'AUDIT_ARCHIVE_RETENTION_DAYS must be a non-negative safe integer',
     );
     expect(mockedFindOldestAuditTimestamp).not.toHaveBeenCalled();
   });
