@@ -18,6 +18,7 @@ import {
   SSMClient,
   SSMClientConfig,
   GetParameterCommand,
+  GetParametersCommand,
   Parameter as SsmParameter,
   ParameterNotFound,
   PutParameterCommand,
@@ -215,6 +216,36 @@ export const loadParameterByName = async (
     }
   } catch (e) {
     addErrorToCache(name, e as Error, credentials);
+  }
+};
+
+const GET_PARAMETERS_MAX_NAMES = 10; // 10 is max allowed by AWS
+
+/**
+ * Loads the named parameters into the cache with one request per 10 names, rather than one request per name,
+ * sending them one at a time as SSM rate limits are low.
+ * Names that don't exist are cached as not found, like loadParameterByName does.
+ */
+export const loadParametersByName = async (
+  names: string[],
+  credentials?: SsmClientCredentials,
+) => {
+  for (let start = 0; start < names.length; start += GET_PARAMETERS_MAX_NAMES) {
+    const command = new GetParametersCommand({
+      Names: names.slice(start, start + GET_PARAMETERS_MAX_NAMES),
+      WithDecryption: true,
+    });
+    const { Parameters, InvalidParameters } =
+      await getSsmClient(credentials).send(command);
+
+    Parameters?.forEach(parameter => addToCache(undefined, parameter, credentials));
+    InvalidParameters?.forEach(name =>
+      addErrorToCache(
+        name,
+        new ParameterNotFound({ message: `Parameter ${name} not found`, $metadata: {} }),
+        credentials,
+      ),
+    );
   }
 };
 
