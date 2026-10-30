@@ -39,7 +39,7 @@ type LoadParametersByPathParameters = {
 /**
  * Loads every parameter under the path (recursively) into the cache, 10 per request.
  * The regex only filters which of them are cached, every parameter under the path is still read from SSM.
- * To load a parameter whose name is known, use loadParameterByName instead.
+ * To load parameters whose names are known, use loadParametersByName instead.
  */
 export const loadParametersByPath = async ({
   path,

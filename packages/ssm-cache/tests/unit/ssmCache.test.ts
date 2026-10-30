@@ -18,6 +18,7 @@ import addDays from 'date-fns/addDays';
 import {
   GetParameterCommand,
   GetParametersByPathCommand,
+  GetParametersCommand,
   ParameterNotFound,
   SSMClient,
 } from '@aws-sdk/client-ssm';
@@ -28,6 +29,7 @@ import {
   getCachedParameters,
   getSsmClient,
   getSsmParameter,
+  loadParametersByName,
   ssmCache,
   setCacheDurationMilliseconds,
 } from '../../src/ssmCache';
@@ -278,6 +280,53 @@ describe('getSsmParameter', () => {
     } finally {
       ssmCache.errorCacheDurationMilliseconds = originalErrorCacheDurationMilliseconds;
     }
+  });
+});
+
+describe('loadParametersByName', () => {
+  beforeEach(() => {
+    mockSSMClient.resetHistory();
+    ssmCache.values = {};
+    ssmCache.cacheDurationMilliseconds = 3600000;
+  });
+
+  test('requests the names 10 at a time and caches the parameters found', async () => {
+    const names = Array.from({ length: 12 }, (_, index) => `/test/batch/${index}`);
+    mockSSMClient
+      .on(GetParametersCommand)
+      .callsFake(({ Names }: { Names: string[] }) => ({
+        Parameters: Names.map(name => ({ Name: name, Value: `${name}-value` })),
+      }));
+
+    await loadParametersByName(names);
+
+    const requestedNames = mockSSMClient
+      .commandCalls(GetParametersCommand)
+      .map(call => call.args[0].input.Names);
+    expect(requestedNames).toStrictEqual([names.slice(0, 10), names.slice(10)]);
+    expect(getCachedParameters(/^\/test\/batch\//)).toStrictEqual(
+      Object.fromEntries(names.map(name => [name, `${name}-value`])),
+    );
+  });
+
+  test('caches names that do not exist as not found, without requesting them again', async () => {
+    mockSSMClient.on(GetParametersCommand).resolves({
+      Parameters: [],
+      InvalidParameters: ['/test/batch/missing'],
+    });
+
+    await loadParametersByName(['/test/batch/missing']);
+
+    await expect(getSsmParameter('/test/batch/missing')).rejects.toThrow(
+      SsmParameterNotFound,
+    );
+    expect(mockSSMClient.commandCalls(GetParameterCommand)).toHaveLength(0);
+  });
+
+  test('sends no request when given no names', async () => {
+    await loadParametersByName([]);
+
+    expect(mockSSMClient.commandCalls(GetParametersCommand)).toHaveLength(0);
   });
 });
 
