@@ -65,7 +65,12 @@ export const updateDocument = async <T>({
   }
 };
 
-export type UpdateScriptExtraParams<T> = UpdateParams<T> & { scriptedUpsert?: boolean };
+export type UpdateScriptExtraParams<T> = UpdateParams<T> & {
+  scriptedUpsert?: boolean;
+  // How many times Elasticsearch re-runs the script against the latest document version
+  // when a concurrent write causes a version conflict
+  retryOnConflict?: number;
+};
 export type UpdateScriptParams<T> = PassThroughConfig<T> & UpdateScriptExtraParams<T>;
 
 export const updateScript = async <T>({
@@ -76,6 +81,7 @@ export const updateScript = async <T>({
   indexConfig,
   scriptedUpsert = false,
   autocreate = false,
+  retryOnConflict,
 }: UpdateScriptParams<T>): Promise<UpdateDocumentResponse> => {
   try {
     if (!indexConfig.convertToScriptUpdate) {
@@ -99,6 +105,7 @@ export const updateScript = async <T>({
       script: scriptUpdate,
       upsert: documentUpdate,
       scripted_upsert: scriptedUpsert,
+      retry_on_conflict: retryOnConflict,
     });
 
     return newOk({ data: response });

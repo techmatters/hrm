@@ -31,6 +31,10 @@ import type {
 } from './messagesToPayloads';
 import { type HrmAccountId, newErr, isErr, newOk } from '@tech-matters/types';
 
+// Update scripts (e.g. adding a contact to its case document) are safe to re-run on a newer
+// document version, so Elasticsearch can retry them itself when concurrent writes conflict
+const UPDATE_SCRIPT_RETRY_ON_CONFLICT = 5;
+
 const tryOperationWithRetry = async ({
   callback,
   retryCount = 0,
@@ -103,14 +107,12 @@ const handleIndexPayload =
           };
         }
         case 'updateScript': {
-          const result = await tryOperationWithRetry({
-            callback: () =>
-              client.updateScript({
-                document: payloadWithMeta.payload,
-                id: documentId.toString(),
-                autocreate: true,
-                scriptedUpsert: true,
-              }),
+          const result = await client.updateScript({
+            document: payloadWithMeta.payload,
+            id: documentId.toString(),
+            autocreate: true,
+            scriptedUpsert: true,
+            retryOnConflict: UPDATE_SCRIPT_RETRY_ON_CONFLICT,
           });
 
           return {
