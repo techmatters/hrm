@@ -22,7 +22,13 @@
     "basic-ftp": "^5.2.0",
     "shell-quote": "1.9.0",
     "ms": "^2.1.3",
-    "@types/ms": "^2.1.0"
+    "@types/ms": "^2.1.0",
+    "mockttp": {
+      "uuid": "^11.1.1"
+    },
+    "sequelize": {
+      "uuid": "^11.1.1"
+    }
   },
   "dependencies": {
     "@maildrop/api": "^1.0.27",
