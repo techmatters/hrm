@@ -124,7 +124,12 @@ describe('archiveAudits', () => {
       .mockResolvedValueOnce(createAuditStream([{ id: 4 }]))
       .mockResolvedValueOnce(createAuditStream([]));
 
+    const bucket = 'configured-audit-archive';
+    process.env.AUDIT_ARCHIVE_BUCKET = bucket;
     const result = await archiveAudits(now, 2);
+
+    expect(s3Client.send.mock.calls[0][0].input.Bucket).toBe(bucket);
+    expect(mockedUpload.mock.calls[0][0].params.Bucket).toBe(bucket);
 
     expect(mockedStreamAuditBatchForDay).toHaveBeenNthCalledWith(
       1,
