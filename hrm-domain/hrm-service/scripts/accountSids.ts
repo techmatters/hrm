@@ -47,8 +47,9 @@ const getParametersByCapturedSegment = async (
   getCredentials: CredentialsProvider,
 ): Promise<Record<string, string>> => {
   await loadPathOnce(path, regex, getCredentials);
+  const credentials = await getCredentials();
   return Object.fromEntries(
-    Object.entries(getCachedParameters(regex)).map(([name, value]) => [
+    Object.entries(getCachedParameters(regex, credentials)).map(([name, value]) => [
       name.match(regex)![1],
       value,
     ]),
