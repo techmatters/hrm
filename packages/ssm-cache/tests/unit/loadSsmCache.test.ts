@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import isAfter from 'date-fns/isAfter';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { loadParametersByPath, loadSsmCache } from '../../src/loadSsmCache';
 import * as SsmCache from '../../src/ssmCache';
@@ -27,17 +26,10 @@ describe('loadSsmCache', () => {
     mockSSMClient.resetHistory();
     SsmCache.ssmCache.values = {};
     SsmCache.ssmCache.cacheDurationMilliseconds = 3600000;
-    delete SsmCache.ssmCache.expiryDate;
+    SsmCache.ssmCache.byPathExpiryDates = {};
   });
 
-  test('loading after cache expired should update expiryDate', async () => {
-    const initialExpire = new Date(Date.now() - 1000);
-    SsmCache.ssmCache.expiryDate = initialExpire;
-    await loadSsmCache({ configs: [] });
-    expect(isAfter(SsmCache.ssmCache.expiryDate, initialExpire)).toBeTruthy();
-  });
-
-  test('loads when only single parameter lookups have cached values', async () => {
+  test('loads even when unrelated parameters are already cached', async () => {
     SsmCache.ssmCache.values = {
       '/test/single/param': { value: 'value', expiryDate: new Date(Date.now() + 60000) },
     };
@@ -48,7 +40,50 @@ describe('loadSsmCache', () => {
     expect(mockSSMClient.commandCalls(GetParametersByPathCommand).length).toBe(1);
   });
 
-  test("doesn't load again before the cache expires, even if nothing was found", async () => {
+  test('loads a config while another config has not expired', async () => {
+    mockSSMClient.on(GetParametersByPathCommand, {}).resolves({
+      Parameters: [{ Name: '/test/fake/a/param', Value: 'value' }],
+    });
+
+    await loadSsmCache({ configs: [{ path: '/test/fake/a' }] });
+    await loadSsmCache({ configs: [{ path: '/test/fake/b' }] });
+
+    const pathsLoaded = mockSSMClient
+      .commandCalls(GetParametersByPathCommand)
+      .map(call => call.args[0].input.Path);
+    expect(pathsLoaded).toStrictEqual(['/test/fake/a', '/test/fake/b']);
+  });
+
+  test('loads a config again after a load that failed partway', async () => {
+    const ssmCacheConfig = { configs: [{ path: '/test/fake/param' }] };
+    mockSSMClient
+      .on(GetParametersByPathCommand, {})
+      .resolvesOnce({
+        Parameters: [{ Name: '/test/fake/param/1', Value: 'value' }],
+        NextToken: 'page-2',
+      })
+      .rejectsOnce(new Error('throttled'))
+      .resolves({ Parameters: [{ Name: '/test/fake/param/1', Value: 'value' }] });
+
+    await expect(loadSsmCache(ssmCacheConfig)).rejects.toThrow('throttled');
+    await loadSsmCache(ssmCacheConfig);
+
+    const nextTokensSent = mockSSMClient
+      .commandCalls(GetParametersByPathCommand)
+      .map(call => call.args[0].input.NextToken);
+    expect(nextTokensSent).toStrictEqual([undefined, 'page-2', undefined]);
+  });
+
+  test('concurrent calls for the same config share one load', async () => {
+    mockSSMClient.on(GetParametersByPathCommand, {}).resolves({ Parameters: [] });
+    const ssmCacheConfig = { configs: [{ path: '/test/fake/param' }] };
+
+    await Promise.all([loadSsmCache(ssmCacheConfig), loadSsmCache(ssmCacheConfig)]);
+
+    expect(mockSSMClient.commandCalls(GetParametersByPathCommand).length).toBe(1);
+  });
+
+  test("doesn't load the same config again before it expires, even if nothing was found", async () => {
     mockSSMClient.on(GetParametersByPathCommand, {}).resolves({ Parameters: [] });
     const ssmCacheConfig = { configs: [{ path: '/test/fake/param' }] };
 
