@@ -192,7 +192,10 @@ export const addErrorToCache = (
   };
 };
 
-export const loadParameter = async (name: string, credentials?: SsmClientCredentials) => {
+export const loadParameterByName = async (
+  name: string,
+  credentials?: SsmClientCredentials,
+) => {
   const params = {
     Name: name,
     WithDecryption: true,
@@ -225,7 +228,7 @@ const getInFlightParameterLoads = perSsmClient<InFlightParameterLoads>(
   () => Object.create(null),
 );
 
-const loadParameterOnce = (
+const loadParameterByNameOnce = (
   name: string,
   credentials?: SsmClientCredentials,
 ): Promise<void> => {
@@ -233,7 +236,7 @@ const loadParameterOnce = (
   const inFlightLoad = inFlightParameterLoads[name];
   if (inFlightLoad) return inFlightLoad;
 
-  const load = loadParameter(name, credentials).finally(() => {
+  const load = loadParameterByName(name, credentials).finally(() => {
     delete inFlightParameterLoads[name];
   });
   inFlightParameterLoads[name] = load;
@@ -254,7 +257,7 @@ export const getSsmParameter = async (
     !parameterExistsInCache(name, credentials) ||
     hasParameterExpired(getCachedValues(credentials)[name])
   ) {
-    await loadParameterOnce(name, credentials);
+    await loadParameterByNameOnce(name, credentials);
   }
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
 
