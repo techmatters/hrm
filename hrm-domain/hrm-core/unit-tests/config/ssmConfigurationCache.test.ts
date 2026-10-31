@@ -75,3 +75,13 @@ describe('getAccountStaticKey', () => {
     );
   });
 });
+
+describe('getFromSSMCache', () => {
+  // Each config reads every parameter under its path, so the same path must not be read twice
+  test('loads each SSM path only once', async () => {
+    await getFromSSMCache('ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+
+    const paths = mockLoadSsmCache.mock.calls[0][0].configs.map(({ path }) => path);
+    expect(new Set(paths).size).toBe(paths.length);
+  });
+});
