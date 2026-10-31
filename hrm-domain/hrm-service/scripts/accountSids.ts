@@ -15,7 +15,7 @@
  */
 
 import type { HrmAccountId } from '@tech-matters/types';
-import { getCachedParameters, loadPaginated } from '@tech-matters/ssm-cache';
+import { getCachedParameters, loadParametersByPath } from '@tech-matters/ssm-cache';
 import type { CredentialsProvider } from './adminRoles';
 
 const loadedPaths = new Map<string, Promise<void>>();
@@ -32,7 +32,9 @@ const loadPathOnce = (
   if (!loadedPaths.has(path)) {
     loadedPaths.set(
       path,
-      getCredentials().then(credentials => loadPaginated({ path, regex, credentials })),
+      getCredentials().then(credentials =>
+        loadParametersByPath({ path, regex, credentials }),
+      ),
     );
   }
   return loadedPaths.get(path)!;
