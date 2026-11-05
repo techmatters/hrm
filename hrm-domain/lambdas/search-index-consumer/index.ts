@@ -16,16 +16,15 @@
 import type { SQSBatchResponse, SQSEvent } from 'aws-lambda';
 import { HrmIndexProcessorError } from '@tech-matters/job-errors';
 import { isErr } from '@tech-matters/types';
-import { groupMessagesByAccountSid } from './messages';
+import { groupMessagesByAccountSid, groupRecordsByMessageGroup } from './messages';
+import { indexMessageGroup, type IndexRecords } from './indexMessageGroup';
 import { messagesToPayloadsByAccountSid } from './messagesToPayloads';
 import { indexDocumentsByAccount } from './payloadToIndex';
 
-export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
-  console.debug('Received event:', JSON.stringify(event, null, 2));
-
+const indexRecords: IndexRecords = async records => {
   try {
     // group the messages by accountSid while adding message meta
-    const messagesByAccoundSid = groupMessagesByAccountSid(event.Records);
+    const messagesByAccoundSid = groupMessagesByAccountSid(records);
 
     // generate corresponding IndexPayload for each IndexMessage and group them by target accountSid-indexType pair
     const payloadsByAccountSid =
@@ -106,28 +105,30 @@ export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
       );
     }
 
-    // send the failed payloads back to SQS so they are redrive to DLQ
-    const response: SQSBatchResponse = {
-      batchItemFailures: documentsWithErrors.map(({ messageId }) => ({
-        itemIdentifier: messageId,
-      })),
-    };
-
-    return response;
+    return documentsWithErrors.map(({ messageId }) => messageId);
   } catch (err) {
     console.error(
       new HrmIndexProcessorError('Failed to process search index request'),
       err,
     );
 
-    const response: SQSBatchResponse = {
-      batchItemFailures: event.Records.map(record => {
-        return {
-          itemIdentifier: record.messageId,
-        };
-      }),
-    };
-
-    return response;
+    return records.map(({ messageId }) => messageId);
   }
+};
+
+export const handler = async (event: SQSEvent): Promise<SQSBatchResponse> => {
+  console.debug('Received event:', JSON.stringify(event, null, 2));
+
+  // Message groups are indexed in parallel, but the messages in each group one at a time,
+  // so messages for the same document never write to it concurrently or out of order
+  const failedMessageIds = await Promise.all(
+    groupRecordsByMessageGroup(event.Records).map(indexMessageGroup(indexRecords)),
+  );
+
+  // send the failed messages back to SQS so they are redriven to the DLQ
+  return {
+    batchItemFailures: failedMessageIds.flat().map(messageId => ({
+      itemIdentifier: messageId,
+    })),
+  };
 };
