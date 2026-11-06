@@ -97,13 +97,15 @@ export type SsmCacheParameter = {
 
 export type SsmCache = {
   values: Record<string, SsmCacheParameter | undefined>;
-  expiryDate?: Date;
+  // When each loadSsmCache config loaded successfully expires, by config key
+  byPathExpiryDates: Record<string, Date | undefined>;
   cacheDurationMilliseconds: number;
   errorCacheDurationMilliseconds: number;
 };
 
 export const ssmCache: SsmCache = {
   values: {},
+  byPathExpiryDates: {},
   cacheDurationMilliseconds: 3600000,
   errorCacheDurationMilliseconds: 60 * 1000 * 5, // 5 minutes,
 };
@@ -111,10 +113,6 @@ export const ssmCache: SsmCache = {
 export const hasParameterExpired = (parameter: SsmCacheParameter | undefined) => {
   return !!(parameter?.expiryDate && new Date() > parameter.expiryDate);
 };
-
-// Until loadSsmCache sets an expiry date it hasn't loaded anything, even if single parameter lookups have cached values
-export const hasCacheExpired = () =>
-  !ssmCache.expiryDate || new Date() > ssmCache.expiryDate;
 
 export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) => {
   ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
