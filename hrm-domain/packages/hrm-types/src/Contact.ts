@@ -17,6 +17,7 @@ import { HrmAccountId, TwilioUserIdentifier, WorkerSID } from '@tech-matters/typ
 import { ConversationMedia } from './ConversationMedia';
 import { Referral } from './Referral';
 import { CaseService } from './Case';
+import { PostSurvey } from './PostSurvey';
 
 /**
  * This and contained types are copied from Flex
@@ -80,6 +81,7 @@ export type Contact = ExistingContactRecord & {
   csamReports: any[];
   referrals?: ReferralWithoutContactId[];
   conversationMedia?: ConversationMedia[];
+  postSurveys?: PostSurvey[];
 };
 
 export const dataCallTypes = {

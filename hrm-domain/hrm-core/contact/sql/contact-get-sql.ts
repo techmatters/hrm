@@ -17,6 +17,7 @@
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
+import { selectCoalescePostSurveysByContactTaskId } from '../../post-survey/sql/postSurveyGetSql';
 
 const ID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."id" = $<contactId>`;
 const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId" = $<taskId>`;
@@ -25,7 +26,7 @@ const TASKID_WHERE_CLAUSE = `WHERE c."accountSid" = $<accountSid> AND c."taskId"
  * Note: this query is also used to index Contact records in ES. If the JOINs are ever removed from this query, make sure that the JOINs are preserved for the ES dedicated one
  */
 export const selectContactsWithRelations = (table: string) => `
-        SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia"
+        SELECT c.*, reports."csamReports", joinedReferrals."referrals", media."conversationMedia", surveys."postSurveys"
         FROM "${table}" c 
         LEFT JOIN LATERAL (
           ${selectCoalesceCsamReportsByContactId('c')}
@@ -35,7 +36,10 @@ export const selectContactsWithRelations = (table: string) => `
         ) joinedReferrals ON true
         LEFT JOIN LATERAL (
           ${selectCoalesceConversationMediasByContactId('c')}
-        ) media ON true`;
+        ) media ON true
+        LEFT JOIN LATERAL (
+          ${selectCoalescePostSurveysByContactTaskId('c')}
+        ) surveys ON true`;
 
 export const selectSingleContactByIdSql = (table: string) => `
       ${selectContactsWithRelations(table)}
