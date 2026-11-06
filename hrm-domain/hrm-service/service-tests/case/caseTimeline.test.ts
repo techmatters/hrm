@@ -153,8 +153,14 @@ beforeEach(async () => {
       (a, b) => parseISO(a.timeOfContact).valueOf() - parseISO(b.timeOfContact).valueOf(),
     )
     .map(c => {
-      const { totalCount, conversationMedia, csamReports, referrals, ...contact } =
-        c as any;
+      const {
+        totalCount,
+        conversationMedia,
+        csamReports,
+        referrals,
+        postSurveys,
+        ...contact
+      } = c as any;
       return {
         ...contact,
         timeOfContact: expect.toParseAsDate(contact.timeOfContact),
