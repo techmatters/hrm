@@ -15,6 +15,7 @@
  */
 
 import { selectSingleContactByTaskId } from './contact-get-sql';
+import { selectCoalescePostSurveysByContactTaskId } from '../../post-survey/sql/postSurveyGetSql';
 import { NewContactRecord } from '@tech-matters/hrm-types';
 
 export { NewContactRecord };
@@ -69,5 +70,7 @@ export const INSERT_CONTACT_SQL = `
   )
   SELECT "existing".*, false AS "isNewRecord" FROM "existing"
   UNION
-  SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", true AS "isNewRecord" FROM "inserted"
+  SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", (${selectCoalescePostSurveysByContactTaskId(
+    'inserted',
+  )}) AS "postSurveys", true AS "isNewRecord" FROM "inserted"
 `;
