@@ -79,6 +79,7 @@ const mockContactRecord: contactDb.ContactRecord = {
   csamReports: [],
   referrals: [],
   conversationMedia: [],
+  postSurveys: [],
   rawJson: {} as any,
   createdAt: baselineDate.toISOString(),
   definitionVersion: 'as-v1',
