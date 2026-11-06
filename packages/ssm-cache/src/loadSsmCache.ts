@@ -29,19 +29,24 @@ import {
   isConfigNotEmpty,
 } from './ssmCache';
 
-type LoadPaginatedParameters = {
+type LoadParametersByPathParameters = {
   path: string;
   regex?: RegExp;
   nextToken?: string;
   // Defaults to the shared client's credentials, pass them to read with others (e.g. an assumed role)
   credentials?: SsmClientCredentials;
 };
-export const loadPaginated = async ({
+/**
+ * Loads every parameter under the path (recursively) into the cache, 10 per request.
+ * The regex only filters which of them are cached, every parameter under the path is still read from SSM.
+ * To load parameters whose names are known, use loadParametersByName instead.
+ */
+export const loadParametersByPath = async ({
   path,
   regex,
   nextToken,
   credentials,
-}: LoadPaginatedParameters): Promise<void> => {
+}: LoadParametersByPathParameters): Promise<void> => {
   const params: GetParametersByPathCommandInput = {
     MaxResults: 10, // 10 is max allowed by AWS
     Path: path,
@@ -58,7 +63,7 @@ export const loadPaginated = async ({
   resp.Parameters?.forEach(p => addToCache(regex, p, credentials));
 
   if (resp.NextToken) {
-    await loadPaginated({
+    await loadParametersByPath({
       path,
       regex,
       nextToken: resp.NextToken,
@@ -75,6 +80,9 @@ export type LoadSsmCacheParameters = {
   // We accept an array of types to allow loading parameters from multiple paths
   configs: SsmCacheConfig[];
 };
+/**
+ * Loads the parameters under each config's path, as loadParametersByPath does, unless they were loaded and haven't expired.
+ */
 export const loadSsmCache = async ({
   cacheDurationMilliseconds,
   configs,
@@ -84,6 +92,6 @@ export const loadSsmCache = async ({
 
   ssmCache.expiryDate = new Date(Date.now() + ssmCache.cacheDurationMilliseconds);
 
-  const promises = configs.map(async config => loadPaginated(config));
+  const promises = configs.map(async config => loadParametersByPath(config));
   await Promise.all(promises);
 };
