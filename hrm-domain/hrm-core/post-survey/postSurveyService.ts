@@ -21,11 +21,41 @@ import {
   PostSurvey,
 } from './postSurveyDataAccess';
 import { HrmAccountId } from '@tech-matters/types';
+import { getByTaskSid } from '../contact/contactDataAccess';
+import { contactRecordToContact } from '../contact/contactService';
+import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
+
+// The contact payload includes its post surveys, so it needs republishing when one is added.
+// If the contact doesn't exist yet, its own create notification will include the survey.
+const notifyContactOfPostSurvey = async (
+  accountSid: HrmAccountId,
+  { contactTaskId }: NewPostSurvey,
+) => {
+  try {
+    const contact = await getByTaskSid(accountSid, contactTaskId);
+    if (contact) {
+      await publishContactChangeNotification({
+        accountSid,
+        contact: contactRecordToContact(contact),
+        operation: 'update',
+      });
+    }
+  } catch (err) {
+    console.error(
+      `Error trying to notify contact of post survey: accountSid ${accountSid} contactTaskId ${contactTaskId}`,
+      err,
+    );
+  }
+};
 
 export const createPostSurvey = async (
   accountSid: HrmAccountId,
   postSurvey: NewPostSurvey,
-): Promise<PostSurvey> => create(accountSid, postSurvey);
+): Promise<PostSurvey> => {
+  const created = await create(accountSid, postSurvey);
+  await notifyContactOfPostSurvey(accountSid, postSurvey);
+  return created;
+};
 
 export const getPostSurveysByContactTaskId = async (
   accountSid: HrmAccountId,
