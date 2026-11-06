@@ -14,11 +14,14 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
+import each from 'jest-each';
 import * as contactApi from '@tech-matters/hrm-core/contact/contactService';
+import { create as createPostSurvey } from '@tech-matters/hrm-core/post-survey/postSurveyDataAccess';
 import '../case/caseValidation';
 import { ContactRawJson } from '@tech-matters/hrm-core/contact/contactJson';
 import { accountSid, ALWAYS_CAN, contact1, workerSid } from '../mocks';
-import { headers } from '../server';
+import { headers, setRules } from '../server';
+import { ruleFileActionOverride } from '../permissions-overrides';
 import * as contactDb from '@tech-matters/hrm-core/contact/contactDataAccess';
 import { setupServiceTests } from '../setupServiceTest';
 
@@ -69,6 +72,49 @@ describe('/contacts/:contactId route', () => {
         },
         conversationMedia: [],
       });
+    });
+
+    describe('postSurveys', () => {
+      each([
+        { channel: 'voice', canViewPostSurvey: true },
+        { channel: 'web', canViewPostSurvey: true },
+        { channel: 'voice', canViewPostSurvey: false },
+      ]).test(
+        'channel $channel, viewPostSurvey permitted: $canViewPostSurvey',
+        async ({ channel, canViewPostSurvey }) => {
+          if (!canViewPostSurvey) {
+            setRules(ruleFileActionOverride('viewPostSurvey', false));
+          }
+          const taskId = `post-survey-contact-${channel}-${canViewPostSurvey}`;
+          const contact = await contactApi.createContact(
+            accountSid,
+            workerSid,
+            { ...contact1, channel, taskId },
+            ALWAYS_CAN,
+            true,
+          );
+          const postSurvey = await createPostSurvey(accountSid, {
+            contactTaskId: taskId,
+            taskId: `${taskId}-survey`,
+            data: { comments: 'Some answer' },
+          });
+
+          const response = await request.get(subRoute(contact.id)).set(headers);
+
+          expect(response.status).toBe(200);
+          if (canViewPostSurvey) {
+            expect(response.body.postSurveys).toStrictEqual([
+              expect.objectContaining({
+                contactTaskId: taskId,
+                taskId: postSurvey.taskId,
+                data: postSurvey.data,
+              }),
+            ]);
+          } else {
+            expect(response.body.postSurveys).toBeUndefined();
+          }
+        },
+      );
     });
   });
 });

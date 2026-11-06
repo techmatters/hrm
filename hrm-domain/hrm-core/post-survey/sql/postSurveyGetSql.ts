@@ -25,3 +25,11 @@ export const SELECT_POST_SURVEYS_BY_CONTACT_TASK = `
   FROM "PostSurveys" AS ps
   WHERE ps."accountSid" = $<accountSid> AND ps."contactTaskId" = $<contactTaskId>
 `;
+
+// Queries used in other modules for JOINs
+
+export const selectCoalescePostSurveysByContactTaskId = (contactAlias: string) => `
+  SELECT COALESCE(jsonb_agg(to_jsonb(ps) ORDER BY ps."createdAt"), '[]') AS "postSurveys"
+  FROM "PostSurveys" ps
+  WHERE ps."contactTaskId" = "${contactAlias}"."taskId" AND ps."accountSid" = "${contactAlias}"."accountSid"
+`;

@@ -69,5 +69,5 @@ export const INSERT_CONTACT_SQL = `
   )
   SELECT "existing".*, false AS "isNewRecord" FROM "existing"
   UNION
-  SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", true AS "isNewRecord" FROM "inserted"
+  SELECT "inserted".*, NULL AS "csamReports", NULL AS "referrals", NULL AS "conversationMedia", NULL AS "postSurveys", true AS "isNewRecord" FROM "inserted"
 `;
