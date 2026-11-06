@@ -339,6 +339,7 @@ export const createContact = async (
       contact.referrals = [];
       contact.csamReports = [];
       contact.conversationMedia = [];
+      contact.postSurveys = [];
 
       const applyTransformations = bindApplyTransformations(can, user, permissionRules);
 
