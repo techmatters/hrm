@@ -17,6 +17,7 @@
 import { selectCoalesceConversationMediasByContactId } from '../../conversation-media/sql/conversation-media-get-sql';
 import { selectCoalesceCsamReportsByContactId } from '../../csam-report/sql/csam-report-get-sql';
 import { selectCoalesceReferralsByContactId } from '../../referral/sql/referral-get-sql';
+import { selectCoalescePostSurveysByContactTaskId } from '../../post-survey/sql/postSurveyGetSql';
 import { TKConditionsSets } from '../../permissions/rulesMap';
 import {
   ContactListCondition,
@@ -26,7 +27,7 @@ import {
 const selectSearchContactBaseQuery = (whereClause: string, includeTotal = true) => `
   SELECT 
   ${includeTotal ? `(count(*) OVER())::INTEGER AS "totalCount",` : ''}
-  contacts.*, reports."csamReports", "joinedReferrals"."referrals", media."conversationMedia"
+  contacts.*, reports."csamReports", "joinedReferrals"."referrals", media."conversationMedia", surveys."postSurveys"
   FROM "Contacts" "contacts"
   LEFT JOIN LATERAL (
     ${selectCoalesceCsamReportsByContactId('contacts')}
@@ -37,6 +38,9 @@ const selectSearchContactBaseQuery = (whereClause: string, includeTotal = true) 
   LEFT JOIN LATERAL (
     ${selectCoalesceConversationMediasByContactId('contacts')}
   ) "media" ON true
+  LEFT JOIN LATERAL (
+    ${selectCoalescePostSurveysByContactTaskId('contacts')}
+  ) "surveys" ON true
 
   ${whereClause}
 
@@ -100,7 +104,8 @@ export const SELECT_CONTACTS_TO_RENOTIFY = `
     "contacts"."definitionVersion",
     reports."csamReports", 
     "joinedReferrals"."referrals", 
-    media."conversationMedia"
+    media."conversationMedia",
+    surveys."postSurveys"
   FROM "Contacts" "contacts"
   LEFT JOIN LATERAL (
     ${selectCoalesceCsamReportsByContactId('contacts')}
@@ -111,6 +116,9 @@ export const SELECT_CONTACTS_TO_RENOTIFY = `
   LEFT JOIN LATERAL (
     ${selectCoalesceConversationMediasByContactId('contacts')}
   ) "media" ON true
+  LEFT JOIN LATERAL (
+    ${selectCoalescePostSurveysByContactTaskId('contacts')}
+  ) "surveys" ON true
   WHERE contacts."accountSid" = $<accountSid>
     AND "contacts"."updatedAt" BETWEEN COALESCE($<dateFrom>::TIMESTAMP WITH TIME ZONE, '-infinity') AND COALESCE($<dateTo>::TIMESTAMP WITH TIME ZONE, 'infinity')
     AND ($<ids>::INTEGER[] IS NULL OR "contacts"."id" = ANY($<ids>::INTEGER[]))

@@ -116,10 +116,13 @@ const filterExternalTranscripts = (contact: Contact): Contact => {
   };
 };
 
+const removePostSurveys = ({ postSurveys, ...rest }: Contact): Contact => rest;
+
 type PermissionsBasedTransformation = {
   action:
     | (typeof actionsMaps)['contact'][keyof (typeof actionsMaps)['contact']]
-    | (typeof actionsMaps)['contactField'][keyof (typeof actionsMaps)['contactField']];
+    | (typeof actionsMaps)['contactField'][keyof (typeof actionsMaps)['contactField']]
+    | (typeof actionsMaps)['postSurvey'][keyof (typeof actionsMaps)['postSurvey']];
   transformation: (contact: Contact) => Contact;
 };
 
@@ -127,6 +130,10 @@ const permissionsBasedTransformations: PermissionsBasedTransformation[] = [
   {
     action: actionsMaps.contact.VIEW_EXTERNAL_TRANSCRIPT,
     transformation: filterExternalTranscripts,
+  },
+  {
+    action: actionsMaps.postSurvey.VIEW_POST_SURVEY,
+    transformation: removePostSurveys,
   },
 ];
 
@@ -332,6 +339,7 @@ export const createContact = async (
       contact.referrals = [];
       contact.csamReports = [];
       contact.conversationMedia = [];
+      contact.postSurveys = [];
 
       const applyTransformations = bindApplyTransformations(can, user, permissionRules);
 
