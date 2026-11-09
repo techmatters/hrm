@@ -25,12 +25,11 @@ import {
   loadSsmCache,
   SsmParameterNotFound,
 } from '@tech-matters/ssm-cache';
-import subDays from 'date-fns/subDays';
+import subHours from 'date-fns/subHours';
 
 const MAX_CLEANUP_JOB_RETENTION_DAYS = 3650;
 
-// removeOldConversations takes a value in days, so this must be in days too
-const MAX_ACTIVE_CONVERSATION_DAYS = 1;
+const MAX_ACTIVE_CONVERSATION_HOURS = 24;
 
 const hrmEnv = process.env.NODE_ENV;
 
@@ -124,11 +123,11 @@ const ITERATION_DELAY = 2000;
 const MAX_ITERATIONS = 1000;
 const removeOldConversations = async (
   accountSid: AccountSID,
-  retentionDays: number,
+  retentionHours: number,
   errorIfFound: boolean = false,
   state?: string,
 ) => {
-  const endDate = subDays(new Date(), retentionDays);
+  const endDate = subHours(new Date(), retentionHours);
   const authToken = await getTwilioAuthToken({ accountSid, environment: hrmEnv });
   let conversationsRetrieved = PAGE_SIZE;
   let iteration = 0;
@@ -167,7 +166,7 @@ const removeOldConversations = async (
         console.error(
           `POSSIBLE STALE CONVERSATIONS DETECTED! ${
             conversationSids.length
-          } conversations found older than ${retentionDays} days${
+          } conversations found older than ${retentionHours} hours${
             state ? ` in a '${state}' state` : ''
           } for account ${accountSid}:`,
           conversationSids,
@@ -228,17 +227,19 @@ export const cleanupConversations = async (): Promise<void> => {
     console.info(`Checking for possible stuck conversations for account:`, accountSid);
     await removeOldConversations(
       accountSid,
-      MAX_ACTIVE_CONVERSATION_DAYS,
+      MAX_ACTIVE_CONVERSATION_HOURS,
       true,
       'active',
     );
     await removeOldConversations(
       accountSid,
-      MAX_ACTIVE_CONVERSATION_DAYS,
+      MAX_ACTIVE_CONVERSATION_HOURS,
       true,
       'inactive',
     );
     console.info(`Removing expired conversations for account:`, accountSid);
-    await removeOldConversations(accountSid, await getCleanupRetentionDays(accountSid));
+    // Retention is configured in days (transcript_retention_days), so convert to hours
+    const retentionDays = await getCleanupRetentionDays(accountSid);
+    await removeOldConversations(accountSid, retentionDays * 24);
   }
 };
