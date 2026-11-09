@@ -25,7 +25,8 @@
     "@types/ms": "^2.1.0",
     "mockttp": {
       "uuid": "^11.1.1",
-      "node-forge": "^1.4.1"
+      "node-forge": "^1.4.1",
+      "@graphql-tools/utils": "^12.0.1"
     },
     "sequelize": {
       "uuid": "^11.1.1"
