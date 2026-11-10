@@ -16,24 +16,26 @@
 
 import type { HrmAccountId } from '@tech-matters/types';
 import { getCachedParameters, loadPaginated } from '@tech-matters/ssm-cache';
-import type { CredentialsProvider } from './adminRoles';
+import type { AwsCredentials, CredentialsProvider } from './adminRoles';
 
-const loadedPaths = new Map<string, Promise<void>>();
+// The SSM cache keeps the values loaded with some credentials apart from those loaded with others,
+// so the loaded paths are kept per credentials too
+const loadedPathsByCredentials = new WeakMap<
+  AwsCredentials,
+  Map<string, Promise<void>>
+>();
 
 /**
- * Loads every parameter under the path into the SSM cache with a single paginated request.
- * Each path is only loaded once per run, as SSM rate limits are low.
+ * Loads every parameter under the path into the SSM cache for the credentials, with a single paginated request.
+ * Each path is only loaded once per run for the same credentials, as SSM rate limits are low.
  */
-const loadPathOnce = (
-  path: string,
-  regex: RegExp,
-  getCredentials: CredentialsProvider,
-) => {
+const loadPathOnce = (path: string, regex: RegExp, credentials: AwsCredentials) => {
+  if (!loadedPathsByCredentials.has(credentials)) {
+    loadedPathsByCredentials.set(credentials, new Map());
+  }
+  const loadedPaths = loadedPathsByCredentials.get(credentials)!;
   if (!loadedPaths.has(path)) {
-    loadedPaths.set(
-      path,
-      getCredentials().then(credentials => loadPaginated({ path, regex, credentials })),
-    );
+    loadedPaths.set(path, loadPaginated({ path, regex, credentials }));
   }
   return loadedPaths.get(path)!;
 };
@@ -46,9 +48,12 @@ const getParametersByCapturedSegment = async (
   regex: RegExp,
   getCredentials: CredentialsProvider,
 ): Promise<Record<string, string>> => {
-  await loadPathOnce(path, regex, getCredentials);
+  // Resolved once, as the cache is read with the same credentials the parameters were loaded with,
+  // and a provider may return new credentials on each call
+  const credentials = await getCredentials();
+  await loadPathOnce(path, regex, credentials);
   return Object.fromEntries(
-    Object.entries(getCachedParameters(regex)).map(([name, value]) => [
+    Object.entries(getCachedParameters(regex, credentials)).map(([name, value]) => [
       name.match(regex)![1],
       value,
     ]),

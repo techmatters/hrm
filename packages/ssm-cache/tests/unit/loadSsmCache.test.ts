@@ -96,9 +96,10 @@ describe('loadPaginated', () => {
   beforeEach(() => {
     mockSSMClient.reset();
     SsmCache.ssmCache.values = {};
+    SsmCache.ssmCache.cacheDurationMilliseconds = 3600000;
   });
 
-  test('reads every page with the given credentials, without changing the shared client', async () => {
+  test('reads every page with the given credentials, without changing the shared client or its cache', async () => {
     const accessKeyIdsUsed: string[] = [];
     mockSSMClient.on(GetParametersByPathCommand).callsFake(async (input, getClient) => {
       accessKeyIdsUsed.push((await getClient().config.credentials()).accessKeyId);
@@ -114,8 +115,11 @@ describe('loadPaginated', () => {
     await loadPaginated({ path: '/test/fake/', credentials });
 
     expect(accessKeyIdsUsed).toStrictEqual(['role-key', 'role-key']);
-    expect(SsmCache.ssmCache.values).toHaveProperty('/test/fake/param/1');
-    expect(SsmCache.ssmCache.values).toHaveProperty('/test/fake/param/2');
+    expect(SsmCache.getCachedParameters(/param/, credentials)).toStrictEqual({
+      '/test/fake/param/1': 'value',
+      '/test/fake/param/2': 'value',
+    });
+    expect(SsmCache.getCachedParameters(/param/)).toStrictEqual({});
     expect(SsmCache.getSsmClient()).toBe(sharedClient);
   });
 
