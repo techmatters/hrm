@@ -18,6 +18,7 @@ import {
   SSMClient,
   SSMClientConfig,
   GetParameterCommand,
+  GetParametersCommand,
   Parameter as SsmParameter,
   ParameterNotFound,
   PutParameterCommand,
@@ -192,7 +193,10 @@ export const addErrorToCache = (
   };
 };
 
-export const loadParameter = async (name: string, credentials?: SsmClientCredentials) => {
+export const loadParameterByName = async (
+  name: string,
+  credentials?: SsmClientCredentials,
+) => {
   const params = {
     Name: name,
     WithDecryption: true,
@@ -215,6 +219,36 @@ export const loadParameter = async (name: string, credentials?: SsmClientCredent
   }
 };
 
+const GET_PARAMETERS_MAX_NAMES = 10; // 10 is max allowed by AWS
+
+/**
+ * Loads the named parameters into the cache with one request per 10 names, rather than one request per name,
+ * sending them one at a time as SSM rate limits are low.
+ * Names that don't exist are cached as not found, like loadParameterByName does.
+ */
+export const loadParametersByName = async (
+  names: string[],
+  credentials?: SsmClientCredentials,
+) => {
+  for (let start = 0; start < names.length; start += GET_PARAMETERS_MAX_NAMES) {
+    const command = new GetParametersCommand({
+      Names: names.slice(start, start + GET_PARAMETERS_MAX_NAMES),
+      WithDecryption: true,
+    });
+    const { Parameters, InvalidParameters } =
+      await getSsmClient(credentials).send(command);
+
+    Parameters?.forEach(parameter => addToCache(undefined, parameter, credentials));
+    InvalidParameters?.forEach(name =>
+      addErrorToCache(
+        name,
+        new ParameterNotFound({ message: `Parameter ${name} not found`, $metadata: {} }),
+        credentials,
+      ),
+    );
+  }
+};
+
 type InFlightParameterLoads = Record<string, Promise<void> | undefined>;
 
 const sharedInFlightParameterLoads: InFlightParameterLoads = Object.create(null);
@@ -225,7 +259,7 @@ const getInFlightParameterLoads = perSsmClient<InFlightParameterLoads>(
   () => Object.create(null),
 );
 
-const loadParameterOnce = (
+const loadParameterByNameOnce = (
   name: string,
   credentials?: SsmClientCredentials,
 ): Promise<void> => {
@@ -233,7 +267,7 @@ const loadParameterOnce = (
   const inFlightLoad = inFlightParameterLoads[name];
   if (inFlightLoad) return inFlightLoad;
 
-  const load = loadParameter(name, credentials).finally(() => {
+  const load = loadParameterByName(name, credentials).finally(() => {
     delete inFlightParameterLoads[name];
   });
   inFlightParameterLoads[name] = load;
@@ -254,7 +288,7 @@ export const getSsmParameter = async (
     !parameterExistsInCache(name, credentials) ||
     hasParameterExpired(getCachedValues(credentials)[name])
   ) {
-    await loadParameterOnce(name, credentials);
+    await loadParameterByNameOnce(name, credentials);
   }
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
 
