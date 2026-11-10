@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "The easiest way to run the tests locally is to run the test DB in docker.",
   "scripts": {
-    "start": "cd dist && node ./index"
+    "start": "cd dist && node ./index",
+    "test:unit": "jest --config jest.config.js tests/unit"
   },
   "exports": {
     ".": "./dist/index.js"

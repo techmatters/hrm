@@ -38,7 +38,7 @@ const hrmEnv = process.env.NODE_ENV;
  * @param accountSid
  * @returns number of days to retain cleanup jobs
  */
-const getCleanupRetentionDays = async (accountSid): Promise<number | undefined> => {
+const getCleanupRetentionDays = async (accountSid): Promise<number> => {
   let ssmRetentionDays: number;
   try {
     ssmRetentionDays =
