@@ -36,7 +36,7 @@ const countPostSurveys = async (
   return parseInt(row[0].count);
 };
 
-const { request } = setupServiceTests();
+const { request, internalRequest } = setupServiceTests();
 
 describe('/postSurveys route', () => {
   const route = `/v0/accounts/${accountSid}/postSurveys`;
@@ -148,5 +148,86 @@ describe('/postSurveys route', () => {
 
       expect(matchingRowsCount).toBe(2);
     });
+  });
+});
+
+describe('PATCH /internal/v0/accounts/:accountSid/postSurveys/:taskId', () => {
+  const contactTaskId = 'WTpatchcontact';
+  const taskId = 'WTpatchsurvey';
+  const route = `/internal/v0/accounts/${accountSid}/postSurveys/${taskId}`;
+
+  test('no auth should return 401', async () => {
+    const response = await internalRequest
+      .patch(route)
+      .send({ contactTaskId, data: { question: 'Answer' } });
+
+    expect(response.status).toBe(401);
+  });
+
+  test('missing contactTaskId should return 400', async () => {
+    const response = await internalRequest
+      .patch(`/internal/v0/accounts/${accountSid}/postSurveys/WTnotexisting`)
+      .set(basicHeaders)
+      .send({ data: { question: 'Answer' } });
+
+    expect(response.status).toBe(400);
+    expect(await countPostSurveys(contactTaskId, 'WTnotexisting')).toBe(0);
+  });
+
+  test('creates the survey, then replaces its data on subsequent patches', async () => {
+    const createResponse = await internalRequest
+      .patch(route)
+      .set(basicHeaders)
+      .send({ contactTaskId, data: { first: 'Answer', second: 'Answer' } });
+
+    expect(createResponse.status).toBe(200);
+    expect(createResponse.body).toMatchObject({
+      contactTaskId,
+      taskId,
+      data: { first: 'Answer', second: 'Answer' },
+    });
+
+    const updateResponse = await internalRequest
+      .patch(route)
+      .set(basicHeaders)
+      .send({ contactTaskId, data: { first: 'Changed answer' } });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body).toMatchObject({
+      id: createResponse.body.id,
+      contactTaskId,
+      taskId,
+      data: { first: 'Changed answer' },
+      createdAt: createResponse.body.createdAt,
+    });
+    expect(new Date(updateResponse.body.updatedAt).getTime()).toBeGreaterThan(
+      new Date(createResponse.body.updatedAt).getTime(),
+    );
+    expect(await countPostSurveys(contactTaskId, taskId)).toBe(1);
+  });
+
+  test('missing contactTaskId on an existing survey should return 400 and leave it unchanged', async () => {
+    const response = await internalRequest
+      .patch(route)
+      .set(basicHeaders)
+      .send({ data: { first: 'Ignored answer' } });
+
+    expect(response.status).toBe(400);
+    const [saved] = await db.task(connection =>
+      connection.any(
+        `SELECT "data" FROM "PostSurveys" WHERE "accountSid" = $<accountSid> AND "taskId" = $<taskId>`,
+        { accountSid, taskId },
+      ),
+    );
+    expect(saved.data).toStrictEqual({ first: 'Changed answer' });
+  });
+
+  test('is not exposed on the public API', async () => {
+    const response = await request
+      .patch(`/v0/accounts/${accountSid}/postSurveys/${taskId}`)
+      .set(headers)
+      .send({ contactTaskId, data: {} });
+
+    expect(response.status).toBe(404);
   });
 });
