@@ -120,7 +120,11 @@ describe('upsertByTaskId', () => {
       .mockResolvedValue([postSurveyFromDB]);
     const oneSpy = jest.spyOn(conn, 'one');
 
-    const result = await upsertByTaskId(accountSid, { taskId, data });
+    const result = await upsertByTaskId(accountSid, {
+      taskId,
+      contactTaskId: 'CONTACT TASK ID',
+      data,
+    });
 
     expect(manyOrNoneSpy).toHaveBeenCalledWith(
       expect.stringContaining('UPDATE "PostSurveys"'),
@@ -144,15 +148,5 @@ describe('upsertByTaskId', () => {
       expect.stringMatching(/insert into "PostSurveys"/i),
     );
     expect(result).toStrictEqual(postSurveyFromDB);
-  });
-
-  test("returns undefined without inserting if none exists and there's no contactTaskId", async () => {
-    jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
-    const oneSpy = jest.spyOn(conn, 'one');
-
-    const result = await upsertByTaskId(accountSid, { taskId, data });
-
-    expect(oneSpy).not.toHaveBeenCalled();
-    expect(result).toBeUndefined();
   });
 });

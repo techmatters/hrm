@@ -19,7 +19,6 @@ import {
   filterByContactTaskId,
   NewPostSurvey,
   PostSurvey,
-  PostSurveyUpsert,
   upsertByTaskId,
 } from './postSurveyDataAccess';
 import {
@@ -67,16 +66,16 @@ export const createPostSurvey = async (
 
 export const upsertPostSurvey = async (
   accountSid: HrmAccountId,
-  postSurvey: PostSurveyUpsert,
+  postSurvey: NewPostSurvey,
 ): Promise<Result<ErrorResult<'InvalidParameterError'>, PostSurvey>> => {
-  const saved = await upsertByTaskId(accountSid, postSurvey);
-  if (!saved) {
+  if (!postSurvey.contactTaskId) {
     return newErr({
       error: 'InvalidParameterError',
-      message: `contactTaskId is required to create post survey for task ${postSurvey.taskId}`,
+      message: `contactTaskId is required to save post survey for task ${postSurvey.taskId}`,
     });
   }
-  await notifyContactOfPostSurvey(accountSid, saved);
+  const saved = await upsertByTaskId(accountSid, postSurvey);
+  await notifyContactOfPostSurvey(accountSid, postSurvey);
   return newOkFromData(saved);
 };
 

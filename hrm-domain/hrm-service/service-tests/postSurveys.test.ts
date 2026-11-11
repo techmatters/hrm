@@ -164,7 +164,7 @@ describe('PATCH /internal/v0/accounts/:accountSid/postSurveys/:taskId', () => {
     expect(response.status).toBe(401);
   });
 
-  test('missing contactTaskId when the survey does not exist should return 400', async () => {
+  test('missing contactTaskId should return 400', async () => {
     const response = await internalRequest
       .patch(`/internal/v0/accounts/${accountSid}/postSurveys/WTnotexisting`)
       .set(basicHeaders)
@@ -190,7 +190,7 @@ describe('PATCH /internal/v0/accounts/:accountSid/postSurveys/:taskId', () => {
     const updateResponse = await internalRequest
       .patch(route)
       .set(basicHeaders)
-      .send({ data: { first: 'Changed answer' } });
+      .send({ contactTaskId, data: { first: 'Changed answer' } });
 
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body).toMatchObject({
@@ -204,6 +204,22 @@ describe('PATCH /internal/v0/accounts/:accountSid/postSurveys/:taskId', () => {
       new Date(createResponse.body.updatedAt).getTime(),
     );
     expect(await countPostSurveys(contactTaskId, taskId)).toBe(1);
+  });
+
+  test('missing contactTaskId on an existing survey should return 400 and leave it unchanged', async () => {
+    const response = await internalRequest
+      .patch(route)
+      .set(basicHeaders)
+      .send({ data: { first: 'Ignored answer' } });
+
+    expect(response.status).toBe(400);
+    const [saved] = await db.task(connection =>
+      connection.any(
+        `SELECT "data" FROM "PostSurveys" WHERE "accountSid" = $<accountSid> AND "taskId" = $<taskId>`,
+        { accountSid, taskId },
+      ),
+    );
+    expect(saved.data).toStrictEqual({ first: 'Changed answer' });
   });
 
   test('is not exposed on the public API', async () => {

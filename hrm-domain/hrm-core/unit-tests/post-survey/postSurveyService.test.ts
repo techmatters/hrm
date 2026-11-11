@@ -103,14 +103,12 @@ describe('upsertPostSurvey', () => {
       taskId: newPostSurvey.contactTaskId,
       postSurveys: [createdPostSurvey],
     } as any);
-    const { taskId, data } = newPostSurvey;
 
-    const result = await upsertPostSurvey(accountSid, { taskId, data });
+    const result = await upsertPostSurvey(accountSid, newPostSurvey);
 
     expect(isErr(result)).toBe(false);
     expect(result.unwrap()).toStrictEqual(createdPostSurvey);
-    expect(upsertByTaskIdMock).toHaveBeenCalledWith(accountSid, { taskId, data });
-    // Uses the saved record's contactTaskId, since the request may not include it
+    expect(upsertByTaskIdMock).toHaveBeenCalledWith(accountSid, newPostSurvey);
     expect(getByTaskSidMock).toHaveBeenCalledWith(
       accountSid,
       newPostSurvey.contactTaskId,
@@ -120,15 +118,14 @@ describe('upsertPostSurvey', () => {
     );
   });
 
-  test("returns an InvalidParameterError and publishes nothing if the survey couldn't be saved", async () => {
-    upsertByTaskIdMock.mockResolvedValue(undefined);
-
+  test('returns an InvalidParameterError without saving or publishing if contactTaskId is missing', async () => {
     const result = await upsertPostSurvey(accountSid, {
-      taskId: newPostSurvey.taskId,
-      data: newPostSurvey.data,
+      ...newPostSurvey,
+      contactTaskId: undefined,
     });
 
     expect(isErr(result) && result.error).toBe('InvalidParameterError');
+    expect(upsertByTaskIdMock).not.toHaveBeenCalled();
     expect(publishContactChangeNotificationSpy).not.toHaveBeenCalled();
   });
 });

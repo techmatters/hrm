@@ -45,18 +45,13 @@ export const create = async (
   );
 };
 
-export type PostSurveyUpsert = Omit<NewPostSurvey, 'contactTaskId'> & {
-  contactTaskId?: string;
-};
-
 /**
  * Replaces the data of the post survey(s) with this taskId, or creates one if none exist.
- * Returns undefined if there is nothing to update and it can't be created because contactTaskId is missing.
  */
 export const upsertByTaskId = async (
   accountSid: string,
-  { taskId, contactTaskId, data }: PostSurveyUpsert,
-): Promise<PostSurvey | undefined> => {
+  { taskId, contactTaskId, data }: NewPostSurvey,
+): Promise<PostSurvey> => {
   const now = new Date();
   return (await getDbForAccount(accountSid)).tx(async connection => {
     const [updated] = await connection.manyOrNone<PostSurvey>(
@@ -64,7 +59,6 @@ export const upsertByTaskId = async (
       { accountSid, taskId, data, updatedAt: now },
     );
     if (updated) return updated;
-    if (!contactTaskId) return undefined;
     return connection.one<PostSurvey>(
       insertPostSurveySql({
         contactTaskId,
