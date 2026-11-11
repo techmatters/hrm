@@ -17,6 +17,7 @@
 import { NewPostSurvey, PostSurvey } from '@tech-matters/hrm-types';
 import { SELECT_POST_SURVEYS_BY_CONTACT_TASK } from './sql/postSurveyGetSql';
 import { insertPostSurveySql } from './sql/postSurveyInsertSql';
+import { UPDATE_POST_SURVEY_DATA_BY_TASK_ID } from './sql/postSurveyUpdateSql';
 import { getDbForAccount } from '../dbConnection';
 
 export type { NewPostSurvey, PostSurvey };
@@ -42,4 +43,37 @@ export const create = async (
       insertPostSurveySql({ ...postSurvey, updatedAt: now, createdAt: now, accountSid }),
     ),
   );
+};
+
+export type PostSurveyUpsert = Omit<NewPostSurvey, 'contactTaskId'> & {
+  contactTaskId?: string;
+};
+
+/**
+ * Replaces the data of the post survey(s) with this taskId, or creates one if none exist.
+ * Returns undefined if there is nothing to update and it can't be created because contactTaskId is missing.
+ */
+export const upsertByTaskId = async (
+  accountSid: string,
+  { taskId, contactTaskId, data }: PostSurveyUpsert,
+): Promise<PostSurvey | undefined> => {
+  const now = new Date();
+  return (await getDbForAccount(accountSid)).tx(async connection => {
+    const [updated] = await connection.manyOrNone<PostSurvey>(
+      UPDATE_POST_SURVEY_DATA_BY_TASK_ID,
+      { accountSid, taskId, data, updatedAt: now },
+    );
+    if (updated) return updated;
+    if (!contactTaskId) return undefined;
+    return connection.one<PostSurvey>(
+      insertPostSurveySql({
+        contactTaskId,
+        taskId,
+        data,
+        updatedAt: now,
+        createdAt: now,
+        accountSid,
+      }),
+    );
+  });
 };

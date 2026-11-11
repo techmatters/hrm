@@ -14,7 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { mockConnection, mockTask } from '../mockDb';
+import { mockConnection, mockTask, mockTransaction } from '../mockDb';
 import * as pgPromise from 'pg-promise';
 import { subDays } from 'date-fns';
 import {
@@ -22,6 +22,7 @@ import {
   filterByContactTaskId,
   NewPostSurvey,
   create,
+  upsertByTaskId,
 } from '../../post-survey/postSurveyDataAccess';
 let conn: pgPromise.ITask<unknown>;
 const accountSid = 'account-sid';
@@ -95,4 +96,63 @@ test('create runs query using account and provided post survey object, and retur
     expect.stringContaining(accountSid), // Not a great assertion but jest assertions are crappy. TODO: write a custom assertion
   );
   expect(result).toStrictEqual(postSurveyFromDB);
+});
+
+describe('upsertByTaskId', () => {
+  const taskId = 'SURVEY TASK ID';
+  const data = { some: 'answers' };
+  const postSurveyFromDB: PostSurvey = {
+    id: '100',
+    contactTaskId: 'CONTACT TASK ID',
+    taskId,
+    data,
+    createdAt: baselineDate,
+    updatedAt: baselineDate,
+  };
+
+  beforeEach(() => {
+    mockTransaction(conn, undefined, accountSid);
+  });
+
+  test('replaces the data of the existing post survey and returns it, without inserting', async () => {
+    const manyOrNoneSpy = jest
+      .spyOn(conn, 'manyOrNone')
+      .mockResolvedValue([postSurveyFromDB]);
+    const oneSpy = jest.spyOn(conn, 'one');
+
+    const result = await upsertByTaskId(accountSid, { taskId, data });
+
+    expect(manyOrNoneSpy).toHaveBeenCalledWith(
+      expect.stringContaining('UPDATE "PostSurveys"'),
+      expect.objectContaining({ accountSid, taskId, data }),
+    );
+    expect(oneSpy).not.toHaveBeenCalled();
+    expect(result).toStrictEqual(postSurveyFromDB);
+  });
+
+  test('inserts a new post survey if none exists for the task', async () => {
+    jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
+    const oneSpy = jest.spyOn(conn, 'one').mockResolvedValue(postSurveyFromDB);
+
+    const result = await upsertByTaskId(accountSid, {
+      taskId,
+      contactTaskId: 'CONTACT TASK ID',
+      data,
+    });
+
+    expect(oneSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/insert into "PostSurveys"/i),
+    );
+    expect(result).toStrictEqual(postSurveyFromDB);
+  });
+
+  test("returns undefined without inserting if none exists and there's no contactTaskId", async () => {
+    jest.spyOn(conn, 'manyOrNone').mockResolvedValue([]);
+    const oneSpy = jest.spyOn(conn, 'one');
+
+    const result = await upsertByTaskId(accountSid, { taskId, data });
+
+    expect(oneSpy).not.toHaveBeenCalled();
+    expect(result).toBeUndefined();
+  });
 });

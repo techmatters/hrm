@@ -17,7 +17,8 @@
 import * as entityChangeNotify from '../../notifications/entityChangeNotify';
 import * as contactDataAccess from '../../contact/contactDataAccess';
 import * as postSurveyDataAccess from '../../post-survey/postSurveyDataAccess';
-import { createPostSurvey } from '../../post-survey/postSurveyService';
+import { createPostSurvey, upsertPostSurvey } from '../../post-survey/postSurveyService';
+import { isErr } from '@tech-matters/types';
 import { NewPostSurvey, PostSurvey } from '../../post-survey/postSurveyDataAccess';
 
 jest.mock('../../contact/contactDataAccess');
@@ -87,6 +88,47 @@ describe('createPostSurvey', () => {
     const result = await createPostSurvey(accountSid, newPostSurvey);
 
     expect(result).toStrictEqual(createdPostSurvey);
+    expect(publishContactChangeNotificationSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('upsertPostSurvey', () => {
+  const upsertByTaskIdMock = postSurveyDataAccess.upsertByTaskId as jest.Mock;
+
+  test('returns the saved survey and publishes an update for its contact', async () => {
+    upsertByTaskIdMock.mockResolvedValue(createdPostSurvey);
+    getByTaskSidMock.mockResolvedValue({
+      id: 123,
+      accountSid,
+      taskId: newPostSurvey.contactTaskId,
+      postSurveys: [createdPostSurvey],
+    } as any);
+    const { taskId, data } = newPostSurvey;
+
+    const result = await upsertPostSurvey(accountSid, { taskId, data });
+
+    expect(isErr(result)).toBe(false);
+    expect(result.unwrap()).toStrictEqual(createdPostSurvey);
+    expect(upsertByTaskIdMock).toHaveBeenCalledWith(accountSid, { taskId, data });
+    // Uses the saved record's contactTaskId, since the request may not include it
+    expect(getByTaskSidMock).toHaveBeenCalledWith(
+      accountSid,
+      newPostSurvey.contactTaskId,
+    );
+    expect(publishContactChangeNotificationSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ accountSid, operation: 'update' }),
+    );
+  });
+
+  test("returns an InvalidParameterError and publishes nothing if the survey couldn't be saved", async () => {
+    upsertByTaskIdMock.mockResolvedValue(undefined);
+
+    const result = await upsertPostSurvey(accountSid, {
+      taskId: newPostSurvey.taskId,
+      data: newPostSurvey.data,
+    });
+
+    expect(isErr(result) && result.error).toBe('InvalidParameterError');
     expect(publishContactChangeNotificationSpy).not.toHaveBeenCalled();
   });
 });

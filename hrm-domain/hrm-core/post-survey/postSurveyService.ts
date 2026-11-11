@@ -19,8 +19,16 @@ import {
   filterByContactTaskId,
   NewPostSurvey,
   PostSurvey,
+  PostSurveyUpsert,
+  upsertByTaskId,
 } from './postSurveyDataAccess';
-import { HrmAccountId } from '@tech-matters/types';
+import {
+  ErrorResult,
+  HrmAccountId,
+  newErr,
+  newOkFromData,
+  Result,
+} from '@tech-matters/types';
 import { getByTaskSid } from '../contact/contactDataAccess';
 import { contactRecordToContact } from '../contact/contactService';
 import { publishContactChangeNotification } from '../notifications/entityChangeNotify';
@@ -55,6 +63,21 @@ export const createPostSurvey = async (
   const created = await create(accountSid, postSurvey);
   await notifyContactOfPostSurvey(accountSid, postSurvey);
   return created;
+};
+
+export const upsertPostSurvey = async (
+  accountSid: HrmAccountId,
+  postSurvey: PostSurveyUpsert,
+): Promise<Result<ErrorResult<'InvalidParameterError'>, PostSurvey>> => {
+  const saved = await upsertByTaskId(accountSid, postSurvey);
+  if (!saved) {
+    return newErr({
+      error: 'InvalidParameterError',
+      message: `contactTaskId is required to create post survey for task ${postSurvey.taskId}`,
+    });
+  }
+  await notifyContactOfPostSurvey(accountSid, saved);
+  return newOkFromData(saved);
 };
 
 export const getPostSurveysByContactTaskId = async (
