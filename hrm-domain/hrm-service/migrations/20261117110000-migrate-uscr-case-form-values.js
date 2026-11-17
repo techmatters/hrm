@@ -15,174 +15,539 @@
  */
 'use strict';
 
-const scalarMappings = {
-  caseReport: {
-    primaryDisposition: {
-      'Gone on Arrival': 'Gone On Arrival',
-      'Engaged - Assisted': 'Engaged: Assisted',
-      'Engaged - Unable to assist': 'Engaged: Unable to Assist',
-      'Engaged - Return to 911 - Reported issue unresolved':
-        'Returned to 911: Reported Issue Unresolved',
-      'Engaged - [LAPD] Emergency Services Requested':
-        'Emergency Services Requested: LAPD',
-      'Engaged - [LAFD/EMS] Emergency Services Requested':
-        'Emergency Services Requested: LAFD/EMS',
-      'Engaged - [DMH] Emergency Services Requested': 'Emergency Services Requested: DMH',
-      'Returned to 911 - Out of Scope': 'Returned to 911: Out of Scope',
-      'Returned to 911 - Out of Area': 'Returned to 911: Out of Area',
-    },
-  },
-};
-
-const multiselectMappings = {
-  caseReport: {
-    tangibleResourcesProvided: {
-      'Transportation: CIRCLE Team Transport': 'Transportation: CIRCLE Team Transport ',
-    },
-    informationProvided: {
-      'Employment or Education Services': 'Employment or Education Resources',
-    },
-    referralProvided: {
-      'Mental Health Provider: DMH Portal': 'Mental Health Provider: DMH',
-    },
-    serviceObtained: {
-      'Employment/Education Enrollment Established': 'Established Employment',
-      'Established Benefits : CalFresh': 'Benefits Established: CalFresh',
-      'Established Benefits : CalWorks': 'Benefits Established: General Relief',
-      'Established Benefits : GR': 'Benefits Established: MediCal',
-      'Established Benefits : MediCal':
-        'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)',
-      'Mental Health Care ': 'Behavioral Health: Established mental health provider',
-      'SUD Treatment : Collaborative': 'SUD Treatment: Collaborative',
-      'SUD Treatment : Other': 'SUD Treatment: Other',
-      'Veterans Services/Benefits': 'Benefits Established: Veterans Services/Benefits',
-    },
-    issueReport: {
-      'Deceased person discovered /Death witnessed':
-        'Deceased person discovered / Death witnessed',
-      'Intervention request made to Child Protective Services.':
-        'Intervention request made to Child Protective Services',
-      'The filing of a police report;': 'The filing of a police report',
-    },
-  },
-  sudSurvey: {
-    substancesUsed: {
-      'Cannabis (marijuana, pot, grass, hash, etc.)':
-        'Cannabis (marijuana, pot, grass, hash, etc.) ',
-      'Cocaine (coke, crack, etc.)': 'Cocaine (coke, crack, etc.) ',
-      'Inhalants (nitrous, glue, petrol, paint thinner, etc.)':
-        'Inhalants (nitrous, glue, petrol, paint thinner, etc.) ',
-      'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)':
-        'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) ',
-      'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)':
-        'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) ',
-    },
-  },
-};
-
-const quoteSql = value => `'${value.replace(/'/g, "''")}'`;
-const reverseSectionMappings = mappings =>
-  Object.fromEntries(
-    Object.entries(mappings).map(([sectionType, sectionMappings]) => [
-      sectionType,
-      Object.fromEntries(
-        Object.entries(sectionMappings).map(([field, fieldMappings]) => [
-          field,
-          Object.fromEntries(
-            Object.entries(fieldMappings).map(([oldValue, newValue]) => [
-              newValue,
-              oldValue,
-            ]),
-          ),
-        ]),
-      ),
-    ]),
-  );
-
-const updateScalar = (sectionType, field, mappings) => {
-  const cases = Object.entries(mappings)
-    .map(
-      ([oldValue, newValue]) => `WHEN ${quoteSql(oldValue)} THEN ${quoteSql(newValue)}`,
-    )
-    .join('\n          ');
-  const values = Object.keys(mappings).map(quoteSql).join(', ');
-
-  return `
+const upQueries = [
+  `
     UPDATE "CaseSections"
     SET "sectionTypeSpecificData" = jsonb_set(
       "sectionTypeSpecificData",
-      '{${field}}',
-      to_jsonb(CASE "sectionTypeSpecificData"->>'${field}' ${cases} END),
+      '{primaryDisposition}',
+      to_jsonb(CASE "sectionTypeSpecificData"->>'primaryDisposition'
+        WHEN 'Gone on Arrival' THEN 'Gone On Arrival'
+        WHEN 'Engaged - Assisted' THEN 'Engaged: Assisted'
+        WHEN 'Engaged - Unable to assist' THEN 'Engaged: Unable to Assist'
+        WHEN 'Engaged - Return to 911 - Reported issue unresolved'
+          THEN 'Returned to 911: Reported Issue Unresolved'
+        WHEN 'Engaged - [LAPD] Emergency Services Requested'
+          THEN 'Emergency Services Requested: LAPD'
+        WHEN 'Engaged - [LAFD/EMS] Emergency Services Requested'
+          THEN 'Emergency Services Requested: LAFD/EMS'
+        WHEN 'Engaged - [DMH] Emergency Services Requested'
+          THEN 'Emergency Services Requested: DMH'
+        WHEN 'Returned to 911 - Out of Scope' THEN 'Returned to 911: Out of Scope'
+        WHEN 'Returned to 911 - Out of Area' THEN 'Returned to 911: Out of Area'
+      END),
       false
     )
-    WHERE "sectionType" = ${quoteSql(sectionType)}
-      AND "sectionTypeSpecificData"->>'${field}' IN (${values});
-  `;
-};
-
-const updateMultiselect = (sectionType, field, mappings) => {
-  const oldValues = Object.keys(mappings);
-  const cases = Object.entries(mappings)
-    .map(
-      ([oldValue, newValue]) => `WHEN ${quoteSql(oldValue)} THEN ${quoteSql(newValue)}`,
-    )
-    .join('\n              ');
-  const values = oldValues.map(quoteSql).join(', ');
-
-  return `
+    WHERE "sectionType" = 'caseReport'
+      AND "sectionTypeSpecificData"->>'primaryDisposition' IN (
+        'Gone on Arrival',
+        'Engaged - Assisted',
+        'Engaged - Unable to assist',
+        'Engaged - Return to 911 - Reported issue unresolved',
+        'Engaged - [LAPD] Emergency Services Requested',
+        'Engaged - [LAFD/EMS] Emergency Services Requested',
+        'Engaged - [DMH] Emergency Services Requested',
+        'Returned to 911 - Out of Scope',
+        'Returned to 911 - Out of Area'
+      );
+  `,
+  `
     UPDATE "CaseSections" cs
     SET "sectionTypeSpecificData" = jsonb_set(
       cs."sectionTypeSpecificData",
-      '{${field}}',
+      '{tangibleResourcesProvided}',
       (
         SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
         FROM (
-          SELECT DISTINCT ON (mapped_value) mapped_value AS value, ordinality
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
           FROM (
-            SELECT CASE value ${cases} ELSE value END AS mapped_value, ordinality
-            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'${field}')
+            SELECT CASE value
+              WHEN 'Transportation: CIRCLE Team Transport'
+                THEN 'Transportation: CIRCLE Team Transport '
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'tangibleResourcesProvided')
               WITH ORDINALITY AS entry(value, ordinality)
           ) AS remapped
-          ORDER BY mapped_value, ordinality
+          ORDER BY new_value, ordinality
         ) AS mapped
       ),
       false
     )
-    WHERE cs."sectionType" = ${quoteSql(sectionType)}
-      AND jsonb_typeof(cs."sectionTypeSpecificData"->'${field}') = 'array'
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') = 'array'
       AND EXISTS (
         SELECT 1
-        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'${field}') AS value
-        WHERE value IN (${values})
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') AS entry(value)
+        WHERE value = 'Transportation: CIRCLE Team Transport'
       );
-  `;
-};
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{informationProvided}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Employment or Education Services' THEN 'Employment or Education Resources'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'informationProvided')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'informationProvided') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'informationProvided') AS entry(value)
+        WHERE value = 'Employment or Education Services'
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{referralProvided}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Mental Health Provider: DMH Portal' THEN 'Mental Health Provider: DMH'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'referralProvided')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'referralProvided') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'referralProvided') AS entry(value)
+        WHERE value = 'Mental Health Provider: DMH Portal'
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{serviceObtained}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Employment/Education Enrollment Established' THEN 'Established Employment'
+              WHEN 'Established Benefits : CalFresh' THEN 'Benefits Established: CalFresh'
+              WHEN 'Established Benefits : CalWorks' THEN 'Benefits Established: General Relief'
+              WHEN 'Established Benefits : GR' THEN 'Benefits Established: MediCal'
+              WHEN 'Established Benefits : MediCal'
+                THEN 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'
+              WHEN 'Mental Health Care '
+                THEN 'Behavioral Health: Established mental health provider'
+              WHEN 'SUD Treatment : Collaborative' THEN 'SUD Treatment: Collaborative'
+              WHEN 'SUD Treatment : Other' THEN 'SUD Treatment: Other'
+              WHEN 'Veterans Services/Benefits'
+                THEN 'Benefits Established: Veterans Services/Benefits'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'serviceObtained')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'serviceObtained') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'serviceObtained') AS entry(value)
+        WHERE value IN (
+          'Employment/Education Enrollment Established',
+          'Established Benefits : CalFresh',
+          'Established Benefits : CalWorks',
+          'Established Benefits : GR',
+          'Established Benefits : MediCal',
+          'Mental Health Care ',
+          'SUD Treatment : Collaborative',
+          'SUD Treatment : Other',
+          'Veterans Services/Benefits'
+        )
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{issueReport}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Deceased person discovered /Death witnessed'
+                THEN 'Deceased person discovered / Death witnessed'
+              WHEN 'Intervention request made to Child Protective Services.'
+                THEN 'Intervention request made to Child Protective Services'
+              WHEN 'The filing of a police report;' THEN 'The filing of a police report'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'issueReport')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'issueReport') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'issueReport') AS entry(value)
+        WHERE value IN (
+          'Deceased person discovered /Death witnessed',
+          'Intervention request made to Child Protective Services.',
+          'The filing of a police report;'
+        )
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{substancesUsed}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Cannabis (marijuana, pot, grass, hash, etc.)'
+                THEN 'Cannabis (marijuana, pot, grass, hash, etc.) '
+              WHEN 'Cocaine (coke, crack, etc.)' THEN 'Cocaine (coke, crack, etc.) '
+              WHEN 'Inhalants (nitrous, glue, petrol, paint thinner, etc.)'
+                THEN 'Inhalants (nitrous, glue, petrol, paint thinner, etc.) '
+              WHEN 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)'
+                THEN 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) '
+              WHEN 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)'
+                THEN 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) '
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'substancesUsed')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'sudSurvey'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'substancesUsed') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'substancesUsed') AS entry(value)
+        WHERE value IN (
+          'Cannabis (marijuana, pot, grass, hash, etc.)',
+          'Cocaine (coke, crack, etc.)',
+          'Inhalants (nitrous, glue, petrol, paint thinner, etc.)',
+          'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)',
+          'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)'
+        )
+      );
+  `,
+];
 
-const migrateValues = async (queryInterface, sectionMappings, update) => {
-  for (const [sectionType, fieldMappings] of Object.entries(sectionMappings)) {
-    for (const [field, mappings] of Object.entries(fieldMappings)) {
-      // Keep each field update separate so failed/partial runs can be safely repeated.
-      // eslint-disable-next-line no-await-in-loop
-      await queryInterface.sequelize.query(update(sectionType, field, mappings));
-    }
+const downQueries = [
+  `
+    UPDATE "CaseSections"
+    SET "sectionTypeSpecificData" = jsonb_set(
+      "sectionTypeSpecificData",
+      '{primaryDisposition}',
+      to_jsonb(CASE "sectionTypeSpecificData"->>'primaryDisposition'
+        WHEN 'Gone On Arrival' THEN 'Gone on Arrival'
+        WHEN 'Engaged: Assisted' THEN 'Engaged - Assisted'
+        WHEN 'Engaged: Unable to Assist' THEN 'Engaged - Unable to assist'
+        WHEN 'Returned to 911: Reported Issue Unresolved'
+          THEN 'Engaged - Return to 911 - Reported issue unresolved'
+        WHEN 'Emergency Services Requested: LAPD'
+          THEN 'Engaged - [LAPD] Emergency Services Requested'
+        WHEN 'Emergency Services Requested: LAFD/EMS'
+          THEN 'Engaged - [LAFD/EMS] Emergency Services Requested'
+        WHEN 'Emergency Services Requested: DMH'
+          THEN 'Engaged - [DMH] Emergency Services Requested'
+        WHEN 'Returned to 911: Out of Scope' THEN 'Returned to 911 - Out of Scope'
+        WHEN 'Returned to 911: Out of Area' THEN 'Returned to 911 - Out of Area'
+      END),
+      false
+    )
+    WHERE "sectionType" = 'caseReport'
+      AND "sectionTypeSpecificData"->>'primaryDisposition' IN (
+        'Gone On Arrival',
+        'Engaged: Assisted',
+        'Engaged: Unable to Assist',
+        'Returned to 911: Reported Issue Unresolved',
+        'Emergency Services Requested: LAPD',
+        'Emergency Services Requested: LAFD/EMS',
+        'Emergency Services Requested: DMH',
+        'Returned to 911: Out of Scope',
+        'Returned to 911: Out of Area'
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{tangibleResourcesProvided}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Transportation: CIRCLE Team Transport '
+                THEN 'Transportation: CIRCLE Team Transport'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'tangibleResourcesProvided')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') AS entry(value)
+        WHERE value = 'Transportation: CIRCLE Team Transport '
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{informationProvided}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Employment or Education Resources' THEN 'Employment or Education Services'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'informationProvided')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'informationProvided') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'informationProvided') AS entry(value)
+        WHERE value = 'Employment or Education Resources'
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{referralProvided}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Mental Health Provider: DMH' THEN 'Mental Health Provider: DMH Portal'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'referralProvided')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'referralProvided') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'referralProvided') AS entry(value)
+        WHERE value = 'Mental Health Provider: DMH'
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{serviceObtained}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Established Employment' THEN 'Employment/Education Enrollment Established'
+              WHEN 'Benefits Established: CalFresh' THEN 'Established Benefits : CalFresh'
+              WHEN 'Benefits Established: General Relief' THEN 'Established Benefits : CalWorks'
+              WHEN 'Benefits Established: MediCal' THEN 'Established Benefits : GR'
+              WHEN 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'
+                THEN 'Established Benefits : MediCal'
+              WHEN 'Behavioral Health: Established mental health provider'
+                THEN 'Mental Health Care '
+              WHEN 'SUD Treatment: Collaborative' THEN 'SUD Treatment : Collaborative'
+              WHEN 'SUD Treatment: Other' THEN 'SUD Treatment : Other'
+              WHEN 'Benefits Established: Veterans Services/Benefits'
+                THEN 'Veterans Services/Benefits'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'serviceObtained')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'serviceObtained') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'serviceObtained') AS entry(value)
+        WHERE value IN (
+          'Established Employment',
+          'Benefits Established: CalFresh',
+          'Benefits Established: General Relief',
+          'Benefits Established: MediCal',
+          'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)',
+          'Behavioral Health: Established mental health provider',
+          'SUD Treatment: Collaborative',
+          'SUD Treatment: Other',
+          'Benefits Established: Veterans Services/Benefits'
+        )
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{issueReport}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Deceased person discovered / Death witnessed'
+                THEN 'Deceased person discovered /Death witnessed'
+              WHEN 'Intervention request made to Child Protective Services'
+                THEN 'Intervention request made to Child Protective Services.'
+              WHEN 'The filing of a police report' THEN 'The filing of a police report;'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'issueReport')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'caseReport'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'issueReport') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'issueReport') AS entry(value)
+        WHERE value IN (
+          'Deceased person discovered / Death witnessed',
+          'Intervention request made to Child Protective Services',
+          'The filing of a police report'
+        )
+      );
+  `,
+  `
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
+      '{substancesUsed}',
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (new_value) new_value AS value, ordinality
+          FROM (
+            SELECT CASE value
+              WHEN 'Cannabis (marijuana, pot, grass, hash, etc.) '
+                THEN 'Cannabis (marijuana, pot, grass, hash, etc.)'
+              WHEN 'Cocaine (coke, crack, etc.) ' THEN 'Cocaine (coke, crack, etc.)'
+              WHEN 'Inhalants (nitrous, glue, petrol, paint thinner, etc.) '
+                THEN 'Inhalants (nitrous, glue, petrol, paint thinner, etc.)'
+              WHEN 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) '
+                THEN 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)'
+              WHEN 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) '
+                THEN 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)'
+              ELSE value
+            END AS new_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'substancesUsed')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY new_value, ordinality
+        ) AS mapped
+      ),
+      false
+    )
+    WHERE cs."sectionType" = 'sudSurvey'
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'substancesUsed') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'substancesUsed') AS entry(value)
+        WHERE value IN (
+          'Cannabis (marijuana, pot, grass, hash, etc.) ',
+          'Cocaine (coke, crack, etc.) ',
+          'Inhalants (nitrous, glue, petrol, paint thinner, etc.) ',
+          'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) ',
+          'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) '
+        )
+      );
+  `,
+];
+
+const runQueries = async (queryInterface, queries) => {
+  for (const query of queries) {
+    // Keep each field update separate so failed/partial runs can be safely repeated.
+    // eslint-disable-next-line no-await-in-loop
+    await queryInterface.sequelize.query(query);
   }
 };
 
 module.exports = {
-  up: async queryInterface => {
-    await migrateValues(queryInterface, scalarMappings, updateScalar);
-    await migrateValues(queryInterface, multiselectMappings, updateMultiselect);
-  },
-  down: async queryInterface => {
-    await migrateValues(
-      queryInterface,
-      reverseSectionMappings(scalarMappings),
-      updateScalar,
-    );
-    await migrateValues(
-      queryInterface,
-      reverseSectionMappings(multiselectMappings),
-      updateMultiselect,
-    );
-  },
+  up: queryInterface => runQueries(queryInterface, upQueries),
+  down: queryInterface => runQueries(queryInterface, downQueries),
 };

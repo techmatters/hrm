@@ -51,7 +51,11 @@ WHERE "sectionType" = 'caseReport'
   );
 
 SELECT cs."caseId", cs."sectionId", cs."sectionType", 'tangibleResourcesProvided' AS field,
-       element.value AS "oldValue", 'Transportation: CIRCLE Team Transport ' AS "newValue"
+       element.value AS "oldValue",
+       CASE element.value
+         WHEN 'Transportation: CIRCLE Team Transport'
+           THEN 'Transportation: CIRCLE Team Transport '
+       END AS "newValue"
 FROM "CaseSections" cs
 CROSS JOIN LATERAL jsonb_array_elements_text(
   CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') = 'array'
@@ -61,7 +65,10 @@ WHERE cs."sectionType" = 'caseReport'
   AND element.value = 'Transportation: CIRCLE Team Transport';
 
 SELECT cs."caseId", cs."sectionId", cs."sectionType", 'informationProvided' AS field,
-       element.value AS "oldValue", 'Employment or Education Resources' AS "newValue"
+       element.value AS "oldValue",
+       CASE element.value
+         WHEN 'Employment or Education Services' THEN 'Employment or Education Resources'
+       END AS "newValue"
 FROM "CaseSections" cs
 CROSS JOIN LATERAL jsonb_array_elements_text(
   CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'informationProvided') = 'array'
@@ -71,7 +78,10 @@ WHERE cs."sectionType" = 'caseReport'
   AND element.value = 'Employment or Education Services';
 
 SELECT cs."caseId", cs."sectionId", cs."sectionType", 'referralProvided' AS field,
-       element.value AS "oldValue", 'Mental Health Provider: DMH' AS "newValue"
+       element.value AS "oldValue",
+       CASE element.value
+         WHEN 'Mental Health Provider: DMH Portal' THEN 'Mental Health Provider: DMH'
+       END AS "newValue"
 FROM "CaseSections" cs
 CROSS JOIN LATERAL jsonb_array_elements_text(
   CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'referralProvided') = 'array'
@@ -81,51 +91,76 @@ WHERE cs."sectionType" = 'caseReport'
   AND element.value = 'Mental Health Provider: DMH Portal';
 
 SELECT cs."caseId", cs."sectionId", cs."sectionType", 'serviceObtained' AS field,
-       element.value AS "oldValue", mapping.new_value AS "newValue"
+       element.value AS "oldValue",
+       CASE element.value
+         WHEN 'Employment/Education Enrollment Established' THEN 'Established Employment'
+         WHEN 'Established Benefits : CalFresh' THEN 'Benefits Established: CalFresh'
+         WHEN 'Established Benefits : CalWorks' THEN 'Benefits Established: General Relief'
+         WHEN 'Established Benefits : GR' THEN 'Benefits Established: MediCal'
+         WHEN 'Established Benefits : MediCal' THEN 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'
+         WHEN 'Mental Health Care ' THEN 'Behavioral Health: Established mental health provider'
+         WHEN 'SUD Treatment : Collaborative' THEN 'SUD Treatment: Collaborative'
+         WHEN 'SUD Treatment : Other' THEN 'SUD Treatment: Other'
+         WHEN 'Veterans Services/Benefits' THEN 'Benefits Established: Veterans Services/Benefits'
+       END AS "newValue"
 FROM "CaseSections" cs
 CROSS JOIN LATERAL jsonb_array_elements_text(
   CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'serviceObtained') = 'array'
     THEN cs."sectionTypeSpecificData"->'serviceObtained' ELSE '[]'::jsonb END
 ) AS element(value)
-JOIN (VALUES
-  ('Employment/Education Enrollment Established', 'Established Employment'),
-  ('Established Benefits : CalFresh', 'Benefits Established: CalFresh'),
-  ('Established Benefits : CalWorks', 'Benefits Established: General Relief'),
-  ('Established Benefits : GR', 'Benefits Established: MediCal'),
-  ('Established Benefits : MediCal', 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'),
-  ('Mental Health Care ', 'Behavioral Health: Established mental health provider'),
-  ('SUD Treatment : Collaborative', 'SUD Treatment: Collaborative'),
-  ('SUD Treatment : Other', 'SUD Treatment: Other'),
-  ('Veterans Services/Benefits', 'Benefits Established: Veterans Services/Benefits')
-) AS mapping(old_value, new_value) ON element.value = mapping.old_value
-WHERE cs."sectionType" = 'caseReport';
+WHERE cs."sectionType" = 'caseReport'
+  AND element.value IN (
+    'Employment/Education Enrollment Established',
+    'Established Benefits : CalFresh',
+    'Established Benefits : CalWorks',
+    'Established Benefits : GR',
+    'Established Benefits : MediCal',
+    'Mental Health Care ',
+    'SUD Treatment : Collaborative',
+    'SUD Treatment : Other',
+    'Veterans Services/Benefits'
+  );
 
 SELECT cs."caseId", cs."sectionId", cs."sectionType", 'issueReport' AS field,
-       element.value AS "oldValue", mapping.new_value AS "newValue"
+       element.value AS "oldValue",
+       CASE element.value
+         WHEN 'Deceased person discovered /Death witnessed'
+           THEN 'Deceased person discovered / Death witnessed'
+         WHEN 'Intervention request made to Child Protective Services.'
+           THEN 'Intervention request made to Child Protective Services'
+         WHEN 'The filing of a police report;' THEN 'The filing of a police report'
+       END AS "newValue"
 FROM "CaseSections" cs
 CROSS JOIN LATERAL jsonb_array_elements_text(
   CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'issueReport') = 'array'
     THEN cs."sectionTypeSpecificData"->'issueReport' ELSE '[]'::jsonb END
 ) AS element(value)
-JOIN (VALUES
-  ('Deceased person discovered /Death witnessed', 'Deceased person discovered / Death witnessed'),
-  ('Intervention request made to Child Protective Services.', 'Intervention request made to Child Protective Services'),
-  ('The filing of a police report;', 'The filing of a police report')
-) AS mapping(old_value, new_value) ON element.value = mapping.old_value
-WHERE cs."sectionType" = 'caseReport';
+WHERE cs."sectionType" = 'caseReport'
+  AND element.value IN (
+    'Deceased person discovered /Death witnessed',
+    'Intervention request made to Child Protective Services.',
+    'The filing of a police report;'
+  );
 
 SELECT cs."caseId", cs."sectionId", cs."sectionType", 'substancesUsed' AS field,
-       element.value AS "oldValue", mapping.new_value AS "newValue"
+       element.value AS "oldValue",
+       CASE element.value
+         WHEN 'Cannabis (marijuana, pot, grass, hash, etc.)' THEN 'Cannabis (marijuana, pot, grass, hash, etc.) '
+         WHEN 'Cocaine (coke, crack, etc.)' THEN 'Cocaine (coke, crack, etc.) '
+         WHEN 'Inhalants (nitrous, glue, petrol, paint thinner, etc.)' THEN 'Inhalants (nitrous, glue, petrol, paint thinner, etc.) '
+         WHEN 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)' THEN 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) '
+         WHEN 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)' THEN 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) '
+       END AS "newValue"
 FROM "CaseSections" cs
 CROSS JOIN LATERAL jsonb_array_elements_text(
   CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'substancesUsed') = 'array'
     THEN cs."sectionTypeSpecificData"->'substancesUsed' ELSE '[]'::jsonb END
 ) AS element(value)
-JOIN (VALUES
-  ('Cannabis (marijuana, pot, grass, hash, etc.)', 'Cannabis (marijuana, pot, grass, hash, etc.) '),
-  ('Cocaine (coke, crack, etc.)', 'Cocaine (coke, crack, etc.) '),
-  ('Inhalants (nitrous, glue, petrol, paint thinner, etc.)', 'Inhalants (nitrous, glue, petrol, paint thinner, etc.) '),
-  ('Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)', 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) '),
-  ('Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)', 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) ')
-) AS mapping(old_value, new_value) ON element.value = mapping.old_value
-WHERE cs."sectionType" = 'sudSurvey';
+WHERE cs."sectionType" = 'sudSurvey'
+  AND element.value IN (
+    'Cannabis (marijuana, pot, grass, hash, etc.)',
+    'Cocaine (coke, crack, etc.)',
+    'Inhalants (nitrous, glue, petrol, paint thinner, etc.)',
+    'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)',
+    'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)'
+  );
