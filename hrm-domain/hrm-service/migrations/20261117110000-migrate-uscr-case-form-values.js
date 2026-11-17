@@ -22,12 +22,10 @@ const scalarMappings = {
     'Engaged - Unable to assist': 'Engaged: Unable to Assist',
     'Engaged - Return to 911 - Reported issue unresolved':
       'Returned to 911: Reported Issue Unresolved',
-    'Engaged - [LAPD] Emergency Services Requested':
-      'Emergency Services Requested: LAPD',
+    'Engaged - [LAPD] Emergency Services Requested': 'Emergency Services Requested: LAPD',
     'Engaged - [LAFD/EMS] Emergency Services Requested':
       'Emergency Services Requested: LAFD/EMS',
-    'Engaged - [DMH] Emergency Services Requested':
-      'Emergency Services Requested: DMH',
+    'Engaged - [DMH] Emergency Services Requested': 'Emergency Services Requested: DMH',
     'Returned to 911 - Out of Scope': 'Returned to 911: Out of Scope',
     'Returned to 911 - Out of Area': 'Returned to 911: Out of Area',
   },
@@ -35,8 +33,7 @@ const scalarMappings = {
 
 const multiselectMappings = {
   tangibleResourcesProvided: {
-    'Transportation: CIRCLE Team Transport':
-      'Transportation: CIRCLE Team Transport ',
+    'Transportation: CIRCLE Team Transport': 'Transportation: CIRCLE Team Transport ',
   },
   informationProvided: {
     'Employment or Education Services': 'Employment or Education Resources',
@@ -82,17 +79,16 @@ const reverseFieldMappings = mappings =>
     Object.entries(mappings).map(([field, fieldMappings]) => [
       field,
       Object.fromEntries(
-        Object.entries(fieldMappings).map(([oldValue, newValue]) => [
-          newValue,
-          oldValue,
-        ]),
+        Object.entries(fieldMappings).map(([oldValue, newValue]) => [newValue, oldValue]),
       ),
     ]),
   );
 
 const updateScalar = (field, mappings) => {
   const cases = Object.entries(mappings)
-    .map(([oldValue, newValue]) => `WHEN ${quoteSql(oldValue)} THEN ${quoteSql(newValue)}`)
+    .map(
+      ([oldValue, newValue]) => `WHEN ${quoteSql(oldValue)} THEN ${quoteSql(newValue)}`,
+    )
     .join('\n          ');
   const values = Object.keys(mappings).map(quoteSql).join(', ');
 
