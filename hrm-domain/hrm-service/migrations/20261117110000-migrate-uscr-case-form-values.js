@@ -16,75 +16,90 @@
 'use strict';
 
 const scalarMappings = {
-  primaryDisposition: {
-    'Gone on Arrival': 'Gone On Arrival',
-    'Engaged - Assisted': 'Engaged: Assisted',
-    'Engaged - Unable to assist': 'Engaged: Unable to Assist',
-    'Engaged - Return to 911 - Reported issue unresolved':
-      'Returned to 911: Reported Issue Unresolved',
-    'Engaged - [LAPD] Emergency Services Requested': 'Emergency Services Requested: LAPD',
-    'Engaged - [LAFD/EMS] Emergency Services Requested':
-      'Emergency Services Requested: LAFD/EMS',
-    'Engaged - [DMH] Emergency Services Requested': 'Emergency Services Requested: DMH',
-    'Returned to 911 - Out of Scope': 'Returned to 911: Out of Scope',
-    'Returned to 911 - Out of Area': 'Returned to 911: Out of Area',
+  caseReport: {
+    primaryDisposition: {
+      'Gone on Arrival': 'Gone On Arrival',
+      'Engaged - Assisted': 'Engaged: Assisted',
+      'Engaged - Unable to assist': 'Engaged: Unable to Assist',
+      'Engaged - Return to 911 - Reported issue unresolved':
+        'Returned to 911: Reported Issue Unresolved',
+      'Engaged - [LAPD] Emergency Services Requested':
+        'Emergency Services Requested: LAPD',
+      'Engaged - [LAFD/EMS] Emergency Services Requested':
+        'Emergency Services Requested: LAFD/EMS',
+      'Engaged - [DMH] Emergency Services Requested': 'Emergency Services Requested: DMH',
+      'Returned to 911 - Out of Scope': 'Returned to 911: Out of Scope',
+      'Returned to 911 - Out of Area': 'Returned to 911: Out of Area',
+    },
   },
 };
 
 const multiselectMappings = {
-  tangibleResourcesProvided: {
-    'Transportation: CIRCLE Team Transport': 'Transportation: CIRCLE Team Transport ',
+  caseReport: {
+    tangibleResourcesProvided: {
+      'Transportation: CIRCLE Team Transport': 'Transportation: CIRCLE Team Transport ',
+    },
+    informationProvided: {
+      'Employment or Education Services': 'Employment or Education Resources',
+    },
+    referralProvided: {
+      'Mental Health Provider: DMH Portal': 'Mental Health Provider: DMH',
+    },
+    serviceObtained: {
+      'Employment/Education Enrollment Established': 'Established Employment',
+      'Established Benefits : CalFresh': 'Benefits Established: CalFresh',
+      'Established Benefits : CalWorks': 'Benefits Established: General Relief',
+      'Established Benefits : GR': 'Benefits Established: MediCal',
+      'Established Benefits : MediCal':
+        'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)',
+      'Mental Health Care ': 'Behavioral Health: Established mental health provider',
+      'SUD Treatment : Collaborative': 'SUD Treatment: Collaborative',
+      'SUD Treatment : Other': 'SUD Treatment: Other',
+      'Veterans Services/Benefits': 'Benefits Established: Veterans Services/Benefits',
+    },
+    issueReport: {
+      'Deceased person discovered /Death witnessed':
+        'Deceased person discovered / Death witnessed',
+      'Intervention request made to Child Protective Services.':
+        'Intervention request made to Child Protective Services',
+      'The filing of a police report;': 'The filing of a police report',
+    },
   },
-  informationProvided: {
-    'Employment or Education Services': 'Employment or Education Resources',
-  },
-  referralProvided: {
-    'Mental Health Provider: DMH Portal': 'Mental Health Provider: DMH',
-  },
-  serviceObtained: {
-    'Employment/Education Enrollment Established': 'Established Employment',
-    'Established Benefits : CalFresh': 'Benefits Established: CalFresh',
-    'Established Benefits : CalWorks': 'Benefits Established: General Relief',
-    'Established Benefits : GR': 'Benefits Established: MediCal',
-    'Established Benefits : MediCal':
-      'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)',
-    'Mental Health Care ': 'Behavioral Health: Established mental health provider',
-    'SUD Treatment : Collaborative': 'SUD Treatment: Collaborative',
-    'SUD Treatment : Other': 'SUD Treatment: Other',
-    'Veterans Services/Benefits': 'Benefits Established: Veterans Services/Benefits',
-  },
-  issueReport: {
-    'Deceased person discovered /Death witnessed':
-      'Deceased person discovered / Death witnessed',
-    'Intervention request made to Child Protective Services.':
-      'Intervention request made to Child Protective Services',
-    'The filing of a police report;': 'The filing of a police report',
-  },
-  substancesUsed: {
-    'Cannabis (marijuana, pot, grass, hash, etc.)':
-      'Cannabis (marijuana, pot, grass, hash, etc.) ',
-    'Cocaine (coke, crack, etc.)': 'Cocaine (coke, crack, etc.) ',
-    'Inhalants (nitrous, glue, petrol, paint thinner, etc.)':
-      'Inhalants (nitrous, glue, petrol, paint thinner, etc.) ',
-    'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)':
-      'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) ',
-    'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)':
-      'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) ',
+  sudSurvey: {
+    substancesUsed: {
+      'Cannabis (marijuana, pot, grass, hash, etc.)':
+        'Cannabis (marijuana, pot, grass, hash, etc.) ',
+      'Cocaine (coke, crack, etc.)': 'Cocaine (coke, crack, etc.) ',
+      'Inhalants (nitrous, glue, petrol, paint thinner, etc.)':
+        'Inhalants (nitrous, glue, petrol, paint thinner, etc.) ',
+      'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)':
+        'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) ',
+      'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)':
+        'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) ',
+    },
   },
 };
 
 const quoteSql = value => `'${value.replace(/'/g, "''")}'`;
-const reverseFieldMappings = mappings =>
+const reverseSectionMappings = mappings =>
   Object.fromEntries(
-    Object.entries(mappings).map(([field, fieldMappings]) => [
-      field,
+    Object.entries(mappings).map(([sectionType, sectionMappings]) => [
+      sectionType,
       Object.fromEntries(
-        Object.entries(fieldMappings).map(([oldValue, newValue]) => [newValue, oldValue]),
+        Object.entries(sectionMappings).map(([field, fieldMappings]) => [
+          field,
+          Object.fromEntries(
+            Object.entries(fieldMappings).map(([oldValue, newValue]) => [
+              newValue,
+              oldValue,
+            ]),
+          ),
+        ]),
       ),
     ]),
   );
 
-const updateScalar = (field, mappings) => {
+const updateScalar = (sectionType, field, mappings) => {
   const cases = Object.entries(mappings)
     .map(
       ([oldValue, newValue]) => `WHEN ${quoteSql(oldValue)} THEN ${quoteSql(newValue)}`,
@@ -93,49 +108,63 @@ const updateScalar = (field, mappings) => {
   const values = Object.keys(mappings).map(quoteSql).join(', ');
 
   return `
-    UPDATE "Cases"
-    SET "info" = jsonb_set(
-      "info",
+    UPDATE "CaseSections"
+    SET "sectionTypeSpecificData" = jsonb_set(
+      "sectionTypeSpecificData",
       '{${field}}',
-      to_jsonb(CASE "info"->>'${field}' ${cases} END),
+      to_jsonb(CASE "sectionTypeSpecificData"->>'${field}' ${cases} END),
       false
     )
-    WHERE "info"->>'${field}' IN (${values});
+    WHERE "sectionType" = ${quoteSql(sectionType)}
+      AND "sectionTypeSpecificData"->>'${field}' IN (${values});
   `;
 };
 
-const updateMultiselect = (field, mappings) => {
+const updateMultiselect = (sectionType, field, mappings) => {
   const oldValues = Object.keys(mappings);
-  const removeValues = oldValues.map(quoteSql).join(', ');
-  const replaceValues = Object.entries(mappings)
+  const cases = Object.entries(mappings)
     .map(
-      ([oldValue, newValue]) =>
-        `${quoteSql(newValue)}, ` +
-        `(COALESCE(("info"->'${field}'->>${quoteSql(newValue)})::boolean, false) OR ` +
-        `COALESCE(("info"->'${field}'->>${quoteSql(oldValue)})::boolean, false))`,
+      ([oldValue, newValue]) => `WHEN ${quoteSql(oldValue)} THEN ${quoteSql(newValue)}`,
     )
-    .join(',\n        ');
-  const oldValueArray = oldValues.map(quoteSql).join(', ');
+    .join('\n              ');
+  const values = oldValues.map(quoteSql).join(', ');
 
   return `
-    UPDATE "Cases"
-    SET "info" = jsonb_set(
-      "info",
+    UPDATE "CaseSections" cs
+    SET "sectionTypeSpecificData" = jsonb_set(
+      cs."sectionTypeSpecificData",
       '{${field}}',
-      (("info"->'${field}') - ARRAY[${removeValues}]::text[]) ||
-        jsonb_build_object(${replaceValues}),
+      (
+        SELECT COALESCE(jsonb_agg(to_jsonb(mapped.value) ORDER BY mapped.ordinality), '[]'::jsonb)
+        FROM (
+          SELECT DISTINCT ON (mapped_value) mapped_value AS value, ordinality
+          FROM (
+            SELECT CASE value ${cases} ELSE value END AS mapped_value, ordinality
+            FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'${field}')
+              WITH ORDINALITY AS entry(value, ordinality)
+          ) AS remapped
+          ORDER BY mapped_value, ordinality
+        ) AS mapped
+      ),
       false
     )
-    WHERE jsonb_typeof("info"->'${field}') = 'object'
-      AND ("info"->'${field}') ?| ARRAY[${oldValueArray}]::text[];
+    WHERE cs."sectionType" = ${quoteSql(sectionType)}
+      AND jsonb_typeof(cs."sectionTypeSpecificData"->'${field}') = 'array'
+      AND EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'${field}') AS value
+        WHERE value IN (${values})
+      );
   `;
 };
 
-const migrateValues = async (queryInterface, mappings, update) => {
-  for (const [field, fieldMappings] of Object.entries(mappings)) {
-    // Keep each field update separate so failed/partial runs can be safely repeated.
-    // eslint-disable-next-line no-await-in-loop
-    await queryInterface.sequelize.query(update(field, fieldMappings));
+const migrateValues = async (queryInterface, sectionMappings, update) => {
+  for (const [sectionType, fieldMappings] of Object.entries(sectionMappings)) {
+    for (const [field, mappings] of Object.entries(fieldMappings)) {
+      // Keep each field update separate so failed/partial runs can be safely repeated.
+      // eslint-disable-next-line no-await-in-loop
+      await queryInterface.sequelize.query(update(sectionType, field, mappings));
+    }
   }
 };
 
@@ -147,12 +176,12 @@ module.exports = {
   down: async queryInterface => {
     await migrateValues(
       queryInterface,
-      reverseFieldMappings(scalarMappings),
+      reverseSectionMappings(scalarMappings),
       updateScalar,
     );
     await migrateValues(
       queryInterface,
-      reverseFieldMappings(multiselectMappings),
+      reverseSectionMappings(multiselectMappings),
       updateMultiselect,
     );
   },

@@ -16,10 +16,12 @@
 -- These SELECT statements show the old and new values without modifying data.
 
 SELECT
-  id AS "caseId",
+  "caseId",
+  "sectionId",
+  'caseReport' AS "sectionType",
   'primaryDisposition' AS field,
-  "info"->>'primaryDisposition' AS "oldValue",
-  CASE "info"->>'primaryDisposition'
+  "sectionTypeSpecificData"->>'primaryDisposition' AS "oldValue",
+  CASE "sectionTypeSpecificData"->>'primaryDisposition'
     WHEN 'Gone on Arrival' THEN 'Gone On Arrival'
     WHEN 'Engaged - Assisted' THEN 'Engaged: Assisted'
     WHEN 'Engaged - Unable to assist' THEN 'Engaged: Unable to Assist'
@@ -34,56 +36,57 @@ SELECT
     WHEN 'Returned to 911 - Out of Scope' THEN 'Returned to 911: Out of Scope'
     WHEN 'Returned to 911 - Out of Area' THEN 'Returned to 911: Out of Area'
   END AS "newValue"
-FROM "Cases"
-WHERE "info"->>'primaryDisposition' IN (
-  'Gone on Arrival',
-  'Engaged - Assisted',
-  'Engaged - Unable to assist',
-  'Engaged - Return to 911 - Reported issue unresolved',
-  'Engaged - [LAPD] Emergency Services Requested',
-  'Engaged - [LAFD/EMS] Emergency Services Requested',
-  'Engaged - [DMH] Emergency Services Requested',
-  'Returned to 911 - Out of Scope',
-  'Returned to 911 - Out of Area'
-);
+FROM "CaseSections"
+WHERE "sectionType" = 'caseReport'
+  AND "sectionTypeSpecificData"->>'primaryDisposition' IN (
+    'Gone on Arrival',
+    'Engaged - Assisted',
+    'Engaged - Unable to assist',
+    'Engaged - Return to 911 - Reported issue unresolved',
+    'Engaged - [LAPD] Emergency Services Requested',
+    'Engaged - [LAFD/EMS] Emergency Services Requested',
+    'Engaged - [DMH] Emergency Services Requested',
+    'Returned to 911 - Out of Scope',
+    'Returned to 911 - Out of Area'
+  );
 
-SELECT c.id AS "caseId", 'tangibleResourcesProvided' AS field,
-       e.key AS "oldValue", 'Transportation: CIRCLE Team Transport ' AS "newValue",
-       e.value AS selected
-FROM "Cases" c
-CROSS JOIN LATERAL jsonb_each(
-  CASE WHEN jsonb_typeof(c."info"->'tangibleResourcesProvided') = 'object'
-    THEN c."info"->'tangibleResourcesProvided' ELSE '{}'::jsonb END
-) e
-WHERE e.key = 'Transportation: CIRCLE Team Transport';
+SELECT cs."caseId", cs."sectionId", cs."sectionType", 'tangibleResourcesProvided' AS field,
+       element.value AS "oldValue", 'Transportation: CIRCLE Team Transport ' AS "newValue"
+FROM "CaseSections" cs
+CROSS JOIN LATERAL jsonb_array_elements_text(
+  CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') = 'array'
+    THEN cs."sectionTypeSpecificData"->'tangibleResourcesProvided' ELSE '[]'::jsonb END
+) AS element(value)
+WHERE cs."sectionType" = 'caseReport'
+  AND element.value = 'Transportation: CIRCLE Team Transport';
 
-SELECT c.id AS "caseId", 'informationProvided' AS field,
-       e.key AS "oldValue", 'Employment or Education Resources' AS "newValue",
-       e.value AS selected
-FROM "Cases" c
-CROSS JOIN LATERAL jsonb_each(
-  CASE WHEN jsonb_typeof(c."info"->'informationProvided') = 'object'
-    THEN c."info"->'informationProvided' ELSE '{}'::jsonb END
-) e
-WHERE e.key = 'Employment or Education Services';
+SELECT cs."caseId", cs."sectionId", cs."sectionType", 'informationProvided' AS field,
+       element.value AS "oldValue", 'Employment or Education Resources' AS "newValue"
+FROM "CaseSections" cs
+CROSS JOIN LATERAL jsonb_array_elements_text(
+  CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'informationProvided') = 'array'
+    THEN cs."sectionTypeSpecificData"->'informationProvided' ELSE '[]'::jsonb END
+) AS element(value)
+WHERE cs."sectionType" = 'caseReport'
+  AND element.value = 'Employment or Education Services';
 
-SELECT c.id AS "caseId", 'referralProvided' AS field,
-       e.key AS "oldValue", 'Mental Health Provider: DMH' AS "newValue",
-       e.value AS selected
-FROM "Cases" c
-CROSS JOIN LATERAL jsonb_each(
-  CASE WHEN jsonb_typeof(c."info"->'referralProvided') = 'object'
-    THEN c."info"->'referralProvided' ELSE '{}'::jsonb END
-) e
-WHERE e.key = 'Mental Health Provider: DMH Portal';
+SELECT cs."caseId", cs."sectionId", cs."sectionType", 'referralProvided' AS field,
+       element.value AS "oldValue", 'Mental Health Provider: DMH' AS "newValue"
+FROM "CaseSections" cs
+CROSS JOIN LATERAL jsonb_array_elements_text(
+  CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'referralProvided') = 'array'
+    THEN cs."sectionTypeSpecificData"->'referralProvided' ELSE '[]'::jsonb END
+) AS element(value)
+WHERE cs."sectionType" = 'caseReport'
+  AND element.value = 'Mental Health Provider: DMH Portal';
 
-SELECT c.id AS "caseId", 'serviceObtained' AS field, e.key AS "oldValue",
-       m.new_value AS "newValue", e.value AS selected
-FROM "Cases" c
-CROSS JOIN LATERAL jsonb_each(
-  CASE WHEN jsonb_typeof(c."info"->'serviceObtained') = 'object'
-    THEN c."info"->'serviceObtained' ELSE '{}'::jsonb END
-) e
+SELECT cs."caseId", cs."sectionId", cs."sectionType", 'serviceObtained' AS field,
+       element.value AS "oldValue", mapping.new_value AS "newValue"
+FROM "CaseSections" cs
+CROSS JOIN LATERAL jsonb_array_elements_text(
+  CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'serviceObtained') = 'array'
+    THEN cs."sectionTypeSpecificData"->'serviceObtained' ELSE '[]'::jsonb END
+) AS element(value)
 JOIN (VALUES
   ('Employment/Education Enrollment Established', 'Established Employment'),
   ('Established Benefits : CalFresh', 'Benefits Established: CalFresh'),
@@ -94,32 +97,35 @@ JOIN (VALUES
   ('SUD Treatment : Collaborative', 'SUD Treatment: Collaborative'),
   ('SUD Treatment : Other', 'SUD Treatment: Other'),
   ('Veterans Services/Benefits', 'Benefits Established: Veterans Services/Benefits')
-) AS m(old_value, new_value) ON e.key = m.old_value;
+) AS mapping(old_value, new_value) ON element.value = mapping.old_value
+WHERE cs."sectionType" = 'caseReport';
 
-SELECT c.id AS "caseId", 'issueReport' AS field, e.key AS "oldValue",
-       m.new_value AS "newValue", e.value AS selected
-FROM "Cases" c
-CROSS JOIN LATERAL jsonb_each(
-  CASE WHEN jsonb_typeof(c."info"->'issueReport') = 'object'
-    THEN c."info"->'issueReport' ELSE '{}'::jsonb END
-) e
+SELECT cs."caseId", cs."sectionId", cs."sectionType", 'issueReport' AS field,
+       element.value AS "oldValue", mapping.new_value AS "newValue"
+FROM "CaseSections" cs
+CROSS JOIN LATERAL jsonb_array_elements_text(
+  CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'issueReport') = 'array'
+    THEN cs."sectionTypeSpecificData"->'issueReport' ELSE '[]'::jsonb END
+) AS element(value)
 JOIN (VALUES
   ('Deceased person discovered /Death witnessed', 'Deceased person discovered / Death witnessed'),
   ('Intervention request made to Child Protective Services.', 'Intervention request made to Child Protective Services'),
   ('The filing of a police report;', 'The filing of a police report')
-) AS m(old_value, new_value) ON e.key = m.old_value;
+) AS mapping(old_value, new_value) ON element.value = mapping.old_value
+WHERE cs."sectionType" = 'caseReport';
 
-SELECT c.id AS "caseId", 'substancesUsed' AS field, e.key AS "oldValue",
-       m.new_value AS "newValue", e.value AS selected
-FROM "Cases" c
-CROSS JOIN LATERAL jsonb_each(
-  CASE WHEN jsonb_typeof(c."info"->'substancesUsed') = 'object'
-    THEN c."info"->'substancesUsed' ELSE '{}'::jsonb END
-) e
+SELECT cs."caseId", cs."sectionId", cs."sectionType", 'substancesUsed' AS field,
+       element.value AS "oldValue", mapping.new_value AS "newValue"
+FROM "CaseSections" cs
+CROSS JOIN LATERAL jsonb_array_elements_text(
+  CASE WHEN jsonb_typeof(cs."sectionTypeSpecificData"->'substancesUsed') = 'array'
+    THEN cs."sectionTypeSpecificData"->'substancesUsed' ELSE '[]'::jsonb END
+) AS element(value)
 JOIN (VALUES
   ('Cannabis (marijuana, pot, grass, hash, etc.)', 'Cannabis (marijuana, pot, grass, hash, etc.) '),
   ('Cocaine (coke, crack, etc.)', 'Cocaine (coke, crack, etc.) '),
   ('Inhalants (nitrous, glue, petrol, paint thinner, etc.)', 'Inhalants (nitrous, glue, petrol, paint thinner, etc.) '),
   ('Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.)', 'Sedatives or Sleeping Pills (Valium, Serepax, Rohypnol, etc.) '),
   ('Opioids (heroin, morphine, methadone, codeine, fentanyl etc.)', 'Opioids (heroin, morphine, methadone, codeine, fentanyl etc.) ')
-) AS m(old_value, new_value) ON e.key = m.old_value;
+) AS mapping(old_value, new_value) ON element.value = mapping.old_value
+WHERE cs."sectionType" = 'sudSurvey';
