@@ -15,6 +15,8 @@
  */
 'use strict';
 
+const { getTwilioAccountSid } = require('@tech-matters/aselo-config');
+
 const upQueries = [
   `
     UPDATE "CaseSections"
@@ -39,6 +41,7 @@ const upQueries = [
       false
     )
     WHERE "sectionType" = 'caseReport'
+      AND "accountSid" = :accountSid
       AND "sectionTypeSpecificData"->>'primaryDisposition' IN (
         'Gone on Arrival',
         'Engaged - Assisted',
@@ -75,6 +78,7 @@ const upQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') = 'array'
       AND EXISTS (
         SELECT 1
@@ -105,6 +109,7 @@ const upQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'informationProvided') = 'array'
       AND EXISTS (
         SELECT 1
@@ -135,6 +140,7 @@ const upQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'referralProvided') = 'array'
       AND EXISTS (
         SELECT 1
@@ -176,6 +182,7 @@ const upQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'serviceObtained') = 'array'
       AND EXISTS (
         SELECT 1
@@ -220,6 +227,7 @@ const upQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'issueReport') = 'array'
       AND EXISTS (
         SELECT 1
@@ -262,6 +270,7 @@ const upQueries = [
       false
     )
     WHERE cs."sectionType" = 'sudSurvey'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'substancesUsed') = 'array'
       AND EXISTS (
         SELECT 1
@@ -277,6 +286,8 @@ const upQueries = [
   `,
 ];
 
+// Rollback reverts every matching value, not just values changed by up; this may undo values
+// entered with the new form after the upgrade.
 const downQueries = [
   `
     UPDATE "CaseSections"
@@ -301,6 +312,7 @@ const downQueries = [
       false
     )
     WHERE "sectionType" = 'caseReport'
+      AND "accountSid" = :accountSid
       AND "sectionTypeSpecificData"->>'primaryDisposition' IN (
         'Gone On Arrival',
         'Engaged: Assisted',
@@ -337,6 +349,7 @@ const downQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'tangibleResourcesProvided') = 'array'
       AND EXISTS (
         SELECT 1
@@ -367,6 +380,7 @@ const downQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'informationProvided') = 'array'
       AND EXISTS (
         SELECT 1
@@ -397,6 +411,7 @@ const downQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'referralProvided') = 'array'
       AND EXISTS (
         SELECT 1
@@ -438,6 +453,7 @@ const downQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'serviceObtained') = 'array'
       AND EXISTS (
         SELECT 1
@@ -482,6 +498,7 @@ const downQueries = [
       false
     )
     WHERE cs."sectionType" = 'caseReport'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'issueReport') = 'array'
       AND EXISTS (
         SELECT 1
@@ -524,6 +541,7 @@ const downQueries = [
       false
     )
     WHERE cs."sectionType" = 'sudSurvey'
+      AND cs."accountSid" = :accountSid
       AND jsonb_typeof(cs."sectionTypeSpecificData"->'substancesUsed') = 'array'
       AND EXISTS (
         SELECT 1
@@ -539,15 +557,26 @@ const downQueries = [
   `,
 ];
 
-const runQueries = async (queryInterface, queries) => {
+const runQueries = async (queryInterface, queries, accountSid) => {
   for (const query of queries) {
     // Keep each field update separate so failed/partial runs can be safely repeated.
     // eslint-disable-next-line no-await-in-loop
-    await queryInterface.sequelize.query(query);
+    await queryInterface.sequelize.query(query, { replacements: { accountSid } });
   }
 };
 
+const getUscrAccountSid = async () => {
+  if (process.env.NODE_ENV !== 'production') return undefined;
+  return getTwilioAccountSid({ shortCode: 'USCR', environment: 'production' });
+};
+
 module.exports = {
-  up: queryInterface => runQueries(queryInterface, upQueries),
-  down: queryInterface => runQueries(queryInterface, downQueries),
+  up: async queryInterface => {
+    const accountSid = await getUscrAccountSid();
+    if (accountSid) await runQueries(queryInterface, upQueries, accountSid);
+  },
+  down: async queryInterface => {
+    const accountSid = await getUscrAccountSid();
+    if (accountSid) await runQueries(queryInterface, downQueries, accountSid);
+  },
 };
