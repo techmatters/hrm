@@ -566,8 +566,9 @@ const runQueries = async (queryInterface, queries, accountSid) => {
 };
 
 const getUscrAccountSid = async () => {
-  if (process.env.NODE_ENV !== 'production') return undefined;
-  return getTwilioAccountSid({ shortCode: 'USCR', environment: 'production' });
+  const environment = process.env.NODE_ENV;
+  if (!['production', 'staging'].includes(environment)) return undefined;
+  return getTwilioAccountSid({ shortCode: 'USCR', environment });
 };
 
 module.exports = {
