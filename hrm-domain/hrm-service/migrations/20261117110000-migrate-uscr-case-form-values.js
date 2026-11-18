@@ -160,10 +160,10 @@ const upQueries = [
           FROM (
             SELECT CASE value
               WHEN 'Employment/Education Enrollment Established' THEN 'Established Employment'
-              WHEN 'Established Benefits : CalFresh' THEN 'Benefits Established: CalFresh'
-              WHEN 'Established Benefits : CalWorks' THEN 'Benefits Established: General Relief'
-              WHEN 'Established Benefits : GR' THEN 'Benefits Established: MediCal'
-              WHEN 'Established Benefits : MediCal'
+              WHEN 'Established Benefits : CalFresh ' THEN 'Benefits Established: CalFresh'
+              WHEN 'Established Benefits : CalWorks ' THEN 'Benefits Established: General Relief'
+              WHEN 'Established Benefits : GR ' THEN 'Benefits Established: MediCal'
+              WHEN 'Established Benefits : MediCal '
                 THEN 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'
               WHEN 'Mental Health Care '
                 THEN 'Behavioral Health: Established mental health provider'
@@ -189,10 +189,10 @@ const upQueries = [
         FROM jsonb_array_elements_text(cs."sectionTypeSpecificData"->'serviceObtained') AS entry(value)
         WHERE value IN (
           'Employment/Education Enrollment Established',
-          'Established Benefits : CalFresh',
-          'Established Benefits : CalWorks',
-          'Established Benefits : GR',
-          'Established Benefits : MediCal',
+          'Established Benefits : CalFresh ',
+          'Established Benefits : CalWorks ',
+          'Established Benefits : GR ',
+          'Established Benefits : MediCal ',
           'Mental Health Care ',
           'SUD Treatment : Collaborative',
           'SUD Treatment : Other',
@@ -431,11 +431,11 @@ const downQueries = [
           FROM (
             SELECT CASE value
               WHEN 'Established Employment' THEN 'Employment/Education Enrollment Established'
-              WHEN 'Benefits Established: CalFresh' THEN 'Established Benefits : CalFresh'
-              WHEN 'Benefits Established: General Relief' THEN 'Established Benefits : CalWorks'
-              WHEN 'Benefits Established: MediCal' THEN 'Established Benefits : GR'
+              WHEN 'Benefits Established: CalFresh' THEN 'Established Benefits : CalFresh '
+              WHEN 'Benefits Established: General Relief' THEN 'Established Benefits : CalWorks '
+              WHEN 'Benefits Established: MediCal' THEN 'Established Benefits : GR '
               WHEN 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'
-                THEN 'Established Benefits : MediCal'
+                THEN 'Established Benefits : MediCal '
               WHEN 'Behavioral Health: Established mental health provider'
                 THEN 'Mental Health Care '
               WHEN 'SUD Treatment: Collaborative' THEN 'SUD Treatment : Collaborative'

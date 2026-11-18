@@ -94,10 +94,10 @@ SELECT cs."caseId", cs."sectionId", cs."sectionType", 'serviceObtained' AS field
        element.value AS "oldValue",
        CASE element.value
          WHEN 'Employment/Education Enrollment Established' THEN 'Established Employment'
-         WHEN 'Established Benefits : CalFresh' THEN 'Benefits Established: CalFresh'
-         WHEN 'Established Benefits : CalWorks' THEN 'Benefits Established: General Relief'
-         WHEN 'Established Benefits : GR' THEN 'Benefits Established: MediCal'
-         WHEN 'Established Benefits : MediCal' THEN 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'
+         WHEN 'Established Benefits : CalFresh ' THEN 'Benefits Established: CalFresh'
+         WHEN 'Established Benefits : CalWorks ' THEN 'Benefits Established: General Relief'
+         WHEN 'Established Benefits : GR ' THEN 'Benefits Established: MediCal'
+         WHEN 'Established Benefits : MediCal ' THEN 'Benefits Established: Social Security Benefits (SSI/SSDI/SSA)'
          WHEN 'Mental Health Care ' THEN 'Behavioral Health: Established mental health provider'
          WHEN 'SUD Treatment : Collaborative' THEN 'SUD Treatment: Collaborative'
          WHEN 'SUD Treatment : Other' THEN 'SUD Treatment: Other'
@@ -111,10 +111,10 @@ CROSS JOIN LATERAL jsonb_array_elements_text(
 WHERE cs."sectionType" = 'caseReport'
   AND element.value IN (
     'Employment/Education Enrollment Established',
-    'Established Benefits : CalFresh',
-    'Established Benefits : CalWorks',
-    'Established Benefits : GR',
-    'Established Benefits : MediCal',
+    'Established Benefits : CalFresh ',
+    'Established Benefits : CalWorks ',
+    'Established Benefits : GR ',
+    'Established Benefits : MediCal ',
     'Mental Health Care ',
     'SUD Treatment : Collaborative',
     'SUD Treatment : Other',
