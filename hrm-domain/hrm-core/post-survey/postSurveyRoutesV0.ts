@@ -14,7 +14,8 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { isErr, mapHTTPError } from '@tech-matters/types';
 import {
   SafeRouter,
   publicEndpoint,
@@ -22,7 +23,11 @@ import {
   RequestWithPermissions,
 } from '../permissions';
 import { NewPostSurvey, PostSurvey } from './postSurveyDataAccess';
-import { createPostSurvey, getPostSurveysByContactTaskId } from './postSurveyService';
+import {
+  createPostSurvey,
+  getPostSurveysByContactTaskId,
+  upsertPostSurvey,
+} from './postSurveyService';
 
 const newPostSurveyRouter = (isPublic: boolean) => {
   const postSurveysRouter = SafeRouter();
@@ -59,6 +64,29 @@ const newPostSurveyRouter = (isPublic: boolean) => {
 
         const postSurveys = await getPostSurveysByContactTaskId(hrmAccountId, id);
         res.json(postSurveys);
+      },
+    );
+  }
+
+  // Internal only endpoints
+  if (!isPublic) {
+    postSurveysRouter.patch(
+      '/:taskId',
+      publicEndpoint,
+      async (req: Request, res: Response<PostSurvey>, next: NextFunction) => {
+        const { hrmAccountId } = req;
+        const { taskId } = req.params;
+        const { contactTaskId, data } = req.body;
+
+        const result = await upsertPostSurvey(hrmAccountId, {
+          taskId,
+          contactTaskId,
+          data,
+        });
+        if (isErr(result)) {
+          return next(mapHTTPError(result, { InvalidParameterError: 400 }));
+        }
+        res.json(result.data);
       },
     );
   }
