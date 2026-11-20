@@ -120,49 +120,73 @@ export const setCacheDurationMilliseconds = (cacheDurationMilliseconds: number) 
   ssmCache.cacheDurationMilliseconds = cacheDurationMilliseconds;
 };
 
-// If the value is falsy, we take that to means that the parameter doesn't exist in addition to just a missing name
-export const parameterExistsInCache = (name: string): boolean =>
-  !!ssmCache.values[name]?.value;
-
 export type SsmClientCredentials = SSMClientConfig['credentials'];
 
-// One client per set of custom credentials, kept apart from the shared client so they never leak to its callers
-const clientsByCredentials = new WeakMap<NonNullable<SsmClientCredentials>, SSMClient>();
+/**
+ * Returns a getter for something kept per SSM client: the shared one's if no credentials are given, otherwise the one
+ * for those credentials (the same object), created the first time they are passed and reused after that.
+ * Keeping them apart means nothing done with some credentials (e.g. an assumed role) leaks to callers using others.
+ */
+const perSsmClient = <T>(
+  getShared: () => T,
+  createForCredentials: (credentials: NonNullable<SsmClientCredentials>) => T,
+) => {
+  const byCredentials = new WeakMap<NonNullable<SsmClientCredentials>, T>();
+  return (credentials?: SsmClientCredentials): T => {
+    if (!credentials) return getShared();
+    if (!byCredentials.has(credentials)) {
+      byCredentials.set(credentials, createForCredentials(credentials));
+    }
+    return byCredentials.get(credentials)!;
+  };
+};
+
+// Values (or errors) loaded with some credentials are only returned to callers using the same ones,
+// as other credentials may not be allowed to read them, or may be allowed when these were not
+const getCachedValues = perSsmClient<SsmCache['values']>(
+  () => ssmCache.values,
+  () => ({}),
+);
+
+// If the value is falsy, we take that to means that the parameter doesn't exist in addition to just a missing name
+export const parameterExistsInCache = (
+  name: string,
+  credentials?: SsmClientCredentials,
+): boolean => !!getCachedValues(credentials)[name]?.value;
 
 /**
  * Returns the shared client, or, if credentials are given (e.g. from an assumed role), the client using them.
- * That client is created the first time those credentials (the same object) are passed, then reused.
  */
-export const getSsmClient = (credentials?: SsmClientCredentials) => {
-  if (credentials) {
-    if (!clientsByCredentials.has(credentials)) {
-      clientsByCredentials.set(
-        credentials,
-        new SSMClient({ ...getSsmConfig(), credentials }),
-      );
+export const getSsmClient = perSsmClient(
+  () => {
+    if (!ssm) {
+      ssm = new SSMClient(getSsmConfig());
     }
-    return clientsByCredentials.get(credentials)!;
-  }
+    return ssm;
+  },
+  credentials => new SSMClient({ ...getSsmConfig(), credentials }),
+);
 
-  if (!ssm) {
-    ssm = new SSMClient(getSsmConfig());
-  }
-
-  return ssm;
-};
-
-export const addToCache = (regex: RegExp | undefined, { Name, Value }: SsmParameter) => {
+export const addToCache = (
+  regex: RegExp | undefined,
+  { Name, Value }: SsmParameter,
+  credentials?: SsmClientCredentials,
+) => {
   if (!Name) return;
   if (regex && !regex.test(Name)) return;
 
-  ssmCache.values[Name] = {
+  getCachedValues(credentials)[Name] = {
     value: Value || '',
     expiryDate: new Date(Date.now() + ssmCache.cacheDurationMilliseconds),
   };
 };
 
-export const addErrorToCache = (parameterName: string, errorToCache: Error) => {
-  ssmCache.values[parameterName] = {
+export const addErrorToCache = (
+  parameterName: string,
+  errorToCache: Error,
+  credentials?: SsmClientCredentials,
+) => {
+  getCachedValues(credentials)[parameterName] = {
     value: errorToCache,
     expiryDate: new Date(Date.now() + ssmCache.errorCacheDurationMilliseconds),
   };
@@ -178,26 +202,34 @@ export const loadParameter = async (name: string, credentials?: SsmClientCredent
   try {
     const { Parameter } = await getSsmClient(credentials).send(command);
     if (Parameter?.Name) {
-      addToCache(undefined, Parameter);
+      addToCache(undefined, Parameter, credentials);
     } else {
       addErrorToCache(
         name,
         new Error(`Invalid parameter returned looking up ${name}: ${Parameter}`),
+        credentials,
       );
     }
   } catch (e) {
-    addErrorToCache(name, e as Error);
+    addErrorToCache(name, e as Error, credentials);
   }
 };
 
-// Loads currently waiting on SSM, so concurrent lookups of the same parameter share one request
-const inFlightParameterLoads: Record<string, Promise<void> | undefined> =
-  Object.create(null);
+type InFlightParameterLoads = Record<string, Promise<void> | undefined>;
+
+const sharedInFlightParameterLoads: InFlightParameterLoads = Object.create(null);
+
+// Loads currently waiting on SSM, so concurrent lookups of the same parameter with the same credentials share one request
+const getInFlightParameterLoads = perSsmClient<InFlightParameterLoads>(
+  () => sharedInFlightParameterLoads,
+  () => Object.create(null),
+);
 
 const loadParameterOnce = (
   name: string,
   credentials?: SsmClientCredentials,
 ): Promise<void> => {
+  const inFlightParameterLoads = getInFlightParameterLoads(credentials);
   const inFlightLoad = inFlightParameterLoads[name];
   if (inFlightLoad) return inFlightLoad;
 
@@ -218,17 +250,20 @@ export const getSsmParameter = async (
   if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
   // If the cache doesn't have the requested parameter or if it is expired, load it
-  if (!parameterExistsInCache(name) || hasParameterExpired(ssmCache.values[name])) {
+  if (
+    !parameterExistsInCache(name, credentials) ||
+    hasParameterExpired(getCachedValues(credentials)[name])
+  ) {
     await loadParameterOnce(name, credentials);
   }
   setCacheDurationMilliseconds(oldCacheDurationMilliseconds);
 
   // If the cache still doesn't have the requested parameter, throw an error
   // Shouldn't happen, an error should be cached here from a previous attempt if not found
-  if (!parameterExistsInCache(name)) {
+  if (!parameterExistsInCache(name, credentials)) {
     throw new SsmParameterNotFound(name);
   }
-  const value = ssmCache.values[name]?.value || '';
+  const value = getCachedValues(credentials)[name]?.value || '';
   if (value instanceof ParameterNotFound) throw new SsmParameterNotFound(name, value);
   if (value instanceof Error) throw value;
   return value;
@@ -267,8 +302,12 @@ export const putSsmParameter = async (
   }
 };
 
-export const getCachedParameters = (filterRegex: RegExp): Record<string, string> => {
-  const validCacheEntries = Object.entries(ssmCache.values).filter(
+export const getCachedParameters = (
+  filterRegex: RegExp,
+  // Defaults to the values read with the shared client's credentials
+  credentials?: SsmClientCredentials,
+): Record<string, string> => {
+  const validCacheEntries = Object.entries(getCachedValues(credentials)).filter(
     ([key, value]) =>
       filterRegex.test(key) &&
       typeof value?.value === 'string' &&
