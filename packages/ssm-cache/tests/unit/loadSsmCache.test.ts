@@ -37,6 +37,27 @@ describe('loadSsmCache', () => {
     expect(isAfter(SsmCache.ssmCache.expiryDate, initialExpire)).toBeTruthy();
   });
 
+  test('loads when only single parameter lookups have cached values', async () => {
+    SsmCache.ssmCache.values = {
+      '/test/single/param': { value: 'value', expiryDate: new Date(Date.now() + 60000) },
+    };
+    mockSSMClient.on(GetParametersByPathCommand, {}).resolves({ Parameters: [] });
+
+    await loadSsmCache({ configs: [{ path: '/test/fake/param' }] });
+
+    expect(mockSSMClient.commandCalls(GetParametersByPathCommand).length).toBe(1);
+  });
+
+  test("doesn't load again before the cache expires, even if nothing was found", async () => {
+    mockSSMClient.on(GetParametersByPathCommand, {}).resolves({ Parameters: [] });
+    const ssmCacheConfig = { configs: [{ path: '/test/fake/param' }] };
+
+    await loadSsmCache(ssmCacheConfig);
+    await loadSsmCache(ssmCacheConfig);
+
+    expect(mockSSMClient.commandCalls(GetParametersByPathCommand).length).toBe(1);
+  });
+
   test('loading after cache expire should cause call fetch new params', async () => {
     const ssmCacheConfig = {
       cacheDurationMilliseconds: -1, // set expire to the past to force update because sometimes this is do fast that milliseconds are the same.
