@@ -22,26 +22,17 @@ import env from 'dotenv';
 
 env.config();
 
+// Only path limits how many parameters are read from SSM, regex just filters what gets cached
 const ssmCacheConfigs = [
   {
-    path: `/${process.env.NODE_ENV}/${
-      process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
-    }/sqs/jobs/contact`,
-    regex: /queue-url-*/,
-  },
-  {
     path: `/${process.env.NODE_ENV}/twilio`,
-    regex: /\/.*\/static_key/,
+    regex: /\/.*\/(static_key|auth_token)$/,
   },
   {
     path: `/${process.env.NODE_ENV}/hrm/service/${
       process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION
     }/static_key`,
     regex: /\/.*/,
-  },
-  {
-    path: `/${process.env.NODE_ENV}/twilio`,
-    regex: /\/.*\/auth_token/,
   },
   {
     path: `/${process.env.NODE_ENV}/config`,
