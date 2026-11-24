@@ -18,10 +18,12 @@ import { AccountSID } from '@tech-matters/types';
 import { getClient } from '@tech-matters/twilio-client';
 import {
   getTranscriptRetentionDays,
+  getTranscriptRetentionDaysSsmPath,
   getTwilioAuthToken,
 } from '@tech-matters/hrm-aselo-config';
 import {
   getCachedParameters,
+  loadParametersByName,
   loadSsmCache,
   SsmParameterNotFound,
 } from '@tech-matters/ssm-cache';
@@ -199,19 +201,12 @@ const removeOldConversations = async (
  * @throws Error
  */
 export const cleanupConversations = async (): Promise<void> => {
+  // Only path limits how many parameters are read from SSM, regex just filters what gets cached
   await loadSsmCache({
     configs: [
       {
         path: `/${process.env.NODE_ENV}/twilio`,
-        regex: /\/.*\/account_sid/,
-      },
-      {
-        path: `/${process.env.NODE_ENV}/twilio`,
-        regex: /\/.*\/auth_token/,
-      },
-      {
-        path: `/${process.env.NODE_ENV}/hrm`,
-        regex: /\/.*\/transcript_retention_days/,
+        regex: /\/.*\/(account_sid|auth_token)$/,
       },
     ],
     cacheDurationMilliseconds: 1000 * 60 * 60, // 1 hour
@@ -220,6 +215,11 @@ export const cleanupConversations = async (): Promise<void> => {
   const accountSids: AccountSID[] = Object.values(
     getCachedParameters(/^\/[^\/]+\/twilio\/[^\/]+\/account_sid$/),
   ) as AccountSID[];
+
+  // Loaded by name, as reading the whole /<env>/hrm path would also read every other HRM parameter
+  await loadParametersByName(
+    accountSids.map(accountSid => getTranscriptRetentionDaysSsmPath({ accountSid })),
+  );
 
   console.info(`Cleaning up contact jobs for accounts:`, accountSids);
 
