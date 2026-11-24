@@ -79,6 +79,10 @@ const resourceIndexDocumentMappings: ResourceIndexDocumentMappings = {
 };
 
 const filterMappings: ResourcesSearchConfiguration['filterMappings'] = {
+  categories: {
+    type: 'term',
+    targetField: 'categoriesName',
+  },
   country: {
     type: 'term',
   },
