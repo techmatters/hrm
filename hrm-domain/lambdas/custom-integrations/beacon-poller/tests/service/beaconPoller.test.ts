@@ -301,7 +301,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  // Clear the SSM cache so loadSsmCache re-scans parameters on each test run
+  // Clear the SSM cache so parameters are read again from SSM on each test run
   ssmCache.values = {};
   ssmCache.expiryDate = undefined;
   await clearAllTables(db);
