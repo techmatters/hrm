@@ -335,7 +335,6 @@ describe('getCachedParameters', () => {
     // Reset to default
     ssmCache.values = {};
     ssmCache.cacheDurationMilliseconds = 3600000;
-    delete ssmCache.expiryDate;
   });
 
   test('Returns only parameter values that match the provided regex', async () => {

@@ -24,7 +24,6 @@ import {
   getSsmClient,
   addToCache,
   SsmClientCredentials,
-  hasCacheExpired,
   setCacheDurationMilliseconds,
 } from './ssmCache';
 
@@ -79,18 +78,48 @@ export type LoadSsmCacheParameters = {
   // We accept an array of types to allow loading parameters from multiple paths
   configs: SsmCacheConfig[];
 };
+// loadSsmCache always loads with the shared client's credentials, so they aren't part of the key
+const toConfigKey = ({ path, regex }: SsmCacheConfig) => `${path}|${regex?.source ?? ''}`;
+
+const hasConfigExpired = (config: SsmCacheConfig) => {
+  const expiryDate = ssmCache.byPathExpiryDates[toConfigKey(config)];
+  return !expiryDate || new Date() > expiryDate;
+};
+
+// Loads currently waiting on SSM, so concurrent calls for the same config share one load
+const inFlightConfigLoads: Record<string, Promise<void> | undefined> =
+  Object.create(null);
+
+const loadConfigOnce = (config: SsmCacheConfig, expiryDate: Date): Promise<void> => {
+  const key = toConfigKey(config);
+  const inFlightLoad = inFlightConfigLoads[key];
+  if (inFlightLoad) return inFlightLoad;
+
+  const load = loadParametersByPath(config)
+    .then(() => {
+      // Only set once loaded, so a failed or partial load is retried on the next call
+      ssmCache.byPathExpiryDates[key] = expiryDate;
+    })
+    .finally(() => {
+      delete inFlightConfigLoads[key];
+    });
+  inFlightConfigLoads[key] = load;
+  return load;
+};
+
 /**
- * Loads the parameters under each config's path, as loadParametersByPath does, unless they were loaded and haven't expired.
+ * Loads the parameters under each config's path, as loadParametersByPath does.
+ * Each config is loaded unless it was loaded successfully before and hasn't expired, regardless of what else is in the cache.
  */
 export const loadSsmCache = async ({
   cacheDurationMilliseconds,
   configs,
 }: LoadSsmCacheParameters) => {
-  if (!hasCacheExpired()) return;
+  const expiredConfigs = configs.filter(hasConfigExpired);
+  if (!expiredConfigs.length) return;
   if (cacheDurationMilliseconds) setCacheDurationMilliseconds(cacheDurationMilliseconds);
 
-  ssmCache.expiryDate = new Date(Date.now() + ssmCache.cacheDurationMilliseconds);
-
-  const promises = configs.map(async config => loadParametersByPath(config));
-  await Promise.all(promises);
+  // Worked out before loading, so a config never outlives the parameters it cached
+  const expiryDate = new Date(Date.now() + ssmCache.cacheDurationMilliseconds);
+  await Promise.all(expiredConfigs.map(config => loadConfigOnce(config, expiryDate)));
 };

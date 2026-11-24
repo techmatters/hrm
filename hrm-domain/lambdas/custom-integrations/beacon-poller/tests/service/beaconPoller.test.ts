@@ -303,7 +303,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   // Clear the SSM cache so parameters are read again from SSM on each test run
   ssmCache.values = {};
-  ssmCache.expiryDate = undefined;
+  ssmCache.byPathExpiryDates = {};
   await clearAllTables(db);
   await putSsmParameter(
     LAST_INCIDENT_REPORT_SEEN_PARAMETER_NAME,
