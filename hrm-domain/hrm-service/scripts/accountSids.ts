@@ -15,7 +15,7 @@
  */
 
 import type { HrmAccountId } from '@tech-matters/types';
-import { getCachedParameters, loadPaginated } from '@tech-matters/ssm-cache';
+import { getCachedParameters, loadParametersByPath } from '@tech-matters/ssm-cache';
 import type { AwsCredentials, CredentialsProvider } from './adminRoles';
 
 // The SSM cache keeps the values loaded with some credentials apart from those loaded with others,
@@ -35,7 +35,7 @@ const loadPathOnce = (path: string, regex: RegExp, credentials: AwsCredentials) 
   }
   const loadedPaths = loadedPathsByCredentials.get(credentials)!;
   if (!loadedPaths.has(path)) {
-    loadedPaths.set(path, loadPaginated({ path, regex, credentials }));
+    loadedPaths.set(path, loadParametersByPath({ path, regex, credentials }));
   }
   return loadedPaths.get(path)!;
 };

@@ -13,23 +13,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { addToCache, loadPaginated } from '@tech-matters/ssm-cache';
+import { addToCache, loadParametersByPath } from '@tech-matters/ssm-cache';
 import { getAccountSidsByShortCode } from './accountSids';
 import type { AwsCredentials } from './adminRoles';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   ...jest.requireActual<object>('@tech-matters/ssm-cache'),
-  loadPaginated: jest.fn(),
+  loadParametersByPath: jest.fn(),
 }));
 
-const mockLoadPaginated = loadPaginated as jest.MockedFunction<typeof loadPaginated>;
+const mockLoadParametersByPath = loadParametersByPath as jest.MockedFunction<
+  typeof loadParametersByPath
+>;
 
 const ACCOUNT_SID = 'AC00000000000000000000000000000000';
 
 // Stands in for the SSM path request, caching one account sid for the credentials it was given
 const loadAccountSid =
   (environment: string) =>
-  async ({ regex, credentials }: Parameters<typeof loadPaginated>[0]) =>
+  async ({ regex, credentials }: Parameters<typeof loadParametersByPath>[0]) =>
     addToCache(
       regex,
       { Name: `/${environment}/twilio/AS/account_sid`, Value: ACCOUNT_SID },
@@ -44,11 +46,11 @@ const newCredentials = (): AwsCredentials => ({
 
 describe('getAccountSidsByShortCode', () => {
   beforeEach(() => {
-    mockLoadPaginated.mockReset();
+    mockLoadParametersByPath.mockReset();
   });
 
   test('provider returning new credentials on each call - reads the values loaded with the credentials it resolved', async () => {
-    mockLoadPaginated.mockImplementation(loadAccountSid('new-each-call'));
+    mockLoadParametersByPath.mockImplementation(loadAccountSid('new-each-call'));
 
     await expect(
       getAccountSidsByShortCode('new-each-call', async () => newCredentials()),
@@ -56,7 +58,7 @@ describe('getAccountSidsByShortCode', () => {
   });
 
   test('path already loaded with other credentials - loads it again for these', async () => {
-    mockLoadPaginated.mockImplementation(loadAccountSid('other-credentials'));
+    mockLoadParametersByPath.mockImplementation(loadAccountSid('other-credentials'));
     const firstCredentials = newCredentials();
     const secondCredentials = newCredentials();
 
@@ -64,17 +66,17 @@ describe('getAccountSidsByShortCode', () => {
     await expect(
       getAccountSidsByShortCode('other-credentials', async () => secondCredentials),
     ).resolves.toStrictEqual({ AS: ACCOUNT_SID });
-    expect(mockLoadPaginated).toHaveBeenCalledTimes(2);
+    expect(mockLoadParametersByPath).toHaveBeenCalledTimes(2);
   });
 
   test('path already loaded with the same credentials - not loaded again', async () => {
-    mockLoadPaginated.mockImplementation(loadAccountSid('same-credentials'));
+    mockLoadParametersByPath.mockImplementation(loadAccountSid('same-credentials'));
     const credentials = newCredentials();
 
     await getAccountSidsByShortCode('same-credentials', async () => credentials);
     await expect(
       getAccountSidsByShortCode('same-credentials', async () => credentials),
     ).resolves.toStrictEqual({ AS: ACCOUNT_SID });
-    expect(mockLoadPaginated).toHaveBeenCalledTimes(1);
+    expect(mockLoadParametersByPath).toHaveBeenCalledTimes(1);
   });
 });

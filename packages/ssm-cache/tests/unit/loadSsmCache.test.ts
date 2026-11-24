@@ -15,7 +15,7 @@
  */
 import isAfter from 'date-fns/isAfter';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { loadPaginated, loadSsmCache } from '../../src/loadSsmCache';
+import { loadParametersByPath, loadSsmCache } from '../../src/loadSsmCache';
 import * as SsmCache from '../../src/ssmCache';
 import { mockClient } from 'aws-sdk-client-mock';
 
@@ -86,7 +86,7 @@ describe('loadSsmCache', () => {
   });
 });
 
-describe('loadPaginated', () => {
+describe('loadParametersByPath', () => {
   const credentials = {
     accessKeyId: 'role-key',
     secretAccessKey: 'role-secret',
@@ -112,7 +112,7 @@ describe('loadPaginated', () => {
     });
 
     const sharedClient = SsmCache.getSsmClient();
-    await loadPaginated({ path: '/test/fake/', credentials });
+    await loadParametersByPath({ path: '/test/fake/', credentials });
 
     expect(accessKeyIdsUsed).toStrictEqual(['role-key', 'role-key']);
     expect(SsmCache.getCachedParameters(/param/, credentials)).toStrictEqual({
@@ -130,8 +130,8 @@ describe('loadPaginated', () => {
       return { Parameters: [] };
     });
 
-    await loadPaginated({ path: '/test/fake/a/', credentials });
-    await loadPaginated({ path: '/test/fake/b/', credentials });
+    await loadParametersByPath({ path: '/test/fake/a/', credentials });
+    await loadParametersByPath({ path: '/test/fake/b/', credentials });
 
     expect(clientsUsed.size).toBe(1);
     expect(clientsUsed.has(SsmCache.getSsmClient(credentials))).toBe(true);
