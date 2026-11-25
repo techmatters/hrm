@@ -478,3 +478,150 @@ describe('resources-scheduled-importer handler', () => {
     },
   );
 });
+
+describe('full imports', () => {
+  const event = { helplineShortCode: 'usnm' } as ScheduledEvent & {
+    helplineShortCode: string;
+  };
+  const response = (data: unknown) =>
+    ({
+      ok: true,
+      json: async () => data,
+    }) as Response;
+
+  test('requests all terms and resources, publishing both resources and deletions on every run', async () => {
+    const terms = [{ slug: 'crisis-support' }, { slug: 'housing' }];
+    const results = {
+      resources: [
+        { id: 1, name: 'First' },
+        { id: 2, name: 'Second' },
+        { id: 3, name: 'Third' },
+        { id: 4, name: 'Fourth' },
+        { id: 5, name: 'Fifth' },
+        { id: 6, name: 'Sixth' },
+        { id: 7, name: 'Seventh' },
+      ],
+      deleted: [{ id: 8, deleted_at: '2026-10-05T12:31:59+00:00' }],
+    };
+    mockFetch
+      .mockResolvedValueOnce(response(terms))
+      .mockResolvedValueOnce(response(results))
+      .mockResolvedValueOnce(response(terms))
+      .mockResolvedValueOnce(response(results));
+
+    await handler(event);
+    await handler(event);
+
+    expect(getConfig).toHaveBeenCalledWith('usnm', false, false);
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+    for (const index of [0, 2]) {
+      const [termsUrl, termsOptions] = mockFetch.mock.calls[index];
+      expect(termsUrl.toString()).toBe(
+        'https://external-url/wp-json/wp/v2/aselo?all=true',
+      );
+      expect(termsOptions).toEqual({ method: 'GET', signal: expect.any(AbortSignal) });
+      const [resourcesUrl, resourcesOptions] = mockFetch.mock.calls[index + 1];
+      expect(resourcesUrl.pathname).toBe('/wp-json/nami-resource-finder/v1/resources');
+      expect(resourcesUrl.searchParams.get('aselo')).toBe('crisis-support,housing');
+      expect(resourcesUrl.searchParams.get('all')).toBe('true');
+      expect(resourcesOptions).toEqual({
+        method: 'GET',
+        headers: { Authorization: MOCK_CONFIG.importApiAuthHeader },
+        signal: expect.any(AbortSignal),
+      });
+    }
+    expect(mockConfiguredPublisher).toHaveBeenCalledTimes(16);
+    expect(mockConfiguredPublisher.mock.calls[0][0]).toEqual({
+      accountSid: MOCK_CONFIG.accountSid,
+      batch: { fromSequence: '', toSequence: '', remaining: 7 },
+      importedResources: [
+        {
+          ...EMPTY_ATTRIBUTES,
+          accountSid: MOCK_CONFIG.accountSid,
+          id: '8',
+          name: 'Deleted resource 8',
+          lastUpdated: '2026-10-05T12:31:59+00:00',
+          deletedAt: '2026-10-05T12:31:59+00:00',
+        },
+      ],
+    });
+    expect(mockConfiguredPublisher.mock.calls[7][0].batch.remaining).toBe(0);
+    expect(mockConfiguredPublisher.mock.calls[8][0]).toEqual(
+      mockConfiguredPublisher.mock.calls[0][0],
+    );
+  });
+
+  test('does not make an unfiltered resource request when there are no terms', async () => {
+    mockFetch.mockResolvedValueOnce(response([]));
+    await handler(event);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockConfiguredPublisher).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [{ error: 'invalid terms' }, undefined],
+    [[{ slug: 'invalid,slug' }], undefined],
+    [[{ slug: 'test' }], []],
+    [[{ slug: 'test' }], { resources: [] }],
+    [[{ slug: 'test' }], { resources: [], deleted: [{ id: 8 }] }],
+    [[{ slug: 'test' }], { resources: [{ id: 1 }], deleted: [] }],
+  ])('rejects invalid API responses', async (terms, resources) => {
+    mockFetch.mockResolvedValueOnce(response(terms));
+    if (resources !== undefined) mockFetch.mockResolvedValueOnce(response(resources));
+    await expect(handler(event)).rejects.toThrow('Invalid');
+    expect(mockConfiguredPublisher).not.toHaveBeenCalled();
+  });
+
+  test.each([0, 1])('surfaces HTTP failures from API request %i', async request => {
+    if (request === 1) mockFetch.mockResolvedValueOnce(response([{ slug: 'test' }]));
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () => 'denied',
+    } as Response);
+    await expect(handler(event)).rejects.toThrow('403 (Forbidden)');
+    expect(mockConfiguredPublisher).not.toHaveBeenCalled();
+  });
+
+  test('uses the environment short code when the invocation does not provide one', async () => {
+    const previous = process.env.helpline_short_code;
+    process.env.helpline_short_code = 'USNM';
+    try {
+      mockFetch.mockResolvedValueOnce(response([]));
+      await handler({} as ScheduledEvent);
+      expect(getConfig).toHaveBeenCalledWith('USNM', false, false);
+    } finally {
+      if (previous === undefined) delete process.env.helpline_short_code;
+      else process.env.helpline_short_code = previous;
+    }
+  });
+
+  test('rejects an unsupported short code before reading configuration', async () => {
+    await expect(
+      handler({ helplineShortCode: 'unknown' } as ScheduledEvent & {
+        helplineShortCode: string;
+      }),
+    ).rejects.toThrow('Unsupported helpline short code');
+    expect(getConfig).not.toHaveBeenCalled();
+  });
+
+  test('invocation short code overrides the environment and selects the KHP client', async () => {
+    const previous = process.env.helpline_short_code;
+    process.env.helpline_short_code = 'usnm';
+    try {
+      mockFetch
+        .mockResolvedValueOnce({ ok: false, status: 404 } as Response)
+        .mockResolvedValueOnce(response({ data: [], totalResults: 0 }));
+      await handler({ helplineShortCode: 'ca' } as ScheduledEvent & {
+        helplineShortCode: string;
+      });
+      expect(getConfig).toHaveBeenCalledWith('ca', true, true);
+      expect(mockFetch.mock.calls[0][0].pathname).toContain('/resources/import/progress');
+      expect(mockFetch.mock.calls[1][0].pathname).toBe('/api/resources');
+    } finally {
+      if (previous === undefined) delete process.env.helpline_short_code;
+      else process.env.helpline_short_code = previous;
+    }
+  });
+});

@@ -16,35 +16,18 @@
 
 import type { ScheduledEvent } from 'aws-lambda';
 import type { AccountSID } from '@tech-matters/types';
-import type {
-  ImportBatch,
-  ImportProgress,
-  TimeSequence,
-} from '@tech-matters/resources-types';
-import parseISO from 'date-fns/parseISO';
+import type { ImportBatch } from '@tech-matters/resources-types';
 import {
   publishToImportConsumer,
   ResourceMessage,
   retrieveUnprocessedMessageCount,
 } from '@tech-matters/resources-import-producer';
 import getConfig from './config';
-import path from 'path';
 import { newSqsClient, SqsClient } from '@tech-matters/sqs-client';
-import { transformKhpResourceToApiResource } from './khpMappings';
+import { isHttpError, NativeResource } from './clients';
+import { getIntegration } from './integrations';
 
-export type HttpError<T = any> = {
-  status: number;
-  statusText: string;
-  body: T;
-};
-
-export const isHttpError = <T>(value: any): value is HttpError<T> => {
-  return (
-    typeof value?.status === 'number' &&
-    typeof value?.statusText === 'string' &&
-    typeof value?.body !== 'undefined'
-  );
-};
+export { HttpError, isHttpError, KhpApiResource, KhpApiResponse } from './clients';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -60,142 +43,43 @@ const waitForEmptyQueue = async (importResourcesSqsQueueUrl: URL) => {
   }
 };
 
-const nextTimeSequence = (timeSequence: TimeSequence): TimeSequence => {
-  const [timestamp, sequence] = timeSequence.split('-');
-  return `${Number(timestamp)}-${Number(sequence) + 1}`;
-};
-
-const retrieveCurrentStatus =
-  (internalResourcesBaseUrl: URL, internalResourcesApiKey: string) =>
-  async (accountSid: AccountSID): Promise<ImportProgress | undefined | HttpError> => {
-    const response = await fetch(
-      new URL(
-        `/v0/accounts/${accountSid}/resources/import/progress`,
-        internalResourcesBaseUrl,
-      ),
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Basic ${internalResourcesApiKey}`,
-        },
-      },
-    );
-    if (response.ok) {
-      return response.json() as Promise<ImportProgress>;
-    } else {
-      if (response.status === 404) {
-        return undefined;
-      }
-      return {
-        status: response.status,
-        statusText: response.statusText,
-        body: await response.text(),
-      };
-    }
-  };
-
-export type KhpApiResource = {
-  _id: string;
-  updatedAt: string;
-  name: { en: string } & Record<string, string>;
-} & Record<string, any>;
-
-export type KhpApiResponse = {
-  data: KhpApiResource[];
-  totalResults: number;
-  nextFrom?: TimeSequence;
-};
-
-const pullUpdates =
-  (
-    externalApiBaseUrl: URL,
-    externalApiKey: string,
-    externalApiAuthorizationHeader: string,
-    maxApiResources: number,
-  ) =>
-  async (
-    from: TimeSequence,
-    to: TimeSequence,
-    remaining = maxApiResources,
-  ): Promise<KhpApiResponse | HttpError> => {
-    const fetchUrl = new URL(
-      path.join(
-        externalApiBaseUrl.pathname,
-        `api/resources?startSequence=${from}&endSequence=${to}&limit=${Math.min(
-          remaining,
-          maxApiResources,
-        )}`,
-      ),
-      externalApiBaseUrl,
-    );
-    const response = await fetch(fetchUrl, {
-      headers: {
-        Authorization: externalApiAuthorizationHeader,
-        'x-api-key': externalApiKey,
-      },
-      method: 'GET',
-      signal: AbortSignal.timeout(15 * 60 * 1000), // 15 minutes
-    });
-
-    if (response.ok) {
-      const { data: fullResults, totalResults } =
-        (await response.json()) as KhpApiResponse;
-      console.info(
-        `[GET ${fetchUrl}] Retrieved ${fullResults.length} resources of ${totalResults} from ${from} to ${to}.`,
-      );
-
-      const result = {
-        data: fullResults,
-        totalResults,
-      };
-
-      if (fullResults.length && fullResults.length < totalResults) {
-        // There is more left to retrieve from this range, provide the 'fromSequence' value for the next request
-        return {
-          ...result,
-          nextFrom: nextTimeSequence(
-            fullResults[fullResults.length - 1].timeSequence as TimeSequence,
-          ),
-        };
-      } else return result;
-    } else {
-      return {
-        status: response.status,
-        statusText: response.statusText,
-        body: await response.text(),
-      };
-    }
-  };
-
 const sendUpdates =
-  (accountSid: AccountSID, sqs: SqsClient, importResourcesSqsQueueUrl: URL) =>
-  async (resources: KhpApiResource[], importBatch: ImportBatch): Promise<void> => {
+  (
+    accountSid: AccountSID,
+    sqs: SqsClient,
+    importResourcesSqsQueueUrl: URL,
+    transform: ReturnType<typeof getIntegration>['transform'],
+  ) =>
+  async (resources: NativeResource[], importBatch: ImportBatch): Promise<void> => {
     let { remaining } = importBatch;
-    for (const khpResource of resources) {
+    for (const resource of resources) {
       remaining--;
       try {
+        const mappedResource = transform(accountSid, resource);
         console.debug(
-          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Transforming resource to standard format for import.`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${mappedResource.id}): Transforming resource to standard format for import.`,
         );
         const transformedResource: ResourceMessage = {
           batch: { ...importBatch, remaining },
-          importedResources: [transformKhpResourceToApiResource(accountSid, khpResource)],
+          importedResources: [mappedResource],
           accountSid,
         };
         console.debug(
-          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Publishing resource to import pending queue`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${mappedResource.id}): Publishing resource to import pending queue`,
         );
         const output = await publishToImportConsumer(
           sqs,
           importResourcesSqsQueueUrl,
         )(transformedResource);
         console.debug(
-          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Published resource to import pending queue.`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${mappedResource.id}): Published resource to import pending queue.`,
           output,
         );
       } catch (error) {
         console.error(
-          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${khpResource._id}): Unable to transform & send resource.`,
+          `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${
+            resource._id ?? resource.id
+          }): Unable to transform & send resource.`,
           error,
         );
       }
@@ -213,63 +97,39 @@ const describeRemaining = (
     rangeRemaining ?? 'unknown number of resources'
   } left in sequence range`;
 
-export const handler = async (event: ScheduledEvent): Promise<void> => {
+export const handler = async (
+  event: ScheduledEvent & { helplineShortCode?: string },
+): Promise<void> => {
   console.debug('Triggered by event:', JSON.stringify(event));
 
-  const {
-    accountSid,
-    importApiBaseUrl,
-    importApiAuthHeader,
-    importApiKey,
-    internalResourcesBaseUrl,
-    internalResourcesApiKey,
-    importResourcesSqsQueueUrl,
-    maxBatchSize,
-    maxRequests,
-    maxApiSize,
-    largeMessagesS3Bucket,
-  } = await getConfig();
-  const configuredPull = pullUpdates(
-    importApiBaseUrl,
-    importApiKey,
-    importApiAuthHeader,
-    maxApiSize,
+  const shortCode = event.helplineShortCode ?? process.env.helpline_short_code ?? 'as';
+  const integration = getIntegration(shortCode);
+  const config = await getConfig(
+    shortCode,
+    integration.needsApiKey,
+    integration.needsProgress,
   );
+  const { accountSid, importResourcesSqsQueueUrl, largeMessagesS3Bucket } = config;
+  const configuredPull = integration.createClient(config);
   const sqs = newSqsClient({
     largeMessageS3BaseLocation: {
       bucket: largeMessagesS3Bucket,
       key: 'sqsLargeMessageContent',
     },
   });
-  const configuredSend = sendUpdates(accountSid, sqs, importResourcesSqsQueueUrl);
+  const configuredSend = sendUpdates(
+    accountSid,
+    sqs,
+    importResourcesSqsQueueUrl,
+    integration.transform,
+  );
 
   // Wait until the target queue is empty, otherwise the progress tracking on the DB will not account for the unprocessed messages and process the same resources again
   await waitForEmptyQueue(importResourcesSqsQueueUrl);
 
   console.debug('Target queue empty, reading current import status.');
-  const progress = await retrieveCurrentStatus(
-    internalResourcesBaseUrl,
-    internalResourcesApiKey,
-  )(accountSid);
-  const now: TimeSequence = `${Date.now()}-0`;
-  if (isHttpError<any>(progress)) {
-    throw new Error(
-      `Failed to retrieve import progress: ${progress.status} (${progress.statusText}). Response body: ${progress.body}`,
-    );
-  }
-
-  // Fair bit of state to track over each loop...
-  let nextFrom = progress
-    ? nextTimeSequence(
-        progress.importSequenceId ??
-          `${parseISO(progress.lastProcessedDate).valueOf()}-0`,
-      )
-    : '0-0';
-  console.info(
-    `Starting import from: ${nextFrom} (${progress ? 'resuming' : 'initial'}${
-      progress?.importSequenceId ? 'import sequence supplied.' : ''
-    })`,
-  );
+  const { from, to: now, maxBatchSize, maxRequests } = await integration.progress(config);
+  let nextFrom = from;
   let remaining = maxBatchSize;
   let totalRemaining: number | undefined;
   let requestsMade = 0;

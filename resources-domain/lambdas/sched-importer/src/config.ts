@@ -49,12 +49,15 @@ const debugGetSsmParameter = async (
   }
 };
 
-const getConfig = async () => {
+const getConfig = async (
+  helplineShortCode = process.env.helpline_short_code ?? 'as',
+  needsApiKey = true,
+  needsProgress = true,
+) => {
   const deploymentEnvironment = process.env.NODE_ENV;
   if (!deploymentEnvironment) {
     throw new Error('Missing NODE_ENV');
   }
-  const helplineShortCode = process.env.helpline_short_code ?? 'as';
   console.debug(`helplineShortCode: ${helplineShortCode}`);
 
   const accountSid: AccountSID = (await debugGetSsmParameter(
@@ -88,17 +91,19 @@ const getConfig = async () => {
         }),
       true,
     ),
-    debugGetSsmParameter(
-      getResourcesImportApiKeySsmPath({
-        accountSid,
-        environment: deploymentEnvironment,
-      }),
-      () =>
-        getResourcesImportApiKey({
-          accountSid,
-          environment: deploymentEnvironment,
-        }),
-    ),
+    needsApiKey
+      ? debugGetSsmParameter(
+          getResourcesImportApiKeySsmPath({
+            accountSid,
+            environment: deploymentEnvironment,
+          }),
+          () =>
+            getResourcesImportApiKey({
+              accountSid,
+              environment: deploymentEnvironment,
+            }),
+        )
+      : Promise.resolve(''),
     debugGetSsmParameter(
       getResourcesImportApiAuthHeaderSsmPath({
         accountSid,
@@ -110,7 +115,7 @@ const getConfig = async () => {
           environment: deploymentEnvironment,
         }),
     ),
-    getAccountStaticKey(accountSid),
+    needsProgress ? getAccountStaticKey(accountSid) : Promise.resolve(''),
     debugGetSsmParameter(
       getS3DocsBucketNameSsmPath({
         accountSid,
@@ -125,7 +130,9 @@ const getConfig = async () => {
   ]);
   return {
     importResourcesSqsQueueUrl: new URL(process.env.pending_sqs_queue_url ?? ''),
-    internalResourcesBaseUrl: new URL(process.env.internal_resources_base_url ?? ''),
+    internalResourcesBaseUrl: needsProgress
+      ? new URL(process.env.internal_resources_base_url ?? '')
+      : undefined,
     internalResourcesApiKey,
     accountSid,
     importApiBaseUrl: new URL(importApiBaseUrl ?? ''),
@@ -137,5 +144,7 @@ const getConfig = async () => {
     largeMessagesS3Bucket: docsBucket,
   } as const;
 };
+
+export type Config = Awaited<ReturnType<typeof getConfig>>;
 
 export default getConfig;
