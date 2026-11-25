@@ -202,7 +202,10 @@ const lookupUsStateNameFromCode = ({
 export const expandCsvLine = (csv: UschCsvResource): UschExpandedResource => {
   const expanded = {
     ...csv,
-    Categories: csv.Categories?.split(';').filter(Boolean),
+    // Categories are matched exactly when filtering searches, so stray spaces around the ';' must not be kept
+    Categories: csv.Categories?.split(';')
+      .map(category => category.trim())
+      .filter(Boolean),
     Coverage: csv.Coverage?.split(';').filter(Boolean),
     Inactive: Boolean(csv.Inactive && csv.Inactive.toLowerCase() === 'true'),
   };

@@ -49,7 +49,7 @@ describe('expandCsvLine', () => {
       Inactive: false,
     });
   });
-  test('Csv line with multiple categories seperated by semi-colons - outputs expanded resource with category array without trimming', async () => {
+  test('Csv line with multiple categories seperated by semi-colons - outputs expanded resource with trimmed category array', async () => {
     const result: UschExpandedResource = expandCsvLine({
       ...EMPTY_CSV_LINE,
       ResourceID: TEST_RESOURCE_ID,
@@ -58,7 +58,20 @@ describe('expandCsvLine', () => {
     expect(result).toStrictEqual({
       ResourceID: TEST_RESOURCE_ID,
       Coverage: [],
-      Categories: ['A ', 'few', ' categories'],
+      Categories: ['A', 'few', 'categories'],
+      Inactive: false,
+    });
+  });
+  test('Csv line with blank categories between semi-colons - drops them', async () => {
+    const result: UschExpandedResource = expandCsvLine({
+      ...EMPTY_CSV_LINE,
+      ResourceID: TEST_RESOURCE_ID,
+      Categories: 'Food; ;Housing;',
+    });
+    expect(result).toStrictEqual({
+      ResourceID: TEST_RESOURCE_ID,
+      Coverage: [],
+      Categories: ['Food', 'Housing'],
       Inactive: false,
     });
   });
