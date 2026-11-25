@@ -16,6 +16,7 @@
 
 import type { ImportProgress } from '@tech-matters/resources-types';
 import parseISO from 'date-fns/parseISO';
+import { randomUUID } from 'crypto';
 import type { Config } from './config';
 import { isHttpError, nextTimeSequence } from './clients';
 
@@ -79,7 +80,7 @@ export const sequenceImportProgress = async (
 };
 
 export const fullImportProgress = async (): Promise<ProgressSettings> => ({
-  from: '',
+  from: randomUUID(),
   to: '',
   maxBatchSize: Number.MAX_SAFE_INTEGER,
   maxRequests: 1,

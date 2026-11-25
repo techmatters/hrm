@@ -49,9 +49,11 @@ const sendUpdates =
     sqs: SqsClient,
     importResourcesSqsQueueUrl: URL,
     transform: ReturnType<typeof getIntegration>['transform'],
+    failOnSendError: boolean,
   ) =>
   async (resources: NativeResource[], importBatch: ImportBatch): Promise<void> => {
     let { remaining } = importBatch;
+    let failed = false;
     for (const resource of resources) {
       remaining--;
       try {
@@ -71,11 +73,15 @@ const sendUpdates =
           sqs,
           importResourcesSqsQueueUrl,
         )(transformedResource);
+        if (failOnSendError && !output) {
+          throw new Error('Failed to publish resource to import queue');
+        }
         console.debug(
           `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${mappedResource.id}): Published resource to import pending queue.`,
           output,
         );
       } catch (error) {
+        failed = true;
         console.error(
           `[Imported Resource Trace](qualifiedResourceId:${accountSid}/${
             resource._id ?? resource.id
@@ -83,6 +89,9 @@ const sendUpdates =
           error,
         );
       }
+    }
+    if (failed && failOnSendError) {
+      throw new Error('Failed to transform or publish one or more resources');
     }
   };
 
@@ -122,6 +131,7 @@ export const handler = async (
     sqs,
     importResourcesSqsQueueUrl,
     integration.transform,
+    integration.failOnSendError,
   );
 
   // Wait until the target queue is empty, otherwise the progress tracking on the DB will not account for the unprocessed messages and process the same resources again

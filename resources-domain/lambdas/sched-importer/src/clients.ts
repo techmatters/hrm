@@ -107,6 +107,9 @@ export const createKhpClient =
 export const createNamiClient =
   (config: Config): PullUpdates =>
   async () => {
+    if (config.importApiBaseUrl.protocol !== 'https:') {
+      throw new Error('Import API must use HTTPS');
+    }
     const termsUrl = new URL(
       path.join(config.importApiBaseUrl.pathname, 'wp-json/wp/v2/aselo'),
       config.importApiBaseUrl,

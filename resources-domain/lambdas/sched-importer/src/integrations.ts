@@ -49,6 +49,7 @@ const khp = {
     transformKhpResourceToApiResource(accountSid, resource as KhpApiResource),
   needsApiKey: true,
   needsProgress: true,
+  failOnSendError: false,
 };
 
 const integrations: Record<string, typeof khp> = {
@@ -60,6 +61,7 @@ const integrations: Record<string, typeof khp> = {
     transform: transformNamiResource,
     needsApiKey: false,
     needsProgress: false,
+    failOnSendError: true,
   },
 };
 

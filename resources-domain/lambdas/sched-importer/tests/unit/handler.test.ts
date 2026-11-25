@@ -533,7 +533,7 @@ describe('full imports', () => {
     expect(mockConfiguredPublisher).toHaveBeenCalledTimes(16);
     expect(mockConfiguredPublisher.mock.calls[0][0]).toEqual({
       accountSid: MOCK_CONFIG.accountSid,
-      batch: { fromSequence: '', toSequence: '', remaining: 7 },
+      batch: { fromSequence: expect.any(String), toSequence: '', remaining: 7 },
       importedResources: [
         {
           ...EMPTY_ATTRIBUTES,
@@ -546,9 +546,36 @@ describe('full imports', () => {
       ],
     });
     expect(mockConfiguredPublisher.mock.calls[7][0].batch.remaining).toBe(0);
-    expect(mockConfiguredPublisher.mock.calls[8][0]).toEqual(
-      mockConfiguredPublisher.mock.calls[0][0],
+    const firstBatch = mockConfiguredPublisher.mock.calls[0][0].batch;
+    const secondBatch = mockConfiguredPublisher.mock.calls[8][0].batch;
+    expect(firstBatch.fromSequence).not.toBe(secondBatch.fromSequence);
+    expect(mockConfiguredPublisher.mock.calls[8][0].importedResources).toEqual(
+      mockConfiguredPublisher.mock.calls[0][0].importedResources,
     );
+  });
+
+  test('rejects insecure API URLs without sending credentials', async () => {
+    (getConfig as jest.MockedFunction<typeof getConfig>).mockResolvedValueOnce({
+      ...MOCK_CONFIG,
+      importApiBaseUrl: new URL('http://external-url'),
+    });
+    await expect(handler(event)).rejects.toThrow('Import API must use HTTPS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test('fails the invocation if a publish fails, after trying the remaining records', async () => {
+    mockFetch.mockResolvedValueOnce(response([{ slug: 'test' }])).mockResolvedValueOnce(
+      response({
+        resources: [
+          { id: 1, name: 'First' },
+          { id: 2, name: 'Second' },
+        ],
+        deleted: [],
+      }),
+    );
+    mockConfiguredPublisher.mockResolvedValueOnce(undefined as any);
+    await expect(handler(event)).rejects.toThrow('Failed to transform or publish');
+    expect(mockConfiguredPublisher).toHaveBeenCalledTimes(2);
   });
 
   test('does not make an unfiltered resource request when there are no terms', async () => {
