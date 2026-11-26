@@ -24,7 +24,7 @@ import {
   translatableAttributeMapping,
 } from '@tech-matters/resources-mappers';
 import type { AccountSID } from '@tech-matters/types/';
-import { KhpApiResource } from './index';
+import type { KhpApiResource } from './clients/khp';
 import { FlatResource } from '@tech-matters/resources-types';
 
 // TODO: Change objectId to site ID when we have it

@@ -15,7 +15,7 @@
  */
 
 import type { ScheduledEvent } from 'aws-lambda';
-import type { AccountSID } from '@tech-matters/types';
+import { AccountSID, isErr } from '@tech-matters/types';
 import type { ImportBatch } from '@tech-matters/resources-types';
 import {
   publishToImportConsumer,
@@ -24,10 +24,8 @@ import {
 } from '@tech-matters/resources-import-producer';
 import getConfig from './config';
 import { newSqsClient, SqsClient } from '@tech-matters/sqs-client';
-import { isHttpError, NativeResource } from './clients';
+import type { NativeResource } from './clients/shared';
 import { getIntegration } from './integrations';
-
-export { HttpError, isHttpError, KhpApiResource, KhpApiResponse } from './clients';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -155,9 +153,9 @@ export const handler = async (
       );
       return;
     }
-    const result = await configuredPull(nextFrom, now, remaining);
+    const pullResult = await configuredPull(nextFrom, now, remaining);
     requestsMade++;
-    if (isHttpError<any>(result)) {
+    if (isErr(pullResult)) {
       console.error(
         `Error calling import API, aborting after ${describeRemaining(
           maxBatchSize,
@@ -165,10 +163,9 @@ export const handler = async (
           totalRemaining,
         )}.`,
       );
-      throw new Error(
-        `Failed to retrieve updates: ${result.status} (${result.statusText}). Response body: ${result.body}. `,
-      );
+      throw new Error(`Failed to retrieve updates: ${pullResult.message}`);
     }
+    const result = pullResult.data;
     remaining = remaining - result.data.length;
     totalRemaining = result.totalResults - result.data.length;
     await configuredSend(result.data, {

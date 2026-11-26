@@ -16,12 +16,9 @@
 
 import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
-import {
-  createKhpClient,
-  createNamiClient,
-  KhpApiResource,
-  NativeResource,
-} from './clients';
+import { createKhpClient, KhpApiResource } from './clients/khp';
+import { createNamiClient } from './clients/nami';
+import type { NativeResource } from './clients/shared';
 import { transformKhpResourceToApiResource } from './khpMappings';
 import { fullImportProgress, sequenceImportProgress } from './progress';
 

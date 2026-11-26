@@ -18,7 +18,7 @@ import type { ImportProgress } from '@tech-matters/resources-types';
 import parseISO from 'date-fns/parseISO';
 import { randomUUID } from 'crypto';
 import type { Config } from './config';
-import { isHttpError, nextTimeSequence } from './clients';
+import { nextTimeSequence } from './clients/shared';
 
 export type ProgressSettings = {
   from: string;
@@ -43,23 +43,14 @@ export const sequenceImportProgress = async (
       headers: { Authorization: `Basic ${config.internalResourcesApiKey}` },
     },
   );
-  const progress:
-    | ImportProgress
-    | undefined
-    | { status: number; statusText: string; body: string } = response.ok
-    ? ((await response.json()) as ImportProgress)
-    : response.status === 404
-    ? undefined
-    : {
-        status: response.status,
-        statusText: response.statusText,
-        body: await response.text(),
-      };
-  if (isHttpError(progress)) {
+  if (!response.ok && response.status !== 404) {
     throw new Error(
-      `Failed to retrieve import progress: ${progress.status} (${progress.statusText}). Response body: ${progress.body}`,
+      `Failed to retrieve import progress: ${response.status} (${
+        response.statusText
+      }). Response body: ${await response.text()}`,
     );
   }
+  const progress = response.ok ? ((await response.json()) as ImportProgress) : undefined;
   const from = progress
     ? nextTimeSequence(
         progress.importSequenceId ??

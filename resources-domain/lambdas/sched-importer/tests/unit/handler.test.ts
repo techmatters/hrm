@@ -15,13 +15,8 @@
  */
 
 import parseISO from 'date-fns/parseISO';
-import {
-  handler,
-  HttpError,
-  isHttpError,
-  KhpApiResource,
-  KhpApiResponse,
-} from '../../src';
+import { handler } from '../../src';
+import type { KhpApiResource, KhpApiResponse } from '../../src/clients/khp';
 import each from 'jest-each';
 import type {
   FlatResource,
@@ -105,6 +100,10 @@ beforeEach(() => {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
 const testNow = parseISO('2025-01-01T00:00:00.000Z');
+
+type HttpError = { status: number; statusText: string; body: unknown };
+const isHttpError = (value: unknown): value is HttpError =>
+  typeof (value as HttpError)?.status === 'number';
 
 type HandlerTestCase = {
   description: string;
