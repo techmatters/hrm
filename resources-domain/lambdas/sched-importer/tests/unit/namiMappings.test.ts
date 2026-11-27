@@ -80,7 +80,7 @@ test('maps every documented resource field and preserves taxonomy metadata', () 
       ].map(([key, value]) => ({ key, value, language: '', info: null })),
       ...taxonomies.flatMap(taxonomy =>
         resource[taxonomy].map(item => ({
-          key: `taxonomies/${taxonomy}/${item.slug}`,
+          key: `taxonomies/${taxonomy}/${item.id}`,
           value: item.name,
           language: '',
           info: item,
@@ -118,6 +118,28 @@ test('maps empty values and taxonomy arrays without inventing terms', () => {
   });
   expect(mapped.stringAttributes).toHaveLength(7);
   expect(mapped.stringAttributes.every(attribute => attribute.value === '')).toBe(true);
+});
+
+test('uses numeric term IDs rather than slugs as taxonomy path segments', () => {
+  const mapped = transformNamiResourceToApiResource('AC000', {
+    ...resource,
+    topic: [
+      { id: 1, name: 'First', slug: '__proto__' },
+      { id: 2, name: 'Second', slug: 'constructor' },
+    ],
+  });
+  expect(mapped.stringAttributes).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ key: 'taxonomies/topic/1', value: 'First' }),
+      expect.objectContaining({ key: 'taxonomies/topic/2', value: 'Second' }),
+    ]),
+  );
+  expect(() =>
+    transformNamiResourceToApiResource('AC000', {
+      ...resource,
+      topic: [{ id: '__proto__' as any, name: 'Invalid', slug: 'invalid' }],
+    }),
+  ).toThrow('Invalid NAMI taxonomy term ID');
 });
 
 test('maps deletion records without resource attributes', () => {

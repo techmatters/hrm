@@ -53,7 +53,12 @@ export type NamiDeletedResource = { id: number; deleted_at: string };
 const taxonomyMapping = (taxonomy: NamiTaxonomy): { children: MappingNode } => ({
   children: {
     '{termIndex}': translatableAttributeMapping(
-      ({ currentValue }) => `taxonomies/${taxonomy}/${currentValue.slug}`,
+      ({ currentValue }) => {
+        if (!Number.isSafeInteger(currentValue.id)) {
+          throw new Error('Invalid NAMI taxonomy term ID');
+        }
+        return `taxonomies/${taxonomy}/${currentValue.id}`;
+      },
       {
         value: ({ currentValue }) => currentValue.name,
         info: ({ currentValue }) => currentValue,
