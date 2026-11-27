@@ -15,28 +15,10 @@
  */
 
 import { createSsmParameterGetter } from '@tech-matters/aselo-config';
-import {
-  getResourcesImportApiAuthHeaderSsmPath,
-  getResourcesImportApiBaseUrlSsmPath,
-  getResourcesImportApiKeySsmPath,
-  getResourcesSearchIndexQueueUrlSsmPath,
-  getTwilioShortHelplineSsmPath,
-} from './ssmParameterNameGetters';
+import { getTwilioShortHelplineSsmPath } from './ssmParameterNameGetters';
 
 export * from './ssmParameterNameGetters';
 
-export const getResourcesSearchIndexQueueUrl = createSsmParameterGetter(
-  getResourcesSearchIndexQueueUrlSsmPath,
-);
 export const getTwilioShortHelpline = createSsmParameterGetter(
   getTwilioShortHelplineSsmPath,
-);
-export const getResourcesImportApiBaseUrl = createSsmParameterGetter(
-  getResourcesImportApiBaseUrlSsmPath,
-);
-export const getResourcesImportApiKey = createSsmParameterGetter(
-  getResourcesImportApiKeySsmPath,
-);
-export const getResourcesImportApiAuthHeader = createSsmParameterGetter(
-  getResourcesImportApiAuthHeaderSsmPath,
 );

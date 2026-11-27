@@ -13,11 +13,11 @@
     "@tech-matters/resources-types": "^1.0.0",
     "@tech-matters/sqs-client": "^1.0.0",
     "@tech-matters/ssm-cache": "^1.0.0",
+    "@tech-matters/types": "^1.0.0",
     "date-fns": "^2.30.0",
     "lodash": "^4.18.1"
   },
   "devDependencies": {
-    "@tech-matters/types": "^1.0.0",
     "@tsconfig/node24": "^24.0.5",
     "@types/aws-lambda": "^8.10.108",
     "@types/lodash": "^4.14.194",

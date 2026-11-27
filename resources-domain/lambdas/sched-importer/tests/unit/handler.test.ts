@@ -15,13 +15,8 @@
  */
 
 import parseISO from 'date-fns/parseISO';
-import {
-  handler,
-  HttpError,
-  isHttpError,
-  KhpApiResource,
-  KhpApiResponse,
-} from '../../src';
+import { handler } from '../../src';
+import type { KhpApiResource, KhpApiResponse } from '../../src/clients/khp';
 import each from 'jest-each';
 import type {
   FlatResource,
@@ -36,6 +31,8 @@ import {
   retrieveUnprocessedMessageCount,
 } from '@tech-matters/resources-import-producer';
 import getConfig from '../../src/config';
+import { getKhpApiConfig } from '../../src/clients/khpConfig';
+import { getNamiApiConfig } from '../../src/clients/namiConfig';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
@@ -65,6 +62,8 @@ const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
   internalResourcesApiKey: 'MOCK_INTERNAL_API_KEY',
   importApiAuthHeader: 'MOCK_AUTH_HEADER',
   importApiKey: 'MOCK_EXTERNAL_API_KEY',
+  importApiUsername: 'nami-user',
+  importApiPassword: 'nami-password',
   importResourcesSqsQueueUrl: new URL('https://queue-url'),
   importApiBaseUrl: new URL('https://external-url'),
   largeMessagesS3Bucket: 'an.s3.bucket',
@@ -105,6 +104,10 @@ beforeEach(() => {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const baselineDate = parseISO('2020-01-01T00:00:00.000Z');
 const testNow = parseISO('2025-01-01T00:00:00.000Z');
+
+type HttpError = { status: number; statusText: string; body: unknown };
+const isHttpError = (value: unknown): value is HttpError =>
+  typeof (value as HttpError)?.status === 'number';
 
 type HandlerTestCase = {
   description: string;
@@ -477,4 +480,209 @@ describe('resources-scheduled-importer handler', () => {
       });
     },
   );
+});
+
+describe('full imports', () => {
+  const event = { helplineShortCode: 'usnm', integration: 'nami' } as ScheduledEvent & {
+    helplineShortCode: string;
+    integration: string;
+  };
+  const response = (data: unknown) =>
+    ({
+      ok: true,
+      json: async () => data,
+    }) as Response;
+
+  test('requests all terms and resources, publishing both resources and deletions on every run', async () => {
+    const terms = [{ slug: 'crisis-support' }, { slug: 'housing' }];
+    const results = {
+      resources: [
+        { id: 1, name: 'First' },
+        { id: 2, name: 'Second' },
+        { id: 3, name: 'Third' },
+        { id: 4, name: 'Fourth' },
+        { id: 5, name: 'Fifth' },
+        { id: 6, name: 'Sixth' },
+        { id: 7, name: 'Seventh' },
+      ],
+      deleted: [{ id: 8, deleted_at: '2026-10-05T12:31:59+00:00' }],
+    };
+    mockFetch
+      .mockResolvedValueOnce(response(terms))
+      .mockResolvedValueOnce(response(results))
+      .mockResolvedValueOnce(response(terms))
+      .mockResolvedValueOnce(response(results));
+
+    await handler(event);
+    await handler(event);
+
+    expect(getConfig).toHaveBeenCalledWith('usnm', getNamiApiConfig, false);
+    expect(mockFetch).toHaveBeenCalledTimes(4);
+    for (const index of [0, 2]) {
+      const [termsUrl, termsOptions] = mockFetch.mock.calls[index];
+      expect(termsUrl.toString()).toBe(
+        'https://external-url/wp-json/wp/v2/aselo?all=true',
+      );
+      expect(termsOptions).toEqual({ method: 'GET', signal: expect.any(AbortSignal) });
+      const [resourcesUrl, resourcesOptions] = mockFetch.mock.calls[index + 1];
+      expect(resourcesUrl.pathname).toBe('/wp-json/nami-resource-finder/v1/resources');
+      expect(resourcesUrl.searchParams.get('aselo')).toBe('crisis-support,housing');
+      expect(resourcesUrl.searchParams.get('all')).toBe('true');
+      expect(resourcesOptions).toEqual({
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${Buffer.from('nami-user:nami-password').toString(
+            'base64',
+          )}`,
+        },
+        signal: expect.any(AbortSignal),
+      });
+    }
+    expect(mockConfiguredPublisher).toHaveBeenCalledTimes(16);
+    expect(mockConfiguredPublisher.mock.calls[0][0]).toEqual({
+      accountSid: MOCK_CONFIG.accountSid,
+      batch: { fromSequence: expect.any(String), toSequence: '', remaining: 7 },
+      importedResources: [
+        {
+          ...EMPTY_ATTRIBUTES,
+          accountSid: MOCK_CONFIG.accountSid,
+          id: '8',
+          name: 'Deleted resource 8',
+          lastUpdated: '2026-10-05T12:31:59+00:00',
+          deletedAt: '2026-10-05T12:31:59+00:00',
+        },
+      ],
+    });
+    expect(mockConfiguredPublisher.mock.calls[7][0].batch.remaining).toBe(0);
+    const firstBatch = mockConfiguredPublisher.mock.calls[0][0].batch;
+    const secondBatch = mockConfiguredPublisher.mock.calls[8][0].batch;
+    expect(firstBatch.fromSequence).not.toBe(secondBatch.fromSequence);
+    expect(mockConfiguredPublisher.mock.calls[8][0].importedResources).toEqual(
+      mockConfiguredPublisher.mock.calls[0][0].importedResources,
+    );
+  });
+
+  test('rejects insecure API URLs without sending credentials', async () => {
+    (getConfig as jest.MockedFunction<typeof getConfig>).mockResolvedValueOnce({
+      ...MOCK_CONFIG,
+      importApiBaseUrl: new URL('http://external-url'),
+    });
+    await expect(handler(event)).rejects.toThrow('Import API must use HTTPS');
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test('fails the invocation if a publish fails, after trying the remaining records', async () => {
+    mockFetch.mockResolvedValueOnce(response([{ slug: 'test' }])).mockResolvedValueOnce(
+      response({
+        resources: [
+          { id: 1, name: 'First' },
+          { id: 2, name: 'Second' },
+        ],
+        deleted: [],
+      }),
+    );
+    mockConfiguredPublisher.mockResolvedValueOnce(undefined as any);
+    await expect(handler(event)).rejects.toThrow('Failed to transform or publish');
+    expect(mockConfiguredPublisher).toHaveBeenCalledTimes(2);
+  });
+
+  test('does not make an unfiltered resource request when there are no terms', async () => {
+    mockFetch.mockResolvedValueOnce(response([]));
+    await handler(event);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockConfiguredPublisher).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [{ error: 'invalid terms' }, undefined],
+    [[{ slug: 'invalid,slug' }], undefined],
+    [[{ slug: 'test' }], []],
+    [[{ slug: 'test' }], { resources: [] }],
+    [[{ slug: 'test' }], { resources: [], deleted: [{ id: 8 }] }],
+    [[{ slug: 'test' }], { resources: [{ id: 1 }], deleted: [] }],
+  ])('rejects invalid API responses', async (terms, resources) => {
+    mockFetch.mockResolvedValueOnce(response(terms));
+    if (resources !== undefined) mockFetch.mockResolvedValueOnce(response(resources));
+    await expect(handler(event)).rejects.toThrow('Invalid');
+    expect(mockConfiguredPublisher).not.toHaveBeenCalled();
+  });
+
+  test.each([0, 1])('surfaces HTTP failures from API request %i', async request => {
+    if (request === 1) mockFetch.mockResolvedValueOnce(response([{ slug: 'test' }]));
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      text: async () => 'denied',
+    } as Response);
+    await expect(handler(event)).rejects.toThrow('403 (Forbidden)');
+    expect(mockConfiguredPublisher).not.toHaveBeenCalled();
+  });
+
+  test('uses the environment short code when the invocation does not provide one', async () => {
+    const previous = process.env.helpline_short_code;
+    process.env.helpline_short_code = 'USNM';
+    try {
+      mockFetch.mockResolvedValueOnce(response([]));
+      await handler({ integration: 'nami' } as ScheduledEvent & { integration: string });
+      expect(getConfig).toHaveBeenCalledWith('USNM', getNamiApiConfig, false);
+    } finally {
+      if (previous === undefined) delete process.env.helpline_short_code;
+      else process.env.helpline_short_code = previous;
+    }
+  });
+
+  test.each(['unknown', '', 'usnm', '__proto__', null, 123])(
+    'rejects unsupported integration %s before reading configuration',
+    async integration => {
+      await expect(
+        handler({ integration } as unknown as ScheduledEvent & {
+          integration: string;
+        }),
+      ).rejects.toThrow('Unsupported integration');
+      expect(getConfig).not.toHaveBeenCalled();
+    },
+  );
+
+  test('invocation short code overrides the environment with an explicit KHP integration', async () => {
+    const previous = process.env.helpline_short_code;
+    process.env.helpline_short_code = 'usnm';
+    try {
+      mockFetch
+        .mockResolvedValueOnce({ ok: false, status: 404 } as Response)
+        .mockResolvedValueOnce(response({ data: [], totalResults: 0 }));
+      await handler({ helplineShortCode: 'ca', integration: 'khp' } as ScheduledEvent & {
+        helplineShortCode: string;
+        integration: string;
+      });
+      expect(getConfig).toHaveBeenCalledWith('ca', getKhpApiConfig, true);
+      expect(mockFetch.mock.calls[0][0].pathname).toContain('/resources/import/progress');
+      expect(mockFetch.mock.calls[1][0].pathname).toBe('/api/resources');
+    } finally {
+      if (previous === undefined) delete process.env.helpline_short_code;
+      else process.env.helpline_short_code = previous;
+    }
+  });
+
+  test('defaults to KHP even for the NAMI helpline', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 404 } as Response)
+      .mockResolvedValueOnce(response({ data: [], totalResults: 0 }));
+    await handler({ helplineShortCode: 'usnm' } as ScheduledEvent & {
+      helplineShortCode: string;
+    });
+    expect(getConfig).toHaveBeenCalledWith('usnm', getKhpApiConfig, true);
+    expect(mockFetch.mock.calls[0][0].pathname).toContain('/resources/import/progress');
+    expect(mockFetch.mock.calls[1][0].pathname).toBe('/api/resources');
+  });
+
+  test('selects NAMI independently of the helpline', async () => {
+    mockFetch.mockResolvedValueOnce(response([]));
+    await handler({ helplineShortCode: 'ca', integration: 'nami' } as ScheduledEvent & {
+      helplineShortCode: string;
+      integration: string;
+    });
+    expect(getConfig).toHaveBeenCalledWith('ca', getNamiApiConfig, false);
+    expect(mockFetch.mock.calls[0][0].pathname).toBe('/wp-json/wp/v2/aselo');
+  });
 });

@@ -15,13 +15,7 @@
  */
 
 import { getSsmParameter } from '@tech-matters/ssm-cache';
-import {
-  getResourcesImportApiAuthHeader,
-  getResourcesImportApiBaseUrl,
-  getResourcesImportApiKey,
-  getResourcesSearchIndexQueueUrl,
-  getTwilioShortHelpline,
-} from '../../src/index';
+import { getTwilioShortHelpline } from '../../src/index';
 
 jest.mock('@tech-matters/ssm-cache', () => {
   const actual = jest.requireActual('@tech-matters/ssm-cache');
@@ -47,48 +41,15 @@ describe('resources SSM parameter getters', () => {
     string,
   ][] = [
     [
-      'getResourcesSearchIndexQueueUrl',
-      getResourcesSearchIndexQueueUrl,
-      {},
-      '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
-    ],
-    [
       'getTwilioShortHelpline',
       getTwilioShortHelpline,
       { accountSid: 'AC123' },
       '/test/twilio/AC123/short_helpline',
-    ],
-    [
-      'getResourcesImportApiBaseUrl',
-      getResourcesImportApiBaseUrl,
-      { accountSid: 'AC123' },
-      '/test/resources/AC123/import_api/base_url',
-    ],
-    [
-      'getResourcesImportApiKey',
-      getResourcesImportApiKey,
-      { accountSid: 'AC123' },
-      '/test/resources/AC123/import_api/api_key',
-    ],
-    [
-      'getResourcesImportApiAuthHeader',
-      getResourcesImportApiAuthHeader,
-      { accountSid: 'AC123' },
-      '/test/resources/AC123/import_api/auth_header',
     ],
   ];
 
   test.each(cases)('%s looks up the expected path', async (_name, getter, args, path) => {
     await expect(getter(args)).resolves.toBe('the-value');
     expect(mockGetSsmParameter).toHaveBeenCalledWith(path, undefined, undefined);
-  });
-
-  test('passes cache duration to the shared getter', async () => {
-    await getResourcesSearchIndexQueueUrl({ cacheDurationMilliseconds: 1200 });
-    expect(mockGetSsmParameter).toHaveBeenCalledWith(
-      '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
-      1200,
-      undefined,
-    );
   });
 });
