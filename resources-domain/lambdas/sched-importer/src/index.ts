@@ -105,12 +105,15 @@ const describeRemaining = (
   } left in sequence range`;
 
 export const handler = async (
-  event: ScheduledEvent & { helplineShortCode?: string },
+  event: ScheduledEvent & { helplineShortCode?: string; integration?: string },
 ): Promise<void> => {
   console.debug('Triggered by event:', JSON.stringify(event));
 
   const shortCode = event.helplineShortCode ?? process.env.helpline_short_code ?? 'as';
-  const integration = getIntegration(shortCode);
+  // Existing EventBridge invocations omit integration; remove this default once the updated AWS infrastructure is fully deployed.
+  const integration = getIntegration(
+    event.integration === undefined ? 'khp' : event.integration,
+  );
   const config = await getConfig(
     shortCode,
     integration.needsApiKey,

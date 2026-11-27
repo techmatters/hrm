@@ -479,8 +479,9 @@ describe('resources-scheduled-importer handler', () => {
 });
 
 describe('full imports', () => {
-  const event = { helplineShortCode: 'usnm' } as ScheduledEvent & {
+  const event = { helplineShortCode: 'usnm', integration: 'nami' } as ScheduledEvent & {
     helplineShortCode: string;
+    integration: string;
   };
   const response = (data: unknown) =>
     ({
@@ -615,7 +616,7 @@ describe('full imports', () => {
     process.env.helpline_short_code = 'USNM';
     try {
       mockFetch.mockResolvedValueOnce(response([]));
-      await handler({} as ScheduledEvent);
+      await handler({ integration: 'nami' } as ScheduledEvent & { integration: string });
       expect(getConfig).toHaveBeenCalledWith('USNM', false, false);
     } finally {
       if (previous === undefined) delete process.env.helpline_short_code;
@@ -623,24 +624,28 @@ describe('full imports', () => {
     }
   });
 
-  test('rejects an unsupported short code before reading configuration', async () => {
-    await expect(
-      handler({ helplineShortCode: 'unknown' } as ScheduledEvent & {
-        helplineShortCode: string;
-      }),
-    ).rejects.toThrow('Unsupported helpline short code');
-    expect(getConfig).not.toHaveBeenCalled();
-  });
+  test.each(['unknown', '', 'usnm', '__proto__', null, 123])(
+    'rejects unsupported integration %s before reading configuration',
+    async integration => {
+      await expect(
+        handler({ integration } as unknown as ScheduledEvent & {
+          integration: string;
+        }),
+      ).rejects.toThrow('Unsupported integration');
+      expect(getConfig).not.toHaveBeenCalled();
+    },
+  );
 
-  test('invocation short code overrides the environment and selects the KHP client', async () => {
+  test('invocation short code overrides the environment with an explicit KHP integration', async () => {
     const previous = process.env.helpline_short_code;
     process.env.helpline_short_code = 'usnm';
     try {
       mockFetch
         .mockResolvedValueOnce({ ok: false, status: 404 } as Response)
         .mockResolvedValueOnce(response({ data: [], totalResults: 0 }));
-      await handler({ helplineShortCode: 'ca' } as ScheduledEvent & {
+      await handler({ helplineShortCode: 'ca', integration: 'khp' } as ScheduledEvent & {
         helplineShortCode: string;
+        integration: string;
       });
       expect(getConfig).toHaveBeenCalledWith('ca', true, true);
       expect(mockFetch.mock.calls[0][0].pathname).toContain('/resources/import/progress');
@@ -649,5 +654,27 @@ describe('full imports', () => {
       if (previous === undefined) delete process.env.helpline_short_code;
       else process.env.helpline_short_code = previous;
     }
+  });
+
+  test('defaults to KHP even for the NAMI helpline', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 404 } as Response)
+      .mockResolvedValueOnce(response({ data: [], totalResults: 0 }));
+    await handler({ helplineShortCode: 'usnm' } as ScheduledEvent & {
+      helplineShortCode: string;
+    });
+    expect(getConfig).toHaveBeenCalledWith('usnm', true, true);
+    expect(mockFetch.mock.calls[0][0].pathname).toContain('/resources/import/progress');
+    expect(mockFetch.mock.calls[1][0].pathname).toBe('/api/resources');
+  });
+
+  test('selects NAMI independently of the helpline', async () => {
+    mockFetch.mockResolvedValueOnce(response([]));
+    await handler({ helplineShortCode: 'ca', integration: 'nami' } as ScheduledEvent & {
+      helplineShortCode: string;
+      integration: string;
+    });
+    expect(getConfig).toHaveBeenCalledWith('ca', false, false);
+    expect(mockFetch.mock.calls[0][0].pathname).toBe('/wp-json/wp/v2/aselo');
   });
 });

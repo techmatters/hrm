@@ -50,9 +50,8 @@ const khp = {
 };
 
 const integrations: Record<string, typeof khp> = {
-  as: khp,
-  ca: khp,
-  usnm: {
+  khp,
+  nami: {
     createClient: createNamiClient,
     progress: fullImportProgress,
     transform: transformNamiResource,
@@ -62,11 +61,11 @@ const integrations: Record<string, typeof khp> = {
   },
 };
 
-export const getIntegration = (shortCode: string) => {
-  const key = shortCode.toLowerCase();
-  const integration = Object.prototype.hasOwnProperty.call(integrations, key)
-    ? integrations[key]
-    : undefined;
-  if (!integration) throw new Error(`Unsupported helpline short code: ${shortCode}`);
+export const getIntegration = (name: string) => {
+  const integration =
+    typeof name === 'string' && Object.prototype.hasOwnProperty.call(integrations, name)
+      ? integrations[name]
+      : undefined;
+  if (!integration) throw new Error(`Unsupported integration: ${name}`);
   return integration;
 };
