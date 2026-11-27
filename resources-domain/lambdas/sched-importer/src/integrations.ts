@@ -15,31 +15,18 @@
  */
 
 import type { AccountSID } from '@tech-matters/types';
-import type { FlatResource } from '@tech-matters/resources-types';
 import { createKhpClient, KhpApiResource } from './clients/khp';
 import { createNamiClient } from './clients/nami';
 import { getKhpApiConfig } from './clients/khpConfig';
 import { getNamiApiConfig } from './clients/namiConfig';
 import type { NativeResource } from './clients/shared';
 import { transformKhpResourceToApiResource } from './khpMappings';
+import {
+  NamiApiResource,
+  NamiDeletedResource,
+  transformNamiResourceToApiResource,
+} from './namiMappings';
 import { fullImportProgress, sequenceImportProgress } from './progress';
-
-// Placeholder mapping until the NAMI resource attributes are mapped.
-const transformNamiResource = (
-  accountSid: AccountSID,
-  resource: NativeResource,
-): FlatResource => ({
-  accountSid,
-  id: String(resource.id),
-  name: resource.name || `Deleted resource ${resource.id}`,
-  lastUpdated: resource.deleted_at || new Date().toISOString(),
-  deletedAt: resource.deleted_at || '',
-  stringAttributes: [],
-  referenceStringAttributes: [],
-  booleanAttributes: [],
-  numberAttributes: [],
-  dateTimeAttributes: [],
-});
 
 const khp = {
   createClient: createKhpClient,
@@ -56,7 +43,11 @@ const integrations: Record<string, typeof khp> = {
   nami: {
     createClient: createNamiClient,
     progress: fullImportProgress,
-    transform: transformNamiResource,
+    transform: (accountSid, resource) =>
+      transformNamiResourceToApiResource(
+        accountSid,
+        resource as NamiApiResource | NamiDeletedResource,
+      ),
     getApiConfig: getNamiApiConfig,
     needsProgress: false,
     failOnSendError: true,

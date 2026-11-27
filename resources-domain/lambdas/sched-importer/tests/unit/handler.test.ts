@@ -497,7 +497,26 @@ describe('full imports', () => {
     const terms = [{ slug: 'crisis-support' }, { slug: 'housing' }];
     const results = {
       resources: [
-        { id: 1, name: 'First' },
+        {
+          id: 1,
+          name: 'First',
+          description: '<p>Crisis support</p>',
+          url: 'https://example.org',
+          address: '',
+          phone: '',
+          chat_link: '',
+          email: '',
+          additional_info: '',
+          aselo: [{ id: 399, name: 'Crisis support', slug: 'crisis-support' }],
+          language: [],
+          source: [],
+          topic: [],
+          'mental-health-concern': [],
+          'mental-health-diagnosis': [],
+          audience: [],
+          'content-type': [],
+          post_tag: [],
+        },
         { id: 2, name: 'Second' },
         { id: 3, name: 'Third' },
         { id: 4, name: 'Fourth' },
@@ -553,6 +572,26 @@ describe('full imports', () => {
         },
       ],
     });
+    expect(mockConfiguredPublisher.mock.calls[1][0].importedResources[0]).toEqual(
+      expect.objectContaining({
+        id: '1',
+        name: 'First',
+        stringAttributes: expect.arrayContaining([
+          {
+            key: 'description',
+            value: '<p>Crisis support</p>',
+            language: '',
+            info: { text: '<p>Crisis support</p>' },
+          },
+          {
+            key: 'terms/aselo/399',
+            value: 'Crisis support',
+            language: '',
+            info: { id: 399, name: 'Crisis support', slug: 'crisis-support' },
+          },
+        ]),
+      }),
+    );
     expect(mockConfiguredPublisher.mock.calls[7][0].batch.remaining).toBe(0);
     const firstBatch = mockConfiguredPublisher.mock.calls[0][0].batch;
     const secondBatch = mockConfiguredPublisher.mock.calls[8][0].batch;
