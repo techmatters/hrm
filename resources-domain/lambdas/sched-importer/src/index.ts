@@ -116,7 +116,7 @@ export const handler = async (
   );
   const config = await getConfig(
     shortCode,
-    integration.needsApiKey,
+    integration.getApiConfig,
     integration.needsProgress,
   );
   const { accountSid, importResourcesSqsQueueUrl, largeMessagesS3Bucket } = config;

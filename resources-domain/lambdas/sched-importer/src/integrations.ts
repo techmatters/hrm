@@ -18,6 +18,8 @@ import type { AccountSID } from '@tech-matters/types';
 import type { FlatResource } from '@tech-matters/resources-types';
 import { createKhpClient, KhpApiResource } from './clients/khp';
 import { createNamiClient } from './clients/nami';
+import { getKhpApiConfig } from './clients/khpConfig';
+import { getNamiApiConfig } from './clients/namiConfig';
 import type { NativeResource } from './clients/shared';
 import { transformKhpResourceToApiResource } from './khpMappings';
 import { fullImportProgress, sequenceImportProgress } from './progress';
@@ -44,7 +46,7 @@ const khp = {
   progress: sequenceImportProgress,
   transform: (accountSid: AccountSID, resource: NativeResource) =>
     transformKhpResourceToApiResource(accountSid, resource as KhpApiResource),
-  needsApiKey: true,
+  getApiConfig: getKhpApiConfig,
   needsProgress: true,
   failOnSendError: false,
 };
@@ -55,7 +57,7 @@ const integrations: Record<string, typeof khp> = {
     createClient: createNamiClient,
     progress: fullImportProgress,
     transform: transformNamiResource,
-    needsApiKey: false,
+    getApiConfig: getNamiApiConfig,
     needsProgress: false,
     failOnSendError: true,
   },

@@ -22,14 +22,7 @@ import {
   getTwilioAccountSid,
   getTwilioAccountSidSsmPath,
 } from '@tech-matters/aselo-config';
-import {
-  getResourcesImportApiAuthHeader,
-  getResourcesImportApiAuthHeaderSsmPath,
-  getResourcesImportApiBaseUrl,
-  getResourcesImportApiBaseUrlSsmPath,
-  getResourcesImportApiKey,
-  getResourcesImportApiKeySsmPath,
-} from '@tech-matters/resources-aselo-config';
+import { getKhpApiConfig } from './clients/khpConfig';
 
 const debugGetSsmParameter = async (
   path: string,
@@ -51,7 +44,7 @@ const debugGetSsmParameter = async (
 
 const getConfig = async (
   helplineShortCode = process.env.helpline_short_code ?? 'as',
-  needsApiKey = true,
+  getApiConfig = getKhpApiConfig,
   needsProgress = true,
 ) => {
   const deploymentEnvironment = process.env.NODE_ENV;
@@ -72,49 +65,8 @@ const getConfig = async (
       }),
   )) as AccountSID;
 
-  const [
-    importApiBaseUrl,
-    importApiKey,
-    importApiAuthHeader,
-    internalResourcesApiKey,
-    docsBucket,
-  ] = await Promise.all([
-    debugGetSsmParameter(
-      getResourcesImportApiBaseUrlSsmPath({
-        accountSid,
-        environment: deploymentEnvironment,
-      }),
-      () =>
-        getResourcesImportApiBaseUrl({
-          accountSid,
-          environment: deploymentEnvironment,
-        }),
-      true,
-    ),
-    needsApiKey
-      ? debugGetSsmParameter(
-          getResourcesImportApiKeySsmPath({
-            accountSid,
-            environment: deploymentEnvironment,
-          }),
-          () =>
-            getResourcesImportApiKey({
-              accountSid,
-              environment: deploymentEnvironment,
-            }),
-        )
-      : Promise.resolve(''),
-    debugGetSsmParameter(
-      getResourcesImportApiAuthHeaderSsmPath({
-        accountSid,
-        environment: deploymentEnvironment,
-      }),
-      () =>
-        getResourcesImportApiAuthHeader({
-          accountSid,
-          environment: deploymentEnvironment,
-        }),
-    ),
+  const [apiConfig, internalResourcesApiKey, docsBucket] = await Promise.all([
+    getApiConfig({ accountSid, environment: deploymentEnvironment }),
     needsProgress ? getAccountStaticKey(accountSid) : Promise.resolve(''),
     debugGetSsmParameter(
       getS3DocsBucketNameSsmPath({
@@ -135,9 +87,7 @@ const getConfig = async (
       : undefined,
     internalResourcesApiKey,
     accountSid,
-    importApiBaseUrl: new URL(importApiBaseUrl ?? ''),
-    importApiKey,
-    importApiAuthHeader,
+    ...apiConfig,
     maxBatchSize: Number(process.env.RESOURCE_IMPORT_MAX_BATCH_SIZE ?? 20000),
     maxApiSize: Number(process.env.RESOURCE_IMPORT_MAX_API_SIZE ?? 200),
     maxRequests: Number(process.env.RESOURCE_IMPORT_MAX_REQUESTS ?? 200),

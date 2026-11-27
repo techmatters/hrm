@@ -25,6 +25,8 @@ const config: Config = {
   internalResourcesApiKey: 'internal-key',
   importApiAuthHeader: 'Basic example',
   importApiKey: 'external-key',
+  importApiUsername: 'user',
+  importApiPassword: 'password with spaces',
   importResourcesSqsQueueUrl: new URL('https://queue.example'),
   importApiBaseUrl: new URL('https://external.example'),
   largeMessagesS3Bucket: 'bucket',
@@ -74,6 +76,10 @@ test('NAMI returns a success Result with deleted and active records', async () =
     }),
   );
   const result = await createNamiClient(config)('', '', 1);
+  expect(mockFetch.mock.calls[0][1].headers).toBeUndefined();
+  expect(mockFetch.mock.calls[1][1].headers).toEqual({
+    Authorization: `Basic ${Buffer.from('user:password with spaces').toString('base64')}`,
+  });
   expect(isOk(result)).toBe(true);
   expect(result.unwrap()).toEqual({
     data: [

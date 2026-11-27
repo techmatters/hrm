@@ -62,7 +62,12 @@ export const createNamiClient = (config: Config): PullUpdates =>
     resourcesUrl.searchParams.set('all', 'true');
     const resourcesResponse = await fetch(resourcesUrl, {
       method: 'GET',
-      headers: { Authorization: config.importApiAuthHeader },
+      headers: {
+        Authorization: `Basic ${Buffer.from(
+          `${config.importApiUsername}:${config.importApiPassword}`,
+          'utf8',
+        ).toString('base64')}`,
+      },
       signal: AbortSignal.timeout(15 * 60 * 1000),
     });
     if (!resourcesResponse.ok) return httpError(resourcesResponse);

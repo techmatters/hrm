@@ -31,6 +31,8 @@ import {
   retrieveUnprocessedMessageCount,
 } from '@tech-matters/resources-import-producer';
 import getConfig from '../../src/config';
+import { getKhpApiConfig } from '../../src/clients/khpConfig';
+import { getNamiApiConfig } from '../../src/clients/namiConfig';
 
 jest.mock('@tech-matters/ssm-cache', () => ({
   getSsmParameter: () => 'static-key',
@@ -60,6 +62,8 @@ const MOCK_CONFIG: Awaited<ReturnType<typeof getConfig>> = {
   internalResourcesApiKey: 'MOCK_INTERNAL_API_KEY',
   importApiAuthHeader: 'MOCK_AUTH_HEADER',
   importApiKey: 'MOCK_EXTERNAL_API_KEY',
+  importApiUsername: 'nami-user',
+  importApiPassword: 'nami-password',
   importResourcesSqsQueueUrl: new URL('https://queue-url'),
   importApiBaseUrl: new URL('https://external-url'),
   largeMessagesS3Bucket: 'an.s3.bucket',
@@ -512,7 +516,7 @@ describe('full imports', () => {
     await handler(event);
     await handler(event);
 
-    expect(getConfig).toHaveBeenCalledWith('usnm', false, false);
+    expect(getConfig).toHaveBeenCalledWith('usnm', getNamiApiConfig, false);
     expect(mockFetch).toHaveBeenCalledTimes(4);
     for (const index of [0, 2]) {
       const [termsUrl, termsOptions] = mockFetch.mock.calls[index];
@@ -526,7 +530,11 @@ describe('full imports', () => {
       expect(resourcesUrl.searchParams.get('all')).toBe('true');
       expect(resourcesOptions).toEqual({
         method: 'GET',
-        headers: { Authorization: MOCK_CONFIG.importApiAuthHeader },
+        headers: {
+          Authorization: `Basic ${Buffer.from('nami-user:nami-password').toString(
+            'base64',
+          )}`,
+        },
         signal: expect.any(AbortSignal),
       });
     }
@@ -617,7 +625,7 @@ describe('full imports', () => {
     try {
       mockFetch.mockResolvedValueOnce(response([]));
       await handler({ integration: 'nami' } as ScheduledEvent & { integration: string });
-      expect(getConfig).toHaveBeenCalledWith('USNM', false, false);
+      expect(getConfig).toHaveBeenCalledWith('USNM', getNamiApiConfig, false);
     } finally {
       if (previous === undefined) delete process.env.helpline_short_code;
       else process.env.helpline_short_code = previous;
@@ -647,7 +655,7 @@ describe('full imports', () => {
         helplineShortCode: string;
         integration: string;
       });
-      expect(getConfig).toHaveBeenCalledWith('ca', true, true);
+      expect(getConfig).toHaveBeenCalledWith('ca', getKhpApiConfig, true);
       expect(mockFetch.mock.calls[0][0].pathname).toContain('/resources/import/progress');
       expect(mockFetch.mock.calls[1][0].pathname).toBe('/api/resources');
     } finally {
@@ -663,7 +671,7 @@ describe('full imports', () => {
     await handler({ helplineShortCode: 'usnm' } as ScheduledEvent & {
       helplineShortCode: string;
     });
-    expect(getConfig).toHaveBeenCalledWith('usnm', true, true);
+    expect(getConfig).toHaveBeenCalledWith('usnm', getKhpApiConfig, true);
     expect(mockFetch.mock.calls[0][0].pathname).toContain('/resources/import/progress');
     expect(mockFetch.mock.calls[1][0].pathname).toBe('/api/resources');
   });
@@ -674,7 +682,7 @@ describe('full imports', () => {
       helplineShortCode: string;
       integration: string;
     });
-    expect(getConfig).toHaveBeenCalledWith('ca', false, false);
+    expect(getConfig).toHaveBeenCalledWith('ca', getNamiApiConfig, false);
     expect(mockFetch.mock.calls[0][0].pathname).toBe('/wp-json/wp/v2/aselo');
   });
 });

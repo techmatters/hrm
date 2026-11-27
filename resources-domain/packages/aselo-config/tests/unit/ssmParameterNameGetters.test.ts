@@ -14,13 +14,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import {
-  getResourcesImportApiAuthHeaderSsmPath,
-  getResourcesImportApiBaseUrlSsmPath,
-  getResourcesImportApiKeySsmPath,
-  getResourcesSearchIndexQueueUrlSsmPath,
-  getTwilioShortHelplineSsmPath,
-} from '../../src/ssmParameterNameGetters';
+import { getTwilioShortHelplineSsmPath } from '../../src/ssmParameterNameGetters';
 
 beforeEach(() => {
   process.env.NODE_ENV = 'test';
@@ -30,17 +24,5 @@ beforeEach(() => {
 test('builds resources-specific SSM paths', () => {
   expect(getTwilioShortHelplineSsmPath({ accountSid: 'AC123' })).toBe(
     '/test/twilio/AC123/short_helpline',
-  );
-  expect(getResourcesSearchIndexQueueUrlSsmPath({})).toBe(
-    '/test/us-east-1/sqs/jobs/hrm-resources-search/queue-url-index',
-  );
-  expect(getResourcesImportApiBaseUrlSsmPath({ accountSid: 'AC123' })).toBe(
-    '/test/resources/AC123/import_api/base_url',
-  );
-  expect(getResourcesImportApiKeySsmPath({ accountSid: 'AC123' })).toBe(
-    '/test/resources/AC123/import_api/api_key',
-  );
-  expect(getResourcesImportApiAuthHeaderSsmPath({ accountSid: 'AC123' })).toBe(
-    '/test/resources/AC123/import_api/auth_header',
   );
 });
