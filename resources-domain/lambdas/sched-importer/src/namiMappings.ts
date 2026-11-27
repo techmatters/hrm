@@ -25,7 +25,7 @@ import type { FlatResource } from '@tech-matters/resources-types';
 import type { AccountSID } from '@tech-matters/types';
 
 type NamiTerm = { id: number; name: string; slug: string };
-type NamiTaxonomy =
+type NamiTermField =
   | 'aselo'
   | 'language'
   | 'source'
@@ -46,18 +46,18 @@ export type NamiApiResource = {
   chat_link: string;
   email: string;
   additional_info: string;
-} & Record<NamiTaxonomy, NamiTerm[]>;
+} & Record<NamiTermField, NamiTerm[]>;
 
 export type NamiDeletedResource = { id: number; deleted_at: string };
 
-const taxonomyMapping = (taxonomy: NamiTaxonomy): { children: MappingNode } => ({
+const termMapping = (termType: string): { children: MappingNode } => ({
   children: {
     '{termIndex}': translatableAttributeMapping(
       ({ currentValue }) => {
         if (!Number.isSafeInteger(currentValue.id)) {
-          throw new Error('Invalid NAMI taxonomy term ID');
+          throw new Error('Invalid NAMI term ID');
         }
-        return `taxonomies/${taxonomy}/${currentValue.id}`;
+        return `terms/${termType}/${currentValue.id}`;
       },
       {
         value: ({ currentValue }) => currentValue.name,
@@ -79,15 +79,15 @@ const NAMI_MAPPING_NODE: MappingNode = {
   chat_link: attributeMapping('stringAttributes', 'chatLink'),
   email: attributeMapping('stringAttributes', 'email'),
   additional_info: translatableAttributeMapping('additionalInfo'),
-  aselo: taxonomyMapping('aselo'),
-  language: taxonomyMapping('language'),
-  source: taxonomyMapping('source'),
-  topic: taxonomyMapping('topic'),
-  'mental-health-concern': taxonomyMapping('mental-health-concern'),
-  'mental-health-diagnosis': taxonomyMapping('mental-health-diagnosis'),
-  audience: taxonomyMapping('audience'),
-  'content-type': taxonomyMapping('content-type'),
-  post_tag: taxonomyMapping('post_tag'),
+  aselo: termMapping('aselo'),
+  language: termMapping('language'),
+  source: termMapping('source'),
+  topic: termMapping('topic'),
+  'mental-health-concern': termMapping('mentalHealthConcern'),
+  'mental-health-diagnosis': termMapping('mentalHealthDiagnosis'),
+  audience: termMapping('audience'),
+  'content-type': termMapping('contentType'),
+  post_tag: termMapping('postTag'),
   deleted_at: resourceFieldMapping('deletedAt'),
 };
 

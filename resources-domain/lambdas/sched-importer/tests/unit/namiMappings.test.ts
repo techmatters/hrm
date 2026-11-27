@@ -21,16 +21,16 @@ import {
 import { getIntegration } from '../../src/integrations';
 
 const term = { id: 399, name: 'Crisis support', slug: 'crisis-support' };
-const taxonomies = [
-  'aselo',
-  'language',
-  'source',
-  'topic',
-  'mental-health-concern',
-  'mental-health-diagnosis',
-  'audience',
-  'content-type',
-  'post_tag',
+const termFields = [
+  ['aselo', 'aselo'],
+  ['language', 'language'],
+  ['source', 'source'],
+  ['topic', 'topic'],
+  ['mental-health-concern', 'mentalHealthConcern'],
+  ['mental-health-diagnosis', 'mentalHealthDiagnosis'],
+  ['audience', 'audience'],
+  ['content-type', 'contentType'],
+  ['post_tag', 'postTag'],
 ] as const;
 const resource: NamiApiResource = {
   id: 1812,
@@ -53,7 +53,7 @@ const resource: NamiApiResource = {
   post_tag: [term],
 };
 
-test('maps every documented resource field and preserves taxonomy metadata', () => {
+test('maps every documented resource field and preserves term metadata', () => {
   const before = Date.now();
   const mapped = getIntegration('nami').transform('AC000', resource);
   const after = Date.now();
@@ -78,9 +78,9 @@ test('maps every documented resource field and preserves taxonomy metadata', () 
         ['email', resource.email],
         ['additionalInfo', resource.additional_info],
       ].map(([key, value]) => ({ key, value, language: '', info: null })),
-      ...taxonomies.flatMap(taxonomy =>
-        resource[taxonomy].map(item => ({
-          key: `taxonomies/${taxonomy}/${item.id}`,
+      ...termFields.flatMap(([field, termType]) =>
+        resource[field].map(item => ({
+          key: `terms/${termType}/${item.id}`,
           value: item.name,
           language: '',
           info: item,
@@ -96,7 +96,7 @@ test('maps every documented resource field and preserves taxonomy metadata', () 
   expect(Date.parse(mapped.lastUpdated)).toBeLessThanOrEqual(after);
 });
 
-test('maps empty values and taxonomy arrays without inventing terms', () => {
+test('maps empty values and term arrays without inventing terms', () => {
   const mapped = transformNamiResourceToApiResource('AC000', {
     ...resource,
     description: '',
@@ -120,7 +120,7 @@ test('maps empty values and taxonomy arrays without inventing terms', () => {
   expect(mapped.stringAttributes.every(attribute => attribute.value === '')).toBe(true);
 });
 
-test('uses numeric term IDs rather than slugs as taxonomy path segments', () => {
+test('uses numeric term IDs rather than slugs as term path segments', () => {
   const mapped = transformNamiResourceToApiResource('AC000', {
     ...resource,
     topic: [
@@ -130,8 +130,8 @@ test('uses numeric term IDs rather than slugs as taxonomy path segments', () => 
   });
   expect(mapped.stringAttributes).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ key: 'taxonomies/topic/1', value: 'First' }),
-      expect.objectContaining({ key: 'taxonomies/topic/2', value: 'Second' }),
+      expect.objectContaining({ key: 'terms/topic/1', value: 'First' }),
+      expect.objectContaining({ key: 'terms/topic/2', value: 'Second' }),
     ]),
   );
   expect(() =>
@@ -139,7 +139,7 @@ test('uses numeric term IDs rather than slugs as taxonomy path segments', () => 
       ...resource,
       topic: [{ id: '__proto__' as any, name: 'Invalid', slug: 'invalid' }],
     }),
-  ).toThrow('Invalid NAMI taxonomy term ID');
+  ).toThrow('Invalid NAMI term ID');
 });
 
 test('maps deletion records without resource attributes', () => {

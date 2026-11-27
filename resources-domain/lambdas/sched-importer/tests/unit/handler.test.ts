@@ -584,7 +584,7 @@ describe('full imports', () => {
             info: { text: '<p>Crisis support</p>' },
           },
           {
-            key: 'taxonomies/aselo/399',
+            key: 'terms/aselo/399',
             value: 'Crisis support',
             language: '',
             info: { id: 399, name: 'Crisis support', slug: 'crisis-support' },
